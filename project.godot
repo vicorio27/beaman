@@ -1,0 +1,50 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Be a man"
+run/main_scene="res://scenes/ui/Title.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+Controls="*res://autoload/Controls.gd"
+SceneRouter="*res://autoload/SceneRouter.gd"
+Narrator="*res://autoload/Narrator.gd"
+GameState="*res://autoload/GameState.gd"
+TimeManager="*res://autoload/TimeManager.gd"
+QuestDirector="*res://autoload/QuestDirector.gd"
+Dialogue="*res://autoload/Dialogue.gd"
+Conversations="*res://autoload/Conversations.gd"
+MusicDirector="*res://autoload/MusicDirector.gd"
+
+[display]
+
+window/size/viewport_width=320
+window/size/viewport_height=180
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="viewport"
+window/stretch/scale_mode="integer"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+rendering_device/driver.windows="d3d12"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.08, 0.08, 0.1, 1)
+2d/snap/snap_2d_transforms_to_pixel=true

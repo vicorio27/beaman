@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/MoodFilter.gd" id="1_mood"]
+[ext_resource type="Shader" path="res://assets/shaders/mood.gdshader" id="2_shader"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P.ttf" id="3_font"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mood"]
+shader = ExtResource("2_shader")
+shader_parameter/distress = 0.0
+shader_parameter/memory = 0.0
+
+[sub_resource type="LabelSettings" id="LabelSettings_debug"]
+font = ExtResource("3_font")
+font_size = 8
+outline_size = 3
+outline_color = Color(0, 0, 0, 1)
+
+[node name="MoodFilter" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_mood")
+
+[node name="Screen" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_mood")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Debug" type="CanvasLayer" parent="."]
+layer = 11
+
+[node name="Label" type="Label" parent="Debug"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 316.0
+offset_bottom = 14.0
+label_settings = SubResource("LabelSettings_debug")
