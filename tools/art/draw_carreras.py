@@ -1,6 +1,8 @@
 """Arte de la serie CARRERAS (Camila, Guillermo, los dos juntos, Diana Carolina).
-  assets/moto/camila_moto.png       Camila en su moto, de espaldas (chaqueta dorada, pelo largo)
-  assets/moto/guillermo_moto.png    Guillermo en su moto, de espaldas (camiseta verde, grande)
+Camila: enana, peinado de honguito pintado de mono (raíz oscura), muy tetona, de fucsia.
+Guillermo: gordo, muy gordo, mono, gafas oscuras, polo verde. (Como en la ciudad y en las peleas.)
+  assets/moto/camila_moto.png       Camila en su moto, de espaldas (chiquita, el honguito, fucsia)
+  assets/moto/guillermo_moto.png    Guillermo en su moto, de espaldas (enorme, nuca mona, polo verde)
   assets/moto/camila_monstruo.png   segunda fase: La Devoradora (hinchada, muchos brazos con carteras)
   assets/moto/guillermo_marrano.png segunda fase: el marrano con gafas y cadenas de oro, en moto, de frente
   assets/moto/patrulla.png, camion_ejercito.png, reten.png, cadena.png, bolso.png
@@ -13,60 +15,107 @@ from draw_moto import outline, canvas, TIRE, CHROME, RED, SKIN
 
 OUT = Path("assets/moto")
 GOLD = (236, 190, 60, 255)
+FUCSIA = (214, 64, 130, 255)
+FUCSIA_D = (160, 40, 96, 255)
+BLOND = (246, 214, 96, 255)
+BLOND_D = (210, 170, 60, 255)
+ROOTS = (96, 66, 46, 255)
+POLO = (90, 160, 100, 255)
+POLO_D = (64, 124, 74, 255)
 
 
-def rider(name, jacket, hair, bike, long_hair=False, helmet=None, big=False):
+def honguito(d, x0, y0, x1, y1):
+    """El peinado de Camila: un casco redondo mono, con la raíz oscura en la coronilla."""
+    d.ellipse([x0, y0, x1, y1], fill=BLOND)
+    d.ellipse([x0 + 2, y0 + (y1 - y0) // 2, x1 - 2, y1], fill=BLOND_D)
+    d.ellipse([x0 + 2, y0 + 2, x1 - 2, y0 + (y1 - y0) // 2 + 1], fill=BLOND)
+    cx = (x0 + x1) // 2
+    d.ellipse([cx - 3, y0, cx + 3, y0 + 3], fill=ROOTS)
+
+
+def camila_moto():
+    """De espaldas, chiquita: casi no alcanza el manubrio. Se le ve el busto por los lados."""
     img, d = canvas(48, 48)
     d.ellipse([18, 34, 30, 47], fill=TIRE)
-    d.rectangle([16, 30, 32, 34], fill=bike)
+    d.rectangle([16, 30, 32, 34], fill=(200, 80, 140, 255))
     d.rectangle([21, 31, 27, 33], fill=RED)
-    w = 4 if big else 0
-    d.rectangle([12 - w, 22, 18 - w, 30], fill=(50, 50, 70, 255))
-    d.rectangle([30 + w, 22, 36 + w, 30], fill=(50, 50, 70, 255))
-    d.polygon([(15 - w, 10), (33 + w, 10), (35 + w, 27), (13 - w, 27)], fill=jacket)
-    d.line([(15 - w, 12), (8 - w, 20)], fill=jacket, width=3)
-    d.line([(33 + w, 12), (40 + w, 20)], fill=jacket, width=3)
-    d.rectangle([5 - w, 19, 9 - w, 22], fill=SKIN)
-    d.rectangle([39 + w, 19, 43 + w, 22], fill=SKIN)
-    if helmet:
-        d.ellipse([17, 0, 31, 11], fill=helmet)
-    else:
-        d.ellipse([17, 0, 31, 12], fill=hair)
-        if long_hair:
-            d.rectangle([17, 6, 31, 22], fill=hair)
-    outline(img).save(OUT / f"{name}.png")
+    d.rectangle([17, 26, 22, 31], fill=(48, 30, 58, 255))                  # medias oscuras
+    d.rectangle([26, 26, 31, 31], fill=(48, 30, 58, 255))
+    d.polygon([(17, 16), (31, 16), (33, 28), (15, 28)], fill=FUCSIA)       # la espalda, bajita
+    d.ellipse([12, 18, 18, 25], fill=FUCSIA)                               # el busto, que se asoma
+    d.ellipse([30, 18, 36, 25], fill=FUCSIA)
+    d.line([(17, 18), (9, 22)], fill=FUCSIA, width=2)                      # brazos estirados al manubrio
+    d.line([(31, 18), (39, 22)], fill=FUCSIA, width=2)
+    d.rectangle([6, 21, 9, 23], fill=SKIN)
+    d.rectangle([39, 21, 42, 23], fill=SKIN)
+    d.point([(6, 23), (42, 23)], fill=RED)                                 # las uñas
+    d.line([(20, 27), (28, 27)], fill=FUCSIA_D)
+    honguito(d, 15, 4, 33, 19)
+    outline(img).save(OUT / "camila_moto.png")
+
+
+def guillermo_moto():
+    """De espaldas: gordo, muy gordo. La moto casi no se le ve. Nuca mona, rollitos, polo verde."""
+    img, d = canvas(48, 48)
+    d.ellipse([18, 36, 30, 47], fill=TIRE)
+    d.rectangle([17, 32, 31, 36], fill=(40, 44, 52, 255))
+    d.rectangle([21, 33, 27, 35], fill=RED)
+    d.rectangle([7, 26, 15, 34], fill=(66, 90, 140, 255))                  # jean
+    d.rectangle([33, 26, 41, 34], fill=(66, 90, 140, 255))
+    d.ellipse([4, 9, 44, 36], fill=POLO)                                    # la espalda: una pared verde
+    d.ellipse([8, 12, 40, 33], fill=POLO)
+    d.arc([10, 24, 38, 36], 200, 340, fill=POLO_D, width=1)                # la camiseta que no alcanza
+    d.line([(6, 16), (1, 22)], fill=POLO, width=4)
+    d.line([(42, 16), (47, 22)], fill=POLO, width=4)
+    d.rectangle([0, 21, 3, 25], fill=SKIN)
+    d.rectangle([44, 21, 47, 25], fill=SKIN)
+    d.ellipse([15, 1, 33, 15], fill=SKIN)                                   # la nuca
+    d.line([(17, 12), (31, 12)], fill=(180, 120, 92, 255))                  # los rollitos
+    d.line([(18, 14), (30, 14)], fill=(180, 120, 92, 255))
+    d.chord([15, 0, 33, 14], 180, 360, fill=BLOND)                         # el pelo mono
+    d.line([(15, 6), (12, 7)], fill=(20, 20, 24, 255))                     # las patas de las gafas
+    d.line([(33, 6), (36, 7)], fill=(20, 20, 24, 255))
+    d.arc([16, 6, 32, 20], 20, 160, fill=GOLD, width=1)                    # la cadena, por atrás
+    outline(img).save(OUT / "guillermo_moto.png")
 
 
 def devoradora():
-    """Camila, segunda fase: hinchada, de frente (mira para atrás, a él), con muchos brazos y carteras."""
+    """Camila, segunda fase: hinchada, de frente (mira para atrás, a él), con muchos brazos y carteras.
+    El honguito mono, el escote reventado, la boca pintada."""
     img, d = canvas(72, 66)
-    d.ellipse([10, 14, 62, 62], fill=(200, 120, 150, 255))           # cuerpo hinchado
-    d.ellipse([16, 20, 56, 58], fill=(214, 140, 166, 255))
-    d.rectangle([18, 40, 54, 60], fill=GOLD)                          # el vestido dorado, reventado
+    d.ellipse([10, 18, 62, 62], fill=(220, 150, 140, 255))           # cuerpo hinchado
+    d.ellipse([16, 24, 56, 58], fill=(232, 168, 156, 255))
+    d.ellipse([18, 26, 36, 44], fill=FUCSIA)                         # el busto, enorme
+    d.ellipse([36, 26, 54, 44], fill=FUCSIA)
+    d.ellipse([22, 30, 30, 36], fill=(236, 110, 160, 255))
+    d.ellipse([42, 30, 50, 36], fill=(236, 110, 160, 255))
+    d.rectangle([18, 42, 54, 60], fill=FUCSIA)                       # el vestido, reventado
     for x in range(20, 54, 6):
-        d.line([(x, 40), (x + 3, 60)], fill=(180, 140, 40, 255))
-    d.ellipse([24, 2, 48, 26], fill=(214, 150, 160, 255))             # cabeza
-    d.rectangle([22, 0, 50, 10], fill=(40, 30, 34, 255))              # pelo
-    d.rectangle([22, 6, 26, 30], fill=(40, 30, 34, 255))
-    d.rectangle([46, 6, 50, 30], fill=(40, 30, 34, 255))
-    d.ellipse([29, 11, 33, 15], fill=(255, 230, 60, 255))             # ojos
-    d.ellipse([39, 11, 43, 15], fill=(255, 230, 60, 255))
-    d.ellipse([29, 17, 43, 24], fill=(200, 30, 60, 255))              # boca enorme, pintada
-    d.rectangle([31, 19, 41, 21], fill=(60, 10, 20, 255))
-    for ax, ay, bx, by in [(10, 30, 0, 18), (62, 30, 72, 18), (12, 44, 0, 50), (60, 44, 72, 50)]:
-        d.line([(ax, ay), (bx, by)], fill=(200, 120, 150, 255), width=4)  # brazos
+        d.line([(x, 44), (x + 3, 60)], fill=FUCSIA_D)
+    d.ellipse([22, 4, 50, 28], fill=(232, 168, 156, 255))            # cabeza (cabezona)
+    honguito(d, 18, 0, 54, 22)
+    d.rectangle([24, 12, 48, 26], fill=(232, 168, 156, 255))         # la cara, debajo del flequillo
+    d.line([(24, 12), (48, 12)], fill=BLOND)
+    d.ellipse([28, 13, 32, 17], fill=(255, 230, 60, 255))            # ojos
+    d.ellipse([40, 13, 44, 17], fill=(255, 230, 60, 255))
+    d.ellipse([29, 18, 43, 25], fill=(200, 30, 60, 255))             # boca enorme, pintada
+    d.rectangle([31, 20, 41, 22], fill=(60, 10, 20, 255))
+    for ax, ay, bx, by in [(10, 34, 0, 22), (62, 34, 72, 22), (12, 48, 0, 54), (60, 48, 72, 54)]:
+        d.line([(ax, ay), (bx, by)], fill=(220, 150, 140, 255), width=4)  # brazos
         d.rectangle([bx - 4 if bx else bx, by - 4, (bx + 4) if bx else bx + 8, by + 4], fill=(150, 40, 60, 255))  # carteras
     d.ellipse([20, 56, 52, 66], fill=TIRE)                            # la moto, aplastada debajo
     outline(img).save(OUT / "camila_monstruo.png")
 
 
 def marrano():
-    """Guillermo, segunda fase: un marrano con gafas oscuras y cadenas de oro, en moto, de frente."""
+    """Guillermo, segunda fase: un marrano con gafas oscuras, copete mono y cadenas de oro, en moto, de frente."""
     img, d = canvas(56, 54)
-    d.ellipse([12, 18, 44, 48], fill=(234, 150, 160, 255))           # cuerpo
+    d.ellipse([6, 16, 50, 50], fill=(234, 150, 160, 255))            # cuerpo (más gordo todavía)
+    d.ellipse([12, 22, 44, 40], fill=POLO)                             # el polo verde, a reventar
     d.ellipse([14, 2, 42, 28], fill=(240, 160, 170, 255))             # cabeza
     d.polygon([(14, 6), (10, 0), (20, 4)], fill=(220, 130, 140, 255))  # orejas
     d.polygon([(42, 6), (46, 0), (36, 4)], fill=(220, 130, 140, 255))
+    d.polygon([(22, 4), (28, 0), (34, 4), (30, 6), (26, 6)], fill=BLOND)  # el copete mono
     d.rectangle([16, 9, 26, 14], fill=(20, 20, 24, 255))              # gafas
     d.rectangle([30, 9, 40, 14], fill=(20, 20, 24, 255))
     d.line([(26, 11), (30, 11)], fill=(20, 20, 24, 255))
@@ -74,9 +123,9 @@ def marrano():
     d.point([(26, 20), (30, 20)], fill=(90, 30, 40, 255))
     for k in range(3):                                                 # cadenas de oro
         d.arc([16 - k * 2, 20 + k * 3, 40 + k * 2, 40 + k * 4], 20, 160, fill=GOLD, width=2)
-    d.rectangle([20, 44, 36, 50], fill=(60, 140, 80, 255))           # la moto
-    d.ellipse([22, 46, 34, 54], fill=TIRE)
-    d.line([(10, 40), (46, 40)], fill=CHROME, width=2)
+    d.rectangle([20, 46, 36, 50], fill=(60, 140, 80, 255))           # la moto
+    d.ellipse([22, 47, 34, 54], fill=TIRE)
+    d.line([(6, 42), (50, 42)], fill=CHROME, width=2)
     outline(img).save(OUT / "guillermo_marrano.png")
 
 
@@ -131,38 +180,43 @@ def small():
 
 
 def copiloto():
-    """Ep. 1: Camila de copiloto (atrás), con el brazo arriba tirando algo; adelante maneja un man."""
+    """Ep. 1: Camila de copiloto (atrás), chiquita, con el brazo arriba tirando algo; adelante maneja un man."""
     img, d = canvas(48, 56)
     d.ellipse([18, 42, 30, 55], fill=TIRE)
     d.rectangle([15, 38, 33, 42], fill=(200, 80, 140, 255))
     d.rectangle([21, 39, 27, 41], fill=RED)
     d.polygon([(16, 14), (32, 14), (34, 30), (14, 30)], fill=(40, 40, 50, 255))   # el que maneja
     d.ellipse([18, 4, 30, 15], fill=(30, 30, 36, 255))
-    d.polygon([(14, 24), (34, 24), (36, 40), (12, 40)], fill=GOLD)                 # Camila, atrás
-    d.rectangle([17, 14, 31, 30], fill=(40, 30, 34, 255))                          # su pelo largo
-    d.ellipse([17, 10, 31, 22], fill=(40, 30, 34, 255))
-    d.line([(34, 26), (44, 10)], fill=GOLD, width=3)                               # el brazo arriba
+    d.polygon([(16, 28), (32, 28), (34, 40), (14, 40)], fill=FUCSIA)              # Camila, atrás (no le pasa del hombro)
+    d.ellipse([11, 30, 17, 37], fill=FUCSIA)                                       # el busto, por un lado
+    honguito(d, 15, 16, 33, 31)
+    d.line([(33, 30), (44, 12)], fill=FUCSIA, width=3)                             # el brazo arriba
+    d.point((44, 11), fill=RED)
     d.rectangle([41, 4, 47, 10], fill=(150, 40, 60, 255))                          # lo que tira
     outline(img).save(OUT / "camila_copiloto.png")
 
 
 def camioneta(name, pig):
-    """Ep. 2: la camioneta de Guillermo, de atrás; en el platón, Camila tirando cosas."""
+    """Ep. 2: la camioneta de Guillermo, de atrás; en el platón, Camila (chiquita, el honguito) tirando cosas."""
     img, d = canvas(66, 58)
     d.rectangle([2, 22, 63, 48], fill=(40, 90, 60, 255))
     d.rectangle([10, 4, 55, 24], fill=(36, 80, 54, 255))                           # cabina
     d.rectangle([14, 8, 51, 20], fill=(70, 90, 110, 255))                          # vidrio de atrás
     if pig:
-        d.ellipse([24, 8, 42, 22], fill=(240, 160, 170, 255))                      # el marrano al volante
-        d.rectangle([26, 12, 32, 15], fill=(20, 20, 24, 255))
-        d.rectangle([34, 12, 40, 15], fill=(20, 20, 24, 255))
+        d.ellipse([18, 6, 46, 22], fill=(240, 160, 170, 255))                      # el marrano al volante, llena el vidrio
+        d.polygon([(28, 7), (32, 4), (36, 7)], fill=BLOND)
+        d.rectangle([22, 11, 30, 14], fill=(20, 20, 24, 255))
+        d.rectangle([34, 11, 42, 14], fill=(20, 20, 24, 255))
         for k in range(3):
             d.line([(6, 30 + k * 4), (60, 30 + k * 4)], fill=GOLD, width=1)        # cadenas en la compuerta
     else:
-        d.ellipse([26, 10, 38, 20], fill=(30, 26, 28, 255))                        # Guillermo, de espaldas
-    d.polygon([(40, 18), (54, 18), (56, 34), (38, 34)], fill=GOLD)                 # Camila en el platón
-    d.rectangle([42, 8, 52, 20], fill=(40, 30, 34, 255))
-    d.line([(54, 20), (62, 6)], fill=GOLD, width=3)
+        d.ellipse([20, 8, 44, 22], fill=SKIN)                                      # Guillermo, de espaldas: una nuca enorme
+        d.chord([20, 7, 44, 19], 180, 360, fill=BLOND)
+        d.line([(24, 18), (40, 18)], fill=(180, 120, 92, 255))
+    d.polygon([(42, 24), (54, 24), (56, 34), (40, 34)], fill=FUCSIA)               # Camila en el platón
+    d.ellipse([37, 25, 43, 31], fill=FUCSIA)
+    honguito(d, 41, 13, 55, 25)
+    d.line([(54, 26), (62, 10)], fill=FUCSIA, width=3)
     d.rectangle([4, 40, 12, 44], fill=RED)
     d.rectangle([53, 40, 61, 44], fill=RED)
     d.rectangle([24, 40, 42, 45], fill=(230, 210, 80, 255))
@@ -235,8 +289,8 @@ if __name__ == "__main__":
     camioneta("camioneta_marrano", True)
     zapato()
     diana_rio()
-    rider("camila_moto", GOLD, (40, 30, 34, 255), (200, 80, 140, 255), long_hair=True)
-    rider("guillermo_moto", (70, 150, 80, 255), (30, 26, 28, 255), (40, 44, 52, 255), helmet=(60, 140, 70, 255), big=True)
+    camila_moto()
+    guillermo_moto()
     devoradora()
     marrano()
     patrulla()
