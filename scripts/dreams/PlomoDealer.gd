@@ -45,6 +45,7 @@ func setup() -> void:
 		["", "Esta noche el sueño se equivoca de cuerpo."],
 		["", "Las manos tienen anillos de oro. La camisa es blanca, de lino. La pistola, dorada."],
 		["", "Ahora usted es Lisandro. Disfrútelo. Él lo disfrutaba."],
+		["", "Lisandro: gordo, bajito, gafas oscuras hasta de noche. Un hijo de puta de traje blanco. Lo blanco es para que se note que nunca se mancha: para eso paga."],
 	]
 	weapon_prefix = "dw_"
 	face_prefix = "dface_"
@@ -59,14 +60,14 @@ func setup() -> void:
 		"motorizado": {"hp": 40, "speed": 2.4, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "hitscan", "h": 0.8, "sprite": "kid_motorizado"},
 		"coronel": {"hp": 220, "speed": 1.6, "range": 10.0, "dmg": 8, "cd": 1.5, "attack": "burst", "h": 1.1, "sprite": "dl_tombo"},
 		"slayer": {"hp": 560, "speed": 1.3, "range": 12.0, "dmg": 9, "cd": 1.3, "attack": "burst", "h": 1.6, "sprite": "dl_slayer"},
-		"lisandro": {"hp": 520, "speed": 1.4, "range": 12.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 1.35, "sprite": "kid_lisandro"},
+		"lisandro": {"hp": 520, "speed": 1.4, "range": 12.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 1.05, "sprite": "kid_lisandro"},
 		"devoradora": {"hp": 150, "speed": 1.1, "range": 9.0, "dmg": 9, "cd": 1.7, "attack": "fan:bolso_p", "h": 1.15, "sprite": "dl_devoradora"},
 		"marrano": {"hp": 170, "speed": 1.6, "range": 8.0, "dmg": 10, "cd": 1.4, "attack": "throw:cadena_p", "h": 1.15, "sprite": "dl_marrano"},
-		"lilato": {"hp": 150, "speed": 1.9, "range": 8.0, "dmg": 9, "cd": 1.7, "attack": "knives", "h": 0.95, "sprite": "kid_lilato"},
+		"lilato": {"hp": 150, "speed": 1.9, "range": 8.0, "dmg": 9, "cd": 1.7, "attack": "fan:saliva", "h": 0.8, "sprite": "kid_lilato"},
 	}
 	pickup_tex = {"balas": "balas", "cartuchos": "cartuchos", "empanada": "d_bolsita", "aguapanela": "d_pepas",
 		"chaleco": "d_maletin", "llave": "llave", "escopeta": "escopeta", "caneca": "d_caneca"}
-	projectile_tex = ["cuchillo", "bolso_p", "cadena_p", "plasma", "d_pepas"]
+	projectile_tex = ["cuchillo", "saliva", "bolso_p", "cadena_p", "plasma", "d_pepas"]
 	mini_kind = "coronel"
 	boss_kind = "slayer"
 	summon_kind = "tombo"

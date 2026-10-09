@@ -32,12 +32,12 @@ func setup() -> void:
 		"enfermero": {"hp": 32, "speed": 1.9, "range": 0.9, "dmg": 11, "cd": 1.0, "attack": "melee", "h": 0.82},
 		"archivista": {"hp": 28, "speed": 1.3, "range": 9.0, "dmg": 9, "cd": 1.7, "attack": "throw:papel", "h": 0.8},
 		"guarda": {"hp": 45, "speed": 2.0, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "hitscan", "h": 0.82},
-		"lilato": {"hp": 190, "speed": 1.9, "range": 8.0, "dmg": 10, "cd": 1.6, "attack": "knives", "h": 0.95},
+		"lilato": {"hp": 190, "speed": 1.9, "range": 8.0, "dmg": 10, "cd": 1.6, "attack": "fan:saliva", "h": 0.8},
 		"expediente": {"hp": 480, "speed": 1.0, "range": 11.0, "dmg": 10, "cd": 1.1, "attack": "fan:papel", "h": 1.45},
 	}
 	pickup_tex = {"balas": "balas", "cartuchos": "cartuchos", "empanada": "empanada", "aguapanela": "aguapanela",
 		"chaleco": "chaleco", "llave": "llave", "escopeta": "escopeta", "caneca": "planta"}
-	projectile_tex = ["papel", "cuchillo"]
+	projectile_tex = ["papel", "cuchillo", "saliva"]
 	mini_kind = "lilato"
 	boss_kind = "expediente"
 	summon_kind = "enfermero"
@@ -45,7 +45,7 @@ func setup() -> void:
 	lines = {
 		"start": "Sala de urgencias. Turno: el último. Como siempre.",
 		"mini_wake": "LILATO: —¿Aquí también? Siempre llegás tarde a todo.",
-		"mini_half": "LILATO: —Ni el psiquiatra te va a creer.",
+		"mini_half": "LILATO: —Ni el siquiatra te va a creer. Ni el sicólogo. Ni el de la P muda.",
 		"mini_die": "LILATO: —Tomá la llave. Ya que ahora te querés curar...",
 		"boss_wake": "EL EXPEDIENTE: —Paciente masculino. Antecedentes de consumo. Datos: compartidos.",
 		"boss_p1": "EL EXPEDIENTE: —Compartidos con terceros. Con una tal Zaida. Sin firma suya.",

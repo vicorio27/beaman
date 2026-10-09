@@ -71,7 +71,7 @@ func before_start() -> void:
 		["", "Esa noche sueña con una terminal. Un bus a Ibagué. Alguien se sube sin mirar atrás. Camina igual que él."],
 		["", "Él sabe quién es. Siempre supo."],
 		["", "Este sueño no da risa. Bueno, un poquito, al principio."],
-		["ÉL", "Brenda. Mi mamá. Crema Nivea de la lata azul, chancletas de baño en la calle, una novela a las nueve que no se perdía ni con el apartamento en llamas. Se fue un martes. La novela siguió."],
+		["ÉL", "Brenda. Mi mamá. Uno ochenta descalza; con tacones agachaba la cabeza para entrar a la cocina. Crema Nivea de la lata azul, chancletas de baño en la calle, una novela a las nueve que no se perdía ni con el apartamento en llamas. Se fue un martes. La novela siguió."],
 	])
 
 

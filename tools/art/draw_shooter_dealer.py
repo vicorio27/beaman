@@ -295,7 +295,8 @@ def slayer_hands(d, name, fire):
 def lisandro_face(level, hurt=False, grin=False):
     img = Image.new("RGBA", (24, 26), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.ellipse([2, 3, 21, 25], fill=(190, 140, 110, 255))
+    d.ellipse([0, 3, 23, 25], fill=(190, 140, 110, 255))                            # cara de gordo
+    d.arc([4, 18, 19, 26], 20, 160, fill=(150, 104, 80, 255))                        # la papada
     d.rectangle([3, 1, 20, 6], fill=(20, 18, 20, 255))
     d.rectangle([4, 9, 19, 13], fill=(20, 20, 24, 255))                               # gafas oscuras
     if hurt:

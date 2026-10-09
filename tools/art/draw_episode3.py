@@ -1,11 +1,16 @@
 """Arte del SUEÑO 6 (beat 'em up, episodio 3: Brenda).
-  assets/prologue/brenda.png      Brenda (recoloreo de la hoja de Lilato: saco café, falda gris)
+  assets/prologue/brenda.png      Brenda: negra y alta (la cabeza más arriba que nadie), afro corto con canas,
+                                  saco mostaza, falda gris, tacones. Misma distribución que la hoja de Lilato.
   assets/prologue/item_maleta.png la maleta que ella tira
   assets/prologue/ep3_bg.png      1280x180: la terminal → adentro del bus → Ibagué (ciudad musical) → la casa de ella
 Uso: python tools/art/draw_episode3.py  (desde la carpeta del proyecto)"""
 import random
+import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+
+sys.path.insert(0, str(Path(__file__).parent))
+from draw_camila_guillermo import outline, rotated, silhouette, glow  # noqa: E402
 
 OUT = Path("assets/prologue")
 FONT = ImageFont.truetype("assets/fonts/PressStart2P.ttf", 8)
@@ -22,6 +27,96 @@ def recolor(src, dst, mapping):
             if a and (r, g, b) in mapping:
                 px[x, y] = mapping[(r, g, b)] + (a,)
     im.save(OUT / dst)
+
+
+B_INK = (46, 34, 47, 255)
+B_SKIN = (112, 70, 48, 255)
+B_SKIN_SH = (78, 46, 32, 255)
+B_HAIR = (28, 24, 26, 255)
+B_GRAY = (170, 166, 160, 255)
+B_COAT = (206, 156, 58, 255)
+B_COAT_SH = (160, 114, 40, 255)
+B_SKIRT = (120, 118, 124, 255)
+B_SKIRT_SH = (90, 88, 96, 255)
+B_EYE = (240, 236, 226, 255)
+B_LIPS = (120, 50, 50, 255)
+
+
+def brenda(front_hand=(27, 34), back_hand=(17, 34), feet=((19, 46), (24, 46)), bob=0, arms_out=False, skirt=0):
+    """Mira a la derecha. Alta: la cabeza arriba en y=11 (Lilato en 19), piernas largas, tacones."""
+    img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    cx = 22
+    hy = 11 + bob  # arriba de la cabeza
+    sh = hy + 10   # hombros
+    # Brazo de atrás.
+    d.line([(cx - 1, sh + 1), back_hand], fill=B_SKIN_SH, width=2)
+    # Piernas largas y tacones.
+    for hip, foot in (((cx - 2, 38), feet[0]), ((cx + 1, 38), feet[1])):
+        d.line([hip, foot], fill=B_SKIN, width=2)
+        d.line([(foot[0], foot[1]), (foot[0] + 2, foot[1])], fill=B_INK)
+    # Saco mostaza largo y falda gris recta.
+    d.rectangle([cx - 3, sh, cx + 3, sh + 9], fill=B_COAT)
+    d.line([(cx - 3, sh), (cx - 3, sh + 9)], fill=B_COAT_SH)
+    d.line([(cx + 1, sh + 1), (cx + 1, sh + 8)], fill=B_COAT_SH)  # la solapa
+    d.polygon([(cx - 3, sh + 10), (cx + 3, sh + 10), (cx + 4 + skirt, 39), (cx - 4 - skirt, 39)], fill=B_SKIRT)
+    d.line([(cx - 4 - skirt, 39), (cx + 4 + skirt, 39)], fill=B_SKIRT_SH)
+    # Cuello largo y cabeza.
+    d.rectangle([cx, hy + 8, cx + 1, sh], fill=B_SKIN)
+    # El afro: corto, redondo, con canas.
+    d.ellipse([cx - 6, hy - 2, cx + 3, hy + 6], fill=B_HAIR)
+    d.ellipse([cx - 4, hy - 3, cx + 4, hy + 3], fill=B_HAIR)
+    for x, y in ((cx - 3, hy - 1), (cx, hy - 2), (cx - 5, hy + 2), (cx + 2, hy), (cx - 2, hy + 3)):
+        d.point((x, y), fill=B_GRAY)
+    # La cara, adelante del afro.
+    d.rectangle([cx, hy + 3, cx + 4, hy + 8], fill=B_SKIN)
+    d.point((cx + 3, hy + 4), fill=B_EYE)
+    d.point((cx + 4, hy + 4), fill=B_INK)
+    d.point((cx + 4, hy + 7), fill=B_LIPS)
+    d.point((cx + 5, hy + 5), fill=B_SKIN_SH)  # la nariz
+    # Brazo de adelante.
+    d.line([(cx + 1, sh + 1), front_hand], fill=B_SKIN, width=2)
+    if arms_out:
+        d.line([(cx - 1, sh + 1), (cx - 12, sh + 1)], fill=B_SKIN, width=2)
+    return outline(img, B_INK)
+
+
+def brenda_sheet():
+    idle_a = brenda()
+    idle_b = brenda(front_hand=(27, 33), back_hand=(17, 33), bob=1)
+    walk = [
+        brenda(front_hand=(28, 32), back_hand=(16, 34), feet=((16, 46), (27, 46))),
+        brenda(front_hand=(26, 34), back_hand=(18, 33), feet=((20, 46), (23, 46)), bob=-1),
+        brenda(front_hand=(18, 33), back_hand=(27, 32), feet=((26, 46), (17, 46))),
+        brenda(front_hand=(26, 34), back_hand=(18, 33), feet=((21, 46), (22, 46)), bob=-1),
+    ]
+    slash = [  # el manotazo, desde arriba (es alta)
+        brenda(front_hand=(18, 10), back_hand=(17, 34), feet=((18, 46), (25, 46))),
+        brenda(front_hand=(38, 22), back_hand=(15, 32), feet=((17, 46), (27, 46)), skirt=1),
+        brenda(front_hand=(35, 32), back_hand=(16, 33), feet=((18, 46), (26, 46)), skirt=1),
+    ]
+    spin = [
+        brenda(front_hand=(34, 22), back_hand=(17, 34), arms_out=True, skirt=1),
+        brenda(front_hand=(34, 22), back_hand=(17, 34), arms_out=True, skirt=2).transpose(Image.FLIP_LEFT_RIGHT),
+        brenda(front_hand=(34, 22), back_hand=(17, 34), arms_out=True, skirt=1),
+        brenda(front_hand=(34, 22), back_hand=(17, 34), arms_out=True, skirt=2).transpose(Image.FLIP_LEFT_RIGHT),
+    ]
+    hurt = brenda(front_hand=(29, 18), back_hand=(13, 20), feet=((18, 46), (23, 46)), bob=1)
+    rows = [
+        [idle_a, idle_b],
+        walk,
+        slash,
+        spin,
+        [silhouette(hurt, (255, 255, 255, 255)), rotated(hurt, 8)],
+        [rotated(idle_a, 30), rotated(idle_a, 75), rotated(idle_a, 90)],
+        [rotated(idle_a, 20)],
+        [glow(rotated(idle_a, 15), (240, 200, 90, 200)), glow(rotated(idle_a, 25), (255, 230, 120, 230))],
+    ]
+    sheet = Image.new("RGBA", (48 * 4, 48 * len(rows)), (0, 0, 0, 0))
+    for r, frames in enumerate(rows):
+        for c, f in enumerate(frames):
+            sheet.paste(f, (c * 48, r * 48))
+    sheet.save(OUT / "brenda.png")
 
 
 def jit(c, k=10):
@@ -103,8 +198,7 @@ def bg():
 
 
 if __name__ == "__main__":
-    recolor("lilato.png", "brenda.png", {(168, 132, 243): (150, 110, 80), (144, 94, 169): (120, 86, 60),
-                                         (107, 62, 117): (96, 66, 46), (195, 36, 84): (170, 90, 90)})
+    brenda_sheet()
     maleta()
     bg()
     print("listo")

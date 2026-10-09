@@ -114,12 +114,13 @@ DEMONS = {
               "pants": (60, 50, 70, 255), "helmet": (240, 120, 40, 255), "backpack": (240, 130, 40, 255), "weapon": "throw",
               "horns": (250, 240, 220, 255)},
     "lilato": {"skin": (220, 170, 140, 255), "hair": (30, 20, 24, 255), "shirt": (170, 40, 60, 255),
-               "pants": (150, 30, 50, 255), "long_hair": True, "weapon": "knife", "horns": (200, 40, 50, 255)},
+               "pants": (150, 30, 50, 255), "long_hair": True, "weapon": "spit", "pretty": True,
+               "horns": (200, 40, 50, 255)},
     "lisandro": {"skin": (210, 50, 50, 255), "hair": (40, 10, 10, 255), "shirt": (236, 232, 222, 255),
                  "pants": (226, 222, 212, 255), "glasses": True, "chains": True, "weapon": "gun", "dual": True,
-                 "horns": (40, 20, 20, 255)},
+                 "fat": True, "open_shirt": (190, 40, 44, 255), "horns": (40, 20, 20, 255)},
 }
-SCALE = {"lilato": 1.2, "lisandro": 1.7}
+SCALE = {"lilato": (1.0, 1.0), "lisandro": (2.1, 1.35)}
 
 
 def demon(spec, pose):
@@ -144,9 +145,9 @@ def demons():
     for name, spec in DEMONS.items():
         for pose in ["walk1", "walk2", "attack", "hurt", "dead"]:
             img = demon(spec, pose)
-            k = SCALE.get(name, 1.0)
-            if k != 1.0:
-                img = img.resize((int(32 * k), int(48 * k)), Image.NEAREST)
+            kx, ky = SCALE.get(name, (1.0, 1.0))
+            if (kx, ky) != (1.0, 1.0):
+                img = img.resize((int(32 * kx), int(48 * ky)), Image.NEAREST)
             img.save(OUT / f"kid_{name}_{pose}.png")
 
 

@@ -40,43 +40,63 @@ def outline(img, color=INK):
 
 
 # ======================================================================= LILATO
+LASH = (20, 10, 24, 255)
+BLUSH = (246, 150, 160, 255)
+LIPS = (214, 40, 80, 255)
+SPIT = (220, 240, 250, 230)
+SPIT_SH = (150, 200, 230, 230)
+PUPIL = (60, 30, 40, 255)
+SMALL = 3  # chiquita: todo baja 3 píxeles, los pies quedan donde estaban
+
+
 def lilato(front_hand=(26, 38), back_hand=(18, 38), feet=((19, 46), (24, 46)), hair_dx=0,
            claw_trail=False, arms_out=False, skirt=0):
+    """Chiquita y de cara linda (ojazos con pestañas, cachetes, boca pintada). No da zarpazos: escupe.
+    Habla con balas de saliva; cuando ataca, la saliva sale en ráfaga (claw_trail)."""
     img = Image.new("RGBA", (C, C), CLEAR)
     d = ImageDraw.Draw(img)
-    cx = 22
+    cx, k = 22, SMALL
+    fh = (cx + 4, 34 + k) if claw_trail else (front_hand[0], front_hand[1] + k)  # escupe: la mano no va
+    bh = (back_hand[0], back_hand[1] + k)
     # Pelo largo por detrás (cae por la espalda, se mueve).
-    d.polygon([(cx - 4, 20), (cx + 2, 20), (cx + 1, 30), (cx - 6 + hair_dx, 37), (cx - 7 + hair_dx, 30)], fill=HAIR)
-    # Brazo de atrás.
-    d.line([(cx - 1, 29), back_hand], fill=SKIN_SH, width=2)
-    d.point(back_hand, fill=CLAW)
-    # Piernas (medias oscuras) y zapatos.
-    for hip, foot in (((cx - 2, 40), feet[0]), ((cx + 1, 40), feet[1])):
+    d.polygon([(cx - 4, 20 + k), (cx + 2, 20 + k), (cx + 1, 30 + k), (cx - 6 + hair_dx, 37 + k),
+               (cx - 7 + hair_dx, 30 + k)], fill=HAIR)
+    # Brazo de atrás (flaquito).
+    d.line([(cx - 1, 29 + k), bh], fill=SKIN_SH, width=1)
+    d.point(bh, fill=CLAW)
+    # Piernas (medias oscuras) y tacones.
+    for hip, foot in (((cx - 2, 39), feet[0]), ((cx + 1, 39), feet[1])):
         d.line([hip, foot], fill=TIGHTS, width=2)
         d.line([(foot[0], foot[1]), (foot[0] + 2, foot[1])], fill=INK)
-    # Vestido: cuerpo y pollera acampanada.
-    d.rectangle([cx - 3, 28, cx + 3, 33], fill=DRESS)
-    d.polygon([(cx - 3, 33), (cx + 3, 33), (cx + 6 + skirt, 41), (cx - 6 - skirt, 41)], fill=DRESS)
-    d.line([(cx - 3, 28), (cx - 3, 33)], fill=DRESS_SH)
-    d.line([(cx - 6 - skirt, 41), (cx + 6 + skirt, 41)], fill=DRESS_SH)
-    # Cabeza (mira a la derecha): flequillo, ojo rojo.
-    d.rectangle([cx - 2, 21, cx + 3, 27], fill=SKIN)
-    d.rectangle([cx - 3, 19, cx + 3, 22], fill=HAIR)
-    d.point((cx + 2, 22), fill=HAIR_HI)
-    d.point((cx + 2, 24), fill=EYE)
-    d.point((cx + 3, 26), fill=SKIN_SH)
-    # Brazo de adelante, con garras.
-    d.line([(cx + 1, 29), front_hand], fill=SKIN, width=2)
-    d.line([front_hand, (front_hand[0] + 1, front_hand[1] + 1)], fill=CLAW)
+    # Vestido: cuerpito y pollera corta acampanada.
+    d.rectangle([cx - 2, 28 + k, cx + 2, 32 + k], fill=DRESS)
+    d.polygon([(cx - 2, 32 + k), (cx + 2, 32 + k), (cx + 5 + skirt, 37 + k), (cx - 5 - skirt, 37 + k)], fill=DRESS)
+    d.line([(cx - 2, 28 + k), (cx - 2, 32 + k)], fill=DRESS_SH)
+    d.line([(cx - 5 - skirt, 37 + k), (cx + 5 + skirt, 37 + k)], fill=DRESS_SH)
+    # Cabeza (mira a la derecha): flequillo, ojazo con pestañas, cachete, boca pintada.
+    d.rectangle([cx - 2, 21 + k, cx + 3, 27 + k], fill=SKIN)
+    d.rectangle([cx - 3, 19 + k, cx + 3, 22 + k], fill=HAIR)
+    d.point((cx + 2, 22 + k), fill=HAIR_HI)
+    d.line([(cx + 1, 23 + k), (cx + 3, 23 + k)], fill=LASH)  # pestañas
+    d.line([(cx + 2, 24 + k), (cx + 2, 25 + k)], fill=PUPIL)  # el ojo, grande (de gente; el rojo es de la serpiente)
+    d.point((cx + 1, 25 + k), fill=BLUSH)
+    d.point((cx + 3, 26 + k), fill=LIPS)
+    if claw_trail:  # la boca abierta, escupiendo
+        d.point((cx + 3, 27 + k), fill=LIPS)
+    # Brazo de adelante, uñas largas.
+    d.line([(cx + 1, 29 + k), fh], fill=SKIN, width=1)
+    d.line([fh, (fh[0] + 1, fh[1] + 1)], fill=CLAW)
     if arms_out:
-        d.line([(cx - 1, 29), (cx - 12, 29)], fill=SKIN, width=2)
-        d.point((cx - 12, 29), fill=CLAW)
+        d.line([(cx - 1, 29 + k), (cx - 12, 29 + k)], fill=SKIN, width=1)
+        d.point((cx - 12, 29 + k), fill=CLAW)
     outline(img)
-    if claw_trail:  # rastro del zarpazo
+    if claw_trail:  # la ráfaga de saliva: gotas que salen de la boca y se abren hacia adelante
         d2 = ImageDraw.Draw(img)
-        for i in range(3):
-            d2.arc([front_hand[0] - 8, front_hand[1] - 10 + i * 2, front_hand[0] + 6, front_hand[1] + 4 + i * 2],
-                   280, 40, fill=(255, 210, 230, 220))
+        mx, my = cx + 5, 26 + k
+        for x, y, r in ((mx + 1, my, 1), (mx + 5, my - 2, 1), (mx + 6, my + 2, 1), (mx + 10, my - 3, 2),
+                        (mx + 11, my + 2, 1), (mx + 15, my - 1, 2), (mx + 16, my + 4, 1), (mx + 19, my - 4, 1)):
+            d2.ellipse([x - r, y - r, x + r, y + r], fill=SPIT)
+            d2.point((x + r, y + r), fill=SPIT_SH)
     return img
 
 

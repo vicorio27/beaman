@@ -30,8 +30,8 @@ const KINDS := {
 	"campanero": {"hp": 15, "speed": 2.3, "range": 0.0, "dmg": 0, "cd": 2.0, "attack": "whistle", "h": 0.75, "sprite": "kid_campanero"},
 	"motorizado": {"hp": 40, "speed": 2.4, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "hitscan", "h": 0.8, "sprite": "kid_motorizado"},
 	"rappi": {"hp": 35, "speed": 1.3, "range": 10.0, "dmg": 12, "cd": 2.0, "attack": "pedido", "h": 0.8, "sprite": "kid_rappi"},
-	"lilato": {"hp": 170, "speed": 1.8, "range": 8.0, "dmg": 10, "cd": 1.7, "attack": "knives", "h": 0.95, "sprite": "kid_lilato"},
-	"lisandro": {"hp": 420, "speed": 1.2, "range": 12.0, "dmg": 7, "cd": 1.4, "attack": "burst", "h": 1.35, "sprite": "kid_lisandro"},
+	"lilato": {"hp": 170, "speed": 1.8, "range": 8.0, "dmg": 10, "cd": 1.7, "attack": "fan:saliva", "h": 0.8, "sprite": "kid_lilato"},
+	"lisandro": {"hp": 420, "speed": 1.2, "range": 12.0, "dmg": 7, "cd": 1.4, "attack": "burst", "h": 1.05, "sprite": "kid_lisandro"},
 }
 ## Armas: daño, espera, munición que usa, perdigones, dispersión.
 const WEAPONS := [
@@ -86,7 +86,7 @@ var recap: Array = []
 var wall_tex: Dictionary = WALL_TEX
 var kinds: Dictionary = KINDS
 var pickup_tex: Dictionary = PICKUP_TEX
-var projectile_tex := ["pedido", "cuchillo"]
+var projectile_tex := ["pedido", "cuchillo", "saliva"]
 var checkpoints: Array = CHECKPOINTS
 var mini_kind := "lilato"
 var boss_kind := "lisandro"
@@ -115,7 +115,7 @@ var dmg_mult := 1.0
 var wall_tint := Color(1, 1, 1)
 var lines := {
 	"start": "Tengo diez años, una pistola y el barrio lleno de demonios. Mi psicólogo estaría orgulloso. Si tuviera psicólogo. O diez años.",
-	"mini_wake": "LILATO: —Otra vez vos.",
+	"mini_wake": "LILATO: —Otra vez vos. ¡Pptt! Perdón. No, no perdón.",
 	"mini_half": "LILATO: —No la vas a ver nunca más.",
 	"mini_die": "LILATO: —Tomá. Ya que te querés ir...",
 	"boss_wake": "LISANDRO: —¿Usted? ¿Todavía vivo?",

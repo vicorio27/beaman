@@ -27,7 +27,7 @@ func setup() -> void:
 		"soldado": {"hp": 60, "speed": 1.8, "range": 10.0, "dmg": 9, "cd": 1.0, "attack": "burst", "h": 0.84, "sprite": "guarda"},
 		"campanero": {"hp": 15, "speed": 2.3, "range": 0.0, "dmg": 0, "cd": 2.0, "attack": "whistle", "h": 0.78, "sprite": "dl_sapo"},
 		"capitan": {"hp": 260, "speed": 1.6, "range": 11.0, "dmg": 9, "cd": 1.3, "attack": "burst", "h": 1.15, "sprite": "dl_tombo"},
-		"lilato": {"hp": 620, "speed": 1.5, "range": 12.0, "dmg": 9, "cd": 1.0, "attack": "fan:papel", "h": 1.2, "sprite": "lilato"},
+		"lilato": {"hp": 620, "speed": 1.5, "range": 12.0, "dmg": 9, "cd": 1.0, "attack": "fan:papel", "h": 1.0, "sprite": "lilato"},
 	}
 	pickup_tex = {"balas": "balas", "cartuchos": "cartuchos", "empanada": "empanada", "aguapanela": "aguapanela",
 		"chaleco": "chaleco", "llave": "llave", "escopeta": "escopeta", "caneca": "caneca"}
@@ -47,7 +47,7 @@ func setup() -> void:
 		"mini_half": "EL CAPITAN: —¡Nadie dijo que este se defendía!",
 		"mini_die": "EL CAPITAN: —Tome la llave... La señora está adentro. Con el megáfono.",
 		"boss_wake": "LILATO: —¡Ahí está! ¡Es él! ¡Está armado! ¡Disparen!",
-		"boss_p1": "LILATO: —¡Yo les di la dirección! ¡Y la foto! ¡Y les dije que estaba armado! ¡Soldados!",
+		"boss_p1": "LILATO: —¡Yo les di la dirección! ¡Y la foto! ¡Y les dije que estaba armado! ¡Hasta los dientes! ¡Lo vi en un estado de WhatsApp!",
 		"boss_p2": "LILATO: —¡Era para quedarme con la niña! ¿Qué querías que hiciera?",
 		"boss_die": "LILATO: —Esto no se acaba aquí...",
 		"boss_reply": "Se arrastra hacia el río. Se le está cayendo la piel. Ya sé qué viene.",

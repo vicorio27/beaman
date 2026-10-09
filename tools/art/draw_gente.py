@@ -47,6 +47,16 @@ HEADS = {
         ["...oooo...", "..ohhhho..", ".ohhhhhho.", ".ohhhhhho.", ".ohhhhhho.", "..ohhhho..", "...ohho...", "...ohho..."],
         ["...oooo...", "..ohhhhoo.", ".ohhhhhhho", "ohhohhssso", "oho.ohseso", "oho.ohssSo", ".o...osso.", "....oSSo.."],
     ),
+    "afro": (  # Brenda: afro corto y ancho, con canas (H)
+        ["..oooooo..", ".ohhHhhho.", "ohhhhhHhho", "ohhsssshho", "ohhesseHho", "ohhssSshho", "..oossoo..", "...oSSo..."],
+        ["..oooooo..", ".ohhhHhho.", "ohHhhhhhho", "ohhhhhhHho", "ohhhhhhhho", ".ohhHhhho.", "..ooSSoo..", "...oSSo..."],
+        ["..oooooo..", ".ohhHhhho.", "ohhhhhHhho", "ohhhhhssso", "ohhHhhseso", ".ohhhssSso", "..ooosso..", "....oSo..."],
+    ),
+    "linda": (  # Lilato: pelo largo, ojos grandes con pestañas (e/l), cachetes (r), boca pintada (m)
+        ["...oooo...", "..ohhhho..", ".ohhhhhho.", ".ohlsslho.", ".ohesseho.", ".ohrmmrho.", ".ohossoho.", ".ohoSSoho."],
+        ["...oooo...", "..ohhhho..", ".ohhhhhho.", ".ohhhhhho.", ".ohhhhhho.", ".ohhhhhho.", ".ohhhhhho.", ".ohhhhhho."],
+        ["...oooo...", "..ohhhho..", ".ohhhhhho.", "ohhhhssl..", "ohhhhseso.", "ohhohrsmo.", "ohho.osso.", "oho..oSo.."],
+    ),
     "hongo": (  # el honguito de Camila: un casco redondo, flequillo hasta las cejas, raíz oscura (H)
         ["...oooo...", "..oHHHHo..", ".ohhhhhho.", ".ohhhhhho.", ".ohesseho.", ".ohssSsho.", "..oosnoo..", "...oSSo..."],
         ["...oooo...", "..oHHHHo..", ".ohhhhhho.", ".ohhhhhho.", ".ohhhhhho.", ".ohhhhhho.", "..oooooo..", "...oSSo..."],
@@ -123,6 +133,19 @@ BODIES = {
         ["....occcco....", "...occcccco...", "...occccccco..", "...ocCccccco..", "...ocCcccccco.", "...osCccccco..",
          "....occcccoo..", "....opppppo..."],
     ),
+    "gordo_saco": (  # Lisandro: gordo, saco blanco abierto, camisa roja (i), cadena de oro (y)
+        ["..ojjjiijjjo..", ".ojjjjiijjjjo.", "ojojjjyyjjjojo", "ojojjjiijjjojo", "ojojjjjjjjjojo", "osojjjjjjjjoso",
+         ".oojjjjjjjjoo.", "...oppppppo..."],
+        ["..ojjjjjjjjo..", ".ojjjjjjjjjjo.", "ojojjjjjjjjojo", "ojojjjjjjjjojo", "ojojjJJJJjjojo", "osojjjjjjjjoso",
+         ".oojjjjjjjjoo.", "...oppppppo..."],
+        ["....ojjjio....", "...ojjjjjio...", "...ojjjjjyio..", "...ojJjjjjiio.", "...ojJjjjjjjo.", "...osJjjjjjo..",
+         "....ojjjjjoo..", "....opppppo..."],
+    ),
+    "chiquita": (  # Lilato: menuda, vestido corto acampanado
+        ["..occcco..", ".occcccco.", ".ococcoco.", ".ososcoso.", "..oddddo..", ".oddddddo.", ".oooooooo."],
+        ["..occcco..", ".occcccco.", ".ococcoco.", ".ososcoso.", "..oddddo..", ".oddddddo.", ".oooooooo."],
+        ["...occo...", "..occcco..", "..occcco..", "..oscco...", "..oddddo..", ".oddddddo.", ".oooooooo."],
+    ),
 }
 
 
@@ -152,10 +175,11 @@ PEOPLE = {
                       {**SKIN, "h": (40, 36, 40), "b": (40, 36, 40), "g": (44, 56, 92), "G": (30, 38, 66),
                        "j": (50, 62, 100), "J": (36, 46, 76), "i": (160, 196, 224),
                        "p": (40, 40, 48), "q": (30, 30, 36), "k": (26, 24, 28)}, 6),
-    # Brenda, la mamá: pelo corto castaño con canas, saco café, falda gris.
-    "brenda": person(head("melena"), body("vestido"),
-                     {**SKIN, "h": (110, 84, 70), "c": (138, 96, 62), "d": (120, 118, 124),
-                      "p": (190, 150, 130), "q": (160, 120, 104), "k": (60, 44, 40)}, 4),
+    # Brenda, la mamá: negra y alta (la más alta de todos), afro corto con canas, saco mostaza, falda gris.
+    "brenda": person(head("afro"), body("vestido"),
+                     {"s": (112, 70, 48), "S": (78, 46, 32), "h": (28, 24, 26), "H": (150, 146, 142),
+                      "c": (206, 156, 58), "d": (120, 118, 124),
+                      "p": (92, 58, 42), "q": (70, 44, 32), "k": (60, 44, 40)}, 8),
     # Mauricio, el papá: bajito y ancho, calvo, barba gris, chaleco de cuero de motociclista.
     "mauricio": person(head("calvo", barba=True), body("chaleco"),
                        {**SKIN, "h": (120, 118, 116), "b": (150, 148, 146), "i": (200, 196, 186),
@@ -166,10 +190,12 @@ PEOPLE = {
                     {**SKIN, "h": (196, 96, 44), "f": (176, 104, 70),
                      "j": (226, 128, 70), "J": (190, 96, 50), "i": (226, 128, 70),
                      "p": (66, 90, 140), "q": (46, 64, 104), "k": (220, 216, 208)}, 7),
-    # Lilato: pelo largo negro, vestido vino, medias oscuras.
-    "lilato": person(head("largo"), body("vestido"),
-                     {**SKIN, "h": (30, 26, 32), "c": (150, 40, 60), "d": (150, 40, 60),
-                      "p": (50, 40, 50), "q": (36, 28, 36), "k": (20, 18, 22)}, 5),
+    # Lilato: chiquita, cara linda (ojazos, pestañas, cachetes, boca pintada), pelo largo negro, vestido vino.
+    # Lo de las balas de saliva y la ignorancia no se dibuja: se oye.
+    "lilato": person(head("linda"), body("chiquita"),
+                     {**SKIN, "h": (30, 26, 32), "l": (20, 16, 22), "r": (236, 140, 140), "m": (200, 40, 70),
+                      "c": (150, 40, 60), "d": (150, 40, 60),
+                      "p": (50, 40, 50), "q": (36, 28, 36), "k": (20, 18, 22)}, 3),
     # José Mario, el jefe: canoso, traje gris oscuro, corbata azul.
     "josemario": person(head("engominado"), body("saco"),
                         {**SKIN, "h": (90, 90, 96), "H": (140, 140, 146),
@@ -190,11 +216,12 @@ PEOPLE = {
                    {**SKIN, "h": (200, 170, 100),
                     "j": (170, 200, 230), "J": (130, 160, 196), "i": (170, 200, 230), "t": (30, 30, 36), "T": (30, 30, 36),
                     "p": (52, 52, 62), "q": (38, 38, 46), "k": (24, 22, 26)}, 7),
-    # Lisandro: traje blanco, camisa roja abierta, cadena de oro, gafas oscuras, nariz roja.
-    "lisandro": person(head("engominado", gafas="oscuras", nariz=True), body("saco", corbata=False, cadena=True),
+    # Lisandro: gordo y bajito, gafas oscuras, engominado, traje blanco, camisa roja, cadena, nariz roja.
+    # Un hijo de puta: se le ve en lo blanco del traje.
+    "lisandro": person(head("engominado", gafas="oscuras", nariz=True), body("gordo_saco"),
                        {**SKIN, "h": (24, 22, 26), "H": (70, 70, 84), "n": (210, 90, 90),
                         "j": (236, 234, 226), "J": (196, 194, 186), "i": (190, 40, 44), "y": (230, 190, 70),
-                        "p": (236, 234, 226), "q": (196, 194, 186), "k": (140, 90, 60)}, 7),
+                        "p": (236, 234, 226), "q": (196, 194, 186), "k": (140, 90, 60)}, 3),
     # Camila: enana, peinado de honguito pintado de mono (raíz oscura), muy tetona, vestido fucsia.
     "camila": person(head("hongo"), body("tetona"),
                      {**SKIN, "h": (246, 214, 96), "H": (96, 66, 46), "n": (220, 40, 60),

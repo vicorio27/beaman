@@ -130,6 +130,10 @@ def figure(spec, pose):
         d.rectangle([10, 33, 14, 47], fill=pants); d.rectangle([18, 33, 22, 47], fill=pants)
     # cuerpo
     d.rectangle([8 + lean, 17, 24 + lean, 34], fill=shirt)
+    if spec.get("fat"):  # la panza
+        d.ellipse([5 + lean, 20, 27 + lean, 37], fill=shirt)
+        if spec.get("open_shirt"):
+            d.polygon([(13 + lean, 17), (19 + lean, 17), (17 + lean, 34), (15 + lean, 34)], fill=spec["open_shirt"])
     if spec.get("backpack"):
         d.rectangle([4 + lean, 12, 28 + lean, 30], fill=spec["backpack"])
         d.rectangle([6 + lean, 18, 26 + lean, 22], fill=(250, 240, 220, 255))
@@ -149,6 +153,8 @@ def figure(spec, pose):
             d.rectangle([22 + lean, 8, 28 + lean, 16], fill=spec.get("backpack", shirt))
         elif spec.get("weapon") == "whistle":
             d.rectangle([14, 13, 17, 15], fill=(200, 200, 210, 255))
+        elif spec.get("weapon") == "spit":
+            d.rectangle([4 + lean, 18, 8 + lean, 26], fill=shirt)
         if spec.get("dual"):
             d.rectangle([4, 22, 10, 30], fill=(30, 30, 34, 255))
             d.ellipse([2, 26, 10, 34], fill=(255, 220, 90, 255))
@@ -182,11 +188,26 @@ def figure(spec, pose):
         else:
             d.point([(13 + lean, 9), (18 + lean, 9)], fill=INK)
         d.line([(14 + lean, 13), (18 + lean, 13)], fill=(120, 50, 50, 255))
+        if spec.get("pretty"):
+            d.line([(12 + lean, 7), (14 + lean, 7)], fill=INK)
+            d.line([(17 + lean, 7), (19 + lean, 7)], fill=INK)
+            d.rectangle([13 + lean, 8, 13 + lean, 10], fill=INK)
+            d.rectangle([18 + lean, 8, 18 + lean, 10], fill=INK)
+            d.point([(12 + lean, 11), (19 + lean, 11)], fill=(240, 140, 150, 255))
+            d.line([(15 + lean, 13), (17 + lean, 13)], fill=(214, 40, 80, 255))
+            if pose == "attack":
+                d.rectangle([15 + lean, 13, 17 + lean, 14], fill=(90, 20, 30, 255))  # la boca abierta
+        if spec.get("fat"):
+            d.line([(12 + lean, 16), (20 + lean, 16)], fill=tuple(max(0, v - 40) for v in skin[:3]) + (255,))
     if spec.get("hood"):
         d.rectangle([9 + lean, 2, 10 + lean, 16], fill=shirt)
         d.rectangle([22 + lean, 2, 23 + lean, 16], fill=shirt)
         d.rectangle([9 + lean, 0, 23 + lean, 3], fill=shirt)
     img = outline(img)
+    if pose == "attack" and spec.get("weapon") == "spit":  # balas de saliva, hacia uno
+        d = ImageDraw.Draw(img)
+        for x, y, r in ((16, 16, 1), (12, 19, 2), (21, 18, 1), (9, 23, 1), (18, 22, 2), (25, 22, 1), (14, 26, 1)):
+            d.ellipse([x - r, y - r, x + r, y + r], fill=SPIT_C)
     if pose == "hurt":
         r = Image.new("RGBA", img.size, (255, 40, 40, 0))
         px = img.load()
@@ -207,21 +228,26 @@ ENEMIES = {
                    "pants": (50, 50, 60, 255), "helmet": (40, 40, 46, 255), "weapon": "gun"},
     "rappi": {"skin": (180, 130, 100, 255), "hair": (30, 26, 28, 255), "shirt": (240, 120, 40, 255),
               "pants": (40, 44, 60, 255), "helmet": (240, 120, 40, 255), "backpack": (240, 130, 40, 255), "weapon": "throw"},
+    # Lilato: chiquita, linda, escupe (balas de saliva).
     "lilato": {"skin": (220, 170, 140, 255), "hair": (30, 20, 24, 255), "shirt": (170, 40, 60, 255),
-               "pants": (150, 30, 50, 255), "long_hair": True, "weapon": "knife"},
+               "pants": (150, 30, 50, 255), "long_hair": True, "weapon": "spit", "pretty": True},
+    # Lisandro: gordo y bajito, gafas oscuras, traje blanco, camisa roja abierta.
     "lisandro": {"skin": (190, 140, 110, 255), "hair": (20, 18, 20, 255), "shirt": (236, 232, 222, 255),
-                 "pants": (226, 222, 212, 255), "glasses": True, "chains": True, "weapon": "gun", "dual": True},
+                 "pants": (226, 222, 212, 255), "glasses": True, "chains": True, "weapon": "gun", "dual": True,
+                 "fat": True, "open_shirt": (190, 40, 44, 255)},
 }
-SCALE = {"lilato": 1.2, "lisandro": 1.6}
+# (ancho, alto): Lisandro es bajito pero ancho; Lilato, chiquita.
+SPIT_C = (210, 236, 250, 255)
+SCALE = {"lilato": (1.0, 1.0), "lisandro": (2.0, 1.3)}
 
 
 def enemies():
     for name, spec in ENEMIES.items():
         for pose in ["walk1", "walk2", "attack", "hurt", "dead"]:
             img = figure(spec, pose)
-            k = SCALE.get(name, 1.0)
-            if k != 1.0:
-                img = img.resize((int(32 * k), int(48 * k)), Image.NEAREST)
+            kx, ky = SCALE.get(name, (1.0, 1.0))
+            if (kx, ky) != (1.0, 1.0):
+                img = img.resize((int(32 * kx), int(48 * ky)), Image.NEAREST)
             img.save(OUT / f"{name}_{pose}.png")
 
 
@@ -252,6 +278,8 @@ def things():
     sprite("escopeta", (32, 10), lambda d: (d.rectangle([0, 3, 22, 5], fill=(60, 60, 66, 255)),
                                           d.rectangle([18, 2, 31, 8], fill=(120, 80, 50, 255)),
                                           d.rectangle([8, 5, 14, 7], fill=(120, 80, 50, 255))))
+    sprite("saliva", (10, 10), lambda d: (d.ellipse([1, 2, 8, 9], fill=SPIT_C),
+                                        d.ellipse([2, 3, 4, 5], fill=(255, 255, 255, 255))))
     sprite("pedido", (12, 12), lambda d: (d.rectangle([1, 2, 10, 11], fill=(240, 130, 40, 255)),
                                         d.rectangle([3, 5, 8, 7], fill=(250, 240, 220, 255))))
     sprite("cuchillo", (12, 12), lambda d: (d.polygon([(1, 10), (9, 2), (11, 1), (10, 3), (3, 11)], fill=(220, 224, 230, 255)),
