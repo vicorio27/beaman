@@ -42,8 +42,7 @@ jobs:
           ./godot --headless --path . --import || true
           ./godot --headless --path . --export-release "Web" build/web/index.html 2>&1 | tee export.log
           if [ ! -f build/web/index.pck ]; then
-            grep -A4 "configuration errors" export.log | tr "
-" " " | sed "s/^/::error::/"; echo
+            echo "::error::$(grep -A4 "configuration errors" export.log | paste -sd ' ')"
             exit 1
           fi
           touch build/web/.nojekyll
