@@ -14,13 +14,16 @@ C = 48
 INK = (0, 0, 8, 255)
 SKIN = (238, 206, 204, 255)
 SKIN_SH = (204, 160, 170, 255)
-HAIR = (54, 30, 66, 255)
-HAIR_HI = (92, 56, 110, 255)
-DRESS = (176, 136, 210, 255)
-DRESS_SH = (128, 92, 168, 255)
-TIGHTS = (48, 30, 58, 255)
+# Rosado, todo rosado (nada de morado): siempre muy femenina.
+HAIR = (52, 30, 30, 255)
+HAIR_HI = (110, 64, 60, 255)
+DRESS = (252, 112, 156, 255)
+DRESS_SH = (200, 52, 104, 255)
+TIGHTS = (240, 206, 214, 255)
+SHOES = (226, 70, 130, 255)
+BOW = (236, 72, 132, 255)
 EYE = (232, 40, 50, 255)
-CLAW = (200, 30, 60, 255)
+CLAW = (236, 80, 140, 255)  # uñas pintadas
 CLEAR = (0, 0, 0, 0)
 
 
@@ -64,10 +67,10 @@ def lilato(front_hand=(26, 38), back_hand=(18, 38), feet=((19, 46), (24, 46)), h
     # Brazo de atrás (flaquito).
     d.line([(cx - 1, 29 + k), bh], fill=SKIN_SH, width=1)
     d.point(bh, fill=CLAW)
-    # Piernas (medias oscuras) y tacones.
+    # Piernas (medias claras) y tacones rosados.
     for hip, foot in (((cx - 2, 39), feet[0]), ((cx + 1, 39), feet[1])):
         d.line([hip, foot], fill=TIGHTS, width=2)
-        d.line([(foot[0], foot[1]), (foot[0] + 2, foot[1])], fill=INK)
+        d.line([(foot[0], foot[1]), (foot[0] + 2, foot[1])], fill=SHOES)
     # Vestido: cuerpito y pollera corta acampanada.
     d.rectangle([cx - 2, 28 + k, cx + 2, 32 + k], fill=DRESS)
     d.polygon([(cx - 2, 32 + k), (cx + 2, 32 + k), (cx + 5 + skirt, 37 + k), (cx - 5 - skirt, 37 + k)], fill=DRESS)
@@ -77,6 +80,8 @@ def lilato(front_hand=(26, 38), back_hand=(18, 38), feet=((19, 46), (24, 46)), h
     d.rectangle([cx - 2, 21 + k, cx + 3, 27 + k], fill=SKIN)
     d.rectangle([cx - 3, 19 + k, cx + 3, 22 + k], fill=HAIR)
     d.point((cx + 2, 22 + k), fill=HAIR_HI)
+    d.point((cx - 3, 19 + k), fill=BOW)  # el moño rosado
+    d.line([(cx - 4, 18 + k), (cx - 2, 18 + k)], fill=BOW)
     d.line([(cx + 1, 23 + k), (cx + 3, 23 + k)], fill=LASH)  # pestañas
     d.line([(cx + 2, 24 + k), (cx + 2, 25 + k)], fill=PUPIL)  # el ojo, grande (de gente; el rojo es de la serpiente)
     d.point((cx + 1, 25 + k), fill=BLUSH)

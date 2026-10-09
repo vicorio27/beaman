@@ -105,7 +105,10 @@ def bg():
 
 
 if __name__ == "__main__":
-    recolor("lilato.png", "camila.png", {(168, 132, 243): (236, 186, 60), (144, 94, 169): (186, 130, 40),
+    # Camila salió de la hoja de Lilato cuando Lilato era morada. Lilato ahora es rosada (otros colores),
+    # así que Camila ya no se rehace: si se borra camila.png, hay que ajustar estos colores.
+    if not (OUT / "camila.png").exists():
+        recolor("lilato.png", "camila.png", {(168, 132, 243): (236, 186, 60), (144, 94, 169): (186, 130, 40),
                                          (107, 62, 117): (130, 86, 30), (195, 36, 84): (220, 40, 60)})
     recolor("enemy_boss.png", "guillermo.png", {(237, 128, 153): (80, 160, 90), (110, 39, 39): (54, 74, 126),
                                                 (169, 90, 72): (60, 120, 70)})

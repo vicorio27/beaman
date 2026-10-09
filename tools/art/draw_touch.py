@@ -1,6 +1,7 @@
 """Botones táctiles para jugar desde el celular (versión web). Semitransparentes, con la letra adentro.
   touch_a.png  ACCIÓN (interact)     touch_b.png  ATRÁS (cancel)
   touch_i.png  INVENTARIO            touch_x.png  SOLTAR (drop)
+  touch_l.png  LUKAS (sniff: su menú; una huellita)
   touch_stick_base.png, touch_stick_knob.png  la palanca de la izquierda
 Salida: assets/ui/touch_*.png
 Uso: python tools/art/draw_touch.py  (desde la carpeta del proyecto)"""
@@ -20,6 +21,20 @@ def button(name, size, letter, color):
     d.ellipse([2, 2, size - 3, size - 3], outline=color)
     w = d.textlength(letter, font=FONT)
     d.text(((size - w) / 2, (size - 8) / 2), letter, font=FONT, fill=(250, 246, 236, 220))
+    img.save(OUT / f"touch_{name}.png")
+
+
+def paw(name, size, color):
+    """Botón de Lukas: una huellita en vez de letra."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse([0, 0, size - 1, size - 1], fill=FILL, outline=RIM)
+    d.ellipse([2, 2, size - 3, size - 3], outline=color)
+    ink = (250, 246, 236, 230)
+    c = size // 2
+    d.ellipse([c - 3, c, c + 3, c + 5], fill=ink)  # la almohadilla
+    for x, y in ((c - 5, c - 2), (c - 2, c - 5), (c + 2, c - 5), (c + 5, c - 2)):  # los dedos
+        d.ellipse([x - 1, y - 1, x + 1, y + 1], fill=ink)
     img.save(OUT / f"touch_{name}.png")
 
 
@@ -43,5 +58,6 @@ if __name__ == "__main__":
     button("b", 22, "B", (220, 110, 110, 200))
     button("i", 18, "I", (120, 160, 230, 200))
     button("x", 18, "X", (230, 200, 110, 200))
+    paw("l", 22, (192, 118, 60, 220))
     stick()
     print("botones táctiles:", OUT)

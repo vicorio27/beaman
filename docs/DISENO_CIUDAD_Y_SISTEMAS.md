@@ -1134,7 +1134,7 @@ El 70% de los días pasa uno, a una hora al azar, y dura una hora y media:
 2. El Padre avisa: un policía quiere hablar.
 3. En la iglesia, en la última banca, **el agente del operativo confiesa** y se ofrece a declarar (`flags.testigo`).
 4. En la Defensoría, con visitas ya ganadas: "Presentar las pruebas". La página 14 y el testigo hacen caer la mentira (`flags.lilato_mentira_caida`): visitas sin supervisión y el cumpleaños con el papá.
-5. **Día 30, el cumpleaños de Victoria:**
+5. **Día 30, el cumpleaños de Victoria** (29 de octubre; cumple doce años):
    - **Con visitas:** en el Parque, de 10 a 14. La torta de Fabiola, los amigos cantando, el regalo según la alcancía (con $150.000, la bicicleta rosada) y *"¿Puedo decirle papá?"*.
    - **Sin visitas:** el regalo queda en la reja del colegio y ella lo saluda de lejos.
    - Después: "BE A MAN. FIN." y vuelta al título.
@@ -1390,3 +1390,17 @@ Los chibis de 16 px se van reemplazando por personajes en proporciones adultas (
 - **La revancha de la lucha:** si pierde, espera dos noches (`flags.lucha_revancha_dia`).
 
 **Técnico:** `Dialogue` parte solo las frases que no entran en el cuadro (más de `PAGE_CHARS`, 94 letras), por oraciones, y cada página conserva a quien habla. Antes, las frases largas se salían del cuadro.
+
+## El celular y las llamadas de Lorena
+
+- **Lorena** es el nombre real de su ex; **Lilato** es como aparece en los sueños. En la ciudad, el recuerdo de la moto y el epílogo se llama Lorena.
+- **El celular de flecha** lo vende Don Efraín ($9.000). Con él en la mochila, en la ciudad (City, Centro, Parque), cada tanto entra una llamada (`autoload/Phone.gd`): el celular salta abajo a la derecha, vibra y suena con el nombre en pantalla. Acción contesta, atrás cuelga.
+- **Lorena** llama para pedir plata o para molestar. Son **los diálogos más chistosos del juego**: él es mudo, así que solo puede `(Respirar)`, `(Respirar dos veces)` o `(Colgar)`, y ella interpreta. Diez llamadas en orden (el número, los tenis, el horóscopo, la tutela, el coaching ontológico, Miami, el perro, el aguacate, la ansiedad, el cumpleaños) y después unas al azar. Malapropismos siempre ("dominio púbico", "apostillada viene de apóstol", "Isaac Nielsen").
+- Si le cuelgan, **vuelve a llamar** ("¿ME COLGÓ?"). A veces llama de otro número: aparece como DESCONOCIDO, así que cuando suena uno nunca sabe si es ella. Los desconocidos que no son ella: créditos preaprobados, Pollos Mario, Rapidito, una encuesta, el "mami, soy yo".
+- La gracia es la expectativa: cuando suena el celular, que el jugador quiera que sea Lorena.
+
+## Diálogos estilo Hades
+
+- Retrato grande de busto a la izquierda (96x112, modelado con volumen y luz y bajado a pixel art: `tools/art/draw_retratos.py` → `assets/portraits/`), la placa con el nombre y lo que es ("su hija", "la panadería", "por dentro") montada sobre el cuadro, y el cuadro de papel con marco dorado (`tools/art/draw_dialogo.py`).
+- Quién tiene retrato: `Dialogue.SPEAKERS`. Sin retrato (desconocidos, narración): el cuadro ocupa todo el ancho.
+- Todos iguales también en los retratos: a la gente de la ciudad se le va apagando la cara (`assets/shaders/retrato_iguales.gdshader`). Victoria y Lukas nunca.

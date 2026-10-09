@@ -569,7 +569,7 @@ func _arrival() -> void:
 	await Dialogue.talk([
 		["", "Frena frente a la casa. El motor hace tic, tic, tic, enfriándose."],
 		["", "Ella sale a la puerta. Se queda mirando la moto. Después lo mira a él."],
-		["LILATO", "—¡Está hermosa!"],
+		["LORENA", "—¡Está hermosa!"],
 		["", "—¿Cierto? Súbase. Le doy la primera vuelta."],
 		["", "Ella se sube atrás y le agarra la cintura. Él arranca despacio. Por primera vez en su vida, sin apuro."],
 		["", "Ninguno de los dos sabía lo que venía después."],

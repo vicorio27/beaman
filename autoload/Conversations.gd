@@ -18,6 +18,7 @@ const SHOP_EFRAIN := [
 	["muneca", 800, "—Gloria. No la deje mirando a la pared, que se ofende. Y cuando se ofende, mira."],
 	["dentadura", 300, "—Completa. Bueno, le falta un colmillo. Como a todos nosotros."],
 	["casete", 1000, "—Boleros. Lado B. El lado A es para la gente feliz, y esa gente no compra casetes."],
+	["celular", 9000, "—Celular de flecha, con chip y saldo. Indestructible: se cae de un cuarto piso y el que se rompe es el piso. Ah, y una señora preguntó por usted. Le di el número. Me pagó. Yo vendo historias, mijo."],
 ]
 const SHOP_GERMAN := [
 	["pan", 1500, "—Mil quinientos. El de hoy. El de ayer se lo regalo, pero no le diga a nadie."],
@@ -346,6 +347,8 @@ func _marta() -> void:
 
 ## Lista de cosas para comprar (con precio); vuelve cuando elige "Nada".
 func _shop(who: String, items: Array) -> void:
+	# Lo que es uno solo (el celular), si ya lo tiene, no se vende otra vez.
+	items = items.filter(func(it): return not (Items.info(it[0]).get("fixed", false) and GameState.count(it[0]) > 0))
 	while true:
 		var opts := []
 		for it in items:
@@ -474,7 +477,7 @@ func _samuel() -> void:
 		await Dialogue.talk([
 			["SAMUEL", "—¿Le quitaron el puesto? Pasa. La calle no es de nadie. Bueno, es de todos los que llegaron primero."],
 			["SAMUEL", "—Hay un banco en la plaza: duro, pero con luz. El kiosco viejo: tiene techito y un señor que ronca los jueves."],
-			["SAMUEL", "—O ármese su cambuche al lado del río, si tiene cartones. Con tres alcanza. Con cuatro, ya es estrato dos."],
+			["SAMUEL", "—O ármese bien el cambuche de debajo del puente, donde se despertó, si tiene cartones. Con tres alcanza. Con cuatro, ya es estrato dos."],
 		])
 		return
 	if not f.get("met_samuel", false):
@@ -1115,16 +1118,16 @@ func _cuenco(id: String) -> void:
 			await Dialogue.talk([["", "PARTIDA GUARDADA."]])
 		return
 	var lukas := scene.find_child("Lukas", true, false)
-	if lukas:
-		lukas.state = "found"
-		lukas._found_time = 2.0
-		lukas.sprite.play("sniff")
+	var spot := scene.find_child("Servicio_" + id, true, false)
+	if lukas and spot:
+		# Va hasta el cuenco y toma de verdad (el pie del dibujo está 4 px arriba del servicio).
+		await lukas.drink(spot.global_position - Vector2(0, 4))
 	var drank: bool = f.get("lukas_water_day", -1) == GameState.day
 	f["lukas_water_day"] = GameState.day
 	GameState.complete_quest("lukas_agua")
 	GameState.calm_until = maxf(GameState.calm_until, TimeManager.minutes + 30.0)
-	var line := "(Lukas toma agua como si fuera la última del mundo. Lo salpica todo.)" if not drank \
-		else "(Lukas toma un poquito más.)"
+	var line := "(Lukas mete el hocico hasta los ojos. Lame y lame, como si fuera la última agua del mundo. Lo salpica todo.)" \
+		if not drank else "(Lukas toma un poquito más. Lame tres veces y se relame.)"
 	var i := await Dialogue.talk([["", line]], ["Guardar partida", "Seguir"])
 	if i == 0:
 		GameState.save_game(scene.scene_file_path, "Spawn_" + id)
@@ -1427,7 +1430,7 @@ func _leonor() -> void:
 			await _buy("flor", 1000, "DOÑA LEONOR", "—Un clavel. Rojo. El blanco es para pedir perdón y usted no tiene cara de pedir perdón. ¿Para quién es?")
 			if GameState.count("flor") > 0:
 				await Dialogue.talk([["", "(...)"], ["DOÑA LEONOR", "—¿No sabe? ¿O no me quiere decir? ... Las dos cosas. Llévelo igual. Los claveles saben solos para quién son."],
-					["ÉL", "Sé para quién es. Tiene siete años. Le gustan los girasoles. No había girasoles."]])
+					["ÉL", "Sé para quién es. Tiene once años; doce el 29 de octubre. Le gustan los girasoles. No había girasoles."]])
 
 
 func _efrain() -> void:
@@ -1734,7 +1737,7 @@ func _colegio() -> void:
 		return
 	if int(f.get("victoria_veda", -1)) > day and _lilato_here():
 		GameState.change_mood(-2.0)
-		await Dialogue.talk([["", "(Lilato está en la puerta, mirando para todos lados. Él se queda en la esquina. La mira irse.)"]])
+		await Dialogue.talk([["", "(Lorena está en la puerta, mirando para todos lados. Él se queda en la esquina. La mira irse.)"]])
 		return
 	if not f.get("victoria_vista", false):
 		f["victoria_vista"] = true
@@ -1757,9 +1760,9 @@ func _colegio() -> void:
 	if gift != "" and not f.has("victoria_regalo_dia"):
 		opts.append("Dejarle algo en la reja")
 	if not _lilato_here() and int(f.get("victoria", 0)) >= 3:
-		opts.append("Acercarse (Lilato no ha llegado)")
+		opts.append("Acercarse (Lorena no ha llegado)")
 	opts.append("Irse")
-	var i := await Dialogue.talk([["", "(Victoria espera en la puerta. %s)" % ("Lilato está con ella." if _lilato_here() else "Lilato todavía no llega.")]], opts)
+	var i := await Dialogue.talk([["", "(Victoria espera en la puerta. %s)" % ("Lorena está con ella." if _lilato_here() else "Lorena todavía no llega.")]], opts)
 	match opts[i]:
 		"Mirarla de lejos":
 			if f.get("victoria_mira_dia", -1) != day:
@@ -1785,23 +1788,23 @@ func _colegio() -> void:
 			GameState.remove_item(gift)
 			f["victoria_regalo_dia"] = day
 			await Dialogue.talk([["", GIFTS[gift]]])
-		"Acercarse (Lilato no ha llegado)":
+		"Acercarse (Lorena no ha llegado)":
 			await _victoria_talk()
 
 
-## Lilato lo vio. Amenaza; unos días sin poder acercarse.
+## Lorena lo vio. Amenaza; unos días sin poder acercarse.
 func _lilato_ve() -> void:
 	var f := GameState.flags
 	f["lilato_avisos"] = int(f.get("lilato_avisos", 0)) + 1
 	f["victoria_veda"] = GameState.day + 3
 	GameState.change_mood(-8.0)
 	await Dialogue.talk([
-		["LILATO", "—¿Usted qué hace aquí?"],
+		["LORENA", "—¿Usted qué hace aquí?"],
 		["ÉL", "Uñas rojas. Las mismas. El mismo tono. Se llama Rojo Pasión, me dijo una vez. Yo le dije que sonaba a telenovela. Se rio. Eso fue en otra vida."],
-		["LILATO", "—La próxima vez llamo a la policía. Y no va a ser la primera vez que vienen por usted."],
+		["LORENA", "—La próxima vez llamo a la policía. Y no va a ser la primera vez que vienen por usted."],
 		["ÉL", "Uno cincuenta. Cara de muñeca de vitrina. Abre la boca y llueve: la saliva llega antes que la idea. A veces la idea no llega."],
-		["LILATO", "—Usted tiene una orden de alejamiento. Bueno, casi. Mi abogado dice que es de facto. Eso es en latín. Busque."],
-		["LILATO", "—¿No me va a decir nada? Claro que no. Nunca dice nada. Por eso da miedo."],
+		["LORENA", "—Usted tiene una orden de alejamiento. Bueno, casi. Mi abogado dice que es de facto. Eso es en latín. Busque."],
+		["LORENA", "—¿No me va a decir nada? Claro que no. Nunca dice nada. Por eso da miedo."],
 		["", "(Victoria lo mira desde atrás de la mamá.)"],
 	])
 	if int(f["lilato_avisos"]) >= 3:
@@ -1915,15 +1918,15 @@ func _audiencia() -> void:
 	f.erase("audiencia_dia")
 	MusicDirector.force("")
 	await Dialogue.talk([
-		["", "(Una oficina chiquita. Un ventilador que no ventila. Lilato, del otro lado de la mesa, sin mirarlo.)"],
+		["", "(Una oficina chiquita. Un ventilador que no ventila. Lorena, del otro lado de la mesa, sin mirarlo.)"],
 		["ÉL", "Ventilador Samurai, tres velocidades, la tres quemada. Un calendario de una ferretería del 2021. Un helecho de plástico con polvo de verdad. Me concentro en el helecho."],
 		["DEFENSORA", "—La mamá dice que usted es peligroso."],
 		["", "(...)"],
 		["DEFENSORA", "—¿No va a decir nada? ¿Nada? ... Señor, así no lo puedo ayudar. Aquí dice que estuvo en la Clínica Irene."],
 		["", "(Pone sobre la mesa un papel doblado mil veces: un certificado de la Clínica Irene. Dos años limpio. Lukas apoya la cabeza en el escritorio.)"],
-		["LILATO", "—¿Y qué? ¿Eso qué cambia?"],
+		["LORENA", "—¿Y qué? ¿Eso qué cambia?"],
 		["DEFENSORA", "—La niña dibuja a un señor con un perro. Me lo trajo la profesora. Dice que lo ve a la salida."],
-		["", "(Lilato no contesta. Por primera vez, no tiene nada que decir.)"],
+		["", "(Lorena no contesta. Por primera vez, no tiene nada que decir.)"],
 		["ÉL", "Ahora somos dos. No se siente como pensé que se iba a sentir. No se siente como nada. Se siente como el helecho."],
 		["DEFENSORA", "—Visitas supervisadas. Los domingos, de diez a doce, en el Parque de San Judas. Empezamos por ahí."],
 	])
@@ -1956,7 +1959,7 @@ func _visita() -> void:
 			["", "(Ella le enseña a Lukas a dar la pata. Lukas no aprende. Ella se ríe. Él casi.)"],
 			["ÉL", "Casi. Casi cuenta."]],
 		[["VICTORIA", "—Hoy le traje una arepa a Lukas. Usted se puede comer el borde. El borde es lo mejor. Nadie lo sabe."],
-			["", "(Dan de comer a las palomas. Ella le pone nombre a cada una. A la gorda le dice Lilato.)"],
+			["", "(Dan de comer a las palomas. Ella le pone nombre a cada una. A la más gritona le dice mamá.)"],
 			["ÉL", "No me río. No me río. No me..."],
 			["", "(Aprieta la mandíbula. Ella lo mira. Se ríen los dos.)"]],
 		[["VICTORIA", "—¿Por qué usted vive en la calle?"], ["", "(...)"],
@@ -2254,7 +2257,7 @@ func _ev_ayuda() -> void:
 				GameState.change_mood(12.0)
 				await Dialogue.talk([["", "(Le da la mano. Recorren la plaza. Lukas la hace reír.)"],
 					["NIÑA", "—¿Usted no habla? ... Mi tío tampoco hablaba. Ahora está en el cielo. Allá tampoco habla."],
-					["ÉL", "Seis años. Medias de distinto color. Le falta un diente de arriba. Victoria tenía ese diente flojo la última... no. Busquemos a la mamá."],
+					["ÉL", "Seis años. Medias de distinto color. Le falta un diente de arriba. Victoria, a esa edad, tenía ese mismo diente flojo. Se lo... no. Busquemos a la mamá."],
 					["", "(La mamá aparece corriendo. Lo mira a él, al perro, a la niña. Duda un segundo.)"],
 					["MAMÁ", "—... Gracias. De verdad."]])
 			1:
@@ -2312,22 +2315,22 @@ func _agente() -> void:
 	Narrator.say("Testigo y página 14: la Defensoría.")
 
 
-## En la Defensoría: con la página 14 y el testigo, la mentira de Lilato se cae.
+## En la Defensoría: con la página 14 y el testigo, la mentira de Lorena se cae.
 func _verdad() -> void:
 	var f := GameState.flags
 	MusicDirector.force("")
 	await Dialogue.talk([
-		["", "(La misma oficina. El mismo ventilador. Lilato, del otro lado de la mesa. Esta vez también está el agente.)"],
+		["", "(La misma oficina. El mismo ventilador. Lorena, del otro lado de la mesa. Esta vez también está el agente.)"],
 		["", "(Pone en la mesa la esquina del periódico. Página 14: \"La denuncia fue retirada. No hubo cargos.\")"],
 		["AGENTE", "—Ella nos dio la dirección y la foto. Dijo que él estaba armado. No lo estaba. Lo puedo jurar."],
-		["LILATO", "—Eso es mentira. Él... él es peligroso. Todo el mundo lo sabe. Es de dominio púbico."],
+		["LORENA", "—Eso es mentira. Él... él es peligroso. Todo el mundo lo sabe. Es de dominio púbico."],
 		["DEFENSORA", "—Público, señora."],
 		["ÉL", "Le cayó una gota en el expediente. La defensora la secó con la manga, sin mirar. Lleva años en esto."],
 		["DEFENSORA", "—Todo el mundo vio la portada, señora. Yo estoy leyendo la página 14."],
 		["ÉL", "Página 14. Entre un aviso de colchones y el horóscopo. Libra: \"hoy alguien le devuelve algo que creía perdido\". Ni el horóscopo lo leyó."],
-		["LILATO", "—..."],
+		["LORENA", "—..."],
 		["DEFENSORA", "—Visitas sin supervisión. Y el cumpleaños de la niña, con el papá. La custodia la revisamos con otra audiencia. Y con otra actitud."],
-		["", "(Lilato no lo mira. No tiene a quién llamar.)"],
+		["", "(Lorena no lo mira. No tiene a quién llamar.)"],
 		["DEFENSORA", "—¿Quiere decir algo, señor? ... ¿Algo? ... Bueno. Usted ya habló con esa página. Mejor que cualquier abogado."],
 		["ÉL", "Un año preparando el chiste perfecto para este momento. El de la portada y la página 14. Tenía remate y todo. No me acuerdo del remate. No importa. Ya no hace falta."],
 		["", "(Sale de la oficina. Afuera, Lukas mueve la cola.)" if GameState.lukas_alive() else "(Sale de la oficina. Afuera no lo espera nadie. Toca el collar en la mochila.)"],
@@ -2349,10 +2352,10 @@ func _cumpleanos(in_person: bool) -> void:
 	MusicDirector.force("")
 	if in_person:
 		await Dialogue.talk([
-			["", "(El Parque de San Judas. Una torta chiquita en la banca verde. Siete velas. Doña Fabiola la hizo. No quiso cobrar.)"],
+			["", "(El Parque de San Judas. Una torta chiquita en la banca verde. Doce velas. Doña Fabiola la hizo. No quiso cobrar.)"],
 			["VICTORIA", "—¡Vino Lukas!" if GameState.lukas_alive() else "—¿Y Lukas?"],
 			["", "(Primero el perro. Después él.)" if GameState.lukas_alive()
-				else "(No contesta. Ella entiende. Le pone una vela más a la torta: ocho. Una es de Lukas.)"],
+				else "(No contesta. Ella entiende. Le pone una vela más a la torta: trece. Una es de Lukas.)"],
 			["", "(Le da el regalo: %s.)" % gift],
 			["VICTORIA", "—... ¿Esto es para mí?"],
 			["", "(Asiente. Le tiemblan las manos.)"],

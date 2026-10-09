@@ -190,12 +190,13 @@ PEOPLE = {
                     {**SKIN, "h": (196, 96, 44), "f": (176, 104, 70),
                      "j": (226, 128, 70), "J": (190, 96, 50), "i": (226, 128, 70),
                      "p": (66, 90, 140), "q": (46, 64, 104), "k": (220, 216, 208)}, 7),
-    # Lilato: chiquita, cara linda (ojazos, pestañas, cachetes, boca pintada), pelo largo negro, vestido vino.
+    # Lilato: chiquita, cara linda (ojazos, pestañas, cachetes, boca pintada), pelo largo negro, vestido rosado
+    # (le gusta más el rosado que el morado; siempre muy femenina).
     # Lo de las balas de saliva y la ignorancia no se dibuja: se oye.
     "lilato": person(head("linda"), body("chiquita"),
                      {**SKIN, "h": (30, 26, 32), "l": (20, 16, 22), "r": (236, 140, 140), "m": (200, 40, 70),
-                      "c": (150, 40, 60), "d": (150, 40, 60),
-                      "p": (50, 40, 50), "q": (36, 28, 36), "k": (20, 18, 22)}, 3),
+                      "c": (238, 120, 160), "d": (238, 120, 160),
+                      "p": (240, 200, 210), "q": (214, 170, 182), "k": (220, 70, 130)}, 3),
     # José Mario, el jefe: canoso, traje gris oscuro, corbata azul.
     "josemario": person(head("engominado"), body("saco"),
                         {**SKIN, "h": (90, 90, 96), "H": (140, 140, 146),

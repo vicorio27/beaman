@@ -3,6 +3,7 @@ extends Area2D
 ## Un lugar donde pasar la noche (se duerme cuando la misión es buscar dónde dormir).
 ##   "banco" (plaza) y "kiosco" (techito del kiosco viejo): solo para dormir.
 ##   "rio", "callejon", "parque": se puede armar el cambuche (uno solo a la vez; se puede mudar).
+##     "rio" es el principal: debajo del puente, donde se despierta el primer día.
 ##     El cambuche tiene caja para guardar cosas, la alcancía, mejoras (toldo, cocinita, candado,
 ##     cobija) y, con la cocinita, se cocina. Su estado vive en GameState.cambuche.
 
@@ -10,10 +11,10 @@ const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const NIGHT_SCENE := "res://scenes/world/Night.tscn"
 const CARTONS_NEEDED := 3
 const NAMES := {"banco": "el banco de la plaza", "kiosco": "el techito del kiosco viejo",
-	"rio": "el cambuche del río", "callejon": "el cambuche del callejón", "parque": "el cambuche del parque"}
+	"rio": "el cambuche del puente", "callejon": "el cambuche del callejón", "parque": "el cambuche del parque"}
 ## Cómo es cada lugar (se dice al armar).
 const ABOUT := {
-	"rio": "(Al lado del río: tranquilo y húmedo.)",
+	"rio": "(Debajo del puente, donde se despertó el primer día. Tranquilo y húmedo. Lo más parecido a una casa.)",
 	"callejon": "(Entre las bodegas: seco, pero de noche pasa de todo.)",
 	"parque": "(En el parque: bonito. La policía pasa seguido.)",
 }
@@ -100,6 +101,12 @@ func _refresh_visual() -> void:
 	for c in _visual.get_children():
 		c.queue_free()
 	if not GameState.has_cambuche(spot_id):
+		if spot_id == "rio":  # el campamento de siempre, bajo el puente
+			var camp := Sprite2D.new()
+			camp.texture = load("res://assets/barrio/camp.png")
+			camp.centered = false
+			camp.offset = Vector2(-17, -camp.texture.get_height() + 4)
+			_visual.add_child(camp)
 		if _player:
 			_update_hint()
 		return
@@ -273,53 +280,28 @@ func _piggy_bank() -> void:
 			await Dialogue.talk([["", "(Saca todo. Se queda mirando la alcancía vacía.)"]])
 
 
+## La pantalla de mejoras (CambucheUI): qué se puede poner, qué falta y qué se gana. Se elige, se pone
+## y vuelve a la pantalla, hasta salir.
 func _upgrade() -> void:
-	var c := GameState.cambuche
-	# Ampliar: el siguiente nivel, si ya se puede (o qué falta).
-	var next := GameState.cambuche_level() + 1
-	if Items.EXPANSIONS.has(next):
-		var plan: Dictionary = Items.EXPANSIONS[next]
-		var missing := []
-		for id in plan["needs"]:
-			if GameState.count(id) < plan["needs"][id]:
-				missing.append("%d %s" % [plan["needs"][id], Items.info(id)["name"].to_lower()])
-		if missing.is_empty():
-			var k := await Dialogue.talk([["", "(Se puede ampliar el cambuche a %s.)" % GameState.CAMBUCHE_NAMES[next]]],
-				["Ampliar a %s" % GameState.CAMBUCHE_NAMES[next], "Después"])
-			if k == 0:
-				for id in plan["needs"]:
-					GameState.remove_item(id, plan["needs"][id])
-				c[plan["flag"]] = true
-				TimeManager.skip(1.0)
-				GameState.change_mood(8.0)
-				GameState.cambuche_changed.emit()
-				await Dialogue.talk([["", plan["line"]]])
-				return
+	while true:
+		var id: String = await CambucheUI.choose(self)
+		if id == "":
+			return
+		var c := GameState.cambuche
+		if id.begins_with("nivel_"):
+			var plan: Dictionary = Items.EXPANSIONS[int(id.substr(6))]
+			for item in plan["needs"]:
+				GameState.remove_item(item, plan["needs"][item])
+			c[plan["flag"]] = true
+			TimeManager.skip(1.0)
+			GameState.change_mood(8.0)
+			GameState.cambuche_changed.emit()
+			await Dialogue.talk([["", plan["line"]]])
 		else:
-			await Dialogue.talk([["", "(Para ampliarlo a %s falta: %s.)" % [GameState.CAMBUCHE_NAMES[next], ", ".join(missing)]]])
-	var can := []
-	for u in Items.UPGRADES:
-		if not c.get(u, false) and GameState.count(u) > 0:
-			can.append(u)
-	if can.is_empty():
-		var missing := []
-		for u in Items.UPGRADES:
-			if not c.get(u, false):
-				missing.append(Items.info(u)["name"].to_lower())
-		await Dialogue.talk([["", "(No tiene nada para ponerle. Falta: %s.)" % (", ".join(missing) if not missing.is_empty() else "nada")]])
-		return
-	var opts := []
-	for u in can:
-		opts.append("Poner: " + Items.info(u)["name"])
-	opts.append("Nada")
-	var i := await Dialogue.talk([["", "(¿Qué ponerle?)"]], opts)
-	if i >= can.size():
-		return
-	var u: String = can[i]
-	GameState.remove_item(u)
-	c[u] = true
-	GameState.cambuche_changed.emit()
-	await Dialogue.talk([["", UPGRADE_LINES[u]]])
+			GameState.remove_item(id)
+			c[id] = true
+			GameState.cambuche_changed.emit()
+			await Dialogue.talk([["", UPGRADE_LINES[id]]])
 
 
 func _cook() -> void:

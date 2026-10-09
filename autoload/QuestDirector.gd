@@ -45,8 +45,8 @@ func _process(delta: float) -> void:
 	DayTasks.tick(get_tree().current_scene)
 
 
-## Victoria: a las 12 sale del colegio (menos los domingos) y Lilato la viene a buscar. A veces
-## (con el vínculo alto) Lilato llega tarde. Los domingos, con visitas, está en el Parque.
+## Victoria: a las 12 sale del colegio (menos los domingos) y Lorena la viene a buscar. A veces
+## (con el vínculo alto) Lorena llega tarde. Los domingos, con visitas, está en el Parque.
 const VICTORIA_POS := Vector2(612, 202)
 const VISITA_POS := Vector2(470, 300)
 
@@ -60,7 +60,7 @@ func _victoria() -> void:
 		g.start_quest("v_defensoria")
 	if g.day >= 45 and not g.quests.has("v_cumple"):
 		g.start_quest("v_cumple")
-		Narrator.say("Hoy cumple años Victoria. %s" % ("Visita en el Parque, de diez a dos." if f.get("visitas", false) else "Sale del colegio a las doce."))
+		Narrator.say("29 de octubre. Victoria cumple doce años. %s" % ("Visita en el Parque, de diez a dos." if f.get("visitas", false) else "Sale del colegio a las doce."))
 	var scene := get_tree().current_scene
 	if scene == null or not TimeManager.running:
 		return
@@ -89,7 +89,7 @@ func _victoria() -> void:
 
 func _spawn_kid(scene: Node, at: Vector2) -> void:
 	var v := _spawn_npc(scene, "victoria", "Victoria", 3, at, Color(1.0, 0.8, 0.9))
-	v.scale = Vector2(0.72, 0.72)  # tiene siete años
+	v.scale = Vector2(0.86, 0.86)  # tiene once (doce el 29 de octubre)
 
 
 func _spawn_npc(scene: Node, id: String, node_name: String, row: int, at: Vector2, tint: Color) -> Node2D:

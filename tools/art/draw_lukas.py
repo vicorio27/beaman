@@ -5,6 +5,7 @@ punta blanca. Sale de la prueba de estilo (draw_adultos_prueba.py).
 Hoja 80x48, celdas de 20x16 (los pies en la fila de abajo, centrado). Ver Lukas.cell().
   Columnas: costado (mira a la izquierda), frente, espalda, extra.
   Filas: quieto, paso 1, paso 2. La columna extra: sentado, olfateando, ladrando.
+  Fila 4 (abajo): tomando agua, dos cuadros (hocico en el cuenco, lame / sube salpicando).
 Salida: assets/characters/lukas.png
 Uso: python tools/art/draw_lukas.py  (desde la carpeta del proyecto)"""
 from pathlib import Path
@@ -22,6 +23,7 @@ PAL = {
     "n": (26, 22, 26),                           # nariz / ojo
     "r": (220, 110, 120),                        # lengua
 }
+WATER = (150, 206, 240, 255)
 
 # De costado, mirando a la derecha (la hoja lo guarda mirando a la izquierda). Sin las patas.
 SIDE_BODY = [
@@ -121,6 +123,21 @@ def side(legs=LEGS_IDLE, pose="stand"):
     if pose == "sniff":
         # La cabeza baja hasta el piso.
         return shift(im, (10, 0, im.width, 9), 2)
+    if pose in ("drink_a", "drink_b"):
+        # Tomando agua (lame): A, el hocico abajo en el cuenco y la lengua afuera; B, sube un poco
+        # y chorrea. Las patas de adelante un poco abiertas, como cuando se agacha.
+        im = sprite(side_rows(SIDE_BODY, [2, 6, 11, 14]))
+        im = shift(im, (10, 0, im.width, 9), 2 if pose == "drink_a" else 1)
+        big = Image.new("RGBA", (im.width + 1, im.height), (0, 0, 0, 0))
+        big.alpha_composite(im)
+        w = im.width
+        if pose == "drink_a":  # la lengua, curva, recogiendo agua
+            big.putpixel((w - 1, 7), PAL["r"] + (255,))
+            big.putpixel((w, 8), PAL["r"] + (255,))
+        else:  # gotas que caen del hocico al cuenco
+            for x, y in ((w, 7), (w - 1, 9), (w, 10)):
+                big.putpixel((x, y), WATER)
+        return big
     return im
 
 
@@ -132,13 +149,15 @@ def cell(im):
 
 def main():
     flip = lambda im: im.transpose(Image.FLIP_LEFT_RIGHT)
-    sheet = Image.new("RGBA", (4 * CW, 3 * CH), (0, 0, 0, 0))
+    sheet = Image.new("RGBA", (4 * CW, 4 * CH), (0, 0, 0, 0))
     for row, legs in enumerate([LEGS_IDLE, LEGS_STEP_1, LEGS_STEP_2]):
         sheet.alpha_composite(cell(flip(side(legs))), (0, row * CH))
         sheet.alpha_composite(cell(sprite(FRONT + FRONT_LEGS[row])), (CW, row * CH))
         sheet.alpha_composite(cell(sprite(BACK + BACK_LEGS[row])), (2 * CW, row * CH))
     for row, pose in enumerate(["sit", "sniff", "bark"]):
         sheet.alpha_composite(cell(flip(side(pose=pose))), (3 * CW, row * CH))
+    for col, pose in enumerate(["drink_a", "drink_b"]):
+        sheet.alpha_composite(cell(flip(side(pose=pose))), (col * CW, 3 * CH))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(OUT)
     print("Lukas:", OUT, sheet.size)

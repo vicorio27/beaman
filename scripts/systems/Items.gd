@@ -7,6 +7,9 @@ class_name Items
 const DB := {
 	"foto": {"name": "Fotografía antigua", "desc": "De chico, con alguien. La otra cara está cortada.",
 		"type": "especial", "stack": 1, "fixed": true},
+	# El celular de flecha (Don Efraín): con él entran llamadas (autoload Phone). Lorena tiene el número.
+	"celular": {"name": "Celular de flecha", "desc": "Indestructible. Lo único que lo mata es que alguien lo llame. Alguien lo va a llamar.",
+		"type": "especial", "stack": 1, "fixed": true},
 	"camiseta": {"name": "Camiseta vieja", "desc": "Huele a humedad. Es ropa, toalla y pijama.",
 		"type": "material", "stack": 1},
 	"pan": {"name": "Pan", "desc": "Del día anterior. Duro.", "type": "comida", "stack": 3, "food": 25},

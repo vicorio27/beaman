@@ -3,7 +3,7 @@ extends CharacterBody2D
 ## Lukas, el beagle. El único que se quedó con él.
 ##   - Lo sigue a todos lados (no choca con él; sí con las paredes).
 ##   - Si se queda quieto un rato, se sienta.
-##   - F / RB abre su menú:
+##   - F / RB (o la acción parado al lado de él; en el celular, la huellita) abre su menú:
 ##     · Buscá: sale a olfatear. Va hasta la cosa más cercana (prefiere comida), ladra y, si estaba
 ##       escondida, la deja a la vista. Con hambre, a veces no trabaja.
 ##     · Acariciar: un rato de calma (el filtro de angustia baja; GameState.calm_until).
@@ -11,6 +11,7 @@ extends CharacterBody2D
 ##     · Jugar: con la pelota de trapo; se la tira, la va a buscar y (casi siempre) la trae.
 
 signal found_something(item_id: String)
+signal at_bowl
 
 const SHEET := preload("res://assets/characters/lukas.png")
 ## Celdas de la hoja (ver tools/art/draw_lukas.py).
@@ -23,6 +24,9 @@ const SEEK_SPEED := 90.0
 const SIT_AFTER := 3.0
 const THROW_DIST := 70.0
 const CALM_MINUTES := 90.0
+## Tomando agua: el nodo queda a este lado del cuenco (el hocico adentro; ver draw_lukas.py).
+const BOWL_SIDE := 9.0
+const DRINK_TIME := 4.0
 const PET_LINES := [
 	"(Lo rasca detrás de la oreja. Lukas patea con la pata de atrás.)",
 	"(Lukas le lame la cara. Mucho. Como revisando que siga ahí.)",
@@ -47,6 +51,8 @@ var _last_pos := Vector2.ZERO
 var _ball: Sprite2D
 var _pet_index := 0
 var _fetch_index := 0
+var _bowl_spot := Vector2.ZERO
+var _bowl_right := false
 
 var sprite: AnimatedSprite2D
 var _bubble: Label
@@ -93,6 +99,7 @@ func _frames() -> SpriteFrames:
 	_add(f, "sit", [[3, 0]], 1.0)
 	_add(f, "sniff", [[3, 1], [0, 0]], 4.0)
 	_add(f, "bark", [[3, 2], [3, 0]], 5.0)
+	_add(f, "drink", [[0, 3], [1, 3]], 4.0)
 	return f
 
 
@@ -112,9 +119,34 @@ static func cell(col: int, row: int) -> AtlasTexture:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("sniff") and not GameState.input_blocked() and not SceneRouter.busy:
+	if GameState.input_blocked() or SceneRouter.busy:
+		return
+	if event.is_action_pressed("sniff"):
 		get_viewport().set_input_as_handled()
 		menu()
+	elif event.is_action_pressed("interact") and _player_near() and not _other_interactable():
+		# Hablarle (acción al lado de él) también abre su menú: en el celular no hay F.
+		get_viewport().set_input_as_handled()
+		menu()
+
+
+const TALK_DIST := 22.0
+
+
+func _player_near() -> bool:
+	return player != null and global_position.distance_to(player.global_position) < TALK_DIST
+
+
+## ¿El jugador está parado en otra cosa que se usa con la acción (persona, puerta, servicio...)?
+## Esas tienen prioridad sobre Lukas.
+func _other_interactable() -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return false
+	for n in scene.find_children("*", "Area2D", true, false):
+		if n.get("_player") == player:
+			return true
+	return false
 
 
 ## El menú de Lukas (F).
@@ -335,6 +367,17 @@ func _physics_process(delta: float) -> void:
 			else:
 				_walk(to_player.normalized() * SEEK_SPEED)
 				_check_stuck_at(delta, player.global_position + Vector2(-12, 4))
+		"drink_go":
+			var to_bowl := _bowl_spot - global_position
+			if to_bowl.length() < 2.0:
+				_start_drinking()
+			else:
+				_walk(to_bowl.normalized() * minf(SEEK_SPEED, to_bowl.length() * 8.0))
+				_check_stuck_at(delta, _bowl_spot)
+		"drinking":
+			_found_time -= delta
+			if _found_time <= 0.0:
+				state = "follow"
 		"found":
 			_walk(Vector2.ZERO)
 			_found_time -= delta
@@ -377,6 +420,9 @@ func _check_stuck_at(delta: float, unstuck_to: Vector2) -> void:
 
 
 func _teleport_behind() -> void:
+	if state == "drink_go":  # alguien espera a que llegue al cuenco
+		_start_drinking()
+		return
 	global_position = player.global_position + Vector2(-14, 4)
 	state = "follow"
 
@@ -468,6 +514,33 @@ func _fetch_done() -> void:
 		sprite.play("bark")
 		Narrator.say(FETCH_LINES[_fetch_index % FETCH_LINES.size()])
 		_fetch_index += 1
+
+
+## Va hasta el cuenco (bowl_foot: el pie del dibujo) y toma agua: mete el hocico y lame.
+## Vuelve cuando ya está tomando (sigue tomando un rato solo, mientras corre el diálogo).
+func drink(bowl_foot: Vector2) -> void:
+	# Se pone del lado del cuenco por donde viene, un píxel más abajo (se dibuja delante).
+	_bowl_right = global_position.x > bowl_foot.x
+	_bowl_spot = bowl_foot + Vector2(BOWL_SIDE if _bowl_right else -BOWL_SIDE, 1)
+	_bubble.visible = false
+	state = "drink_go"
+	_stuck = 0.0
+	if global_position.distance_to(_bowl_spot) > 120.0:  # lejos o detrás de algo: aparece al lado
+		global_position = _bowl_spot + Vector2(10 if _bowl_right else -10, 0)
+	if player == null:  # sin jugador no camina (_physics_process no corre): toma ahí mismo
+		_start_drinking.call_deferred()
+	await at_bowl
+
+
+func _start_drinking() -> void:
+	global_position = _bowl_spot
+	velocity = Vector2.ZERO
+	facing = "side"
+	sprite.flip_h = not _bowl_right  # la hoja mira a la izquierda: voltea para mirar a la derecha
+	sprite.play("drink")
+	state = "drinking"
+	_found_time = DRINK_TIME
+	at_bowl.emit()
 
 
 ## Sed: si a la tarde todavía no tomó agua en un cuenco.

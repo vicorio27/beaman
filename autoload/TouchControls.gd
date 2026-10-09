@@ -1,7 +1,7 @@
 extends CanvasLayer
 ## Controles táctiles para jugar desde el celular (la versión web). Solo aparecen con pantalla táctil.
 ## Izquierda: una palanca (cualquier dedo en la mitad izquierda de la pantalla la mueve).
-## Derecha: A (acción), B (atrás), I (inventario), X (soltar). Todo dispara las mismas acciones
+## Derecha: A (acción), B (atrás), I (inventario), X (soltar), la huellita (Lukas: su menú). Todo dispara las mismas acciones
 ## que el teclado (ver Controls.gd), así que el resto del juego no se entera.
 
 const STICK_CENTER := Vector2(38, 140)
@@ -13,6 +13,7 @@ const BUTTONS := [
 	["cancel", "touch_b", Vector2(260, 154)],
 	["inventory", "touch_i", Vector2(296, 112)],
 	["drop", "touch_x", Vector2(264, 128)],
+	["sniff", "touch_l", Vector2(238, 132)],
 ]
 
 var _stick_finger := -1

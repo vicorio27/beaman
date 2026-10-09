@@ -97,7 +97,7 @@ const SETTLE_SOLO := {
 	"parque": "El parque. Desde aquí se ve el árbol de flores amarillas.",
 	"pension": "Una cama. Debajo, nadie. Duerme en la mitad.",
 }
-const SPOT_NAMES := {"banco": "el banco de la plaza", "kiosco": "el kiosco viejo", "rio": "el cambuche del río",
+const SPOT_NAMES := {"banco": "el banco de la plaza", "kiosco": "el kiosco viejo", "rio": "el cambuche del puente",
 	"callejon": "el callejón", "parque": "el parque", "pension": "la pensión"}
 
 var _bg: ColorRect
@@ -378,7 +378,7 @@ func _morning(spot: String, first: bool) -> void:
 	for line in GameState.new_day(spot):
 		await _say(line)
 	if first:
-		await _say("Victoria, su hija, cumple siete años en mes y medio.\nMeta: $150.000 para un regalo. Tiene $%d." % GameState.money)
+		await _say("Victoria, su hija, cumple doce años el 29 de octubre. En mes y medio.\nMeta: $150.000 para un regalo. Tiene $%d." % GameState.money)
 	TimeManager.set_time(6, 30)
 	SceneRouter.go(CITY, "Wake_" + spot, "DIA %d — 06:30" % GameState.day)
 

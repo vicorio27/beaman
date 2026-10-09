@@ -352,9 +352,10 @@ func paint_river() -> void:
 		g_rect(Rect2i(28, y, 3, 1), DECK)
 		g(Vector2i(27, y), RAIL, 1)
 		g(Vector2i(31, y), RAIL, 1)
-	# Bajo el puente: el campamento.
+	# Bajo el puente: el campamento, donde se despierta. Es el cambuche principal (el "rio" de
+	# SleepSpot): sin armar, se ven los cartones de siempre; armado, el cambuche con sus mejoras.
 	g_rect(Rect2i(23, 37, 4, 3), CONCRETE)
-	prop("camp", Vector2(400, 630), false)
+	shadow_ellipse(Rect2(386, 626, 34, 7))
 	place("pillar", Vector2(426, 640), Vector2(20, 8))
 	prop("trash", Vector2(374, 618))
 	prop("cart", Vector2(350, 652), false)
@@ -428,7 +429,7 @@ func place_pickups() -> void:
 	# Lugares para pasar la noche.
 	add_sleep_spot(world, "banco", Vector2(568, 514))
 	add_sleep_spot(world, "kiosco", Vector2(394, 554))
-	add_sleep_spot(world, "rio", Vector2(536, 618))
+	add_sleep_spot(world, "rio", Vector2(400, 626))  # bajo el puente, donde se despierta (Start)
 	add_sleep_spot(world, "callejon", Vector2(700, 186))
 	add_sleep_spot(world, "parque", Vector2(262, 138))
 	# Plata: el puesto de Doña Rosa y el baño público, en la plaza.

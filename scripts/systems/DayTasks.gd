@@ -352,7 +352,7 @@ static func _zaida(n: int) -> void:
 				await Dialogue.talk([["ZAIDA", "—Orgulloso. Me encanta. Te dura poco, pero me encanta."]])
 		2:
 			i = await Dialogue.talk([
-				["ZAIDA", "—Supe lo de la niña. Lilato y yo vamos al mismo salón de uñas. ¿Querés que le hable? Yo soy muy convincente."],
+				["ZAIDA", "—Supe lo de la niña. Lorena y yo vamos al mismo salón de uñas. ¿Querés que le hable? Yo soy muy convincente."],
 			], ["Asentir", "Negar con la cabeza"])
 			if i == 0:
 				f["zaida_deuda"] = debt + 1
@@ -387,7 +387,7 @@ static func _zaida(n: int) -> void:
 					["ZAIDA", "—Salió perfecto. Le conté todo. Bueno, mi versión. La mía es más bonita."]])
 			elif i == 0:
 				await Dialogue.talk([["ZAIDA", "—Bueno, no voy. Pero te digo algo, ya que me dijiste que no tantas veces."],
-					["ZAIDA", "—Esa vez, la de la policía, Lilato me pidió que dijera que vos tenías un arma. Yo no lo dije. ... Bueno, lo dije una vez."],
+					["ZAIDA", "—Esa vez, la de la policía, Lorena me pidió que dijera que vos tenías un arma. Yo no lo dije. ... Bueno, lo dije una vez."],
 					["", "(Aprieta los puños. No se mueve.)"]])
 				GameState.add_locura(1)
 			else:

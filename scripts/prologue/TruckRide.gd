@@ -6,12 +6,13 @@ extends Node2D
 ##      vaivén, baches, curvas); izquierda/derecha corrige. Si se pasa, se suelta una mano:
 ##      apretar el botón rápido para volver a agarrarse.
 ##      Los matones vienen en moto: se ponen al lado y pegan (desequilibra y quita vida).
-##      Botón = patada hacia atrás: hay que tirarlos de la moto.
+##      Botón = patada hacia atrás: hay que tirarlos de la moto. El de atrás no espera turno: tira
+##      botellas (una patada a tiempo la devuelve). Frenético: muchas motos, curvas y baches seguidos.
 ##   2. GANÓ: STAGE CLEAR, el camión frena en el puente: abajo lo espera Lilato (jefa final).
 ##      PERDIÓ (sin vida): se cae del camión y rueda hasta el puente: también va a Lilato.
 
 const NEXT_SCENE := "res://scenes/prologue/Lilato.tscn"
-const SPEED := 240.0  # velocidad del mundo con el camión lanzado (px/s)
+const SPEED := 330.0  # velocidad del mundo con el camión lanzado (px/s)
 const SKY_FACTOR := 0.09
 const ROAD_Y := 136.0
 const GROUND_Y := 168.0  # pies de los que corren por la calle
@@ -42,12 +43,13 @@ const MAX_LIFE := 50
 const HIT_DAMAGE := 5
 
 # --- Motos
-const BIKERS := ["punk", "goon", "punk", "thug", "goon", "punk", "thug"]
+const BIKERS := ["punk", "goon", "punk", "punk", "thug", "goon", "punk", "goon", "thug", "punk"]
 const BIKER_HP := {"punk": 1, "goon": 2, "thug": 3}
 const MAX_BIKERS := 2
 ## Alcance de la patada hacia atrás: dónde tiene que estar el que maneja (x de pantalla).
 const KICK_RANGE := Vector2(HAND.x - 64, HAND.x - 14)
 const BIKER_SLOT_X := [HAND.x - 44, HAND.x - 70]
+const BOTTLE_TIME := 0.55  # lo que tarda la botella en llegar (con la patada a tiempo se devuelve)
 
 enum Phase { BOARD, HANG, CLEAR, FALL, DONE }
 
@@ -425,7 +427,7 @@ func _hang(delta: float) -> void:
 	if _next_curve <= 0.0 and _curve_left <= 0.0:
 		_curve_dir = 1 if randf() < 0.5 else -1
 		_curve_left = CURVE_TIME
-		_next_curve = randf_range(5.0, 8.0)
+		_next_curve = randf_range(3.0, 5.5)
 		_spawn("sign", "res://assets/prologue/sign_curve.png", ROAD_Y - 64, _back, _curve_dir < 0, 200.0)
 	var tilt := 0.0
 	if _curve_left > 0.0:
@@ -435,9 +437,9 @@ func _hang(delta: float) -> void:
 	_rig.rotation = lerpf(_rig.rotation, tilt, 6.0 * delta)
 	_next_bump -= delta
 	if _next_bump <= 0.0:
-		_next_bump = randf_range(1.2, 2.6)
+		_next_bump = randf_range(0.7, 1.6)
 		_omega += randf_range(-2.4, 2.4)
-		_shake = 2.5
+		_shake = 3.5
 		_rig.position.y -= 3.0
 
 	if _slip > 0.0:
@@ -524,7 +526,7 @@ func _draw_meter() -> void:
 func _update_bikers(delta: float) -> void:
 	_next_biker -= delta
 	if _next_biker <= 0.0 and not _to_spawn.is_empty() and _bikers.size() < MAX_BIKERS:
-		_next_biker = randf_range(2.0, 3.2)
+		_next_biker = randf_range(0.9, 1.6)
 		_spawn_biker(_to_spawn.pop_front())
 	for b in _bikers.duplicate():
 		_biker_tick(b, delta)
@@ -561,23 +563,26 @@ func _biker_tick(b: Dictionary, delta: float) -> void:
 	var wobble := sin(_t * 3.0 + b["slot"] * 2.0) * 3.0
 	match b["state"]:
 		"approach":
-			node.position.x = move_toward(node.position.x, target, 70.0 * delta)
+			node.position.x = move_toward(node.position.x, target, 110.0 * delta)
 			if absf(node.position.x - target) < 2.0:
 				b["state"] = "ride"
-				b["timer"] = randf_range(1.0, 2.0)
+				b["timer"] = randf_range(0.5, 1.1)
 		"ride":
 			node.position.x = target + wobble
 			if b["timer"] <= 0.0 and b["slot"] == 0:
 				# Se tira encima para pegar (avisa poniéndose rojo).
 				b["state"] = "windup"
-				b["timer"] = 0.6
+				b["timer"] = 0.5
 				create_tween().tween_property(rider, "modulate", Color(1, 0.4, 0.4), 0.3)
 			elif b["timer"] <= 0.0:
-				b["timer"] = 0.5
-				# El de atrás espera turno; si el de adelante cayó, pasa adelante.
+				# El de atrás no espera tranquilo: tira botellas. Si el de adelante cayó, pasa adelante.
 				if _bikers.filter(func(x): return x["slot"] == 0).is_empty():
 					b["slot"] = 0
 					b["state"] = "approach"
+					b["timer"] = 0.5
+				else:
+					b["timer"] = randf_range(1.6, 2.6)
+					_throw_bottle(b)
 		"windup":
 			node.position.x = move_toward(node.position.x, target + 10.0, 30.0 * delta)
 			if b["timer"] <= 0.0:
@@ -592,15 +597,62 @@ func _biker_tick(b: Dictionary, delta: float) -> void:
 				_lose_life(HIT_DAMAGE)
 				_sfx["hit-1"].play()
 				b["state"] = "ride"
-				b["timer"] = randf_range(1.4, 2.4)
+				b["timer"] = randf_range(0.8, 1.4)
 				rider.play("idle")
 		"stagger":
 			node.position.x = move_toward(node.position.x, target, 50.0 * delta)
 			node.rotation = lerpf(node.rotation, 0.0, 6.0 * delta)
 			if b["timer"] <= 0.0:
 				b["state"] = "ride"
-				b["timer"] = randf_range(1.0, 1.8)
+				b["timer"] = randf_range(0.5, 1.0)
 				rider.play("idle")
+
+
+## El de atrás tira una botella (en arco) hacia él. Si al llegar está pateando, la devuelve.
+func _throw_bottle(b: Dictionary) -> void:
+	var rider: AnimatedSprite2D = b["rider"]
+	rider.play("punch")
+	var bottle := Sprite2D.new()
+	bottle.texture = load("res://assets/prologue/item_bottle.png")
+	bottle.z_index = 25
+	bottle.position = b["node"].position + Vector2(14, -40)
+	add_child(bottle)
+	var from := bottle.position
+	var to := HAND + Vector2(-4, 16)
+	var t := create_tween().set_parallel()
+	t.tween_method(func(k: float): bottle.position = from.lerp(to, k) - Vector2(0, sin(k * PI) * 30.0), 0.0, 1.0, BOTTLE_TIME)
+	t.tween_property(bottle, "rotation", 9.0, BOTTLE_TIME)
+	await t.finished
+	if is_instance_valid(rider):
+		rider.play("idle")
+	if phase != Phase.HANG:
+		bottle.queue_free()
+		return
+	if _kick > 0.0:  # la devolvió de una patada
+		Dream.add(150)
+		_sfx["hit-2"].play()
+		var back := create_tween().set_parallel()
+		back.tween_property(bottle, "position", bottle.position + Vector2(-140, 40), 0.5)
+		back.tween_property(bottle, "rotation", -12.0, 0.5)
+		back.chain().tween_callback(bottle.queue_free)
+		return
+	bottle.queue_free()
+	_omega += 1.8
+	_lose_life(HIT_DAMAGE)
+	_sfx["hit-1"].play()
+	var glass := Label.new()  # "¡CRASH!" donde le pega
+	glass.text = "¡CRASH!"
+	glass.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+	glass.add_theme_font_size_override("font_size", 8)
+	glass.add_theme_constant_override("outline_size", 3)
+	glass.add_theme_color_override("font_outline_color", Color.BLACK)
+	glass.position = to + Vector2(-24, -30)
+	glass.z_index = 40
+	add_child(glass)
+	var g := create_tween()
+	g.tween_property(glass, "position:y", glass.position.y - 12, 0.6)
+	g.parallel().tween_property(glass, "modulate:a", 0.0, 0.6)
+	g.tween_callback(glass.queue_free)
 
 
 ## La patada pega al que esté más cerca dentro del alcance (y le corta el golpe si lo estaba cargando).
