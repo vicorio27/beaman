@@ -331,7 +331,7 @@ func los(a: Vector2, b: Vector2) -> bool:
 func _title() -> void:
 	state = "title"
 	_big.text = title_text
-	_small.text = subtitle + "\n\n[E / clic] empezar"
+	_small.text = subtitle + "\n\n" + ("[A] empezar" if Controls.touch() else "[E / clic] empezar")
 
 
 func _start() -> void:
@@ -386,7 +386,7 @@ func _process(delta: float) -> void:
 			_special(delta)
 		"dead":
 			_continue -= delta
-			_small.text = "CONTINUE?  %d\n\n[E] seguir soñando" % maxi(0, ceili(_continue))
+			_small.text = Controls.keys_in("CONTINUE?  %d\n\n[E] seguir soñando" % maxi(0, ceili(_continue)))
 			if _continue <= 0.0:
 				_wake(false)
 		"done":
@@ -483,9 +483,23 @@ func _fire() -> void:
 		for e in enemies:  # el ruido despierta a los que están cerca
 			if e.state != "dead" and e.pos.distance_to(pos) < 10.0:
 				e.alerted = true
+	# Ayuda para apuntar (como Doom): si un enemigo a la vista está casi en la mira, el tiro va a él.
+	# En el celular (girar con la palanca es grueso) la ayuda es más generosa.
+	var aim := ang
+	var best_da: float = 0.13 if Controls.touch() else 0.06
+	for e in enemies:
+		if e.state == "dead":
+			continue
+		var rel := e.pos - pos
+		if rel.length() > w["reach"]:
+			continue
+		var da := absf(wrapf(rel.angle() - ang, -PI, PI))
+		if da < best_da and los(pos, e.pos):
+			best_da = da
+			aim = rel.angle()
 	for p in w["pellets"]:
 		var spread: float = w["spread"] * (0.5 if GameState.has_skill("sangre_fria") else 1.0)
-		var a := ang + randf_range(-spread, spread)
+		var a := aim + randf_range(-spread, spread)
 		var rd := Vector2(cos(a), sin(a))
 		var wall := cast(pos, rd)
 		var best: Ent = null
@@ -756,7 +770,7 @@ func _finish() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	MusicDirector.force("")
 	_big.text = "NIVEL COMPLETO"
-	_small.text = "TIEMPO %02d:%02d\nBAJAS %d/%d\nSECRETOS 0/0\n%s\n\n[E] despertar" % [
+	_small.text = Controls.keys_in("TIEMPO %02d:%02d\nBAJAS %d/%d\nSECRETOS 0/0\n%s\n\n[E] despertar") % [
 		int(time) / 60, int(time) % 60, kills, total, finish_note]
 
 

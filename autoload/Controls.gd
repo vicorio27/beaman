@@ -65,6 +65,29 @@ static func set_touch_pref(pref: String) -> void:
 	cfg.save(SETTINGS)
 
 
+## Cómo se llama el botón de una acción en lo que tiene el jugador en la mano: en el celular, la letra
+## del botón en pantalla ("A"); si no, la tecla ("E"). Para los avisos ("[E] agarrar").
+static func key_name(action: String) -> String:
+	var touch_names := {"interact": "A", "cancel": "B", "inventory": "I", "drop": "X", "sniff": "huella", "libreta": "libro"}
+	if touch() and touch_names.has(action):
+		return touch_names[action]
+	var keys: Array = ACTIONS.get(action, [])
+	return OS.get_keycode_string(keys[0]) if not keys.is_empty() else action
+
+
+## En el celular, los textos que nombran teclas ("E: golpe", "[Q] dejar", "F: provocar") nombran el
+## botón en pantalla. Solo letras sueltas (una E sola, no la de una palabra).
+static func keys_in(text: String) -> String:
+	if not touch():
+		return text
+	var out := text
+	for pair in [["E", "A"], ["Q", "B"], ["F", "huella"], ["Tab", "I"]]:
+		var re := RegEx.new()
+		re.compile("(?<![\\wÁÉÍÓÚáéíóúñÑ'])%s(?![\\wÁÉÍÓÚáéíóúñÑ'])" % pair[0])
+		out = re.sub(out, pair[1], true)
+	return out
+
+
 ## Hasta dónde llega el texto a la derecha: con controles en pantalla, la franja x > 286 es de los botones.
 static func right_edge() -> float:
 	return 286.0 if touch() else 320.0

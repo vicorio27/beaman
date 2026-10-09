@@ -1469,3 +1469,35 @@ L (Select en el control, el librito en el celular, o L desde la mochila). Págin
   - Umbral de la patada: 42 px (el puño, 36). Más lejos, el botón le tira una bolsa de harina del camión: le quita 1 de vida y lo hace tambalear.
   - Cuando la patada o el puño conecta, el golpeado se acomoda contra el pie o el puño (FOOT/FIST) y después sale para atrás.
   - Los "¡TOMA!", "¡PAF!" y "¡PUF!" van quietos en la franja entre el medidor y el techo, nunca sobre el letrero del camión.
+
+## Que todo pida algo del jugador (revisión de jugabilidad)
+
+`tools/bot_jugar.gd` juega cada escena con dos políticas:
+- `idle`: no hace nada.
+- `mash`: machaca el botón.
+
+Si `idle` gana, esa parte no pide nada. Si `mash` gana fácil, es plana.
+
+**Reglas que salieron de la revisión:**
+- **El botón hace lo que tiene sentido según dónde está el otro:**
+  - Callejón: si el único a tiro está atrás, se da vuelta. Con un matón encima, pega en vez de agarrar el arma del piso. La botella se rompe en la cabeza del que está al lado y se tira al que está lejos.
+  - Camión: igual. Si todos están atrás, se voltea. Mientras saca otra bolsa no patea al aire.
+- **Caer cuesta:** en el beat 'em up, sin vida queda tirado: "¡LEVANTATE!", machacar el botón y −1000 puntos.
+- **Las reglas que se anuncian se cumplen:**
+  - Fuente: moverse con el "!" te pilla. Meter la mano donde no hay moneda hace que el celador se dé vuelta antes.
+  - Sigilo: E de frente avisa ("por la espalda") y el guardia sospecha.
+- **Carreras con rivales:** E ya no acelera.
+  - Rival al lado: patada, con la pierna dibujada. Lo frena, lo corre de carril y deja de tirar cosas.
+  - Rival adelante: botella. Hay 3, y se recarga una cada 10 s.
+  - Los rivales alcanzan menos al que va adelante.
+- **Pedir:**
+  - El tipo de persona no se escribe hasta que se lo conoce. Se lee por la ropa y por cómo camina: el apurado va rápido.
+  - Lukas se cansa si se repite el truco.
+- **Plomo:** ayuda para apuntar (como Doom), más generosa en el celular.
+- **Lo bueno del barrio:**
+  - Pelaos: penales (`Penal.gd`), mirándole el cuerpo al que patea.
+  - Columpio, atardecer y perro: un toque de ritmo (`Ritmo.gd`).
+  - Banca: se elige qué mirar.
+- **Teclas en el celular:**
+  - `Controls.keys_in()` cambia "E", "Q", "F" por "A", "B", "huella" en diálogos, avisos y carteles.
+  - Hay botón táctil C (armar) con la mochila abierta.

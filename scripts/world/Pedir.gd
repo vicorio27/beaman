@@ -5,6 +5,9 @@ extends Node2D
 ## A cada tipo le funciona otra cosa (aprenderlo es el juego). Equivocarse trae desprecio
 ## (baja el ánimo). Sin ánimo, los chistes no salen. Con Lukas sin comer, no hay truco.
 ## La segunda vez en el mismo día y lugar, la compasión rinde la mitad.
+## Qué tipo es cada uno no está escrito: se lee por cómo se ve y cómo camina (el apurado va rápido).
+## El cartelito con el tipo aparece cuando ya se lo conoce (después de la primera vez con ese tipo).
+## Lukas se cansa: después del segundo truco seguido rinde menos (hay que alternar).
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const W := 320.0
@@ -71,6 +74,7 @@ var _legend: Label
 var _type_label: Label
 var _bubble: Label
 var _me_line: Label
+var _lukas_uses := 0  # trucos seguidos (se cansa)
 var _people_left := PEOPLE
 var _line_i := 0
 
@@ -195,8 +199,10 @@ func _process(delta: float) -> void:
 	if state != "play" or current.is_empty():
 		return
 	var spr: AnimatedSprite2D = current["sprite"]
-	spr.position.x += WALK_SPEED * delta * (0.4 if current["done"] and spr.position.x < ZONE.y else 1.0)
-	_type_label.text = current["type"]
+	var pace: float = 1.8 if current["type"] == "APURADO" else (0.8 if current["type"] == "SEÑORA" else 1.0)
+	spr.position.x += WALK_SPEED * pace * delta * (0.4 if current["done"] and spr.position.x < ZONE.y else 1.0)
+	var known: Array = GameState.flags.get("pedir_conocidos", [])
+	_type_label.text = current["type"] if current["type"] in known else "?"
 	_type_label.position = spr.position + Vector2(-_type_label.text.length() * 4.0, -34)
 	# Que no se salgan de la pantalla ("BRERO") ni se metan debajo de los botones táctiles.
 	_type_label.position.x = clampf(_type_label.position.x, 2.0, Controls.right_edge() - _type_label.text.length() * 8.0)
@@ -234,6 +240,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _choose(action: String) -> void:
 	current["done"] = true
+	var known: Array = GameState.flags.get("pedir_conocidos", [])
+	if not current["type"] in known:
+		known.append(current["type"])  # después de verlo reaccionar, ya sabe qué tipo de persona es
+		GameState.flags["pedir_conocidos"] = known
+	if action == "lukas":
+		_lukas_uses += 1
+	else:
+		_lukas_uses = 0
 	var rule: Array = TYPES[current["type"]][2][action]
 	var chance: float = rule[0]
 	if action != "nada":
@@ -255,6 +269,9 @@ func _choose(action: String) -> void:
 		chance *= 0.3
 	if action == "lukas" and GameState.lukas_knows("pata") and current["type"] == "SEÑORA":
 		chance = 1.0  # las señoras no se resisten
+	if action == "lukas" and _lukas_uses > 2 and GameState.lukas_alive():
+		chance *= maxf(0.3, 1.0 - 0.25 * (_lukas_uses - 2))  # cansado de hacer lo mismo
+		_me_line.text = "(Lukas hace el truco bostezando. Ya lo hizo %d veces seguidas.)" % _lukas_uses
 	if randf() < chance:
 		var amount: int = rule[1] / (2 if _half else 1)
 		if action == "lukas" and GameState.lukas_knows("sentarse"):

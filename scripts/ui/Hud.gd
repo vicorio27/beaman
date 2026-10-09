@@ -88,9 +88,15 @@ func _ready() -> void:
 	_others.add_theme_color_override("font_color", Color(0.7, 0.68, 0.64))
 	_toast = _label(Vector2(0, 40))
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast.size = Vector2(320, 24)
+	_toast.size = Vector2(Controls.right_edge(), 24)  # la franja derecha: botones táctiles
 	_toast.add_theme_constant_override("outline_size", 3)
 	_toast.add_theme_color_override("font_outline_color", Color.BLACK)
+	# Con fondo: así no se mezcla con los letreros del mapa ("ARMAR", "PESCAR") que queden detrás.
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.04, 0.05, 0.85)
+	bg.content_margin_top = 2
+	bg.content_margin_bottom = 2
+	_toast.add_theme_stylebox_override("normal", bg)
 	_toast.modulate.a = 0.0
 	GameState.quest_changed.connect(_on_quest_changed)
 	GameState.skill_learned.connect(_show_skill)

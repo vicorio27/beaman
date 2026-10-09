@@ -144,7 +144,11 @@ func _label(pos: Vector2, color: Color) -> Label:
 ## Muestra las líneas ([quién, texto] o solo texto) y, al final, las opciones.
 func talk(lines: Array, choices: Array = []) -> int:
 	Narrator.hide_now()  # que no se mezclen dos textos
-	_lines = _paginate(lines)
+	# En el celular, "E: golpe" dice "A: golpe" (antes de partir en páginas: puede cambiar el largo).
+	var shown := []
+	for l in lines:
+		shown.append([l[0], Controls.keys_in(str(l[1]))] if l is Array else Controls.keys_in(str(l)))
+	_lines = _paginate(shown)
 	_choices = choices
 	_keep_company(lines)
 	_index = 0

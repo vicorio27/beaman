@@ -1671,6 +1671,8 @@ func _atardecer() -> void:
 	sky.add_child(tint)
 	get_tree().root.add_child(sky)
 	create_tween().tween_property(tint, "modulate:a", 1.0, 1.5)
+	var photo: int = await Ritmo.play(self, "Cuando el sol toque el cerro", 1,
+		{"zone": 18.0, "speed": 60.0, "color": Color(0.98, 0.6, 0.3), "hit": "Guardado. Nítido.", "miss": "Se movió. Igual queda."})
 	var lines := [["", "(El sol se mete detrás de los cerros. El río se pone naranja, después rosado, después de un color que no tiene nombre.)"],
 		["", "(Los carros siguen pasando por detrás. Nadie más se detiene. Él sí.)"],
 		["ÉL", "Gratis. Esto es gratis. Lo único bonito de la ciudad que no cobra, y nadie lo mira."]]
@@ -1678,9 +1680,11 @@ func _atardecer() -> void:
 		lines.append(["", "(Lukas se sienta a su lado, de cara al sol, con los ojos entrecerrados. Los dos igual de quietos.)"])
 	if GameState.day >= 3:
 		lines.append(["ÉL", "A Victoria le gustaban los atardeceres. Decía que el sol se iba a dormir a otra casa. Ojalá tenga razón. Ojalá sea una casa buena."])
+	if photo > 0:
+		lines.append(["ÉL", "Lo guardé. Ese no me lo quita nadie: no tiene precio y no se puede robar."])
 	await Dialogue.talk(lines)
 	TimeManager.skip(maxf(0.0, 19.0 - TimeManager.minutes / 60.0))
-	GameState.change_mood(8.0)
+	GameState.change_mood(8.0 + photo * 3.0)
 	GameState.company(5.0)
 	var out := create_tween()
 	out.tween_property(tint, "modulate:a", 0.0, 1.5)
@@ -1714,18 +1718,7 @@ func _pelaos() -> void:
 	if i != 0:
 		return
 	f["pelaos_jugo"] = true
-	var saved := 0
-	for k in 5:
-		var shot: Array = PELAOS_SHOTS[k]
-		var j := await Dialogue.talk([shot], ["Tirarse a la izquierda", "Quedarse en el medio", "Tirarse a la derecha"])
-		var aim := randi() % 3
-		if j == aim:
-			saved += 1
-			await Dialogue.talk([["", ["(¡La ataja! Con la panza, pero la ataja.)", "(¡La saca con la punta de los dedos!)",
-				"(La pelota le pega en la cara y sale. Cuenta.)"].pick_random()]])
-		else:
-			await Dialogue.talk([["", ["(Gol. Por el otro lado. Él sigue tirado en el piso mirando el cielo.)", "(Gol. Por entre las piernas. Los pelados lo celebran como un Mundial.)",
-				"(Gol. Le pasó por encima. Él no salta: ya no salta.)"].pick_random()]])
+	var saved: int = await Penal.play(self, PELAOS_SHOTS)
 	var end := []
 	if saved >= 3:
 		end = [["EL CHINO", "—¡%d de 5! ¡Usted es una pared, señor! ¿Viene mañana?" % saved],
@@ -1759,13 +1752,22 @@ const BANCA_VIEW := [
 ]
 
 
+const BANCA_WHAT := ["La señora que barre", "El del colchón en la bici", "Los viejitos de la tienda",
+	"La niña y el aviso", "El carrito de helados"]
+
+
 func _banca_parquecito() -> void:
 	var f := GameState.flags
 	var idx := int(f.get("banca_vista", 0))
 	f["banca_vista"] = idx + 1
-	var view: Array = BANCA_VIEW[idx % BANCA_VIEW.size()]
-	var i := await Dialogue.talk([["", "(Una banca vieja en el parquecito. Se sienta. Desde acá se ve medio barrio.)"]] + view,
-		["Quedarse un rato (1 hora)", "Seguir"])
+	# Qué mirar: tres cosas del barrio (cambian cada vez).
+	var opts: Array = []
+	for k in 3:
+		opts.append((idx + k) % BANCA_VIEW.size())
+	var pick := await Dialogue.talk([["", "(Una banca vieja en el parquecito. Se sienta. Desde acá se ve medio barrio. ¿Qué mira?)"]],
+		opts.map(func(o): return BANCA_WHAT[o]))
+	var view: Array = BANCA_VIEW[opts[pick]]
+	var i := await Dialogue.talk(view, ["Quedarse un rato (1 hora)", "Seguir"])
 	if i != 0:
 		return
 	TimeManager.skip(1.0)
@@ -1791,11 +1793,17 @@ func _columpio() -> void:
 		lines += [["", ["(Se mece despacio. Las cadenas suenan como una canción que nadie terminó.)",
 			"(Se mece. Un pelado pasa y lo mira raro. Él se mece más alto.)",
 			"(Se mece con los ojos cerrados. Por un rato no es nadie. Es descansado no ser nadie.)"].pick_random()]]
-	if GameState.lukas_alive():
-		lines.append(["", "(Lukas le ladra al columpio cada vez que va para adelante. Cada vez. No se cansa.)"])
 	await Dialogue.talk(lines)
+	var hits: int = await Ritmo.play(self, "Impulsarse cuando llega atrás", 5,
+		{"hit": "¡Más alto!", "miss": "Se frena un poco.", "speed": 90.0, "speedup": 22.0})
+	var end := ["(Se mece bajito. Igual cuenta.)", "(Se mece. El estómago se le sube un poquito.)",
+		"(Va alto. Las cadenas crujen. Él no se baja.)", "(Va tan alto que por un segundo ve por encima del muro. Y se ríe. Sin sonido, pero se ríe.)"]
+	var after := [["", end[clampi(hits - 1, 0, 3)]]]
+	if GameState.lukas_alive():
+		after.append(["", "(Lukas le ladra al columpio cada vez que va para adelante. Cada vez. No se cansa.)"])
+	await Dialogue.talk(after)
 	TimeManager.skip(0.5)
-	GameState.change_mood(4.0)
+	GameState.change_mood(2.0 + hits)
 	await _bueno("columpio")
 
 
@@ -1816,6 +1824,9 @@ func _perro_barrio() -> void:
 			tail = "(Le dice Firulais. El perro lo mira con lástima. Pero mueve la cola. Se queda Firulais.)"
 		await Dialogue.talk([["", tail]])
 	else:
+		var scratch: int = await Ritmo.play(self, "Rascarle la oreja a %s" % name, 3,
+			{"hit": "Mueve la pata de atrás.", "miss": "Ahí no.", "speed": 100.0})
+		GameState.company(4.0 * scratch)
 		var lines := [["", ["(%s le pone la cabeza en la rodilla. Huele a calle, a lluvia, a perro feliz.)" % name,
 			"(%s le trae un palo. No se lo suelta. El juego es ese: no soltarlo.)" % name,
 			"(%s se le echa a los pies, panza arriba. Exige. Él obedece.)" % name].pick_random()]]

@@ -20,6 +20,7 @@ const BUTTONS := [
 	["drop", "touch_x", Vector2(264, 128), Vector2(298, 88), Vector2(298, 108)],
 	["sniff", "touch_l", Vector2(238, 132), null, Vector2(298, 88)],
 	["libreta", "touch_lib", Vector2(274, 106), Vector2(298, 68), null],
+	["craft", "touch_c", null, Vector2(298, 48), null],  # armar: solo con una pantalla abierta (la mochila)
 ]
 
 var _stick_finger := -1
@@ -47,7 +48,7 @@ func _ready() -> void:
 		var t := TouchScreenButton.new()
 		t.texture_normal = load("res://assets/ui/%s.png" % b[1])
 		t.action = b[0]
-		t.position = b[2]
+		t.position = b[2] if b[2] != null else Vector2.ZERO
 		t.passby_press = true
 		var shape := CircleShape2D.new()
 		shape.radius = t.texture_normal.get_width() * 0.5 + 3.0  # un poco más grande que el dibujo

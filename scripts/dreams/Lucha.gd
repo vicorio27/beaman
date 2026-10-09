@@ -458,7 +458,19 @@ func _reset() -> void:
 
 # ---------------------------------------------------------------- Bucle
 
+## En el celular, los carteles que dicen "E" / "F" dicen el botón en pantalla.
+var _shown_keys := {}
+func _touch_keys() -> void:
+	if not Controls.touch():
+		return
+	for l in [_sign, _center, _call]:
+		if l and l.text != _shown_keys.get(l, ""):
+			l.text = Controls.keys_in(l.text)
+			_shown_keys[l] = l.text
+
+
 func _process(delta: float) -> void:
+	_touch_keys()
 	_t += delta
 	_shake = maxf(0.0, _shake - delta * 2.0)
 	_call_cd -= delta
@@ -818,7 +830,7 @@ func _perform(a: W, b: W, move: String) -> void:
 			a.state = "idle"
 			b.state = "idle"
 			b.cd = 0.8
-			_center.text = "¡E!"
+			_center.text = Controls.keys_in("¡E!")
 			var t := 0.4
 			while t > 0.0:
 				if not is_inside_tree():

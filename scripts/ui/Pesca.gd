@@ -83,8 +83,8 @@ func _new_cast() -> void:
 	_t = 0.0
 	_bite_at = randf_range(2.0, 5.0)
 	_nibbles = [randf_range(0.6, _bite_at - 0.4)] if randf() < 0.7 else []
-	_msg.text = "Espera... [E] cuando pique"
-	_count.text = "Lanzada %d de %d   [Q] dejar" % [_cast + 1, CASTS]
+	_msg.text = Controls.keys_in("Espera... [E] cuando pique")
+	_count.text = Controls.keys_in("Lanzada %d de %d   [Q] dejar" % [_cast + 1, CASTS])
 
 
 func _process(delta: float) -> void:

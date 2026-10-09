@@ -154,6 +154,12 @@ func walk_bounds(who: Node = null) -> Rect2:
 	return Rect2(margin, BAND.x, 320.0 - margin * 2.0, BAND.y - BAND.x)
 
 
+func foes() -> Array:
+	if lilato and is_instance_valid(lilato) and phase == Phase.LILATO:
+		return [lilato]
+	return []
+
+
 func resolve_attack(attacker: Brawler, reach: float, damage: int, heavy: bool) -> void:
 	var landed := false
 	if attacker == player:

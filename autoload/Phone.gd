@@ -38,7 +38,7 @@ func _ready() -> void:
 	_root.add_child(panel)
 	_label("LLAMADA", Vector2(186, 122), Color(0.6, 0.85, 0.55))
 	_caller = _label("", Vector2(186, 133), Color(0.95, 0.8, 0.45))
-	_hint = _label("[E]sí [Q]no", Vector2(186, 145), Color(0.6, 0.57, 0.55))
+	_hint = _label(Controls.keys_in("[E]sí [Q]no"), Vector2(186, 145), Color(0.6, 0.57, 0.55))
 	_phone = TextureRect.new()
 	_phone.texture = load("res://assets/ui/phone.png")
 	_phone.position = Vector2(148, 112)

@@ -102,7 +102,7 @@ func _ready() -> void:
 	_text.position = Vector2(0, 150)
 	_text.size = Vector2(Controls.right_edge(), 12)
 	_text.add_to_group("under_dialogue")
-	_text.text = "E: patear"
+	_text.text = Controls.keys_in("E: patear")
 	ui.add_child(_text)
 	_flash = ColorRect.new()
 	_flash.color = Color(1, 1, 1, 1)

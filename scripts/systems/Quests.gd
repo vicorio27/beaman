@@ -86,7 +86,12 @@ const DEFS := {
 const KIND_LABEL := {"main": "PRINCIPAL", "side": "SECUNDARIA", "optional": "OPCIONAL"}
 
 
+## El título que se muestra (en el celular, "[F]" dice el botón de la huella).
 static func title(id: String) -> String:
+	return Controls.keys_in(_title_raw(id))
+
+
+static func _title_raw(id: String) -> String:
 	if id == "sobrevivir":
 		return "Día %d: llegá a la noche" % GameState.day
 	if id == "recoger_cedula" and GameState.flags.has("cedula_day"):

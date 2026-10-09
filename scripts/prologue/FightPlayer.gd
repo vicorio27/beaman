@@ -4,9 +4,12 @@ extends Brawler
 ##   - Sin arma: golpe, golpe, patada (la patada tira al piso).
 ##   - Parado sobre un arma + botón: la agarra.
 ##   - Cuchillo / caño: cada botón es un ataque con el arma; se gastan con el uso.
-##   - Botella: se tira hacia adelante y se rompe contra el primero que agarra.
+##   - Botella: si hay alguien al lado, se la rompe en la cabeza; si están lejos, se la tira.
 ##   - Si lo tiran al piso, suelta el arma.
-## Si se queda sin vida no hay game over: cae y se levanta con media vida.
+##   - El botón hace lo que tiene sentido: si el único a tiro está atrás, se da vuelta y le pega;
+##     con un matón encima, pega en vez de agarrar el arma del piso.
+## Sin vida: queda tirado hasta que se machaca el botón (¡LEVANTATE!); pierde puntos y se levanta con
+## media vida.
 
 signal hurt(hp_ratio: float)
 
@@ -36,6 +39,14 @@ var _queued := false
 var _since_attack := 99.0
 var _hit_done := false
 var _weapon_frames := {}
+var _ko := false  # tirado sin vida: hay que machacar para levantarse
+var _ko_presses := 0
+var _ko_t := 0.0
+var _ko_label: Label
+const KO_PRESSES := 6
+const KO_MAX := 4.0  # si no machaca, igual se levanta (más tarde)
+const KO_PENALTY := 1000
+const REACH_CHECK := 34.0
 
 
 func build_frames() -> SpriteFrames:
@@ -74,7 +85,9 @@ func tick(delta: float) -> void:
 		return
 
 	if attack:
-		if weapon == "" and arena.has_method("try_pickup") and arena.try_pickup(self):
+		_face_threat()
+		var busy_close := _foe_at(REACH_CHECK, facing) != null
+		if weapon == "" and not busy_close and arena.has_method("try_pickup") and arena.try_pickup(self):
 			return
 		if weapon != "":
 			_start_weapon_attack()
@@ -83,6 +96,28 @@ func tick(delta: float) -> void:
 			_start_attack(next)
 		return
 	walk(Input.get_vector("move_left", "move_right", "move_up", "move_down"), delta)
+
+
+## El matón más cercano a tiro hacia `dir` (alineado en la profundidad), o null.
+func _foe_at(reach: float, dir: int) -> Brawler:
+	if not arena.has_method("foes"):
+		return null
+	var best: Brawler = null
+	var best_d := reach
+	for f in arena.foes():
+		if not is_instance_valid(f) or f.state in [State.OUT, State.DOWN, State.GETUP]:
+			continue
+		var dx: float = (f.position.x - position.x) * dir
+		if absf(f.position.y - position.y) <= 10.0 and dx >= -4.0 and dx <= best_d:
+			best = f
+			best_d = dx
+	return best
+
+
+## Si adelante no hay nadie a tiro pero atrás sí: se da vuelta antes de pegar.
+func _face_threat() -> void:
+	if _foe_at(REACH_CHECK, facing) == null and _foe_at(REACH_CHECK, -facing) != null:
+		set_facing(-facing)
 
 
 func _start_attack(step: int) -> void:
@@ -120,7 +155,13 @@ func _on_frame_changed() -> void:
 func _use_weapon() -> void:
 	var w: Dictionary = WEAPONS[weapon]
 	if w.get("throw", false):
-		arena.throw_item(self, weapon)
+		if _foe_at(28.0, facing) != null:
+			# Pegado a él: no se la tira, se la rompe en la cabeza.
+			arena.resolve_attack(self, 28.0, 12, true)
+			if arena.has_method("break_item"):
+				arena.break_item(weapon, position + Vector2(facing * 12, 0))
+		else:
+			arena.throw_item(self, weapon)
 		unequip()
 		return
 	arena.resolve_attack(self, w["reach"], w["damage"], w["heavy"])
@@ -162,10 +203,46 @@ func _on_hurt(_damage: int) -> void:
 	hurt.emit(clampf(float(hp) / max_hp, 0.0, 1.0))
 
 
-## Sin game over: se levanta con media vida.
+## Sin vida: queda tirado. Machacar el botón lo levanta (si no, se levanta solo, tarde). Pierde puntos.
 func _go_out() -> void:
-	hp = max_hp / 2
-	state = State.GETUP
-	_timer = GETUP_TIME * 2
-	play("crouch")
-	hurt.emit(float(hp) / max_hp)
+	state = State.OUT
+	_ko = true
+	_ko_presses = 0
+	_ko_t = 0.0
+	Dream.score = maxi(0, Dream.score - KO_PENALTY)
+	if _ko_label == null:
+		_ko_label = Label.new()
+		_ko_label.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+		_ko_label.add_theme_font_size_override("font_size", 8)
+		_ko_label.add_theme_constant_override("outline_size", 3)
+		_ko_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		_ko_label.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+		_ko_label.position = Vector2(-44, -52)
+		_ko_label.z_index = 500
+		add_child(_ko_label)
+	_ko_label.visible = true
+
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if not _ko:
+		return
+	_ko_t += delta
+	var key := "A" if Controls.touch() else "E"
+	_ko_label.text = "¡LEVANTATE! %s" % ("[%s]" % key if int(_ko_t * 6) % 2 == 0 else " %s " % key)
+	# Que no se salga de la pantalla si cayó en un borde.
+	var sx: float = get_global_transform_with_canvas().origin.x - 44.0
+	var w := _ko_label.text.length() * 8.0
+	_ko_label.position.x = -44.0 + (clampf(sx, 2.0, Controls.right_edge() - w) - sx)
+	if Input.is_action_just_pressed("interact"):
+		_ko_presses += 1
+		sprite.position.x = randf_range(-1.5, 1.5)  # se sacude con cada intento
+	if _ko_presses >= KO_PRESSES or _ko_t >= KO_MAX:
+		_ko = false
+		_ko_label.visible = false
+		sprite.position.x = 0.0
+		hp = max_hp / 2
+		state = State.GETUP
+		_timer = GETUP_TIME * 2
+		play("crouch")
+		hurt.emit(float(hp) / max_hp)

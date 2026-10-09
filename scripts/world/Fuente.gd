@@ -3,7 +3,8 @@ extends Node2D
 ## Vista desde arriba del agua. La mano se mueve con las flechas; interactuar = agarrar.
 ## El agua engaña: las monedas se ven corridas de donde están de verdad (refracción), y la
 ## diferencia cambia con las ondas. El celador da vueltas por el borde: cuando se gira ("!"),
-## hay que quedarse quieto. Si te ve agarrando, te echa (te quedás con la mitad).
+## hay que quedarse quieto: si te ve moviendo la mano o agarrando, te echa (te quedás con la mitad).
+## Meter la mano donde no hay moneda salpica: el celador oye y se da vuelta antes ("?").
 ## Una vez por día (los deseos se reponen).
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
@@ -25,6 +26,7 @@ var state := "intro"            # intro, play, done
 var guard := "away"             # away, turning, looking
 var _guard_t := 3.0
 var _t := 0.0
+var _moved_t := 0.0
 var _splashes: Array = []       # {"pos", "t"}
 var _guard_sprite: AnimatedSprite2D
 var _guard_mark: Label
@@ -54,7 +56,7 @@ func _ready() -> void:
 	_hint.size = Vector2(Controls.right_edge(), 10)  # a la derecha, los botones táctiles
 	_hint.add_to_group("under_dialogue")
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.text = "[E] agarrar  -  ¡que no te vea!"
+	_hint.text = "[%s] agarrar  -  con \"!\" ¡quieto!" % ("A" if Controls.touch() else "E")
 	_guard_mark = _label(ui, Vector2(156, 2))
 	_guard_mark.add_theme_color_override("font_color", Color(1, 0.4, 0.3))
 	_guard_mark.add_theme_font_size_override("font_size", 16)
@@ -86,6 +88,14 @@ func _process(delta: float) -> void:
 		return
 	time_left -= delta
 	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	# Mirando él: la mano quieta. Un instante de margen (lo que tarda en enfocar).
+	if guard == "looking" and dir.length() > 0.2:
+		_moved_t += delta
+		if _moved_t > 0.25:
+			_finish(true)
+			return
+	else:
+		_moved_t = 0.0
 	hand += dir * HAND_SPEED * delta
 	hand.x = clampf(hand.x, 20, W - 20)
 	hand.y = clampf(hand.y, 36, H - 14)
@@ -131,6 +141,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			got += c["value"]
 			coins.erase(c)
 			return
+	# Al agua sin moneda: salpica, y el celador lo oye.
+	if guard == "away":
+		_guard_t = minf(_guard_t, 0.6)
+		_guard_mark.text = "?"
 
 
 ## Donde se ve la moneda (no donde está): la onda la corre.

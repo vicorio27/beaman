@@ -6,6 +6,7 @@ extends Node2D
 ## postes, vallas y casas van al costado; en la calle hay tráfico (taxi, buseta, camión), baches
 ## y conos.
 ##   Arriba / E: acelerar. Abajo: frenar. Izquierda / derecha: doblar.
+##   (En las carreras de los sueños E no acelera: es la patada / la botella; ver Carrera.gd.)
 ## Al llegar: la imagen de la llegada, ella en la puerta, y de vuelta al presente.
 
 const W := 320.0
@@ -75,6 +76,7 @@ class Seg:
 
 
 ## Lo que cambia cada carrera (la serie CARRERAS lo cambia en setup()).
+var accel_on_interact := true  # E acelera (en las carreras con rivales, E pega)
 var sky_top := SKY_TOP
 var sky_low := SKY_LOW
 var haze := HAZE
@@ -288,7 +290,7 @@ func _ride(dt: float) -> void:
 		player_x += dx
 		_lean = 1
 	player_x -= dx * pct * pseg.curve * CENTRIFUGAL
-	if Input.is_action_pressed("move_up") or Input.is_action_pressed("interact"):
+	if Input.is_action_pressed("move_up") or (accel_on_interact and Input.is_action_pressed("interact")):
 		speed += ACCEL * dt
 	elif Input.is_action_pressed("move_down"):
 		speed += BRAKE * dt
@@ -425,8 +427,15 @@ func _draw() -> void:
 	if state != "arrival":
 		var tex: Texture2D = _bike[_lean]
 		var bounce := sin(Time.get_ticks_msec() / 60.0) * (1.0 if absf(player_x) > 1.0 else 0.3) * (speed / MAX_SPEED)
-		draw_texture(tex, Vector2(W / 2.0 - tex.get_width() / 2.0, H - tex.get_height() - 4 + bounce))
+		var at := Vector2(W / 2.0 - tex.get_width() / 2.0, H - tex.get_height() - 4 + bounce)
+		draw_texture(tex, at)
+		_draw_rider_extra(at, tex.get_size())
 	draw_set_transform(Vector2.ZERO)
+
+
+## Para sobreescribir: algo más del que maneja (la pierna de la patada en las carreras).
+func _draw_rider_extra(_at: Vector2, _size: Vector2) -> void:
+	pass
 
 
 func _draw_background() -> void:

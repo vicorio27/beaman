@@ -413,7 +413,10 @@ func _act() -> void:
 		var to_me := (me_pos - g.pos).normalized()
 		var behind := facing.dot(to_me) < 0.2 or g.state == "eat"
 		if not behind:
-			continue
+			# De frente no se puede: se da cuenta (sospecha) y él lo sabe.
+			g.sus = maxf(g.sus, 0.5)
+			_say("De frente no. Me está mirando. Por la espalda.")
+			return
 		if g.boss:
 			if L.get("cameras", false) and panels < panels_total:
 				_say("Todavía hay cámaras prendidas. Él lo vería. Él siempre ve.")
@@ -436,6 +439,7 @@ func _act() -> void:
 			g.node.rotation = PI / 2
 			_say(["Lo duermo. Ronca. Igual que en las reuniones.", "Uno menos. Se va a despertar con un tortícolis y una historia."].pick_random())
 		return
+	_say("(Nada a la mano. E sirve por la espalda de alguien o en un tablero.)")
 
 
 func _throw_cup(dir: Vector2) -> void:

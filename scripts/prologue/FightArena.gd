@@ -267,6 +267,11 @@ func _pick_aggressive() -> void:
 
 
 ## Resuelve un golpe: pega a quien esté adelante del atacante, a la misma profundidad y al alcance.
+## Contra quién pelea el jugador ahora (para que el botón haga lo que tiene sentido según dónde estén).
+func foes() -> Array:
+	return _alive
+
+
 func resolve_attack(attacker: Brawler, reach: float, damage: int, heavy: bool) -> void:
 	var targets: Array = _alive if attacker == player else [player]
 	var landed := false

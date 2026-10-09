@@ -12,6 +12,9 @@ extends "res://scripts/world/MotoRide.gd"
 ##   Camila → La Devoradora (se infla, tira carteras y estira los brazos: si te agarra, te frena).
 ##   Guillermo → el marrano con gafas y cadenas de oro: tira cadenas de oro al camino.
 ## Ganar: llegar primero. Perder: revancha o despertarse. La huida: tres veces alcanzado = atrapado.
+## Pelear (como Road Rash): E con el rival al lado = patada (lo frena, lo corre de carril y deja de
+## tirar cosas un rato). E con el rival adelante, lejos = botella (3; se recarga una cada 10 s): si le
+## llega en su carril, lo frena. En la huida (sin rivales) E sigue acelerando.
 
 const NIGHT := "res://scenes/world/Night.tscn"
 const FIST_FIGHT := "res://scenes/dreams/PeleaGuillermo.tscn"
@@ -123,9 +126,27 @@ func setup() -> void:
 	goal_label = ep["goal"]
 
 
+const KICK_GAP := 1.3  # segmentos: "al lado"
+const KICK_LANE := 0.6
+const THROW_GAP := 34.0  # hasta dónde llega la botella
+const BOTTLES := 3
+const BOTTLE_REFILL := 10.0
+
+var _bottles := BOTTLES
+var _refill := BOTTLE_REFILL
+var _kick_t := 0.0
+var _kick_side := 0.0
+var _say_t := 0.0
+var _hud_ammo: Label
+
+
 func _ready() -> void:
 	Narrator.top_y = 26.0  # que los textos no tapen la calle
 	super._ready()
+	accel_on_interact = ep.get("chase", false)
+	if not accel_on_interact:
+		_hud_ammo = _hud_label(_hud_time.get_parent(), Vector2(6, 166), Color(0.85, 0.95, 1.0))
+		_tex["botella"] = load("res://assets/prologue/item_bottle.png")
 	for n in ["camila_moto", "camila_monstruo", "camila_copiloto", "guillermo_moto", "guillermo_marrano",
 			"camioneta", "camioneta_marrano", "patrulla", "camion_ejercito", "reten", "cadena", "bolso", "zapato"]:
 		_tex[n] = load("res://assets/moto/%s.png" % n)
@@ -185,6 +206,9 @@ func _countdown() -> void:
 	_hud_center.text = ep["title"]
 	await get_tree().create_timer(0.6).timeout
 	await super._countdown()
+	if not accel_on_interact:
+		var key := "A" if Controls.touch() else "E"
+		Narrator.say("^ acelerar   %s al lado: patada   %s lejos: botella" % [key, key], true)
 	if FinalRush.is_step("carrera") and not _phase2:
 		_start_phase2()
 
@@ -193,8 +217,10 @@ func _countdown() -> void:
 
 func _move_cars(dt: float) -> void:
 	var me := position_z + player_z
-	for car in cars:
-		if car.has("rival"):
+	for car in cars.duplicate():
+		if car.get("bottle", false):
+			_move_bottle(car, dt)
+		elif car.has("rival"):
 			_move_rival(car, dt, me)
 		elif car.get("police", false):
 			_move_police(car, dt, me)
@@ -213,8 +239,11 @@ func _move_rival(car: Dictionary, dt: float, me: float) -> void:
 	if me < finish_z * 0.88:
 		if gap > 12.0:
 			target *= 0.85
-		elif gap < -3.0:
-			target = MAX_SPEED * 1.05
+		elif gap < -8.0:
+			target = MAX_SPEED * 1.02  # lo alcanzan, pero ya no regalado: si va bien adelante, gana
+	if car.get("stun", 0.0) > 0.0:
+		car["stun"] -= dt
+		target *= 0.55  # le pegaron: se tambalea
 	target *= 1.0 + 0.05 * GameState.difficulty()  # más adelante en la historia, corren más
 	if ep["rivals"].size() > 1:
 		target *= 0.97  # dos rivales ya son bastante castigo
@@ -229,7 +258,7 @@ func _move_rival(car: Dictionary, dt: float, me: float) -> void:
 		kind = "bolso" if d["monster"] == "camila" else "cadena"
 	if kind != "":
 		car["throw_t"] -= dt
-		if car["throw_t"] <= 0.0 and gap > 4.0 and gap < 40.0:
+		if car["throw_t"] <= 0.0 and gap > 4.0 and gap < 40.0 and car.get("stun", 0.0) <= 0.0:
 			car["throw_t"] = (1.6 if kind == "cadena" else 2.4) * (1.25 if ep["rivals"].size() > 1 else 1.0)
 			var k := int(car["z"] / SEG_LEN) - 2
 			if k > 0 and k < segments.size():
@@ -262,6 +291,8 @@ func _move_police(car: Dictionary, dt: float, me: float) -> void:
 func _ride(dt: float) -> void:
 	super._ride(dt)
 	_caught_cd -= dt
+	if not accel_on_interact:
+		_fight(dt)
 	var me := position_z + player_z
 	if not _phase2 and me > finish_z * 0.5 and not ep["rivals"].is_empty():
 		_start_phase2()
@@ -290,6 +321,95 @@ func _start_phase2() -> void:
 	MusicDirector.force("plomo_boss")
 	_shake = 1.0
 	Narrator.say(" ".join(msgs), true)
+
+
+# ---------------------------------------------------------------- Pelear: patada y botella
+
+func _fight(dt: float) -> void:
+	_kick_t = maxf(0.0, _kick_t - dt)
+	_say_t -= dt
+	if _bottles < BOTTLES:
+		_refill -= dt
+		if _refill <= 0.0:
+			_refill = BOTTLE_REFILL
+			_bottles += 1
+	if not Input.is_action_just_pressed("interact"):
+		return
+	var me := position_z + player_z
+	var beside = null
+	var ahead = null
+	for car in cars:
+		if not car.has("rival") or car["done"]:
+			continue
+		var gap: float = (car["z"] - me) / SEG_LEN
+		if absf(gap) < KICK_GAP and absf(car["offset"] - player_x) < KICK_LANE:
+			beside = car
+		elif gap > 0.0 and gap < THROW_GAP and (ahead == null or car["z"] < ahead["z"]):
+			ahead = car
+	if beside != null:
+		# Patada: lo frena, lo corre de carril y se le pasan las ganas de tirar cosas.
+		_kick_side = signf(beside["offset"] - player_x)
+		if _kick_side == 0.0:
+			_kick_side = 1.0
+		_kick_t = 0.3
+		beside["stun"] = 1.6
+		beside["speed"] *= 0.6
+		beside["offset"] = clampf(beside["offset"] + _kick_side * 0.5, -1.2, 1.2)
+		beside["throw_t"] = maxf(beside["throw_t"], 3.5)
+		_shake = 0.5
+		_flash("¡PATADA!")
+	elif ahead != null:
+		if _bottles <= 0:
+			_flash("SIN BOTELLAS")
+			return
+		_bottles -= 1
+		_refill = BOTTLE_REFILL
+		_kick_t = 0.18  # el brazo (misma pierna/brazo hacia adelante)
+		_kick_side = 0.0
+		cars.append({"tex": _tex["botella"], "offset": player_x, "z": me + SEG_LEN * 0.3, "speed": MAX_SPEED * 1.5,
+			"w": 0.1, "bottle": true, "target": ahead})
+	else:
+		_flash("NADIE CERCA")
+
+
+## La botella va hacia adelante buscando el carril del rival; si le llega cerca, lo frena.
+func _move_bottle(b: Dictionary, dt: float) -> void:
+	var target: Dictionary = b["target"]
+	b["z"] += b["speed"] * dt
+	b["offset"] = move_toward(b["offset"], target["offset"], dt * 0.9)
+	if b["z"] >= target["z"]:
+		cars.erase(b)
+		if absf(b["offset"] - target["offset"]) < 0.35 and not target["done"]:
+			target["stun"] = 2.0
+			target["speed"] *= 0.6
+			target["throw_t"] = maxf(target["throw_t"], 3.0)
+			_flash("¡TOMA!")
+		else:
+			_flash("¡FALLÓ!")
+	elif (b["z"] - position_z - player_z) / SEG_LEN > THROW_GAP + 4.0:
+		cars.erase(b)
+
+
+func _flash(text: String) -> void:
+	_hud_center.text = text
+	_say_t = 0.7
+	var my := text
+	await get_tree().create_timer(0.7).timeout
+	if is_instance_valid(_hud_center) and _hud_center.text == my:
+		_hud_center.text = ""
+
+
+## La pierna de la patada (al lado del que pateó) o el brazo de la botella (adelante).
+func _draw_rider_extra(at: Vector2, size: Vector2) -> void:
+	if _kick_t <= 0.0:
+		return
+	var hip := at + Vector2(size.x * 0.5 + _kick_side * 4.0, size.y * 0.55)
+	var k := 1.0 - absf(_kick_t / 0.3 - 0.5) * 2.0  # sale y vuelve
+	var foot := hip + (Vector2(_kick_side * 44.0, -6.0) if _kick_side != 0.0 else Vector2(0, -34.0)) * clampf(k + 0.3, 0.0, 1.0)
+	draw_line(hip, foot, Color(0.16, 0.12, 0.14), 8.0)
+	draw_line(hip, foot, Color(0.26, 0.36, 0.57) if _kick_side != 0.0 else Color(0.84, 0.59, 0.47), 6.0)
+	draw_rect(Rect2(foot - Vector2(5, 3), Vector2(10, 6)), Color(0.12, 0.1, 0.12))
+	draw_rect(Rect2(foot - Vector2(4, 2), Vector2(8, 4)), Color(0.18, 0.16, 0.18) if _kick_side != 0.0 else Color(0.84, 0.59, 0.47))
 
 
 ## La Devoradora estira los brazos hacia un carril (avisa antes): si lo agarra, lo frena.
@@ -407,3 +527,5 @@ func _update_hud() -> void:
 				pos += 1
 		_hud_time.text = "POS %d/%d" % [pos, ep["rivals"].size() + 1]
 		_hud_extra.text = _clock(time)
+		if _hud_ammo:
+			_hud_ammo.text = "BOTELLAS " + "I".repeat(_bottles) + ".".repeat(BOTTLES - _bottles)

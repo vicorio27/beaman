@@ -74,8 +74,8 @@ func _ready() -> void:
 	_name.size = Vector2(TEXT_W, 10)
 	_name.clip_text = true
 	_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_label("[E]usar [X]tirar [C]armar", Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 6), Color(0.55, 0.52, 0.5))
-	_label("[L]libreta [Q]salir", Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 18), Color(0.55, 0.52, 0.5))
+	_label(Controls.keys_in("[E]usar [X]tirar [C]armar"), Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 6), Color(0.55, 0.52, 0.5))
+	_label(Controls.keys_in("[L]libreta [Q]salir"), Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 18), Color(0.55, 0.52, 0.5))
 	_desc.add_theme_font_size_override("font_size", 8)
 	GameState.inventory_changed.connect(_refresh)
 
@@ -189,7 +189,7 @@ func _refresh() -> void:
 		var ok := Items.can_craft(id)
 		_name.text = "ARMAR %d/%d: %s" % [_recipe + 1, Items.RECIPES.size(), Items.info(id)["name"]]
 		_desc.text = "Con: %s.\n%s\n[arriba/abajo] otra receta" % [Items.recipe_text(id),
-			"[E] armar" if ok else "Me falta algo."]
+			Controls.keys_in("[E] armar") if ok else "Me falta algo."]
 		_desc.add_theme_color_override("font_color", Color(0.6, 0.95, 0.6) if ok else Color(0.75, 0.72, 0.68))
 		return
 	_desc.add_theme_color_override("font_color", Color(0.75, 0.72, 0.68))
@@ -200,7 +200,7 @@ func _refresh() -> void:
 	else:
 		var it := Items.info(sel["id"])
 		_name.text = it["name"]
-		_desc.text = it["desc"]
+		_desc.text = Controls.keys_in(it["desc"])
 
 
 ## Principal primero (amarilla), después secundarias (blancas) y opcionales (grises).

@@ -67,7 +67,7 @@ func _ready() -> void:
 	_root.add_child(_after)
 	_detail = Control.new()
 	_root.add_child(_detail)
-	_label("[E]poner [Q]salir", Vector2(10, 164), DIM)
+	_label(Controls.keys_in("[E]poner [Q]salir"), Vector2(10, 164), DIM)
 	# Empieza en lo primero que se puede poner (si hay).
 	for i in ENTRIES.size():
 		if _state(ENTRIES[i][0]) == "listo":

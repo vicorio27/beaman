@@ -223,7 +223,7 @@ func _start_colado() -> void:
 	_colado.position = _slot(ahead) + Vector2(10, 40)
 	_colado.play("walk_side")
 	add_child(_colado)
-	_prompt.text = "[E] ¡LA FILA!"
+	_prompt.text = Controls.keys_in("[E] ¡LA FILA!")
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -59,7 +59,7 @@ func say(text: String, top := false) -> void:
 		return
 	_current = [text, top]
 	_scene = get_tree().current_scene
-	_label.text = text
+	_label.text = Controls.keys_in(text)
 	# Crece según el texto; abajo crece hacia arriba para no salirse de la pantalla.
 	if top:
 		# Arriba, en plena acción: fina, ancha (menos renglones) y casi transparente.

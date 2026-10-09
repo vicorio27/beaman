@@ -1,6 +1,6 @@
 """Botones táctiles para jugar desde el celular (versión web). Semitransparentes, con la letra adentro.
   touch_a.png  ACCIÓN (interact)     touch_b.png  ATRÁS (cancel)
-  touch_i.png  INVENTARIO            touch_x.png  SOLTAR (drop)
+  touch_i.png  INVENTARIO            touch_x.png  SOLTAR (drop)   touch_c.png  ARMAR (en la mochila)
   touch_l.png  LUKAS (sniff: su menú; una huellita)
   touch_lib.png LIBRETA (un librito)
   compania.png el ícono de la barra de compañía del HUD
@@ -88,6 +88,7 @@ if __name__ == "__main__":
     button("b", 22, "B", (220, 110, 110, 200))
     button("i", 18, "I", (120, 160, 230, 200))
     button("x", 18, "X", (230, 200, 110, 200))
+    button("c", 18, "C", (190, 140, 220, 200))  # armar (en la mochila)
     paw("l", 22, (192, 118, 60, 220))
     book("lib", 18, (200, 180, 140, 220))
     stick()

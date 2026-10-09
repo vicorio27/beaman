@@ -419,7 +419,7 @@ func _board(delta: float) -> void:
 
 	var in_range := _runner.position.x > TRUCK_REAR - 22.0
 	_prompt.visible = in_range and int(_t * 5) % 2 == 0
-	_prompt.text = "¡E! SALTA"
+	_prompt.text = Controls.keys_in("¡E! SALTA")
 	_prompt.position = Vector2(_runner.position.x - 30, 96)
 	if in_range and Input.is_action_just_pressed("interact"):
 		_grab_truck()
@@ -514,11 +514,19 @@ func _hang(delta: float) -> void:
 				_attack_hit()
 	_throw_cd -= delta
 	if Input.is_action_just_pressed("interact") and not _tuck and _attack < 0.08:
-		# Si nadie pasó el umbral de la patada pero hay alguien más lejos hacia donde mira: harina.
+		# Si adelante no hay nadie y atrás sí: se da vuelta (el botón es para el que está).
+		if _nearest_ahead(THROW_RANGE) == null:
+			_face = -_face
+			if _nearest_ahead(THROW_RANGE) == null:
+				_face = -_face  # no hay nadie en ningún lado: patea al aire, para donde miraba
+			_hanging.flip_h = _face > 0.0
+		# Si nadie pasó el umbral de la patada pero hay alguien más lejos: harina.
 		var far = _nearest_ahead(THROW_RANGE)
-		if _nearest_ahead(KICK_REACH.y) == null and far != null and _throw_cd <= 0.0:
-			_throw_target = far
-			_start_attack("throw")
+		if _nearest_ahead(KICK_REACH.y) == null and far != null:
+			if _throw_cd <= 0.0:
+				_throw_target = far
+				_start_attack("throw")
+			# recién tiró: espera a sacar otra bolsa (no patea al aire)
 		else:
 			_start_attack("punch" if _combo > 0.0 and _attack_kind == "kick" else "kick")
 
