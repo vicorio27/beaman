@@ -125,7 +125,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("sniff"):
 		get_viewport().set_input_as_handled()
 		menu()
-	elif event.is_action_pressed("interact") and _player_near() and not _other_interactable():
+	elif event.is_action_pressed("interact") and _player_near() and _player_facing_me() and not _other_interactable():
 		# Hablarle (acción al lado de él) también abre su menú: en el celular no hay F.
 		get_viewport().set_input_as_handled()
 		menu()
@@ -138,14 +138,26 @@ func _player_near() -> bool:
 	return player != null and global_position.distance_to(player.global_position) < TALK_DIST
 
 
+## ¿El protagonista está mirando hacia Lukas? (Solo así la acción es para él.)
+func _player_facing_me() -> bool:
+	var to := global_position - player.global_position
+	match player.facing:
+		"side":
+			return absf(to.y) < 14.0 and (to.x > 0) == player.sprite.flip_h
+		"up":
+			return to.y < 0 and absf(to.x) < 16.0
+		_:
+			return to.y > 0 and absf(to.x) < 16.0
+
+
 ## ¿El jugador está parado en otra cosa que se usa con la acción (persona, puerta, servicio...)?
-## Esas tienen prioridad sobre Lukas.
+## Esas tienen prioridad sobre Lukas. (Las personas son CharacterBody2D, no Area2D: se miran todos.)
 func _other_interactable() -> bool:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return false
-	for n in scene.find_children("*", "Area2D", true, false):
-		if n.get("_player") == player:
+	for n in scene.find_children("*", "", true, false):
+		if n != self and n.get("_player") == player:
 			return true
 	return false
 
