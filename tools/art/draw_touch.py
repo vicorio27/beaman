@@ -2,6 +2,7 @@
   touch_a.png  ACCIÓN (interact)     touch_b.png  ATRÁS (cancel)
   touch_i.png  INVENTARIO            touch_x.png  SOLTAR (drop)
   touch_l.png  LUKAS (sniff: su menú; una huellita)
+  touch_lib.png LIBRETA (un librito)
   compania.png el ícono de la barra de compañía del HUD
   touch_stick_base.png, touch_stick_knob.png  la palanca de la izquierda
 Salida: assets/ui/touch_*.png
@@ -39,6 +40,21 @@ def paw(name, size, color):
     img.save(OUT / f"touch_{name}.png")
 
 
+def book(name, size, color):
+    """Botón de la libreta: un librito en vez de letra."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse([0, 0, size - 1, size - 1], fill=FILL, outline=RIM)
+    d.ellipse([2, 2, size - 3, size - 3], outline=color)
+    ink = (250, 246, 236, 230)
+    c = size // 2
+    d.rectangle([c - 5, c - 4, c - 1, c + 4], outline=ink)
+    d.rectangle([c + 1, c - 4, c + 5, c + 4], outline=ink)
+    d.line([(c - 3, c - 1), (c - 2, c - 1)], fill=ink)
+    d.line([(c + 3, c - 1), (c + 4, c - 1)], fill=ink)
+    img.save(OUT / f"touch_{name}.png")
+
+
 def company_icon():
     """El ícono de la barra de compañía (HUD): dos cabecitas juntas. La de al lado es Lukas."""
     img = Image.new("RGBA", (14, 12), (0, 0, 0, 0))
@@ -73,6 +89,7 @@ if __name__ == "__main__":
     button("i", 18, "I", (120, 160, 230, 200))
     button("x", 18, "X", (230, 200, 110, 200))
     paw("l", 22, (192, 118, 60, 220))
+    book("lib", 18, (200, 180, 140, 220))
     stick()
     company_icon()
     print("botones táctiles:", OUT)

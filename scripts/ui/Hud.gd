@@ -166,7 +166,7 @@ func _show_skill(id: String) -> void:
 	_toast_tween.tween_property(_toast, "modulate:a", 1.0, 0.2)
 	_toast_tween.tween_interval(3.5)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.5)
-	Narrator.say(Skills.desc(id))
+	Narrator.say(Skills.desc(id) + " (Libreta: L)")
 
 
 ## Vínculo más fuerte con alguien.

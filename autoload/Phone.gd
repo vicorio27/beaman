@@ -41,7 +41,7 @@ func _ready() -> void:
 	_hint = _label("[E]sí [Q]no", Vector2(186, 145), Color(0.6, 0.57, 0.55))
 	_phone = TextureRect.new()
 	_phone.texture = load("res://assets/ui/phone.png")
-	_phone.position = Vector2(288, 118)
+	_phone.position = Vector2(148, 112)
 	_root.add_child(_phone)
 	_ring = AudioStreamPlayer.new()
 	_ring.stream = load("res://assets/audio/ring.wav")
@@ -60,6 +60,10 @@ func _label(text: String, pos: Vector2, color: Color) -> Label:
 	return l
 
 
+func ringing() -> bool:
+	return _ringing
+
+
 func has_phone() -> bool:
 	return GameState.count("celular") > 0
 
@@ -72,7 +76,7 @@ func _can_ring() -> bool:
 
 func _process(delta: float) -> void:
 	if _ringing:
-		_phone.position = Vector2(288, 118) + Vector2(randf_range(-1, 1), randf_range(-1, 1))
+		_phone.position = Vector2(148, 112) + Vector2(randf_range(-1, 1), randf_range(-1, 1))
 		return
 	if not _can_ring():
 		return

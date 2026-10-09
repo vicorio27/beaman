@@ -10,6 +10,11 @@ const DB := {
 	# El celular de flecha (Don Efraín): con él entran llamadas (autoload Phone). Lorena tiene el número.
 	"celular": {"name": "Celular de flecha", "desc": "Indestructible. Lo único que lo mata es que alguien lo llame. Alguien lo va a llamar.",
 		"type": "especial", "stack": 1, "fixed": true},
+	# Lo que sale pescando en el río (lo bueno del barrio).
+	"bombon": {"name": "Bombón", "desc": "De los pelados del fútbol. Pegajoso de tanto estar en un bolsillo. Sabe a premio.",
+		"type": "comida", "stack": 3, "food": 5},
+	"pescado": {"name": "Bocachico", "desc": "Lo sacó él. Asado en una lata, bajo el puente, sabe a río y a gloria.",
+		"type": "comida", "stack": 2, "food": 30},
 	"camiseta": {"name": "Camiseta vieja", "desc": "Huele a humedad. Es ropa, toalla y pijama.",
 		"type": "material", "stack": 1},
 	"pan": {"name": "Pan", "desc": "Del día anterior. Duro.", "type": "comida", "stack": 3, "food": 25},

@@ -152,6 +152,18 @@ func run(id: String, npc: Node) -> void:
 			await _pedir()
 		"vitrina_tv":
 			await _vitrina_tv()
+		"pescar":
+			await _pescar()
+		"atardecer":
+			await _atardecer()
+		"pelaos":
+			await _pelaos()
+		"banca_parquecito":
+			await _banca_parquecito()
+		"columpio":
+			await _columpio()
+		"perro_barrio":
+			await _perro_barrio()
 
 
 # ---------------------------------------------------------------- Don Germán (tienda-panadería)
@@ -1559,6 +1571,261 @@ func _banca() -> void:
 				["ÉL", "Esta banca era verde. Ahora es verde. Algo cambió. No sé qué. La banca tampoco me lo quiere decir."]]],
 	])
 	await Dialogue.talk(lines.pick_random())
+
+
+# ---------------------------------------------------------------- Lo bueno del barrio
+# Lo agradable de estar despierto (el Día 1 sobre todo): pescar, el atardecer en el puente, los
+# pelados del fútbol, la banca y el columpio del parquecito, el perro del barrio. Cada una cuenta
+# para "Lo bueno del barrio" (opcional): la vida de verdad también tiene cosas buenas.
+
+const BUENO := ["pescar", "atardecer", "pelaos", "banca", "columpio", "perro"]
+
+
+func bueno_count() -> int:
+	var n := 0
+	for b in BUENO:
+		if GameState.flags.get("bueno_" + b, false):
+			n += 1
+	return n
+
+
+func _bueno(id: String) -> void:
+	var f := GameState.flags
+	if f.get("bueno_" + id, false):
+		return
+	f["bueno_" + id] = true
+	if bueno_count() < BUENO.size():
+		Narrator.say("Lo bueno del barrio: %d de %d." % [bueno_count(), BUENO.size()])
+	if bueno_count() >= BUENO.size() and GameState.is_active("lo_bueno"):
+		GameState.complete_quest("lo_bueno")
+		await Dialogue.talk([["ÉL", "Pesqué. Vi el atardecer. Tapé un penalti. Me mecí. Un perro me eligió. Nadie me pagó por nada de eso. Fue un buen día. No sabía que todavía se podía."]])
+		GameState.change_mood(10.0)
+
+
+func _pescar() -> void:
+	var f := GameState.flags
+	if not f.get("pesca_vista", false):
+		f["pesca_vista"] = true
+		await Dialogue.talk([["", "(En la orilla, amarrada a una piedra: una línea de nylon enrollada en una lata, un anzuelo y un balde azul. Un papel con letra torcida: \"PARA EL QUE LLEGUE. DEVUÉLVALA\".)"],
+			["ÉL", "Alguien dejó una caña para cualquiera. En esta ciudad. Debe ser un fantasma. Uno bueno."]])
+	var h := TimeManager.hour()
+	if h >= 20 or h < 5:
+		await Dialogue.talk([["", "(De noche el río es negro y suena más fuerte. Mejor de día.)"]])
+		return
+	var i := await Dialogue.talk([["", "(El río pasa lento, color café con leche. Huele a barro y a algo que fue un pescado.)"]],
+		["Pescar un rato", "Seguir"])
+	if i != 0:
+		return
+	if GameState.lukas_alive():
+		await Dialogue.talk([["", "(Lukas se echa al lado del balde. Vigila el corcho como si fuera a robárselo alguien.)"]])
+	var got: Array = await Pesca.fish(self)
+	TimeManager.skip(0.33 * maxi(1, got.size()))
+	var lines := []
+	for g in got:
+		match g:
+			"pescado":
+				if GameState.has_space_for("pescado"):
+					GameState.add_item("pescado")
+			"lata", "botella":
+				if GameState.has_space_for(g):
+					GameState.add_item(g)
+			"bota":
+				lines.append(["ÉL", "Una bota. La devuelvo al río. Era de alguien. Que la venga a buscar."])
+	if "pescado" in got:
+		lines.append(["ÉL", "Un bocachico. Lo saqué yo. Con un nylon, una lata y paciencia. Nadie me lo dio. Me lo gané. Hace rato no me ganaba nada."])
+		if GameState.lukas_alive():
+			lines.append(["", "(Lukas le huele el pescado y estornuda. Aprobado.)"])
+	elif got.is_empty():
+		return
+	else:
+		lines.append(["ÉL", "No picó nada que se coma. Pero estuve una hora sin pensar. Eso también se pesca."])
+	GameState.change_mood(4.0)
+	GameState.calm_until = maxf(GameState.calm_until, TimeManager.minutes + 60.0)
+	await Dialogue.talk(lines)
+	await _bueno("pescar")
+
+
+func _atardecer() -> void:
+	var h := TimeManager.hour()
+	if h < 17 or h >= 19:
+		await Dialogue.talk([["", "(Desde el puente se ve el río entero, y al fondo los cerros. A esta hora no tiene nada de especial.)"],
+			["ÉL", "Samuel dice que al atardecer este puente es lo más bonito del barrio. Dice. Él dice muchas cosas. Pero esa se la creo."]])
+		return
+	var sky := CanvasLayer.new()
+	sky.layer = 10
+	var tint := TextureRect.new()
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.45, 0.25, 0.55, 0.45))
+	grad.add_point(0.5, Color(0.98, 0.55, 0.25, 0.4))
+	grad.set_color(1, Color(0.85, 0.3, 0.25, 0.25))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill_from = Vector2(0, 0)
+	tex.fill_to = Vector2(0, 1)
+	tex.width = 4
+	tex.height = 64
+	tint.texture = tex
+	tint.size = Vector2(320, 180)
+	tint.stretch_mode = TextureRect.STRETCH_SCALE
+	tint.modulate.a = 0.0
+	sky.add_child(tint)
+	get_tree().root.add_child(sky)
+	create_tween().tween_property(tint, "modulate:a", 1.0, 1.5)
+	var lines := [["", "(El sol se mete detrás de los cerros. El río se pone naranja, después rosado, después de un color que no tiene nombre.)"],
+		["", "(Los carros siguen pasando por detrás. Nadie más se detiene. Él sí.)"],
+		["ÉL", "Gratis. Esto es gratis. Lo único bonito de la ciudad que no cobra, y nadie lo mira."]]
+	if GameState.lukas_alive():
+		lines.append(["", "(Lukas se sienta a su lado, de cara al sol, con los ojos entrecerrados. Los dos igual de quietos.)"])
+	if GameState.day >= 3:
+		lines.append(["ÉL", "A Victoria le gustaban los atardeceres. Decía que el sol se iba a dormir a otra casa. Ojalá tenga razón. Ojalá sea una casa buena."])
+	await Dialogue.talk(lines)
+	TimeManager.skip(maxf(0.0, 19.0 - TimeManager.minutes / 60.0))
+	GameState.change_mood(8.0)
+	GameState.company(5.0)
+	var out := create_tween()
+	out.tween_property(tint, "modulate:a", 0.0, 1.5)
+	out.tween_callback(sky.queue_free)
+	await _bueno("atardecer")
+
+
+const PELAOS_SHOTS := [
+	["EL CHINO", "—¡Este va al ángulo!"],
+	["LA FLACA", "—¡Mire pa'l otro lado, señor!"],
+	["BRAYAN", "—¡Rabona! ... No, normal. Rabona no me sale."],
+	["EL CHINO", "—¡El último! ¡El que pierde compra gaseosa!"],
+	["LA FLACA", "—¡Penalti a lo Panenka!"],
+]
+
+
+func _pelaos() -> void:
+	var h := TimeManager.hour()
+	if h < 9 or h >= 18:
+		await Dialogue.talk([["", "(El lote está vacío. Quedaron los dos morrales que hacen de arco, olvidados. Mañana vuelven.)"]])
+		return
+	var f := GameState.flags
+	var first: bool = not f.get("pelaos_jugo", false)
+	var lines := [["", "(Tres pelados juegan fútbol en el lote, con dos morrales de arco y una pelota pelada.)"]]
+	if first:
+		lines.append(["EL CHINO", "—¡Señor! ¡Señor del saco! ¿Tapa? Nos falta arquero. El último se fue a almorzar hace dos años."])
+		lines.append(["LA FLACA", "—No habla. Mejor. Los arqueros que hablan se creen Higuita."])
+	else:
+		lines.append(["BRAYAN", "—¡Volvió el arquero mudo! ¡El muro! ¡El muro sin boca!"])
+	var i := await Dialogue.talk(lines, ["Tapar", "Ahora no"])
+	if i != 0:
+		return
+	f["pelaos_jugo"] = true
+	var saved := 0
+	for k in 5:
+		var shot: Array = PELAOS_SHOTS[k]
+		var j := await Dialogue.talk([shot], ["Tirarse a la izquierda", "Quedarse en el medio", "Tirarse a la derecha"])
+		var aim := randi() % 3
+		if j == aim:
+			saved += 1
+			await Dialogue.talk([["", ["(¡La ataja! Con la panza, pero la ataja.)", "(¡La saca con la punta de los dedos!)",
+				"(La pelota le pega en la cara y sale. Cuenta.)"].pick_random()]])
+		else:
+			await Dialogue.talk([["", ["(Gol. Por el otro lado. Él sigue tirado en el piso mirando el cielo.)", "(Gol. Por entre las piernas. Los pelados lo celebran como un Mundial.)",
+				"(Gol. Le pasó por encima. Él no salta: ya no salta.)"].pick_random()]])
+	var end := []
+	if saved >= 3:
+		end = [["EL CHINO", "—¡%d de 5! ¡Usted es una pared, señor! ¿Viene mañana?" % saved],
+			["LA FLACA", "—Tome, le guardamos un bombón. No es gaseosa, pero es dulce."],
+			["ÉL", "Me tiré al piso por unos pelados que no conozco y me dolió todo. Hace años no me dolía algo tan bonito."]]
+		if GameState.has_space_for("bombon"):
+			GameState.add_item("bombon")
+	else:
+		end = [["BRAYAN", "—%d de 5. Bueno, peor era nada. Peor era el portero de antes, que era una caneca." % saved],
+			["ÉL", "Me metieron goles unos niños de nueve años. Y me reí. Por dentro, pero me reí. Cuenta."]]
+	if GameState.lukas_alive():
+		end.append(["", "(Lukas se roba la pelota y sale corriendo. Los tres pelados detrás. Nadie la recupera en diez minutos. Nadie quiere.)"])
+	await Dialogue.talk(end)
+	TimeManager.skip(1.0)
+	GameState.change_mood(6.0)
+	GameState.company(25.0)
+	await _bueno("pelaos")
+
+
+const BANCA_VIEW := [
+	[["", "(Una señora barre el andén de su casa, después el de la vecina, después el de la otra. Llega hasta la esquina barriendo.)"],
+		["ÉL", "Empezó por lo suyo y terminó barriendo la cuadra. Así debería funcionar todo."]],
+	[["", "(Un señor en bicicleta lleva un colchón amarrado a la espalda. Pedalea muy despacio y muy digno.)"],
+		["ÉL", "Se está mudando en bicicleta. Con toda la dignidad del mundo. Le aplaudiría si supiera aplaudir sin que me miren."]],
+	[["", "(Dos viejitos discuten de fútbol en la tienda. Uno grita, el otro le da la razón para que se calle. Siguen así una hora.)"],
+		["ÉL", "Se quieren. Se nota en lo mal que se escuchan."]],
+	[["", "(Una niña le enseña a leer a su hermanito con el aviso de la droguería: \"DRO-GUE-RÍ-A\". Él lo repite mal. Ella se ríe. Él también.)"],
+		["ÉL", "Así aprende uno: equivocándose delante de alguien que lo quiere."]],
+	[["", "(Pasa el carrito de los helados con su musiquita. Nadie compra. La musiquita sigue, contenta, como si nada.)"],
+		["ÉL", "Esa musiquita no se rinde. Le voy a copiar la actitud."]],
+]
+
+
+func _banca_parquecito() -> void:
+	var f := GameState.flags
+	var idx := int(f.get("banca_vista", 0))
+	f["banca_vista"] = idx + 1
+	var view: Array = BANCA_VIEW[idx % BANCA_VIEW.size()]
+	var i := await Dialogue.talk([["", "(Una banca vieja en el parquecito. Se sienta. Desde acá se ve medio barrio.)"]] + view,
+		["Quedarse un rato (1 hora)", "Seguir"])
+	if i != 0:
+		return
+	TimeManager.skip(1.0)
+	GameState.change_mood(3.0)
+	GameState.company(5.0)
+	var lines := [["", "(Pasa una hora. Nadie lo echa. En el parquecito no hay vigilante: es de todos y de nadie.)"]]
+	if GameState.lukas_alive():
+		lines.append(["", "(Lukas duerme debajo de la banca, con una oreja afuera por si acaso.)"])
+	await Dialogue.talk(lines)
+	await _bueno("banca")
+
+
+func _columpio() -> void:
+	var f := GameState.flags
+	var first: bool = not f.get("columpio", false)
+	f["columpio"] = true
+	var lines := [["", "(Un columpio de cadena oxidada. El asiento es una tabla. Se sienta. Cruje, pero aguanta.)"]]
+	if first:
+		lines += [["", "(Se impulsa con los pies. Una vez. Dos. A la tercera, el estómago se le sube como cuando era niño.)"],
+			["ÉL", "La última vez que me subí a un columpio tenía ocho años y mi papá me empujaba. Bueno, me empujó tres veces y se fue a comprar cigarrillos."],
+			["ÉL", "Volvió. Esa vez sí volvió. Me acuerdo porque fue la única."]]
+	else:
+		lines += [["", ["(Se mece despacio. Las cadenas suenan como una canción que nadie terminó.)",
+			"(Se mece. Un pelado pasa y lo mira raro. Él se mece más alto.)",
+			"(Se mece con los ojos cerrados. Por un rato no es nadie. Es descansado no ser nadie.)"].pick_random()]]
+	if GameState.lukas_alive():
+		lines.append(["", "(Lukas le ladra al columpio cada vez que va para adelante. Cada vez. No se cansa.)"])
+	await Dialogue.talk(lines)
+	TimeManager.skip(0.5)
+	GameState.change_mood(4.0)
+	await _bueno("columpio")
+
+
+func _perro_barrio() -> void:
+	var f := GameState.flags
+	var name: String = f.get("perro_barrio_nombre", "")
+	if name == "":
+		var lines := [["", "(Un perro flaco, color canela, con una oreja parada y la otra no. Es de la cuadra: de todos y de nadie.)"]]
+		if GameState.lukas_alive():
+			lines += [["", "(Lukas y el perro se huelen. Por todos lados. Mucho rato. Es su forma de leerse el currículum.)"],
+				["", "(El perro canela mueve la cola. Lukas también. Contratados.)"]]
+		var i := await Dialogue.talk(lines + [["ÉL", "No tiene nombre. Nadie le puso. Le puedo poner uno. Es lo único que puedo regalar."]],
+			["Canelo", "Mechas", "Firulais (no, eso no)", "Don Perro"])
+		name = ["Canelo", "Mechas", "Firulais", "Don Perro"][i]
+		f["perro_barrio_nombre"] = name
+		var tail := "(Le dice %s. El perro no reacciona. Se lo dice otra vez. Mueve la cola. Ya está: se llama %s.)" % [name, name]
+		if name == "Firulais":
+			tail = "(Le dice Firulais. El perro lo mira con lástima. Pero mueve la cola. Se queda Firulais.)"
+		await Dialogue.talk([["", tail]])
+	else:
+		var lines := [["", ["(%s le pone la cabeza en la rodilla. Huele a calle, a lluvia, a perro feliz.)" % name,
+			"(%s le trae un palo. No se lo suelta. El juego es ese: no soltarlo.)" % name,
+			"(%s se le echa a los pies, panza arriba. Exige. Él obedece.)" % name].pick_random()]]
+		if GameState.lukas_alive():
+			lines.append(["", "(Lukas y %s se persiguen alrededor de un poste. Gana el poste.)" % name])
+		await Dialogue.talk(lines)
+	GameState.change_mood(4.0)
+	GameState.company(10.0)
+	GameState.calm_until = maxf(GameState.calm_until, TimeManager.minutes + 45.0)
+	await _bueno("perro")
 
 
 # ---------------------------------------------------------------- La vitrina de TV RADIO (ver tele desde la calle)

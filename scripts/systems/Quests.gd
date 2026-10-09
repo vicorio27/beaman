@@ -15,6 +15,7 @@ const DEFS := {
 	"mandado_marta": {"title": "Llevá el pedido de Marta", "kind": "side"},
 	# Día 1 — opcionales
 	"lukas_olfato": {"title": "Que Lukas busque comida [F]", "kind": "optional"},
+	"lo_bueno": {"title": "Lo bueno del barrio", "kind": "optional"},
 	# Día 2 — principales: aprender lo básico, en orden (y después, el recuerdo de la moto)
 	"t_cambuche": {"title": "Armá el cambuche: 3 cartones [C]", "kind": "main"},
 	"t_lukas": {"title": "Dale de comer a Lukas [F]", "kind": "main"},
@@ -104,6 +105,8 @@ static func progress_text(id: String) -> String:
 			return " (%d/5)" % mini(5, GameState.count("lata") + GameState.count("botella"))
 		"cartones":
 			return " (%d/3)" % mini(3, GameState.count("carton"))
+		"lo_bueno":
+			return " (%d/%d)" % [Conversations.bueno_count(), Conversations.BUENO.size()]
 		"c_plata":
 			return " ($%dk/55k)" % mini(55, GameState.money / 1000)
 		"regalo_hija":

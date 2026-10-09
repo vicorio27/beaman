@@ -54,8 +54,8 @@ func _ready() -> void:
 	_root = Control.new()
 	add_child(_root)
 	_rect(Vector2.ZERO, Vector2(320, 180), Color(0, 0, 0, 0.5))
-	_rect(Vector2(4, 4), Vector2(312, 172), PANEL)
-	_frame(Vector2(4, 4), Vector2(312, 172))
+	_rect(Vector2(4, 4), Vector2(282, 172), PANEL)
+	_frame(Vector2(4, 4), Vector2(282, 172))
 	var lvl := GameState.cambuche_level()
 	_label("MEJORAR EL CAMBUCHE", Vector2(10, 8), GOLD)
 	_label("Nivel %d: %s" % [lvl, GameState.CAMBUCHE_NAMES[lvl]], Vector2(10, 19), DIM)
@@ -211,9 +211,9 @@ func _refresh() -> void:
 	var now := GameState.cambuche
 	var after := _with(id)
 	var changed := _state(id) != "puesto"
-	_preview(now, Vector2(150, 30), "AHORA", _now)
-	_label(">", Vector2(226, 52), GOLD if changed else DIM, _now)
-	_preview(after, Vector2(236, 30), "CON ESTO" if changed else "(YA ESTÁ)", _after)
+	_preview(now, Vector2(146, 30), "AHORA", _now)
+	_label(">", Vector2(210, 52), GOLD if changed else DIM, _now)
+	_preview(after, Vector2(218, 30), "CON ESTO" if changed else "(YA ESTÁ)", _after)
 	# Barras: caja, seguridad, ánimo (lo que sube, en verde).
 	var a := stats(now)
 	var b := stats(after)
@@ -233,8 +233,10 @@ func _refresh() -> void:
 	_rect(Vector2(8, 138), Vector2(304, 1), Color(0.85, 0.74, 0.5, 0.5), _detail)
 	var gives := _label(ENTRIES[_cursor][2], Vector2(10, 141), CREAM, _detail)
 	gives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	gives.custom_minimum_size = Vector2(300, 0)
-	gives.size = Vector2(300, 20)
+	gives.custom_minimum_size = Vector2(272, 0)
+	gives.size = Vector2(272, 20)
+	gives.clip_text = true
+	gives.max_lines_visible = 2
 	gives.add_theme_constant_override("line_spacing", 1)
 	_needs_row(id, Vector2(152, 162))
 
@@ -261,11 +263,11 @@ func _needs_row(id: String, at: Vector2) -> void:
 
 
 func _preview(c: Dictionary, at: Vector2, title: String, parent: Control) -> void:
-	_rect(at, Vector2(72, 50), Color(0.2, 0.17, 0.2), parent)
+	_rect(at, Vector2(62, 50), Color(0.2, 0.17, 0.2), parent)
 	var tex: Texture2D = load("res://assets/barrio/%s.png" % art_of(c))
 	var bed := TextureRect.new()
 	bed.texture = tex
-	bed.position = at + Vector2(36 - tex.get_width() / 2.0, 46 - tex.get_height())
+	bed.position = at + Vector2(31 - tex.get_width() / 2.0, 46 - tex.get_height())
 	parent.add_child(bed)
 	# Lo que no cambia el dibujo del cambuche, encima: cobija, candado, latas, trampa.
 	for spot in [["cobija", Vector2(30, 33)], ["candado", Vector2(56, 34)], ["alarma", Vector2(4, 6)], ["trampa", Vector2(54, 38)]]:
@@ -276,15 +278,15 @@ func _preview(c: Dictionary, at: Vector2, title: String, parent: Control) -> voi
 		stove.texture = load("res://assets/barrio/cocinita.png")
 		stove.position = at + Vector2(4, 46 - stove.texture.get_height())
 		parent.add_child(stove)
-	var l := _label(title, at + Vector2(0, -9), DIM, parent)
-	l.size.x = 72
+	var l := _label(title, at + Vector2(-4, -9), DIM, parent)
+	l.size.x = 70
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 func _bar(title: String, now: float, after: float, value: String, at: Vector2) -> void:
 	_label(title, at, DIM, _detail)
 	var x := at.x + 52
-	var w := 78.0
+	var w := 52.0
 	_rect(Vector2(x, at.y + 1), Vector2(w, 6), Color(0.2, 0.17, 0.2), _detail)
 	_rect(Vector2(x, at.y + 1), Vector2(w * clampf(after, 0, 1), 6), GOOD, _detail)
 	_rect(Vector2(x, at.y + 1), Vector2(w * clampf(now, 0, 1), 6), Color(0.85, 0.74, 0.5), _detail)

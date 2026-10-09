@@ -1411,3 +1411,25 @@ Los chibis de 16 px se van reemplazando por personajes en proporciones adultas (
 - **Ver tele desde la calle:** la vitrina de TV RADIO (entre el café y la calle del este, en la vereda). Lo que dan depende de la hora: programa de la mañana, noticiero, telenovela, fútbol. Los domingos en la mañana, la Fórmula 1 (y a veces la repetición en la tarde). "Ver un rato" (1 hora) o "Quedarse la tarde" (3 horas; a veces Don Jairo, el dueño, lo corta). Pasa el tiempo y sube un poco el ánimo (hasta +6 por día). De 20 a 8, la reja abajo. `Conversations._vitrina_tv`, arte en `tools/art/draw_vitrina.py`.
 - **Tráfico:** carros, taxis, la buseta, bicis y motos pasan de vez en cuando por la avenida y por la calle principal (hasta el puente). De noche, menos. Si él o Lukas están en el carril, frenan y pitan. `scripts/world/Traffic.gd`, arte en `tools/art/draw_trafico.py`.
 - **Soledad (barra de compañía, arriba):** sube sola con las horas (más despacio con Lukas vivo, más rápido sin él). Baja cuando alguien le habla, acariciando a Lukas, gritando un gol con desconocidos frente a la vitrina, y sobre todo **hablándole a Lukas** (menú de Lukas → Hablarle): afuera es mudo, pero a Lukas sí le habla en voz alta. Arriba de 70, el ánimo se va cayendo. `GameState.loneliness`.
+
+## Lo bueno del barrio (estar despierto también vale la pena)
+
+Misión opcional desde el Día 1: "Lo bueno del barrio (n/6)". Cosas agradables, sin plata ni sueños, que suben el ánimo, la compañía o la calma (`Conversations`, sección "Lo bueno del barrio"):
+- **Pescar** en la orilla, al lado del campamento: alguien deja una línea de nylon en una lata, "PARA EL QUE LLEGUE". Minijuego tranquilo (`scripts/ui/Pesca.gd`): tres lanzadas, el corcho mordisquea, cuando PICA se le da a la acción. Sale bocachico (comida), latas, botellas o una bota.
+- **El atardecer** desde el puente (de 17 a 19): el cielo se pinta; pasa el tiempo hasta las 19; mucho ánimo.
+- **Los pelados del fútbol** en el lote del parquecito (de 9 a 18): de arquero, cinco penaltis (izquierda, medio, derecha). Si ataja 3, le regalan un bombón. Mucha compañía.
+- **La banca** del parquecito: ver pasar el barrio (escenas chiquitas, buenas).
+- **El columpio**: un recuerdo del papá; mecerse.
+- **El perro del barrio**: Lukas se hace amigo; él le pone nombre.
+Al completar las seis: "Fue un buen día. No sabía que todavía se podía."
+
+## La libreta (lo que se gana y lo que falta)
+
+L (Select en el control, el librito en el celular, o L desde la mochila). Páginas con izquierda/derecha, arriba/abajo elige, el detalle abajo (`scripts/ui/Libreta.gd`):
+- **Habilidades:** las que tiene (de día / soñando) y las que no ("???", con dónde se aprenden).
+- **Sueños:** cuántos soñó (cuadritos por serie) y qué despierta cada serie (la cédula, la obra, llamar a la mamá, el papá en la plaza...).
+- **El cambuche:** nivel, caja, robos, ánimo de noche, lo puesto, y qué falta para el siguiente.
+- **Lukas:** salud, días juntos, trucos (sesiones 0/3) y cómo enseñarlos.
+- **La gente:** cada favor y qué abre (pan gratis, baño del café, menos robos, fiado).
+
+**Ningún texto encima de otro:** todo texto de pantallas va en cajas fijas con máximo de renglones; los avisos (Narrator) esperan si hay un diálogo, una llamada o una pantalla abierta (y si estaban a la vista, vuelven después); en el celular las pantallas dejan libre la franja derecha (x > 286) y los botones se ponen en fila ahí, la palanca no se dibuja mientras hay una pantalla abierta, y los avisos de abajo van angostos entre la palanca y los botones. La mochila dice lo que pasa (comió, tiró, armó) en su propia caja.

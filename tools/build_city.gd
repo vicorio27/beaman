@@ -261,6 +261,12 @@ func paint_park() -> void:
 	for x in [16, 32, 48, 112, 128, 224, 240, 256, 304]:
 		prop("fence_wood", Vector2(x, 196))
 	place_anim(["dog_a", "dog_b"], 2.0, Vector2(176, 186), Vector2(14, 5))
+	# Lo bueno del barrio, en el parquecito: los pelados del fútbol, la banca, el columpio, el perro.
+	place_anim(["pelaos_a", "pelaos_b"], 3.0, Vector2(300, 100))
+	add_service(world, "pelaos", Vector2(300, 106), "FÚTBOL", Vector2(64, 18))
+	add_service(world, "banca_parquecito", Vector2(120, 174), "SENTARSE", Vector2(24, 14))
+	add_service(world, "columpio", Vector2(196, 124), "COLUMPIO", Vector2(22, 14))
+	add_service(world, "perro_barrio", Vector2(176, 194), "PERRO", Vector2(22, 12))
 
 
 func paint_industrial() -> void:
@@ -378,6 +384,10 @@ func paint_river() -> void:
 		"lamp_on", "lamp_on", "lamp_on", "lamp_off"], 8.0, Vector2(340, 612), Vector2(4, 4))
 	tree("tree_dead", Vector2(560, 626))
 	prop("mattress", Vector2(640, 634), false)
+	# Lo bueno del barrio en el río: la línea de pesca que alguien deja, y el atardecer desde el puente.
+	prop("pesca", Vector2(706, 640), false)
+	add_service(world, "pescar", Vector2(706, 644), "PESCAR", Vector2(28, 14))
+	add_service(world, "atardecer", Vector2(472, 704), "MIRAR", Vector2(40, 18))
 	prop("trash", Vector2(760, 630))
 	tree("tree_dead", Vector2(900, 622))
 

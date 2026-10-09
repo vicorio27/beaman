@@ -14,6 +14,7 @@ const ACTIONS := {
 	"drop": [KEY_X],
 	"sniff": [KEY_F],
 	"craft": [KEY_C],
+	"libreta": [KEY_L],
 }
 
 const PAD_BUTTONS := {
@@ -27,6 +28,7 @@ const PAD_BUTTONS := {
 	"drop": JOY_BUTTON_X,
 	"sniff": JOY_BUTTON_RIGHT_SHOULDER,
 	"craft": JOY_BUTTON_LEFT_SHOULDER,
+	"libreta": JOY_BUTTON_BACK,
 }
 
 const PAD_AXES := {
@@ -35,6 +37,15 @@ const PAD_AXES := {
 	"move_left": [JOY_AXIS_LEFT_X, -1.0],
 	"move_right": [JOY_AXIS_LEFT_X, 1.0],
 }
+
+
+## ¿Se juega con los dedos? (la versión web en el celular). Las pantallas dejan libre la franja
+## derecha (x > 286) para los botones, y los avisos de abajo se angostan entre la palanca y los botones.
+static var force_touch := false  # para probar el diseño del celular en el computador
+
+
+static func touch() -> bool:
+	return force_touch or DisplayServer.is_touchscreen_available() or OS.has_feature("web_android") or OS.has_feature("web_ios")
 
 
 func _ready() -> void:

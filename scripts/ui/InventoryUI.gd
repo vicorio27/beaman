@@ -9,8 +9,8 @@ const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const COLS := 4
 const CELL := 22
 const ORIGIN := Vector2(16, 84)
-const TEXT_X := 120.0
-const TEXT_W := 186.0
+const TEXT_X := 110.0
+const TEXT_W := 170.0  # el panel termina en x=286: a la derecha quedan los botones táctiles
 
 var _open := false
 var _cursor := 0
@@ -22,7 +22,6 @@ var _name: Label
 var _desc: Label
 var _quest_lines: Array[Label] = []
 var _crafting := false
-var _skills_label: Label
 var _recipe := 0
 
 
@@ -42,7 +41,11 @@ func _ready() -> void:
 	_root.add_child(qpanel)
 	_label("MISIONES", Vector2(ORIGIN.x - 2, 8), Color(0.9, 0.74, 0.36))
 	for i in 4:
-		_quest_lines.append(_label("", Vector2(ORIGIN.x - 2, 20 + i * 9), Color.WHITE))
+		var q := _label("", Vector2(ORIGIN.x - 2, 19 + i * 10), Color.WHITE)
+		q.size = Vector2(TEXT_X + TEXT_W - ORIGIN.x, 10)  # no se sale del panel
+		q.clip_text = true
+		q.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		_quest_lines.append(q)
 	var panel := ColorRect.new()
 	panel.color = Color(0.12, 0.09, 0.12, 0.95)
 	panel.position = ORIGIN - Vector2(10, 22)
@@ -65,11 +68,15 @@ func _ready() -> void:
 	_name = _label("", Vector2(TEXT_X, ORIGIN.y), Color(0.95, 0.92, 0.85))
 	_desc = _label("", Vector2(TEXT_X, ORIGIN.y + 14), Color(0.75, 0.72, 0.68))
 	_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_desc.size = Vector2(TEXT_W, 56)
-	_label("[E]usar [X]tirar [C]armar [Q]salir", Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 30), Color(0.55, 0.52, 0.5))
+	_desc.size = Vector2(TEXT_W, 60)
+	_desc.clip_text = true
+	_desc.max_lines_visible = 6
+	_name.size = Vector2(TEXT_W, 10)
+	_name.clip_text = true
+	_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_label("[E]usar [X]tirar [C]armar", Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 6), Color(0.55, 0.52, 0.5))
+	_label("[L]libreta [Q]salir", Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 18), Color(0.55, 0.52, 0.5))
 	_desc.add_theme_font_size_override("font_size", 8)
-	_skills_label = _label("", Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 6), Color(0.6, 0.85, 1.0))
-	_skills_label.size = Vector2(300, 24)
 	GameState.inventory_changed.connect(_refresh)
 
 
@@ -93,6 +100,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not _open:
 		return
+	if event.is_action_pressed("libreta"):  # de la mochila a la libreta
+		get_viewport().set_input_as_handled()
+		_toggle(false)
+		var lib := get_tree().get_first_node_in_group("libreta")
+		if lib:
+			lib.open()
+		return
 	if _crafting:
 		_craft_input(event)
 		return
@@ -109,14 +123,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("interact"):
 		var line := GameState.use_slot(_cursor)
 		if line != "":
-			Narrator.say(line, true)
+			_say(line)
 	elif event.is_action_pressed("drop"):
 		var s = GameState.inventory[_cursor]
 		if s != null:
 			if Items.info(s["id"]).get("fixed", false):
-				Narrator.say("(Esto no se tira.)", true)
+				_say("(Esto no se tira.)")
 			else:
-				Narrator.say("(Tira: %s.)" % Items.info(s["id"])["name"].to_lower(), true)
+				_say("(Tira: %s.)" % Items.info(s["id"])["name"].to_lower())
 				GameState.remove_slot(_cursor, s["qty"])
 	else:
 		return
@@ -133,7 +147,7 @@ func _craft_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("move_up") or event.is_action_pressed("move_left"):
 		_recipe = (_recipe - 1 + n) % n
 	elif event.is_action_pressed("interact"):
-		Narrator.say(GameState.craft(Items.RECIPES.keys()[_recipe]), true)
+		_say(GameState.craft(Items.RECIPES.keys()[_recipe]))
 	else:
 		return
 	get_viewport().set_input_as_handled()
@@ -150,6 +164,13 @@ func _toggle(open: bool) -> void:
 	_refresh()
 
 
+var _note := ""  # lo último que pasó (comió, tiró, armó): se muestra en la caja de la descripción
+
+
+func _say(line: String) -> void:
+	_note = line
+
+
 func _refresh() -> void:
 	for i in GameState.SLOTS:
 		var s = GameState.inventory[i]
@@ -157,15 +178,12 @@ func _refresh() -> void:
 		_icons[i].texture = Items.icon(s["id"]) if s != null else null
 		_qty[i].text = str(s["qty"]) if s != null and s["qty"] > 1 else ""
 	_refresh_quests()
-	var names := GameState.skills.map(func(s): return Skills.name_of(s).split(" ")[0])
-	var lazos := []
-	for id in GameState.bonds:
-		if GameState.bonds[id] > 0:
-			lazos.append("%s%d" % [GameState.BOND_NAMES.get(id, id).split(" ")[-1], GameState.bonds[id]])
-	_skills_label.text = ("HAB: " + " ".join(names)) if not names.is_empty() else ""
-	if not lazos.is_empty():
-		_skills_label.text += ("
-" if _skills_label.text != "" else "") + "LAZOS: " + " ".join(lazos)
+	if _note != "":
+		_name.text = ""
+		_desc.text = _note
+		_desc.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
+		_note = ""
+		return
 	if _crafting:
 		var id: String = Items.RECIPES.keys()[_recipe]
 		var ok := Items.can_craft(id)
@@ -194,7 +212,7 @@ func _refresh_quests() -> void:
 	for id in GameState.active_quests("side"):
 		lines.append(["- " + Quests.title(id) + Quests.progress_text(id), Color(0.92, 0.9, 0.86)])
 	for id in GameState.active_quests("optional"):
-		lines.append(["· " + Quests.title(id), Color(0.62, 0.6, 0.58)])
+		lines.append(["· " + Quests.title(id) + Quests.progress_text(id), Color(0.62, 0.6, 0.58)])
 	for i in _quest_lines.size():
 		_quest_lines[i].text = lines[i][0] if i < lines.size() else ""
 		if i < lines.size():

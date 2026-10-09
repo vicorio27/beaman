@@ -35,7 +35,8 @@ func _ready() -> void:
 
 	_add_lukas()
 	TimeManager.running = true
-	var systems := ["res://scripts/ui/Hud.gd", "res://scripts/ui/InventoryUI.gd", "res://scripts/systems/Survival.gd"]
+	var systems := ["res://scripts/ui/Hud.gd", "res://scripts/ui/InventoryUI.gd", "res://scripts/ui/Libreta.gd",
+		"res://scripts/systems/Survival.gd"]
 	if outdoor:
 		systems.append("res://scripts/systems/DayNight.gd")
 		systems.append("res://scripts/world/PasserbySpawner.gd")

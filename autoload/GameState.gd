@@ -107,7 +107,7 @@ func new_game() -> void:
 	quests = {}
 	stats = {"money_earned": 0, "food_eaten": 0}
 	# Día 1.
-	for id in ["conseguir_comida", "latas", "cartones", "lukas_olfato"]:
+	for id in ["conseguir_comida", "latas", "cartones", "lukas_olfato", "lo_bueno"]:
 		quests[id] = "active"
 	inventory.clear()
 	inventory.resize(SLOTS)
@@ -780,6 +780,8 @@ func load_game() -> Dictionary:
 	cambuche = data["cambuche"]
 	skills = data["skills"]
 	bonds = data["bonds"]
+	if not quests.has("lo_bueno"):  # partidas de antes de "Lo bueno del barrio"
+		quests["lo_bueno"] = "active"
 	TimeManager.minutes = data["minutes"]
 	TimeManager.set_time(int(data["minutes"]) / 60, int(data["minutes"]) % 60)
 	inventory_changed.emit()

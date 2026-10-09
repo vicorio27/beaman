@@ -14,6 +14,8 @@ var _label: Label
 var _tween: Tween
 var _style_box: StyleBoxFlat   # abajo: la caja de siempre
 var _style_thin: StyleBoxFlat  # arriba (en la acción): fina y transparente, para ver a través
+var _pending: Array = []  # lo que llegó mientras había un diálogo o una llamada en pantalla
+var _current: Array = []  # lo que se está mostrando (si se abre una pantalla, se guarda y vuelve)
 
 
 func _ready() -> void:
@@ -51,6 +53,10 @@ func _ready() -> void:
 
 ## top = mostrarla arriba de la pantalla (cuando la acción está abajo).
 func say(text: String, top := false) -> void:
+	if _busy():
+		_pending = [text, top]
+		return
+	_current = [text, top]
 	_label.text = text
 	# Crece según el texto; abajo crece hacia arriba para no salirse de la pantalla.
 	if top:
@@ -61,15 +67,35 @@ func say(text: String, top := false) -> void:
 		_panel.position = Vector2(4, top_y)
 	else:
 		_panel.add_theme_stylebox_override("panel", _style_box)
-		var h := maxf(26.0, FONT.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, 270, 8).y + 10.0)
-		_panel.size = Vector2(280, h)
-		_panel.position = Vector2(20, 172 - h)
+		# En el celular: entre la palanca (izquierda) y los botones (derecha).
+		var w := 166.0 if Controls.touch() else 280.0
+		var x := 66.0 if Controls.touch() else 20.0
+		var h := maxf(26.0, FONT.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, w - 10.0, 8).y + 10.0)
+		_panel.size = Vector2(w, h)
+		_panel.position = Vector2(x, 172 - h)
 	if _tween:
 		_tween.kill()
 	_tween = create_tween()
 	_tween.tween_property(_panel, "modulate:a", 1.0, 0.15)
 	_tween.tween_interval(maxf(MIN_SECONDS, text.length() * SECONDS_PER_CHAR))
 	_tween.tween_property(_panel, "modulate:a", 0.0, 0.4)
+
+
+func _busy() -> bool:
+	return Dialogue.active or Phone.ringing() or GameState.ui_open
+
+
+func _process(_delta: float) -> void:
+	# Se abrió una pantalla con el aviso a la vista: se esconde y vuelve a salir cuando se cierre.
+	if _busy() and _panel.modulate.a > 0.0:
+		if _pending.is_empty() and not _current.is_empty():
+			_pending = _current
+		hide_now()
+		return
+	if not _pending.is_empty() and not _busy():
+		var p := _pending
+		_pending = []
+		say(p[0], p[1])
 
 
 ## Se calla de golpe (cuando empieza un diálogo).
