@@ -1,5 +1,6 @@
 # Exporta el juego para navegador y lo publica en GitHub Pages en cada push a main.
-# Una sola vez: Settings → Pages → Source: "GitHub Actions".
+# Publica en la rama gh-pages. Si Pages no queda activado solo: Settings → Pages → Source:
+# "Deploy from a branch" → gh-pages / (root).
 name: Web
 
 on:
@@ -8,9 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -48,16 +47,9 @@ jobs:
           touch build/web/.nojekyll
           ls -la build/web
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Publicar en gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: build/web
-
-  deploy:
-    needs: export
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/web
+          force_orphan: true
