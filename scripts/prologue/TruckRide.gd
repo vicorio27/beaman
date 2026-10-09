@@ -2,12 +2,18 @@ extends Node2D
 ## Sueño 1 (beat 'em up), parte 2 — La avenida y el camión en movimiento (de costado).
 ##   0. AVENIDA: sale del callejón; el camión de "Harinas El Sol" arranca; vienen más matones.
 ##      Correr detrás del camión y saltar (botón) para agarrarse.
-##   1. COLGADO: el cuerpo cuelga de las manos y se balancea. El camión lo desequilibra (viento,
-##      vaivén, baches, curvas); izquierda/derecha corrige. Si se pasa, se suelta una mano:
+##   1. COLGADO: cuelga del borde del techo de la caja y se balancea (péndulo). Izquierda/derecha:
+##      se mueve a lo largo de la caja, mano sobre mano (moverse también lo hace balancear).
+##      Arriba: encoge las piernas (se estabiliza, y así pasan por debajo las carretillas y canecas
+##      parqueadas; no se puede mover ni pegar). Si se balancea demasiado se suelta una mano:
 ##      apretar el botón rápido para volver a agarrarse.
-##      Los matones vienen en moto: se ponen al lado y pegan (desequilibra y quita vida).
-##      Botón = patada hacia atrás: hay que tirarlos de la moto. El de atrás no espera turno: tira
-##      botellas (una patada a tiempo la devuelve). Frenético: muchas motos, curvas y baches seguidos.
+##      Los matones vienen en moto por los dos lados: se le acercan, cargan (se ponen rojos) y pegan.
+##      Botón = patada hacia donde mira; dos seguidas = patada y puño. Si el más cercano está lejos
+##      (pasado el umbral de la patada), le tira una bolsa de harina del camión. Cuando cruza el
+##      umbral, la patada (o el puño) le llega justo: el golpeado se acomoda al pie / al puño.
+##      Los que tiran botellas se quedan lejos: moverse esquiva la botella, y un golpe a tiempo
+##      la devuelve.
+##      Largo y frenético: 22 motos, curvas, baches y cosas parqueadas.
 ##   2. GANÓ: STAGE CLEAR, el camión frena en el puente: abajo lo espera Lilato (jefa final).
 ##      PERDIÓ (sin vida): se cae del camión y rueda hasta el puente: también va a Lilato.
 
@@ -27,29 +33,53 @@ const CHASER_SPEED := 96.0
 const BOARD_TRUCK_SPEED := 72.0
 const CHASERS := ["goon", "punk", "thug", "punk", "goon"]
 
-# --- Colgado
-const HAND := Vector2(110, 135)  # dónde se agarra (coordenadas de pantalla)
-const HANG_GRIP := Vector2(20, 3)  # punto de agarre dentro de cada cuadro de player_hang.png
-const HANG_CELL := Vector2(32, 40)
-const INSTABILITY := 5.0
-const DAMPING := 1.6
-const CONTROL := 10.0
+# --- Colgado (del borde del techo de la caja)
+const GRIP_Y := ROOF_Y + 1.0
+const RAIL := Vector2(TRUCK_REAR + 8.0, TRUCK_REAR + 104.0)  # hasta dónde se mueve (x de pantalla)
+const SHIMMY := 54.0  # mano sobre mano (px/s)
+const HANG_GRIP := Vector2(20, 2)  # las manos dentro de cada cuadro de player_hang.png
+const HANG_CELL := Vector2(40, 48)
+const STIFF := 5.0  # el péndulo vuelve solo al centro...
+const STIFF_TUCK := 10.0  # ...y encogido, más rápido
+const DAMPING := 1.2
+const DAMPING_TUCK := 4.5
+const CONTROL := 3.0  # moverse lo balancea para el otro lado
 const SLIP_ANGLE := 1.0
 const REGRAB_PRESSES := 3
 const REGRAB_TIME := 1.4
 const CURVE_TIME := 2.4
-const CURVE_FORCE := 4.5
-const MAX_LIFE := 50
+const CURVE_FORCE := 4.0
+const MAX_LIFE := 80
 const HIT_DAMAGE := 5
 
+# --- Golpes (desde él, hacia donde mira)
+const KICK_REACH := Vector2(4, 42)  # el umbral: más cerca que esto, la patada llega
+const PUNCH_REACH := Vector2(0, 36)
+const KICK_TIME := 0.28
+const PUNCH_TIME := 0.26
+const COMBO_WINDOW := 0.4
+const THROW_RANGE := 190.0  # hasta dónde tira la bolsa de harina
+const THROW_SPEED := 230.0
+const THROW_COOLDOWN := 0.55
+## Dónde quedan el pie (patada estirada) y el puño (pegando abajo), desde las manos, mirando a la izquierda.
+const FOOT := Vector2(-17, 39)
+const FIST := Vector2(-16, 34)
+
 # --- Motos
-const BIKERS := ["punk", "goon", "punk", "punk", "thug", "goon", "punk", "goon", "thug", "punk"]
+const BIKERS := ["punk", "goon", "punk", "punk", "thug", "goon", "punk", "goon", "punk", "thug",
+	"punk", "goon", "punk", "thug", "goon", "punk", "goon", "thug", "punk", "goon", "thug", "thug"]
 const BIKER_HP := {"punk": 1, "goon": 2, "thug": 3}
-const MAX_BIKERS := 2
-## Alcance de la patada hacia atrás: dónde tiene que estar el que maneja (x de pantalla).
-const KICK_RANGE := Vector2(HAND.x - 64, HAND.x - 14)
-const BIKER_SLOT_X := [HAND.x - 44, HAND.x - 70]
-const BOTTLE_TIME := 0.55  # lo que tarda la botella en llegar (con la patada a tiempo se devuelve)
+const MAX_BIKERS := 3
+const HOVER := 48.0  # a esta distancia esperan (fuera del alcance de la patada)
+const THROW_HOVER := 84.0  # los que tiran botellas, más lejos
+const BIKER_FOLLOW := 42.0  # lo siguen más despacio de lo que él se mueve
+const BOTTLE_TIME := 0.6
+const BIKE_W := 36.0
+
+# --- Cosas parqueadas en el carril de afuera (encoger las piernas)
+const OBSTACLE_EVERY := Vector2(6.5, 10.0)
+const OBSTACLE_WARN := 1.2
+const OBSTACLES := {"carretilla": 24.0, "caneca": 22.0}  # alto de cada una
 
 enum Phase { BOARD, HANG, CLEAR, FALL, DONE }
 
@@ -68,8 +98,18 @@ var _theta := 0.0
 var _omega := 0.0
 var _slip := 0.0
 var _presses := 0
-var _kick := 0.0
-var _kick_done := false
+var _px := RAIL.x  # dónde está agarrado (x de pantalla)
+var _face := -1.0  # hacia dónde mira: -1 izquierda, 1 derecha
+var _tuck := false
+var _attack := 0.0  # lo que le falta al golpe en curso
+var _attack_kind := ""
+var _hit_done := false
+var _combo := 0.0
+var _throw_cd := 0.0
+var _throw_target = null  # la moto a la que va la bolsa
+var _next_obstacle := 9.0
+var _warned := false
+var _obstacles: Array = []  # [{node, h, hit}]
 var _next_bump := 1.5
 var _next_curve := 4.0
 var _curve_dir := 0
@@ -149,7 +189,7 @@ func _ready() -> void:
 
 	# Colgado: el cuerpo cuelga de un punto en las manos y rota alrededor de él (péndulo).
 	_hands = Node2D.new()
-	_hands.position = HAND - RIG
+	_hands.position = Vector2(_px, GRIP_Y) - RIG
 	_hands.visible = false
 	_rig.add_child(_hands)
 	_hanging = AnimatedSprite2D.new()
@@ -189,8 +229,11 @@ func _build_hang_frames() -> SpriteFrames:
 		"hang": [[0, 1], 3.0, true],
 		"swing_l": [[2], 1.0, true],
 		"swing_r": [[3], 1.0, true],
-		"kick": [[4, 5, 5, 4], 16.0, false],
+		"kick": [[4, 5, 5, 4], 14.0, false],
 		"slip": [[6, 7], 8.0, true],
+		"shimmy": [[8, 9], 7.0, true],
+		"punch": [[10, 11, 11, 10], 15.0, false],
+		"tuck": [[12], 1.0, true],
 	}
 	var f := SpriteFrames.new()
 	f.remove_animation("default")
@@ -399,7 +442,7 @@ func _grab_truck() -> void:
 	_sfx["click"].play()
 	_runner.play("kick")
 	var t := create_tween()
-	t.tween_property(_runner, "position", HAND + Vector2(-6, 18), 0.25).set_ease(Tween.EASE_OUT)
+	t.tween_property(_runner, "position", Vector2(_px, GRIP_Y + 20), 0.25).set_ease(Tween.EASE_OUT)
 	await t.finished
 	_runner.visible = false
 	_hands.visible = true
@@ -409,6 +452,8 @@ func _grab_truck() -> void:
 	_theta = 0.3
 	_to_spawn = BIKERS.duplicate()
 	hud.set_counter("0/%d" % BIKERS.size())
+	var keys := "A" if Controls.touch() else "E"
+	Narrator.say("<- -> moverse   %s patada (dos: puño)   ^ encoger las piernas" % keys, true)
 	for c in _chasers:
 		var s: AnimatedSprite2D = c
 		create_tween().tween_property(s, "modulate:a", 0.0, 2.0).finished.connect(s.queue_free)
@@ -419,6 +464,7 @@ func _grab_truck() -> void:
 
 func _hang(delta: float) -> void:
 	var lean := Input.get_axis("move_left", "move_right")
+	_tuck = Input.is_action_pressed("move_up") and _slip <= 0.0
 	mood.forced_distress = 0.45 + 0.35 * clampf(absf(_theta) / SLIP_ANGLE, 0.0, 1.0)
 
 	# Fuerzas del camión: viento/vaivén, curvas (el camión se inclina) y baches.
@@ -438,45 +484,89 @@ func _hang(delta: float) -> void:
 	_next_bump -= delta
 	if _next_bump <= 0.0:
 		_next_bump = randf_range(0.7, 1.6)
-		_omega += randf_range(-2.4, 2.4)
+		_omega += randf_range(-1.5, 1.5)
 		_shake = 3.5
 		_rig.position.y -= 3.0
+	_update_obstacles(delta)
 
 	if _slip > 0.0:
 		_slipping(delta)
+		_place_hands()
 		return
 
-	# Patada hacia atrás (a la izquierda, donde vienen las motos).
-	if _kick > 0.0:
-		_kick -= delta
-		if not _kick_done and _kick < 0.16:
-			_kick_done = true
-			_kick_hit()
-	elif Input.is_action_just_pressed("interact"):
-		_kick = 0.25
-		_kick_done = false
-		_hanging.play("kick")
-		_omega -= 0.8  # patear para atrás empuja el cuerpo para el otro lado
+	# Mano sobre mano a lo largo de la caja. No mientras pega ni encogido.
+	var moving := lean != 0.0 and _attack <= 0.0 and not _tuck
+	if moving:
+		_face = signf(lean)
+		_px = clampf(_px + lean * SHIMMY * delta, RAIL.x, RAIL.y)
+		force += sin(_t * 9.0) * 2.0  # cada mano que suelta lo sacude
+	_hanging.flip_h = _face > 0.0
 
-	# Equilibrio: tiende a irse para un lado; izquierda/derecha corrige.
-	var acc := INSTABILITY * _theta - DAMPING * _omega + CONTROL * lean + force
+	# Golpes: patada; otra vez enseguida = puño.
+	_combo -= delta
+	if _attack > 0.0:
+		_attack -= delta
+		if not _hit_done and _attack < (KICK_TIME if _attack_kind == "kick" else PUNCH_TIME) * 0.55:
+			_hit_done = true
+			if _attack_kind == "throw":
+				_throw_flour()
+			else:
+				_attack_hit()
+	_throw_cd -= delta
+	if Input.is_action_just_pressed("interact") and not _tuck and _attack < 0.08:
+		# Si nadie pasó el umbral de la patada pero hay alguien más lejos hacia donde mira: harina.
+		var far = _nearest_ahead(THROW_RANGE)
+		if _nearest_ahead(KICK_REACH.y) == null and far != null and _throw_cd <= 0.0:
+			_throw_target = far
+			_start_attack("throw")
+		else:
+			_start_attack("punch" if _combo > 0.0 and _attack_kind == "kick" else "kick")
+
+	# El péndulo: vuelve solo al centro; las fuerzas lo sacan. Encogido, se estabiliza.
+	var k := STIFF_TUCK if _tuck else STIFF
+	var d := DAMPING_TUCK if _tuck else DAMPING
+	var acc := -k * _theta - d * _omega + CONTROL * (lean if moving else 0.0) + force
 	_omega += acc * delta
 	_theta = clampf(_theta + _omega * delta, -1.4, 1.4)
 	_hands.rotation = _theta * 0.8
-	if _kick <= 0.0:
-		# Las piernas quedan atrás del movimiento del cuerpo.
-		_hanging.play("swing_r" if _omega > 1.2 else ("swing_l" if _omega < -1.2 else "hang"))
+	_place_hands()
+	if _attack <= 0.0:
+		if _tuck:
+			_hanging.play("tuck")
+		elif moving:
+			_hanging.play("shimmy")
+		else:
+			_hanging.play("swing_r" if _omega > 1.2 else ("swing_l" if _omega < -1.2 else "hang"))
 	if absf(_theta) > SLIP_ANGLE:
 		_start_slip()
+
+
+func _place_hands() -> void:
+	_hands.position = Vector2(_px, GRIP_Y) - RIG
+
+
+func _start_attack(kind: String) -> void:
+	_attack_kind = kind
+	_attack = KICK_TIME if kind == "kick" else PUNCH_TIME
+	_hit_done = false
+	_combo = COMBO_WINDOW + _attack if kind != "throw" else 0.0
+	_hanging.stop()
+	_hanging.play("punch" if kind == "throw" else kind)  # tirar: el mismo brazo, soltando la bolsa
+	_omega += -_face * (0.8 if kind == "kick" else 0.4)  # pegar para un lado empuja el cuerpo al otro
+
+
+## Dónde están los pies (o el puño) en la pantalla, más o menos: para los golpes y las cosas parqueadas.
+func _feet_y() -> float:
+	return GRIP_Y + (36.0 if _tuck else 46.0)
 
 
 func _start_slip() -> void:
 	_slip = REGRAB_TIME
 	_presses = 0
-	_kick = 0.0
+	_attack = 0.0
 	_hanging.play("slip")
 	_sfx["grunt"].play()
-	_prompt.text = "¡E!"
+	_prompt.text = "¡%s!" % ("A" if Controls.touch() else "E")
 
 
 ## Se le soltó una mano: cuelga de la otra y se sacude. Apretar rápido para volver a agarrarse.
@@ -484,7 +574,7 @@ func _slipping(delta: float) -> void:
 	_slip -= delta
 	_hands.rotation = signf(_theta) * 0.9 + sin(_t * 10.0) * 0.25
 	_prompt.visible = int(_t * 8) % 2 == 0
-	_prompt.position = Vector2(HAND.x - 18, HAND.y - 52)
+	_prompt.position = Vector2(_px - 12, GRIP_Y - 46)  # encima del medidor (no sobre el letrero del camión)
 	if Input.is_action_just_pressed("interact"):
 		_presses += 1
 	if _presses >= REGRAB_PRESSES or _slip <= 0.0:
@@ -508,7 +598,7 @@ func _lose_life(amount: int) -> void:
 
 func _draw_meter() -> void:
 	# Arco de equilibrio sobre la cabeza: verde al centro, rojo en los extremos.
-	var c: Vector2 = HAND + Vector2(-6, -44)
+	var c := Vector2(_px, GRIP_Y - 14)
 	_meter.draw_arc(c, 17, deg_to_rad(-152), deg_to_rad(-28), 24, Color(0.05, 0.05, 0.08, 0.85), 6.0)
 	_meter.draw_arc(c, 17, deg_to_rad(-150), deg_to_rad(-30), 24, Color(0.95, 0.75, 0.25), 3.0)
 	_meter.draw_arc(c, 17, deg_to_rad(-108), deg_to_rad(-72), 12, Color(0.35, 0.85, 0.4), 3.0)
@@ -519,6 +609,50 @@ func _draw_meter() -> void:
 	_meter.draw_line(c, c + Vector2.from_angle(a) * 20.0, Color.BLACK, 3.0)
 	_meter.draw_line(c, c + Vector2.from_angle(a) * 20.0, Color.WHITE, 1.0)
 	_meter.draw_circle(c, 2.0, Color.WHITE)
+	# Aviso de lo parqueado que viene: flecha arriba titilando.
+	if _warned and int(_t * 6) % 2 == 0:
+		var w := Vector2(_px + 22, GRIP_Y + 10)
+		_meter.draw_colored_polygon(PackedVector2Array([w + Vector2(0, -8), w + Vector2(-6, 0), w + Vector2(6, 0)]), Color(1, 0.85, 0.3))
+		_meter.draw_rect(Rect2(w + Vector2(-2, 0), Vector2(4, 6)), Color(1, 0.85, 0.3))
+
+
+# ---------------------------------------------------------------- Cosas parqueadas
+
+## Cada tanto, una carretilla o una caneca en el carril de afuera: pasa a la altura de los pies.
+## Avisa antes (flecha arriba). Si no encoge las piernas, se la lleva. A las motos también.
+func _update_obstacles(delta: float) -> void:
+	_next_obstacle -= delta
+	if not _warned and _next_obstacle <= OBSTACLE_WARN and not _to_spawn.is_empty():
+		_warned = true
+		_sfx["click"].play()
+	if _next_obstacle <= 0.0:
+		_next_obstacle = randf_range(OBSTACLE_EVERY.x, OBSTACLE_EVERY.y)
+		_warned = false
+		var kind: String = OBSTACLES.keys().pick_random()
+		var h: float = OBSTACLES[kind]
+		var node := _spawn("obstacle", "res://assets/prologue/%s.png" % kind, BIKE_Y - h, self, false, 340.0)
+		node.z_index = 22
+		_obstacles.append({"node": node, "h": h, "hit": false})
+	for o in _obstacles.duplicate():
+		if not is_instance_valid(o["node"]):  # ya pasó (la soltó _scroll)
+			_obstacles.erase(o)
+			continue
+		var node: Sprite2D = o["node"]
+		var x0 := node.position.x
+		var x1 := x0 + node.texture.get_width()
+		# Se lleva a las motos que estén en el camino.
+		for b in _bikers.duplicate():
+			var bx: float = b["node"].position.x
+			if bx + BIKE_W > x0 + 4.0 and bx < x1 - 4.0:
+				_crash(b, true)
+		# Y a él, si cuelga con las piernas abajo.
+		if not o["hit"] and phase == Phase.HANG and _px + 6.0 > x0 and _px - 6.0 < x1:
+			if _feet_y() > BIKE_Y - o["h"] + 2.0:
+				o["hit"] = true
+				_omega += 3.2
+				_lose_life(HIT_DAMAGE * 2)
+				_sfx["hit-1"].play()
+				_pop_text("¡PUM!", Vector2(_px + 20, GRIP_Y - 14))
 
 
 # ---------------------------------------------------------------- Motos
@@ -526,15 +660,17 @@ func _draw_meter() -> void:
 func _update_bikers(delta: float) -> void:
 	_next_biker -= delta
 	if _next_biker <= 0.0 and not _to_spawn.is_empty() and _bikers.size() < MAX_BIKERS:
-		_next_biker = randf_range(0.9, 1.6)
+		_next_biker = randf_range(1.2, 2.4)
 		_spawn_biker(_to_spawn.pop_front())
 	for b in _bikers.duplicate():
 		_biker_tick(b, delta)
 
 
 func _spawn_biker(kind: String) -> void:
+	# La mayoría vienen de atrás (lo alcanzan); algunos se quedan desde adelante.
+	var side := -1.0 if randf() < 0.7 else 1.0
 	var node := Node2D.new()
-	node.position = Vector2(-50, BIKE_Y)
+	node.position = Vector2(-50 if side < 0 else 340, BIKE_Y)
 	node.z_index = 20
 	add_child(node)
 	var rider := AnimatedSprite2D.new()
@@ -547,44 +683,52 @@ func _spawn_biker(kind: String) -> void:
 	bike.centered = false
 	bike.position = Vector2(0, -22)
 	node.add_child(bike)
-	var used: Array = _bikers.map(func(x): return x["slot"])
-	var slot := 0 if not 0 in used else 1
-	_bikers.append({"node": node, "rider": rider, "kind": kind, "hp": BIKER_HP[kind], "state": "approach", "timer": 0.0, "slot": slot})
+	# Uno de cada tres se queda lejos tirando botellas (si no hay ya otro haciéndolo).
+	var throwers := _bikers.filter(func(x): return x["thrower"]).size()
+	var thrower := throwers == 0 and (BIKERS.size() - _to_spawn.size()) % 3 == 0
+	_bikers.append({"node": node, "rider": rider, "kind": kind, "hp": BIKER_HP[kind], "state": "approach",
+		"timer": 0.0, "side": side, "thrower": thrower})
 	if _to_spawn.size() == BIKERS.size() - 1:
 		Narrator.say("—¡Las motos! ¡No lo dejen ir!", true)
+
+
+## El centro de la moto (x de pantalla).
+func _bx(b: Dictionary) -> float:
+	return b["node"].position.x + BIKE_W * 0.5
 
 
 func _biker_tick(b: Dictionary, delta: float) -> void:
 	var node: Node2D = b["node"]
 	var rider: AnimatedSprite2D = b["rider"]
-	var target: float = BIKER_SLOT_X[b["slot"]]
 	b["timer"] -= delta
-	# Las motos zigzaguean un poco al lado del camión.
-	var wobble := sin(_t * 3.0 + b["slot"] * 2.0) * 3.0
+	# Se quedan de su lado: si él se pasa, cambian de lado.
+	var side: float = signf(_bx(b) - _px)
+	if side == 0.0:
+		side = b["side"]
+	b["side"] = side
+	rider.flip_h = side > 0.0  # miran hacia él
+	var hover: float = THROW_HOVER if b["thrower"] else HOVER
+	var target := clampf(_px + side * hover, -20.0, 300.0) - BIKE_W * 0.5
+	var wobble := sin(_t * 3.0 + node.get_instance_id() % 7) * 3.0
 	match b["state"]:
 		"approach":
-			node.position.x = move_toward(node.position.x, target, 110.0 * delta)
-			if absf(node.position.x - target) < 2.0:
+			node.position.x = move_toward(node.position.x, target, 120.0 * delta)
+			if absf(node.position.x - target) < 3.0:
 				b["state"] = "ride"
-				b["timer"] = randf_range(0.5, 1.1)
+				b["timer"] = randf_range(0.6, 1.4)
 		"ride":
-			node.position.x = target + wobble
-			if b["timer"] <= 0.0 and b["slot"] == 0:
-				# Se tira encima para pegar (avisa poniéndose rojo).
-				b["state"] = "windup"
-				b["timer"] = 0.5
-				create_tween().tween_property(rider, "modulate", Color(1, 0.4, 0.4), 0.3)
-			elif b["timer"] <= 0.0:
-				# El de atrás no espera tranquilo: tira botellas. Si el de adelante cayó, pasa adelante.
-				if _bikers.filter(func(x): return x["slot"] == 0).is_empty():
-					b["slot"] = 0
-					b["state"] = "approach"
-					b["timer"] = 0.5
-				else:
+			node.position.x = move_toward(node.position.x, target + wobble, BIKER_FOLLOW * delta)
+			if b["timer"] <= 0.0:
+				if b["thrower"]:
 					b["timer"] = randf_range(1.6, 2.6)
 					_throw_bottle(b)
+				else:
+					# Se le tira encima para pegar (avisa poniéndose rojo).
+					b["state"] = "windup"
+					b["timer"] = 0.65
+					create_tween().tween_property(rider, "modulate", Color(1, 0.4, 0.4), 0.3)
 		"windup":
-			node.position.x = move_toward(node.position.x, target + 10.0, 30.0 * delta)
+			node.position.x = move_toward(node.position.x, _px + side * 14.0 - BIKE_W * 0.5, 70.0 * delta)
 			if b["timer"] <= 0.0:
 				b["state"] = "punch"
 				b["timer"] = 0.3
@@ -593,22 +737,27 @@ func _biker_tick(b: Dictionary, delta: float) -> void:
 		"punch":
 			if b["timer"] <= 0.0:
 				rider.modulate = Color.WHITE
-				_omega -= 2.8  # el golpe lo empuja contra el camión
-				_lose_life(HIT_DAMAGE)
-				_sfx["hit-1"].play()
+				if absf(_bx(b) - _px) < 26.0 and _slip <= 0.0:
+					_omega += -side * 2.6  # el golpe lo empuja para el otro lado
+					_lose_life(HIT_DAMAGE)
+					_sfx["hit-1"].play()
+				else:
+					_sfx["miss"].play()  # se movió a tiempo
 				b["state"] = "ride"
-				b["timer"] = randf_range(0.8, 1.4)
+				b["timer"] = randf_range(1.3, 2.3)
 				rider.play("idle")
 		"stagger":
 			node.position.x = move_toward(node.position.x, target, 50.0 * delta)
 			node.rotation = lerpf(node.rotation, 0.0, 6.0 * delta)
 			if b["timer"] <= 0.0:
 				b["state"] = "ride"
-				b["timer"] = randf_range(0.5, 1.0)
+				b["timer"] = randf_range(0.7, 1.3)
 				rider.play("idle")
+				rider.modulate = Color.WHITE
 
 
-## El de atrás tira una botella (en arco) hacia él. Si al llegar está pateando, la devuelve.
+## Tira una botella (en arco) a donde está él ahora. Si se movió, la esquiva; si le pega justo
+## cuando llega (patada o puño), la devuelve.
 func _throw_bottle(b: Dictionary) -> void:
 	var rider: AnimatedSprite2D = b["rider"]
 	rider.play("punch")
@@ -618,7 +767,7 @@ func _throw_bottle(b: Dictionary) -> void:
 	bottle.position = b["node"].position + Vector2(14, -40)
 	add_child(bottle)
 	var from := bottle.position
-	var to := HAND + Vector2(-4, 16)
+	var to := Vector2(_px, GRIP_Y + 20)
 	var t := create_tween().set_parallel()
 	t.tween_method(func(k: float): bottle.position = from.lerp(to, k) - Vector2(0, sin(k * PI) * 30.0), 0.0, 1.0, BOTTLE_TIME)
 	t.tween_property(bottle, "rotation", 9.0, BOTTLE_TIME)
@@ -628,63 +777,182 @@ func _throw_bottle(b: Dictionary) -> void:
 	if phase != Phase.HANG:
 		bottle.queue_free()
 		return
-	if _kick > 0.0:  # la devolvió de una patada
+	if absf(_px - to.x) > 12.0:  # se movió: la botella se revienta contra la caja
+		bottle.queue_free()
+		_sfx["miss"].play()
+		_pop_text("¡CRASH!", Vector2(to.x + 20, GRIP_Y - 14))
+		return
+	if _attack > 0.0 and _attack_kind != "throw":  # la devolvió de un golpe
 		Dream.add(150)
 		_sfx["hit-2"].play()
 		var back := create_tween().set_parallel()
-		back.tween_property(bottle, "position", bottle.position + Vector2(-140, 40), 0.5)
+		back.tween_property(bottle, "position", bottle.position + Vector2(-_face * -140.0, 40), 0.5)
 		back.tween_property(bottle, "rotation", -12.0, 0.5)
 		back.chain().tween_callback(bottle.queue_free)
 		return
 	bottle.queue_free()
-	_omega += 1.8
+	_omega += 1.8 * signf(_px - from.x)
 	_lose_life(HIT_DAMAGE)
 	_sfx["hit-1"].play()
-	var glass := Label.new()  # "¡CRASH!" donde le pega
-	glass.text = "¡CRASH!"
-	glass.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
-	glass.add_theme_font_size_override("font_size", 8)
-	glass.add_theme_constant_override("outline_size", 3)
-	glass.add_theme_color_override("font_outline_color", Color.BLACK)
-	glass.position = to + Vector2(-24, -30)
-	glass.z_index = 40
-	add_child(glass)
+	_pop_text("¡CRASH!", Vector2(to.x + 20, GRIP_Y - 14))
+
+
+## Un "¡TOMA!" / "¡PUF!" corto. Va en la franja libre entre el medidor y el techo del camión (no sobre
+## el letrero), sin subir: se agranda y se desvanece ahí mismo.
+func _pop_text(text: String, at: Vector2) -> void:
+	at.y = GRIP_Y - 13.0
+	var w := text.length() * 8.0
+	if at.x + w > _px - 20.0 and at.x < _px + 20.0:  # no encima del medidor: a un lado
+		at.x = _px + 22.0 if at.x + w * 0.5 >= _px else _px - 22.0 - w
+	at.x = clampf(at.x, 2.0, Controls.right_edge() - w)
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.position = at
+	l.z_index = 40
+	add_child(l)
 	var g := create_tween()
-	g.tween_property(glass, "position:y", glass.position.y - 12, 0.6)
-	g.parallel().tween_property(glass, "modulate:a", 0.0, 0.6)
-	g.tween_callback(glass.queue_free)
+	g.tween_interval(0.35)
+	g.tween_property(l, "modulate:a", 0.0, 0.3)
+	g.tween_callback(l.queue_free)
 
 
-## La patada pega al que esté más cerca dentro del alcance (y le corta el golpe si lo estaba cargando).
-func _kick_hit() -> void:
+## La moto más cercana hacia donde mira, a menos de `limit` (null si no hay).
+func _nearest_ahead(limit: float):
 	var best = null
+	var best_d := limit
 	for b in _bikers:
-		var rx: float = b["node"].position.x + 12.0
-		if b["state"] != "crash" and rx >= KICK_RANGE.x and rx <= KICK_RANGE.y:
-			if best == null or rx > best["node"].position.x + 12.0:
-				best = b
+		var d := (_bx(b) - _px) * _face
+		if b["state"] != "crash" and d >= 0.0 and d <= best_d:
+			best = b
+			best_d = d
+	return best
+
+
+## Dónde queda (en la pantalla) un punto del cuerpo colgado: las manos + el balanceo.
+func _body_point(p: Vector2) -> Vector2:
+	var local := Vector2(p.x * -_face, p.y)  # los cuadros miran a la izquierda; espejado si mira a la derecha
+	return Vector2(_px, GRIP_Y) + local.rotated(_hands.rotation + _rig.rotation)
+
+
+## El golpe pega al que esté más cerca hacia donde mira, dentro del alcance (patada más larga que el
+## puño). Si lo estaba cargando, se lo corta. El golpeado se acomoda para que el pie (o el puño) le
+## llegue justo al cuerpo, y después sale para atrás.
+func _attack_hit() -> void:
+	var reach := KICK_REACH if _attack_kind == "kick" else PUNCH_REACH
+	var best = null
+	var best_d := 999.0
+	for b in _bikers:
+		var d := (_bx(b) - _px) * _face
+		if b["state"] != "crash" and d >= reach.x and d <= reach.y and d < best_d:
+			best = b
+			best_d = d
 	if best == null:
 		_sfx["miss"].play()
 		return
+	var contact := _body_point(FOOT if _attack_kind == "kick" else FIST)
+	best["contact_x"] = contact.x + _face * 5.0 - 12.0  # el cuerpo del que maneja (rider en x+12) contra el pie
 	best["hp"] -= 1
 	Dream.add(100)
 	_sfx["hit-2"].play()
 	_shake = 2.0
 	var rider: AnimatedSprite2D = best["rider"]
-	rider.modulate = Color.WHITE
-	if best["hp"] <= 0:
-		_crash(best)
-	else:
-		best["state"] = "stagger"
-		best["timer"] = 0.6
-		best["node"].position.x -= 26.0
-		best["node"].rotation = -0.3
-		rider.stop()
-		rider.play("hurt")
+	rider.modulate = Color(1, 1, 1)
+	_pop_text("¡PAF!" if _attack_kind == "punch" else "¡TOMA!", Vector2(_bx(best) - 20, BIKE_Y - 62))
+	_knock(best)
+
+
+## Le pegaron (patada, puño o harina): pierde vida; se tambalea para atrás, o se cae de la moto.
+func _knock(b: Dictionary) -> void:
+	var rider: AnimatedSprite2D = b["rider"]
+	if b["hp"] <= 0:
+		_crash(b)
+		return
+	var away: float = signf(_bx(b) - _px)
+	if away == 0.0:
+		away = _face
+	b["state"] = "stagger"
+	b["timer"] = 0.7
+	var node: Node2D = b["node"]
+	var k := create_tween()
+	var x0: float = node.position.x
+	if b.has("contact_x"):  # primero se acomoda contra el pie / el puño...
+		x0 = b["contact_x"]
+		b.erase("contact_x")
+		k.tween_property(node, "position:x", x0, 0.04)
+	k.tween_interval(0.04)
+	k.tween_property(node, "position:x", x0 + away * 28.0, 0.16).set_ease(Tween.EASE_OUT)  # ...y sale para atrás
+	node.rotation = 0.3 * away
+	rider.stop()
+	rider.play("hurt")
+	rider.modulate = Color(3, 3, 3)  # el que recibe se pone blanco un instante
+	create_tween().tween_property(rider, "modulate", Color.WHITE, 0.2)
+
+
+## Le tira una bolsa de harina del camión al que está lejos. Va siguiéndolo; si le llega, ¡PUF!
+func _throw_flour() -> void:
+	var b = _throw_target
+	_throw_target = null
+	_throw_cd = THROW_COOLDOWN
+	if b == null or b["state"] == "crash":
+		return
+	var bag := Sprite2D.new()
+	bag.texture = load("res://assets/prologue/bolsa_harina.png")
+	bag.z_index = 26
+	bag.position = _body_point(FIST)
+	add_child(bag)
+	_sfx["click"].play()
+	var from := bag.position
+	var dist := absf(_bx(b) - from.x)
+	var time := maxf(0.2, dist / THROW_SPEED)
+	var face := _face
+	var fly := func(k: float) -> void:
+		if not is_instance_valid(bag):
+			return
+		var to: Vector2 = Vector2(_bx(b), BIKE_Y - 34) if b["state"] != "crash" else from + Vector2(face * dist, 20)
+		bag.position = from.lerp(to, k) - Vector2(0, sin(k * PI) * 14.0)
+	var t := create_tween().set_parallel()
+	t.tween_method(fly, 0.0, 1.0, time)
+	t.tween_property(bag, "rotation", _face * 8.0, time)
+	await t.finished
+	var at := bag.position
+	bag.queue_free()
+	_flour_puff(at)
+	if phase != Phase.HANG or b["state"] == "crash" or not _bikers.has(b):
+		return
+	b["hp"] -= 1
+	Dream.add(80)
+	_sfx["hit-2"].play()
+	_pop_text("¡PUF!", Vector2(_bx(b) - 14, BIKE_Y - 62))
+	b["rider"].modulate = Color.WHITE
+	_knock(b)
+
+
+## La nube de harina donde revienta la bolsa.
+func _flour_puff(at: Vector2) -> void:
+	for i in 8:
+		var p := Polygon2D.new()
+		p.polygon = PackedVector2Array([Vector2(-2, 0), Vector2(0, -2), Vector2(2, 0), Vector2(0, 2)])
+		p.color = Color(0.96, 0.94, 0.88, 0.9)
+		p.position = at
+		p.z_index = 27
+		add_child(p)
+		var dir := Vector2.from_angle(i * TAU / 8.0 + randf_range(-0.3, 0.3))
+		var t := create_tween().set_parallel()
+		t.tween_property(p, "position", at + dir * randf_range(8, 16) + Vector2(-_speed * 0.05, -4), 0.5)
+		t.tween_property(p, "scale", Vector2(2.5, 2.5), 0.5)
+		t.tween_property(p, "modulate:a", 0.0, 0.5)
+		t.chain().tween_callback(p.queue_free)
 
 
 ## Se cae de la moto: la moto da vueltas hacia atrás y el que manejaba sale volando.
-func _crash(b: Dictionary) -> void:
+## by_obstacle: se la llevó una carretilla (también cuenta).
+func _crash(b: Dictionary, by_obstacle := false) -> void:
+	if b["state"] == "crash":
+		return
 	b["state"] = "crash"
 	_bikers.erase(b)
 	Dream.add(500)
@@ -692,14 +960,19 @@ func _crash(b: Dictionary) -> void:
 	var rider: AnimatedSprite2D = b["rider"]
 	rider.play("fall")
 	rider.reparent(self)
+	var away := -1.0 if by_obstacle else signf(_bx(b) - _px)
+	if away == 0.0:
+		away = -1.0
 	var t := create_tween().set_parallel()
 	t.tween_property(node, "position", node.position + Vector2(-160, 0), 0.9).set_ease(Tween.EASE_IN)
 	t.tween_property(node, "rotation", -6.0, 0.9)
-	t.tween_property(rider, "position", rider.position + Vector2(-120, -30), 0.5).set_ease(Tween.EASE_OUT)
-	t.tween_property(rider, "rotation", -4.0, 0.9)
+	t.tween_property(rider, "position", rider.position + Vector2(away * 60.0 - 70.0, -34), 0.5).set_ease(Tween.EASE_OUT)
+	t.tween_property(rider, "rotation", away * 4.0, 0.9)
 	t.chain().tween_callback(func():
 		node.queue_free()
 		rider.queue_free())
+	if by_obstacle:
+		_pop_text("¡JA!", Vector2(_bx(b) - 10, BIKE_Y - 60))
 	var done := BIKERS.size() - _to_spawn.size() - _bikers.size()
 	hud.set_counter("%d/%d" % [done, BIKERS.size()])
 	if _to_spawn.is_empty() and _bikers.is_empty():
@@ -713,11 +986,13 @@ func _stage_clear() -> void:
 	phase = Phase.CLEAR
 	_meter.visible = false
 	_prompt.visible = false
+	_warned = false
 	_banner.visible = true
 	_sfx["gogogo"].play()
 	Dream.add(3000)
 	mood.forced_distress = 0.4
 	_hands.rotation = 0.0
+	_hanging.flip_h = false
 	_hanging.play("hang")
 	_target_speed = 0.0
 	Narrator.say("El camión frena en el puente.", true)

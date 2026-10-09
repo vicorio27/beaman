@@ -1459,3 +1459,13 @@ L (Select en el control, el librito en el celular, o L desde la mochila). Págin
   - más alto (2 filas de pecho y 2 de piernas) y más ancho de hombros (2 columnas);
   - la cabeza del mismo tamaño;
   - brazos al aire, con sombra de músculo.
+- **El colgado del camión** (sueño 1, parte 2) lo dibuja `tools/art/draw_colgado.py`. Es el mismo héroe, con cuadros de 40x48.
+- **Cómo se juega esa parte:**
+  - Cuelga del borde del techo de la caja.
+  - Izquierda/derecha: se mueve mano sobre mano.
+  - Arriba: encoge las piernas. Así se estabiliza y esquiva las carretillas y canecas parqueadas, que también tumban a las motos.
+  - A/E: patada; dos seguidas, patada y puño, hacia donde mira.
+  - Hay 22 motos que vienen por los dos lados. Los que tiran botellas se quedan lejos: moverse las esquiva.
+  - Umbral de la patada: 42 px (el puño, 36). Más lejos, el botón le tira una bolsa de harina del camión: le quita 1 de vida y lo hace tambalear.
+  - Cuando la patada o el puño conecta, el golpeado se acomoda contra el pie o el puño (FOOT/FIST) y después sale para atrás.
+  - Los "¡TOMA!", "¡PAF!" y "¡PUF!" van quietos en la franja entre el medidor y el techo, nunca sobre el letrero del camión.

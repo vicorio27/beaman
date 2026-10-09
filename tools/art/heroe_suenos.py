@@ -169,6 +169,8 @@ def avatar():
 
 def main():
     for name, cw in SHEETS.items():
+        if name == "player_hang.png":
+            continue  # el colgado del camión se dibuja aparte (draw_colgado.py)
         heroize(dress(Image.open(SRC / ("orig_" + name)), cw, sleeves=False), cw).save(DIR / name)
         print("héroe:", name)
     avatar()
