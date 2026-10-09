@@ -1,5 +1,5 @@
 extends CanvasLayer
-## HUD mínimo de la vida real (spec, sección 9): hambre, plata y hora.
+## HUD mínimo de la vida real (spec, sección 9): hambre, plata, ánimo, compañía (soledad) y hora.
 ## Debajo, la misión principal (siempre a la vista) y cuántas secundarias/opcionales hay (Tab las muestra).
 ## Aviso en el medio cuando empieza o se cumple una misión.
 
@@ -7,6 +7,8 @@ const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const SEGMENTS := 10
 
 var _segs: Array[ColorRect] = []
+var _company: Array[ColorRect] = []
+var _company_bg: ColorRect
 var _money: Label
 var _dirty: Label
 var _mood: TextureRect
@@ -51,6 +53,22 @@ func _ready() -> void:
 	_dirty = _label(Vector2(163, 5))
 	_dirty.text = "SUCIO"
 	_dirty.add_theme_color_override("font_color", Color(0.62, 0.7, 0.36))
+	# Compañía (lo contrario de la soledad): baja sola; sube hablando con gente o con Lukas.
+	_company_bg = ColorRect.new()
+	_company_bg.color = panel.color
+	_company_bg.position = Vector2(208, 2)
+	_company_bg.size = Vector2(64, 14)
+	add_child(_company_bg)
+	var cicon := TextureRect.new()
+	cicon.texture = load("res://assets/ui/compania.png")
+	cicon.position = Vector2(210, 3)
+	add_child(cicon)
+	for i in 8:
+		var c := ColorRect.new()
+		c.position = Vector2(226 + i * 5, 5)
+		c.size = Vector2(4, 6)
+		add_child(c)
+		_company.append(c)
 	var clock_bg := ColorRect.new()
 	clock_bg.color = panel.color
 	clock_bg.position = Vector2(274, 2)
@@ -84,6 +102,7 @@ func _ready() -> void:
 	GameState.money_changed.connect(func(_v): _refresh())
 	GameState.hygiene_changed.connect(func(_v): _refresh())
 	GameState.mood_changed.connect(func(_v): _refresh())
+	GameState.loneliness_changed.connect(func(_v): _refresh())
 	_refresh()
 
 
@@ -108,6 +127,11 @@ func _refresh() -> void:
 		_segs[i].color = (Color(0.86, 0.36, 0.26) if low else Color(0.9, 0.74, 0.36)) if i < filled else Color(0.25, 0.22, 0.24)
 	_money.text = "$%d" % GameState.money
 	_mood.texture = MOOD_ICONS[GameState.mood_level()]
+	var company := 100.0 - GameState.loneliness
+	var lit := ceili(company / (100.0 / 8))
+	var lonely := GameState.is_lonely()
+	for i in 8:
+		_company[i].color = (Color(0.5, 0.62, 0.9) if lonely else Color(0.62, 0.82, 0.96)) if i < lit else Color(0.25, 0.22, 0.24)
 	_dirty.visible = GameState.is_dirty()
 	_dirty_bg.visible = _dirty.visible
 	var main := GameState.main_quest()

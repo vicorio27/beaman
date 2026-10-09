@@ -9,6 +9,7 @@ extends CharacterBody2D
 ##     · Acariciar: un rato de calma (el filtro de angustia baja; GameState.calm_until).
 ##     · Comida: concentrado o compartir lo que haya. Una vez por día (flags.lukas_fed_day).
 ##     · Jugar: con la pelota de trapo; se la tira, la va a buscar y (casi siempre) la trae.
+##     · Hablarle: a Lukas sí le habla, en voz alta. Baja la soledad (barra de compañía del HUD).
 
 signal found_something(item_id: String)
 signal at_bowl
@@ -151,7 +152,7 @@ func _other_interactable() -> bool:
 
 ## El menú de Lukas (F).
 func menu() -> void:
-	var opts := ["Buscá", "Acariciar", "Comida", "Jugar", "Truco", "Nada"]
+	var opts := ["Buscá", "Acariciar", "Comida", "Jugar", "Truco", "Hablarle", "Nada"]
 	var head := "(Me mira. Mueve la cola. Espera instrucciones, o comida, o las dos.)"
 	if GameState.lukas_sick():
 		head = "(Me mira desde el piso. La cola apenas se mueve. Está enfermo.)"
@@ -159,9 +160,14 @@ func menu() -> void:
 		head = "(Me mira. Mueve la cola. Tose una vez, como pidiendo perdón.)"
 	elif GameState.lukas_stage() == 3:
 		head = "(Respira rápido. Me mira largo, como si me estuviera aprendiendo de memoria.)"
+	elif GameState.is_lonely():
+		head = "(Hace horas que no habla con nadie. Lukas se le sienta enfrente, como esperando que diga algo.)"
 	var i := await Dialogue.talk([["LUKAS", head]], opts)
 	if i == 4:
 		await tricks()
+		return
+	if i == 5:
+		await talk_to()
 		return
 	match i:
 		0:
@@ -250,6 +256,55 @@ func _teach(learning: Array) -> void:
 		Narrator.say("(Lukas se acuesta y lo mira. Hoy no.)")
 
 
+## Hablarle a Lukas: afuera es mudo, pero a Lukas sí le habla (en voz alta, bajito). Baja la soledad.
+const TALKS := [
+	"—Vos sí entendés. No decís nada, pero entendés. Somos dos mudos con buena actitud.",
+	"—Hoy un señor me dio una moneda sin mirarme. Yo tampoco lo miré. Empate.",
+	"—¿Te acordás de la casa? Tenía sofá. Vos no te podías subir. Ahora dormimos en el piso los dos. Ganaste vos.",
+	"—Gracias por quedarte. No tenías por qué. Los perros no firman nada.",
+	"—Si algún día hablás, no le contés a nadie lo de la sopa. Ni lo del primer día.",
+	"—Lorena dice que comés más que un niño. Mentira. Comés más que dos.",
+	"—Victoria cumple doce el 29 de octubre. Doce, Lukas. Cuando nació, le cabía la mano entera alrededor de mi dedo.",
+	"—Mañana va a ser mejor. No sé por qué lo digo. Vos me mirás como si fuera verdad, y eso ya ayuda.",
+	"—Si te encuentro algo bueno en la basura, es tuyo. Si es muy bueno, lo partimos. Si es pizza, ya veremos.",
+	"—A veces se me olvida cómo suena mi voz. Por eso te hablo. Para que no se me pierda.",
+]
+const LUKAS_ANSWERS := [
+	"(Lukas ladea la cabeza. Mueve la cola dos veces: una es sí, la otra es comida.)",
+	"(Lukas le pone la pata en la rodilla. Se quedan así un rato.)",
+	"(Lukas suspira, con ese suspiro de perro que suena a persona cansada.)",
+	"(Lukas le lame la mano. Es su forma de decir \"ya, ya\".)",
+	"(Lukas se echa encima de sus pies. No lo va a dejar ir a ningún lado.)",
+]
+
+
+func talk_to() -> void:
+	var f := GameState.flags
+	var lines: Array = []
+	if not f.get("le_hablo_a_lukas", false):
+		f["le_hablo_a_lukas"] = true
+		lines.append(["ÉL", "Afuera no me sale la voz. Con él sí. Es la única voz que tengo, y la guardo para él."])
+	var idx := int(f.get("lukas_charla", 0))
+	f["lukas_charla"] = idx + 1
+	var said: String = TALKS[idx % TALKS.size()]
+	if f.get("lukas_fed_day", -1) != GameState.day and randf() < 0.4:
+		said = "—Ya sé, ya sé. Primero la comida, después la filosofía."
+	lines.append(["ÉL, A LUKAS", said])
+	lines.append(["", LUKAS_ANSWERS.pick_random()])
+	state = "found"
+	_found_time = 4.0
+	sprite.play("sit")
+	_bubble.text = "<3"
+	_bubble.visible = true
+	await Dialogue.talk(lines)
+	# Mucho mejor si de verdad estaba solo; si acaba de hablarle, un poco menos.
+	var fresh: bool = TimeManager.minutes - float(f.get("lukas_charla_at", -999.0)) > 60.0
+	f["lukas_charla_at"] = TimeManager.minutes
+	GameState.company(30.0 if fresh else 10.0)
+	if fresh:
+		GameState.change_mood(3.0)
+
+
 func pet() -> void:
 	state = "found"
 	_found_time = 6.0
@@ -257,6 +312,7 @@ func pet() -> void:
 	_bubble.text = "<3"
 	_bubble.visible = true
 	GameState.calm_until = TimeManager.minutes + CALM_MINUTES
+	GameState.company(8.0)
 	GameState.flags["lukas_pets"] = GameState.flags.get("lukas_pets", 0) + 1
 	if TimeManager.minutes - GameState.flags.get("lukas_pet_at", -999.0) > 60.0:  # no es una máquina
 		GameState.flags["lukas_pet_at"] = TimeManager.minutes

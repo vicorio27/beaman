@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dff2uwl43jtid"
-path="res://.godot/imported/dlg_box.png-3e68c29f557876cc08f2c3b42304984f.ctex"
+uid="uid://brcfle8jbw7va"
+path="res://.godot/imported/car_azul_down_a.png-c6638e2592347766f9e22d342700b474.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/dlg_box.png"
-dest_files=["res://.godot/imported/dlg_box.png-3e68c29f557876cc08f2c3b42304984f.ctex"]
+source_file="res://assets/barrio/trafico/car_azul_down_a.png"
+dest_files=["res://.godot/imported/car_azul_down_a.png-c6638e2592347766f9e22d342700b474.ctex"]
 
 [params]
 

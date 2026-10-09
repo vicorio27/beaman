@@ -5,8 +5,8 @@ extends CanvasLayer
 ## Devuelve el índice de la opción elegida (cancelar = la última), o -1 si no había opciones.
 ## Interactuar: avanza (o completa el texto). Arriba/abajo: elegir. Cancelar: la última opción.
 ## Lo que él piensa va con quien habla = INNER ("ÉL"): otro color, y la placa dice "por dentro".
-## Estilo Hades: el retrato grande del que habla a la izquierda (SPEAKERS), la placa con el nombre
-## montada sobre el cuadro, y el cuadro de papel con marco dorado (tools/art/draw_dialogo.py).
+## Estilo Dredge: el que habla, de pie, en el medio (retrato serio y gastado, SPEAKERS), detrás de
+## un cuadro negro con letra blanca; el nombre centrado entre dos líneas finas, y comillas.
 
 signal _finished(choice: int)
 
@@ -14,14 +14,16 @@ const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const CHARS_PER_SECOND := 45.0
 ## Lo que él piensa (afuera es mudo: los demás no lo oyen). Se escribe ["ÉL", "..."], sin raya.
 const INNER := "ÉL"
-const INK := Color(0.2, 0.14, 0.12)
-const INNER_COLOR := Color(0.16, 0.26, 0.52)
-const NARRATION_COLOR := Color(0.42, 0.32, 0.26)
-const NAME_COLOR := Color(0.95, 0.8, 0.45)
-const SUB_COLOR := Color(0.86, 0.5, 0.46)
+const INK := Color(0.93, 0.91, 0.87)
+const INNER_COLOR := Color(0.62, 0.76, 0.96)
+const NARRATION_COLOR := Color(0.7, 0.67, 0.62)
+const NAME_COLOR := Color(0.95, 0.93, 0.88)
+const SUB_COLOR := Color(0.58, 0.55, 0.52)
+const SELECT_COLOR := Color(0.88, 0.36, 0.42)
+const BOX := Rect2(34, 130, 252, 48)
 ## Lo que entra en el cuadro (4 renglones). Lo más largo se parte en páginas.
-const PAGE_CHARS := 88  # con retrato (27 letras por renglón)
-const PAGE_CHARS_WIDE := 124  # sin retrato (36 por renglón)
+const PAGE_CHARS := 96  # 28 letras por renglón, 4 renglones
+const PAGE_CHARS_WIDE := 96
 ## Quién habla -> [retrato (assets/portraits/<id>.png), lo que dice la placa abajo del nombre].
 ## Sin entrada: placa sin retrato. Los retratos salen de tools/art/draw_retratos.py.
 const SPEAKERS := {
@@ -39,7 +41,7 @@ const SPEAKERS := {
 	"DON OCTAVIO": ["octavio", "el ajedrez"], "DON RAMIRO": ["ramiro", "el ajedrez"], "YEISON": ["yeison", ""],
 	"EL DE LA CHAQUETA": ["chaqueta", ""], "FUNCIONARIA": ["funcionaria", ""], "FOTOGRAFO": ["fotografo", ""],
 	"DON TITO": ["tito", ""], "LA MONA": ["mona", ""], "MAESTRO RAMIRO": ["maestro", ""],
-	"LORENA": ["lilato", "su ex"],
+	"LORENA": ["lilato", "su ex"], "ÉL, A LUKAS": ["el", "en voz alta, a Lukas"],
 }
 ## Los de la ciudad: a esos se les va apagando la cara (todos iguales, GameState.sameness), como a
 ## su muñeco en el mapa. Los de los sueños, no. Retrato -> id de la persona.
@@ -57,14 +59,15 @@ var _shown := 0.0
 var _cursor := 0
 var _guard := 0.0
 
-var _box: NinePatchRect
+var _box: ColorRect
 var _portrait: TextureRect
-var _plate: NinePatchRect
+var _plate: Control
 var _name: Label
 var _sub: Label
 var _text: Label
 var _more: TextureRect
-var _choice_panel: NinePatchRect
+var _quotes: Array[Label] = []
+var _choice_panel: ColorRect
 var _choice_bar: ColorRect
 var _choice_labels: Array[Label] = []
 
@@ -72,44 +75,61 @@ var _choice_labels: Array[Label] = []
 func _ready() -> void:
 	layer = 16
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_box = _nine("res://assets/ui/dlg_box.png", 6)
+	# El que habla, de pie en el medio, detrás del cuadro (el cuadro le tapa la cintura).
+	_portrait = TextureRect.new()
+	_portrait.position = Vector2(112, 24)
+	_portrait.visible = false
+	add_child(_portrait)
+	_box = ColorRect.new()
+	_box.color = Color(0.03, 0.03, 0.04, 0.9)
+	_box.position = BOX.position
+	_box.size = BOX.size
 	_box.visible = false
 	add_child(_box)
-	_text = _label(Vector2.ZERO, INK)
+	var inner := ReferenceRect.new()
+	inner.border_color = Color(0.55, 0.53, 0.5, 0.35)
+	inner.editor_only = false
+	inner.position = Vector2(2, 2)
+	inner.size = BOX.size - Vector2(4, 4)
+	_box.add_child(inner)
+	_text = _label(Vector2(14, 5), INK)
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.add_theme_constant_override("line_spacing", 2)
+	_text.size = Vector2(224, 40)
 	_box.add_child(_text)
+	for q in [["“", Vector2(2, -6)], ["”", BOX.size - Vector2(14, 10)]]:  # las comillas grandes
+		var l := _label(q[1], Color(0.93, 0.91, 0.87))
+		l.text = q[0]
+		l.add_theme_font_size_override("font_size", 16)
+		_box.add_child(l)
+		_quotes.append(l)
 	_more = TextureRect.new()
 	_more.texture = load("res://assets/ui/dlg_more.png")
 	_box.add_child(_more)
-	# El retrato va encima del borde del cuadro (como en Hades), la placa encima de los dos.
-	_portrait = TextureRect.new()
-	_portrait.position = Vector2(-4, 68)  # retratos de 96x112, abajo a la izquierda
-	_portrait.visible = false
-	add_child(_portrait)
-	_plate = _nine("res://assets/ui/dlg_plate.png", 5)
+	# El nombre: centrado, entre dos líneas finas, sobre el borde de arriba del cuadro.
+	_plate = Control.new()
 	_plate.visible = false
 	add_child(_plate)
-	_name = _label(Vector2(6, 4), NAME_COLOR)
+	for side in [0, 1]:
+		var ln := ColorRect.new()
+		ln.color = Color(0.85, 0.83, 0.78, 0.8)
+		ln.name = "Linea%d" % side
+		_plate.add_child(ln)
+	var name_bg := ColorRect.new()
+	name_bg.name = "Fondo"
+	name_bg.color = Color(0.03, 0.03, 0.04, 0.9)
+	_plate.add_child(name_bg)
+	_name = _label(Vector2.ZERO, NAME_COLOR)
 	_plate.add_child(_name)
-	_sub = _label(Vector2(6, 13), SUB_COLOR)
+	_sub = _label(Vector2.ZERO, SUB_COLOR)
 	_plate.add_child(_sub)
-	_choice_panel = _nine("res://assets/ui/dlg_box.png", 6)
+	_choice_panel = ColorRect.new()
+	_choice_panel.color = Color(0.03, 0.03, 0.04, 0.9)
 	_choice_panel.visible = false
 	add_child(_choice_panel)
 	_choice_bar = ColorRect.new()
-	_choice_bar.color = Color(0.87, 0.7, 0.33, 0.45)
+	_choice_bar.color = Color(0.5, 0.12, 0.16, 0.6)
 	_choice_panel.add_child(_choice_bar)
-
-
-func _nine(path: String, margin: int) -> NinePatchRect:
-	var n := NinePatchRect.new()
-	n.texture = load(path)
-	n.patch_margin_left = margin
-	n.patch_margin_right = margin
-	n.patch_margin_top = margin
-	n.patch_margin_bottom = margin
-	return n
 
 
 func _label(pos: Vector2, color: Color) -> Label:
@@ -126,6 +146,7 @@ func talk(lines: Array, choices: Array = []) -> int:
 	Narrator.hide_now()  # que no se mezclen dos textos
 	_lines = _paginate(lines)
 	_choices = choices
+	_keep_company(lines)
 	_index = 0
 	_cursor = 0
 	_guard = 0.15
@@ -135,6 +156,17 @@ func talk(lines: Array, choices: Array = []) -> int:
 	_show_line()
 	var result: int = await _finished
 	return result
+
+
+## Si alguien le habla (no él por dentro, no la narración), baja la soledad. Una vez cada 20 minutos.
+func _keep_company(lines: Array) -> void:
+	for line in lines:
+		if line is Array and line[0] != null and not str(line[0]) in ["", INNER, "YO", "EL PELADO"]:
+			var f := GameState.flags
+			if TimeManager.minutes - float(f.get("company_at", -999.0)) > 20.0:
+				f["company_at"] = TimeManager.minutes
+				GameState.company(10.0)
+			return
 
 
 ## Parte las líneas que no entran en el cuadro, por oraciones (si una oración sola no entra, por
@@ -194,31 +226,31 @@ func _show_line() -> void:
 	elif who == INNER:
 		color = INNER_COLOR
 	_text.add_theme_color_override("font_color", color)
-	# El retrato (si tiene) y el cuadro: con retrato, el cuadro empieza a su derecha.
 	_portrait.visible = not info.is_empty()
 	if _portrait.visible:
 		_portrait.texture = load("res://assets/portraits/%s.png" % info[0])
-		_portrait.modulate = Color(0.78, 0.86, 1.0) if who == INNER else Color.WHITE
+		_portrait.modulate = Color(0.8, 0.88, 1.0) if who == INNER else Color.WHITE
 		_set_sameness(info[0])
-		_box.position = Vector2(60, 126)
-		_box.size = Vector2(258, 52)
-		_text.position = Vector2(34, 7)
-		_text.size = Vector2(216, 40)
-	else:
-		_box.position = Vector2(2, 126)
-		_box.size = Vector2(316, 52)
-		_text.position = Vector2(10, 7)
-		_text.size = Vector2(298, 40)
-	_more.position = _box.size - Vector2(14, 9)
-	# La placa del nombre, montada sobre el borde de arriba del cuadro.
+	_more.position = BOX.size - Vector2(26, 9)
+	# El nombre (y lo que es, más apagado), centrado entre dos líneas.
 	_plate.visible = who != ""
 	if _plate.visible:
 		_name.text = who
-		_sub.text = info[1] if info.size() > 1 else ""
-		var w := maxi(_name.text.length(), _sub.text.length()) * 8 + 12
-		var h := 24 if _sub.text != "" else 16
-		_plate.size = Vector2(w, h)
-		_plate.position = Vector2(_box.position.x + (30 if _portrait.visible else 6), _box.position.y - h + 3)
+		_sub.text = ("  " + info[1]) if info.size() > 1 and info[1] != "" else ""
+		var w := (_name.text.length() + _sub.text.length()) * 8
+		var x0 := 160.0 - w / 2.0
+		var y := BOX.position.y - 12
+		_name.position = Vector2(x0, y)
+		_sub.position = Vector2(x0 + _name.text.length() * 8, y)
+		var bg: ColorRect = _plate.get_node("Fondo")
+		bg.position = Vector2(x0 - 6, y - 2)
+		bg.size = Vector2(w + 12, 12)
+		var l0: ColorRect = _plate.get_node("Linea0")
+		var l1: ColorRect = _plate.get_node("Linea1")
+		l0.position = Vector2(BOX.position.x + 6, y + 4)
+		l0.size = Vector2(maxf(0.0, x0 - 10 - BOX.position.x - 6), 1)
+		l1.position = Vector2(x0 + w + 10, y + 4)
+		l1.size = Vector2(maxf(0.0, BOX.end.x - 6 - (x0 + w + 10)), 1)
 	_shown = 0.0
 	_text.visible_characters = 0
 	_choice_panel.visible = false
@@ -263,8 +295,7 @@ func _show_choices() -> void:
 		w = maxi(w, str(c).length())
 	var width := w * 8 + 30
 	_choice_panel.size = Vector2(width, _choices.size() * 11 + 12)
-	var top := (_plate.position.y if _plate.visible else _box.position.y) - 2
-	_choice_panel.position = Vector2(318 - width, top - _choice_panel.size.y)
+	_choice_panel.position = Vector2(BOX.end.x - width, BOX.position.y - 16 - _choice_panel.size.y)
 	for i in _choices.size():
 		var l := _label(Vector2(8, 7 + i * 11), INK)
 		_choice_panel.add_child(l)
@@ -279,7 +310,7 @@ func _refresh_cursor() -> void:
 	for i in _choice_labels.size():
 		var sel := i == _cursor
 		_choice_labels[i].text = ("> " if sel else "  ") + str(_choices[i])
-		_choice_labels[i].add_theme_color_override("font_color", Color(0.5, 0.12, 0.1) if sel else INK)
+		_choice_labels[i].add_theme_color_override("font_color", SELECT_COLOR.lightened(0.3) if sel else INK)
 
 
 func _unhandled_input(event: InputEvent) -> void:

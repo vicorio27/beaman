@@ -1,12 +1,12 @@
-"""Retratos para los diálogos (estilo Hades: el busto grande a la izquierda, encima del cuadro de texto).
-Más retrato que muñequito: cada cara se modela con volumen. Se arma un mapa de alturas (cráneo y
-mandíbula, nariz, pómulos, arco de las cejas, cuencas de los ojos, labios, mentón), se ilumina desde
-arriba a la derecha (luz, sombra cálida, oclusión en lo hundido) a 4x, se baja a 1x y se reduce la
-paleta (pixel art). Después, a mano y nítido: ojos (párpado, iris, pupila, brillo), cejas, boca,
-fosas nasales, arrugas, gafas. El pelo lleva mechones (ruido estirado en la dirección del peinado) y
-brillo; la ropa, pliegues.
-Busto de 96x112, de tres cuartos mirando a la derecha (hacia el texto). Una mancha de color detrás.
-También iguales.png: el maniquí gris sin cara (todos iguales, ver Dialogue.gd).
+"""Retratos para los diálogos, estilo Dredge: gente seria, gastada, con cara de cansancio. El que
+habla aparece de pie en el medio, detrás del cuadro negro (ver Dialogue.gd).
+Cada cara se modela con volumen: un mapa de alturas (cráneo, nariz, pómulos, cuencas hundidas,
+mejillas chupadas, surcos), luz dura de costado por planos (cortes, no degradé), y después facetas:
+cada celda de un Voronoi toma el color promedio (el look low-poly). Colores apagados (sombras frías,
+luces cálidas). Se pinta a 4x, se baja a 1x y se reduce la paleta (pixel art). A mano y nítido:
+ceño, párpados caídos, ojeras, comisuras para abajo, barba de días, arrugas; "destruido": ojos rojos.
+Busto de 96x112, de tres cuartos mirando a la derecha, fondo transparente.
+También iguales.png: el maniquí gris sin cara (todos iguales).
 Salida: assets/portraits/<id>.png
 Uso: python tools/art/draw_retratos.py [id ...]  (desde la carpeta del proyecto)"""
 import math
@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 OUT = Path("assets/portraits")
 W, H = 96, 112
 S = 4  # se pinta a 4x y se baja
-LIGHT = np.array([0.72, -0.45, 0.52])
+LIGHT = np.array([0.8, -0.42, 0.42])
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
 HALF = (LIGHT + np.array([0, 0, 1.0]))
 HALF = HALF / np.linalg.norm(HALF)
@@ -118,19 +118,25 @@ class Canvas:
     def __init__(self):
         self.rgb = np.zeros((H * S, W * S, 3), np.float32)
         self.a = np.zeros((H * S, W * S), np.float32)
+        self.mat = np.zeros((H * S, W * S), np.int32)  # qué material pintó cada píxel (para las facetas)
+        self._next = 1
 
     def paint(self, m, color):
-        m = np.clip(m, 0, 1)[..., None]
+        m = np.clip(m, 0, 1)
+        self.mat = np.where(m > 0.5, self._next, self.mat)
+        self._next += 1
+        m = m[..., None]
         self.rgb = self.rgb * (1 - m) + color * m
         self.a = np.maximum(self.a, m[..., 0])
 
-    def material(self, m, palette, height=None, k=40.0, amb=0.32, gloss=0.0, extra=None):
+    def material(self, m, palette, height=None, k=40.0, amb=0.22, gloss=0.0, extra=None):
         """Pinta una zona con volumen: palette = (sombra, base, luz)."""
         h = blur(m, 5 * S) if height is None else height
         diff, spec, ao = shade(h, k)
-        t = (amb + diff * 0.85) * ao
+        t = (amb + diff * 0.95) * ao
         if extra is not None:
             t = t + extra
+        t = np.floor(np.clip(t, 0, 1) * 4.0 + 0.35) / 4.0  # luz por planos: cortes duros, no degradé
         col = ramp(t, *palette) + spec[..., None] * gloss * 255
         self.paint(m, np.clip(col, 0, 255))
 
@@ -170,8 +176,11 @@ def draw_head(c, p):
     h += bump(X(59), 61, 3.0, 2.4, 0.55)  # punta de la nariz
     h += bump(X(55), 61, 2.2, 1.6, 0.25)  # ala de la nariz
     h += bump(X(53), 45, 9, 2.4, 0.12)    # arco de las cejas
-    h += bump(X(46), 49, 4.2, 2.8, -0.16)  # cuenca del ojo cercano
-    h += bump(X(61), 49, 2.6, 2.6, -0.12)  # cuenca del ojo lejano
+    h += bump(X(46), 49, 4.4, 3.2, -0.24)  # cuenca del ojo cercano (hundida: cansancio)
+    h += bump(X(61), 49, 2.8, 2.8, -0.18)  # cuenca del ojo lejano
+    if not p.get("chiquita"):
+        h += bump(X(44), 64, 4, 4, -0.08)  # mejilla chupada
+        h += bump(X(48), 63, 2.5, 6, -0.06)  # surco nasogeniano
     h += bump(X(43), 57, 6, 4, 0.10)      # pómulo
     h += bump(X(55), 68, 5, 1.6, 0.10)    # labios
     h += bump(X(54), 75, 5, 3, 0.10)      # mentón
@@ -182,10 +191,10 @@ def draw_head(c, p):
         h += bump(X(50), 82, 9, 2, -0.08)  # la papada
     c.material(ear, (dark, mid, light), height=blur(ear, 2 * S) + bump(X(29), 55, 2, 4, -0.2), k=30)
     # El lado de atrás de la cara (lejos de la luz) más oscuro; y la sombra que tira la nariz.
-    form = np.clip((_XX - X(44)) / 26.0, -1, 1) * 0.22
+    form = np.clip((_XX - X(46)) / 18.0, -1, 1) * 0.38
     nose_shadow = -(bump(X(54), 58, 1.8, 5, 0.32) + bump(X(56), 63.5, 3, 1.1, 0.3))
     jaw_shadow = -bump(X(40), 72, 8, 6, 0.18)
-    c.material(head, (dark, mid, light), height=h, k=52, amb=0.3, gloss=0.08, extra=form + nose_shadow + jaw_shadow)
+    c.material(head, (dark, mid, light), height=h, k=52, amb=0.18, gloss=0.05, extra=form + nose_shadow + jaw_shadow)
     # Mejillas sonrojadas, un poco de rojo en la nariz (la piel no es de un solo color).
     blush = (bump(X(45), 59, 5, 3, 0.16) + bump(X(59), 61, 2.5, 2, 0.1)) * head
     if p.get("cachetes"):
@@ -213,7 +222,7 @@ def draw_body(c, p, seed):
     # Hombros caídos (trapecio, deltoides redondos), no una caja.
     shoulders = poly([(lx, H), (lx + 1, top + 12), (lx + 5, top + 6), (16, top + 2), (30, top - 3), (40, top - 6),
                       (56, top - 6), (66, top - 3), (80, top + 2), (rx - 5, top + 6), (rx - 1, top + 12), (rx, H)])
-    c.material(shoulders, cloth, k=20, amb=0.3, extra=noise(3, 12, seed, 0.25) * 0.6)
+    c.material(shoulders, cloth, k=20, amb=0.2, extra=noise(3, 12, seed, 0.25) * 0.6 + np.clip((_XX - 48) / 30.0, -1, 1) * 0.3)
     shirt = tones(p.get("camisa", (230, 226, 216)))
     if kind in ("saco", "bata", "chaleco", "uniforme"):
         c.material(poly([(38, top - 4), (58, top - 4), (52, H), (44, H)]), shirt, k=20, amb=0.4)
@@ -313,6 +322,10 @@ def draw_hair(c, p, X, seed, front=True):
     if p.get("canas_afro"):
         speck = (noise(0.7, 0.7, seed + 3, 1.0) > 0.38) * m
         c.paint(speck * 0.8, np.array([170, 166, 160], np.float32))
+    if p.get("canas"):  # canas sueltas, más en las sienes
+        temple = np.clip(1.0 - np.abs(_XX - X(26)) / 10.0, 0, 1) * 0.35
+        speck = (noise(0.6, 1.8, seed + 4, 1.0) > 0.5 - p["canas"] - temple) * m
+        c.paint(speck * 0.75, np.array([150, 146, 142], np.float32))
 
 
 def draw_beard(c, p, X, seed):
@@ -325,6 +338,9 @@ def draw_beard(c, p, X, seed):
                   (X(56), 70), (X(48), 70), (X(40), 64)]) * head
         m = m * (1 - poly([(X(50), 66), (X(60), 66), (X(60), 70), (X(50), 70)]) * 0.9)
         c.material(m * np.clip(0.75 + tex, 0, 1), pal, k=40, extra=tex * 0.4)
+        if p.get("canas"):  # la barba con canas (más en el mentón)
+            speck = (noise(0.6, 1.2, seed + 9, 1.0) > 0.5 - p["canas"] - bump(X(52), 80, 6, 4, 0.3)) * m
+            c.paint(speck * 0.8, np.array([156, 150, 144], np.float32))
     if p.get("bigote"):
         c.material(poly([(X(49), 64), (X(58), 63), (X(62), 66), (X(55), 66.5), (X(48), 67)]), pal, k=40, extra=tex * 0.3)
     if p.get("chivera"):
@@ -358,95 +374,114 @@ def px(d, pts, col):
 
 
 def details(img, p, X):
-    """Ojos, cejas, boca, fosas nasales, arrugas, pestañas, gafas: a 1x, píxel por píxel."""
+    """Ojos, cejas, boca, arrugas, barba de días, gafas: a 1x, píxel por píxel. Caras serias y
+    gastadas (como Dredge): ceño, párpados caídos, ojeras, comisuras para abajo."""
     d = ImageDraw.Draw(img)
     dark, mid, light = skin_of(p)
     x = lambda v: int(round(X(v)))
     female, kid, old = p.get("mujer"), p.get("chiquita"), p.get("viejo")
+    worn = p.get("destruido") or old
     ey = 50
-    ink = (34, 22, 22)
-    brow = tones(p.get("cejas", p.get("pelo_color", (40, 32, 34))), 0.5, 1.2)
-    # Cejas: la cercana más larga.
-    by = ey - 5
-    thick = 1 if female or kid else 2
-    for i, bx in enumerate(range(x(41), x(51))):
-        yy = by - (1 if 3 <= i <= 7 else 0)
+    ink = (28, 20, 22)
+    sh = lambda k: tuple(int(v * k) for v in mid)
+    brow = tones(p.get("cejas", p.get("pelo_color", (40, 32, 34))), 0.5, 1.1)
+    # Cejas: gruesas, bajas, con el ceño (la punta de adentro más abajo que la de afuera).
+    thick = 1 if kid else 2
+    for i, bx in enumerate(range(x(41), x(52))):
+        yy = ey - 6 + (1 if i >= 8 else 0) + (0 if kid else (1 if i <= 1 else 0))
         for t in range(thick):
             px(d, [(bx, yy + t)], brow[0] if t == 0 else brow[1])
-    for bx in range(x(58), x(64)):
-        px(d, [(bx, by - (1 if bx < x(62) else 0))], brow[0])
-    # Ojos: cercano (ancho) y lejano (angosto, cerca del borde de la cara).
-    iris = p.get("ojo_color", (70, 46, 34))
+    for bx in range(x(57), x(64)):
+        px(d, [(bx, ey - 5 if bx < x(59) else ey - 6)], brow[0])
+    if not kid:
+        px(d, [(x(53), ey - 4), (x(53), ey - 3)], sh(0.72))  # la arruga del ceño
+    # Ojos: almendra chica, párpado de arriba caído (tapa la mitad del iris), ojera abajo.
+    iris = p.get("ojo_color", (64, 44, 34))
     for (ex0, ex1, near) in ((x(43), x(50), True), (x(58), x(62), False)):
         if p.get("ojos") == "cerrados":
             d.line([(ex0, ey + 1), (ex1, ey + 1)], fill=ink)
-            d.line([(ex0, ey + 2), (ex1 - 1, ey + 2)], fill=tuple(int(v) for v in dark))
             continue
-        white = (232, 224, 214) if not old else (222, 210, 194)
-        # Almendra: arriba y abajo más cortos que el medio.
-        d.line([(ex0 + 1, ey - 1), (ex1 - 1, ey - 1)], fill=white)
-        d.line([(ex0, ey), (ex1, ey)], fill=white)
-        d.line([(ex0 + 1, ey + 1), (ex1 - 1, ey + 1)], fill=(206, 192, 182))
+        white = (210, 200, 186) if not worn else (206, 186, 170)
+        d.line([(ex0 + 1, ey), (ex1 - 1, ey)], fill=white)
+        d.line([(ex0 + 1, ey + 1), (ex1 - 2, ey + 1)], fill=sh(0.8))
         ix = ex1 - (3 if near else 1)
-        iw = 2 if near else 1
-        d.rectangle([ix - 1, ey - 1, ix - 1 + iw, ey + 1], fill=iris)
-        px(d, [(ix, ey)] if near else [(ix - 1, ey)], (20, 14, 14))  # pupila
-        px(d, [(ix + 1 if near else ix, ey - 1)], (250, 250, 246))  # brillo
-        d.line([(ex0, ey - 2), (ex1 - 1, ey - 2)], fill=ink)  # párpado de arriba, grueso hacia afuera
-        px(d, [(ex1, ey - 1), (ex1 + 1, ey - 1) if not near else (ex1, ey - 1)], ink)
-        px(d, [(ex0 - 1, ey)], tuple(int(v * 0.7) for v in dark))  # lagrimal en sombra
-        d.line([(ex0 + 1, ey + 2), (ex1 - 2, ey + 2)], fill=tuple(int(v * 0.92) for v in mid))  # párpado de abajo
-        d.line([(ex0, ey - 3), (ex1 - 1, ey - 3)], fill=tuple(int(v * 0.86) for v in mid))  # pliegue del párpado
-        if old or p.get("ojeras"):
-            d.line([(ex0, ey + 3), (ex1 - 1, ey + 3)], fill=tuple(int(v) for v in dark))
+        d.rectangle([ix - 1, ey, ix + (0 if not near else 1), ey + 1], fill=iris)
+        px(d, [(ix, ey)], (16, 10, 10))
+        px(d, [(ix + (1 if near else 0), ey)], (236, 232, 222))  # un brillo chiquito
+        d.line([(ex0, ey - 1), (ex1, ey - 1)], fill=ink)  # el párpado, pesado
+        d.line([(ex0 + 1, ey - 2), (ex1 - 1, ey - 2)], fill=sh(0.7))  # el pliegue, en sombra
+        px(d, [(ex1 + 1, ey)], ink)
+        if not kid:
+            d.line([(ex0, ey + 2), (ex1 - 1, ey + 2)], fill=sh(0.66))  # ojera
+            if worn or p.get("ojeras"):
+                d.line([(ex0 + 1, ey + 3), (ex1 - 2, ey + 3)], fill=sh(0.74))
+        if p.get("destruido"):
+            px(d, [(ex0, ey), (ex0 + 1, ey + 1)], (150, 70, 66))  # ojo rojo, de no dormir
         if female or kid:
-            px(d, [(ex0 - 2, ey - 3), (ex1 + 1, ey - 3), (ex1 + 2, ey - 2)], ink)  # pestañas
-    # Fosa nasal.
-    px(d, [(x(57), 62), (x(58), 62)], tuple(int(v * 0.75) for v in dark))
-    # Boca: la línea, el labio de abajo con luz.
+            px(d, [(ex1 + 1, ey - 2), (ex1 + 2, ey - 2)], ink)
+    # Nariz: el borde en sombra y la fosa.
+    px(d, [(x(56), 55), (x(56), 57), (x(56), 59)], sh(0.8))
+    px(d, [(x(57), 62), (x(58), 62)], sh(0.55))
+    # Boca: recta, comisuras hacia abajo.
     lips = p.get("labios")
     my = 67
     m0, m1 = x(49), x(59)
     if lips:
-        lc = tones(lips, 0.6, 1.25)
-        d.line([(m0 + 1, my - 1), (m1 - 1, my - 1)], fill=tuple(int(v) for v in lc[0]))
+        lc = tones(lips, 0.6, 1.1)
         d.line([(m0 + 1, my + 1), (m1 - 2, my + 1)], fill=tuple(int(v) for v in lc[1]))
-        px(d, [(m0 + 4, my + 1)], lc[2])
-    d.line([(m0, my), (m1, my)], fill=tuple(int(v * 0.6) for v in dark))
-    up = 1 if p.get("sonrisa") else 0
-    px(d, [(m0 - 1, my - up), (m1 + 1, my - up)], tuple(int(v * 0.7) for v in dark))
+    d.line([(m0, my), (m1, my)], fill=sh(0.5))
+    if kid and p.get("sonrisa"):
+        px(d, [(m0 - 1, my - 1), (m1 + 1, my - 1)], sh(0.6))
+    else:
+        px(d, [(m0 - 1, my + 1), (m1 + 1, my + 1)], sh(0.58))
+    if not kid:
+        px(d, [(x(52), my + 3), (x(55), my + 3)], sh(0.78))  # sombra bajo el labio
+        # Surcos de la nariz a la boca.
+        px(d, [(x(51), 60), (x(50), 62), (x(49), 64), (x(48), 66)], sh(0.74))
     if old:
-        d.line([(x(44), 40), (x(56), 40)], fill=tuple(int(v * 0.9) for v in dark))
-        d.line([(x(46), 42), (x(54), 42)], fill=tuple(int(v * 0.95) for v in dark))
-        px(d, [(x(52), 60), (x(51), 62), (x(50), 64), (x(49), 66)], tuple(int(v * 0.85) for v in dark))
-        px(d, [(x(63), 50), (x(64), 52)], tuple(int(v * 0.85) for v in dark))
+        d.line([(x(44), 39), (x(56), 39)], fill=sh(0.8))
+        d.line([(x(46), 41), (x(54), 41)], fill=sh(0.84))
+        px(d, [(x(63), 50), (x(64), 52), (x(64), 47)], sh(0.75))  # patas de gallo
+        px(d, [(x(40), 70), (x(42), 73), (x(45), 75)], sh(0.8))  # la papada que cuelga
+    # Barba de días (los hombres sin barba): puntitos en la quijada y el bigote.
+    if not (female or kid or p.get("barba")):
+        rnd = random.Random(7)
+        stub = (36, 28, 28) if p.get("pelo_color", (40, 32, 34))[0] < 120 else (120, 110, 100)
+        for _ in range(110 if p.get("destruido") else 60):
+            sx, sy = rnd.randint(x(32), x(64)), rnd.randint(56, 80)
+            pxl = img.getpixel((sx, sy))
+            if pxl[3] and abs(pxl[0] - mid[0]) < 60 and not (x(48) <= sx <= x(60) and my - 1 <= sy <= my + 1):
+                if sy > 64 or (x(48) <= sx <= x(61) and 63 <= sy <= 65):
+                    blend = tuple(int(a * 0.55 + b * 0.45) for a, b in zip(pxl[:3], stub))
+                    d.point((sx, sy), fill=blend + (255,))
+    if p.get("cicatriz"):
+        d.line([(x(60), 44), (x(57), 54)], fill=sh(1.15))
     if p.get("nariz_roja"):
-        d.ellipse([x(57), 58, x(61), 62], fill=(196, 90, 92))
+        d.ellipse([x(57), 58, x(61), 62], fill=(170, 84, 84))
     if p.get("pecas"):
         rnd = random.Random(3)
         for _ in range(12):
-            px(d, [(rnd.randint(x(41), x(62)), rnd.randint(54, 60))], tuple(int(v * 0.78) for v in mid))
+            px(d, [(rnd.randint(x(41), x(62)), rnd.randint(54, 60))], sh(0.8))
     if p.get("arete"):
-        px(d, [(x(29), 62), (x(29), 63)], (240, 200, 80))
+        px(d, [(x(29), 62), (x(29), 63)], (200, 170, 80))
     g = p.get("gafas")
     if g:
-        frame = (30, 24, 26)
+        frame = (24, 18, 20)
         if g == "oscuras":
-            d.rectangle([x(41), ey - 3, x(51), ey + 3], fill=(26, 24, 30))
-            d.rectangle([x(56), ey - 3, x(63), ey + 3], fill=(26, 24, 30))
-            d.line([(x(43), ey - 2), (x(46), ey - 2)], fill=(120, 124, 144))
-            px(d, [(x(58), ey - 2)], (120, 124, 144))
+            d.rectangle([x(41), ey - 3, x(51), ey + 3], fill=(22, 20, 26))
+            d.rectangle([x(56), ey - 3, x(63), ey + 3], fill=(22, 20, 26))
+            d.line([(x(43), ey - 2), (x(46), ey - 2)], fill=(96, 100, 116))
         else:
             d.rectangle([x(41), ey - 3, x(51), ey + 3], outline=frame)
             d.rectangle([x(56), ey - 3, x(63), ey + 3], outline=frame)
-            px(d, [(x(49), ey - 2), (x(61), ey - 2)], (250, 250, 250))
+            px(d, [(x(49), ey - 2), (x(61), ey - 2)], (210, 214, 214))
         d.line([(x(51), ey - 1), (x(56), ey - 1)], fill=frame)
         d.line([(x(31), ey - 1), (x(41), ey - 1)], fill=frame)
     if p.get("audifonos"):
-        d.arc([x(22), 14, x(66), 70], 190, 330, fill=(40, 40, 46), width=2)
-        d.rectangle([x(24), 50, x(30), 60], fill=(60, 180, 180))
+        d.arc([x(22), 14, x(66), 70], 190, 330, fill=(34, 34, 40), width=2)
+        d.rectangle([x(24), 50, x(30), 60], fill=(50, 130, 130))
     if p.get("moño_pelo"):
-        col = p["moño_pelo"]
+        col = tuple(int(v * 0.8) for v in p["moño_pelo"])
         d.polygon([(x(26), 18), (x(33), 23), (x(26), 28)], fill=col)
         d.polygon([(x(40), 18), (x(33), 23), (x(40), 28)], fill=col)
         px(d, [(x(33), 23)], tuple(int(v * 0.6) for v in col))
@@ -454,24 +489,44 @@ def details(img, p, X):
 
 # ---------------------------------------------------------------- Armado
 
-def backdrop(color, seed):
-    """Pinceladas de color detrás (la tela roja de Hades)."""
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    rnd = random.Random(seed)
-    c = tuple(color[:3])
-    dk = tuple(int(v * 0.7) for v in c)
-    pts = []
-    for i in range(16):
-        a = math.pi * 2 * i / 16
-        r = rnd.uniform(34, 46)
-        pts.append((46 + math.cos(a) * r, 66 + math.sin(a) * r * 0.95))
-    d.polygon(pts, fill=dk + (255,))
-    for _ in range(7):
-        y = rnd.randint(24, 104)
-        x0 = rnd.randint(0, 30)
-        d.line([(x0, y), (x0 + rnd.randint(20, 40), y - rnd.randint(4, 14))], fill=c + (255,), width=rnd.randint(2, 5))
-    return img
+def facets(c, cell=5.0, seed=0):
+    """Planos facetados (como Dredge): cada celda de un Voronoi con puntos corridos toma el color
+    promedio de lo que tiene adentro (por material, para no mezclar pelo con piel)."""
+    rnd = np.random.default_rng(seed)
+    cs = cell * S
+    gw, gh = int(W * S / cs) + 3, int(H * S / cs) + 3
+    jx, jy = rnd.random((gh, gw)), rnd.random((gh, gw))
+    yy, xx = np.mgrid[0:H * S, 0:W * S].astype(np.float32)
+    ix, iy = (xx // cs).astype(np.int32), (yy // cs).astype(np.int32)
+    best = np.full(xx.shape, 1e9, np.float32)
+    cid = np.zeros(xx.shape, np.int64)
+    for dj in (-1, 0, 1):
+        for di in (-1, 0, 1):
+            cx, cy = np.clip(ix + di, 0, gw - 1), np.clip(iy + dj, 0, gh - 1)
+            pxp, pyp = (cx + jx[cy, cx]) * cs, (cy + jy[cy, cx]) * cs
+            dd = (xx - pxp) ** 2 + (yy - pyp) ** 2
+            closer = dd < best
+            best = np.where(closer, dd, best)
+            cid = np.where(closer, cy * gw + cx, cid)
+    label = (cid * 512 + c.mat).ravel()
+    _, inv = np.unique(label, return_inverse=True)
+    cnt = np.bincount(inv).astype(np.float32)
+    out = np.empty_like(c.rgb).reshape(-1, 3)
+    flat = c.rgb.reshape(-1, 3)
+    for ch in range(3):
+        out[:, ch] = (np.bincount(inv, weights=flat[:, ch]) / cnt)[inv]
+    c.rgb = out.reshape(c.rgb.shape)
+
+
+def grade(c):
+    """Colores apagados, como de pueblo húmedo: menos saturación, sombras frías, luces cálidas."""
+    rgb = c.rgb / 255.0
+    lum = (rgb @ np.array([0.3, 0.59, 0.11], np.float32))[..., None]
+    rgb = lum + (rgb - lum) * 0.62
+    shadow = np.clip(1.0 - lum * 2.0, 0, 1)
+    rgb = rgb + shadow * np.array([-0.03, 0.01, 0.04]) + (1 - shadow) * np.array([0.02, 0.0, -0.03])
+    rgb = rgb * 0.9
+    c.rgb = np.clip(rgb * 255.0, 0, 255).astype(np.float32)
 
 
 def to_pixels(c):
@@ -479,7 +534,7 @@ def to_pixels(c):
     rgb = Image.fromarray(np.clip(c.rgb, 0, 255).astype(np.uint8)).resize((W, H), Image.BOX)
     a = Image.fromarray((c.a * 255).astype(np.uint8)).resize((W, H), Image.BOX)
     a = a.point(lambda v: 255 if v > 110 else 0)
-    q = rgb.quantize(colors=40, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+    q = rgb.quantize(colors=32, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
     img = q.convert("RGBA")
     img.putalpha(a)
     pxl = img.load()
@@ -492,7 +547,7 @@ def to_pixels(c):
                        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
             if edge and y < H - 1:
                 r, g, b, _ = src[x, y]
-                k = 0.45 if x < 60 else 0.6  # del lado de la luz, el borde es más claro
+                k = 0.35 if x < 60 else 0.5  # del lado de la luz, el borde es más claro
                 pxl[x, y] = (int(r * k), int(g * k), int(b * k * 1.05), 255)
     return img
 
@@ -508,15 +563,15 @@ def portrait(p, seed=0):
     draw_beard(c, p, X, seed)
     draw_hair(c, p, X, seed + 11, front=True)
     draw_hat(c, p, X, seed)
+    facets(c, seed=seed)
+    grade(c)
     fig = to_pixels(c)
     details(fig, p, X)
     if p.get("chiquita"):  # más chica: todo un poco más abajo y más chico
         small = fig.resize((int(W * 0.88), int(H * 0.88)), Image.NEAREST)
         fig = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         fig.alpha_composite(small, ((W - small.width) // 2, H - small.height))
-    img = backdrop(p.get("fondo", (120, 40, 50)), seed)
-    img.alpha_composite(fig)
-    return img
+    return fig
 
 
 def mannequin():
@@ -528,17 +583,19 @@ def mannequin():
     draw_neck(c, p)
     head, ear, X = head_masks(p)
     c.material(np.clip(head + ear, 0, 1), skin_of(p), height=blur(head, 7 * S), k=38, amb=0.3)
-    img = backdrop(p["fondo"], 99)
-    img.alpha_composite(to_pixels(c))
-    return img
+    facets(c, seed=99)
+    return to_pixels(c)
 
 
 # ---------------------------------------------------------------- El reparto
 M = {"mujer": True}
 CAST = {
     # Él: pelo negro, chaqueta gris, camisa roja. Ojeras.
-    "el": {"piel": "media", "pelo": "corto", "pelo_color": (30, 26, 30), "ropa": (96, 98, 108), "tipo": "saco",
-           "camisa": (180, 44, 50), "fondo": (60, 90, 140), "ojeras": True},
+    # Él: ya no es joven. Barba tupida, canas en la barba y las sienes, la frente marcada.
+    "el": {"destruido": True, "cicatriz": True, "viejo": True, "piel": "media", "pelo": "corto",
+           "pelo_color": (40, 34, 34), "canas": 0.12, "barba": True, "bigote": True, "barba_color": (58, 50, 48),
+           "ropa": (82, 86, 106), "tipo": "saco", "camisa": (206, 200, 184), "corbata": (206, 48, 52),
+           "fondo": (60, 90, 140), "ojeras": True},  # como en el mapa: saco gris grande, corbata roja floja
     "german": {"piel": "clara", "pelo": "calvo", "pelo_color": (190, 186, 180), "bigote": True, "viejo": True,
                "barba_color": (200, 196, 190), "ropa": (200, 176, 136), "tipo": "delantal", "delantal": (238, 234, 226),
                "fondo": (170, 120, 60), "sonrisa": True},
@@ -547,10 +604,10 @@ CAST = {
              "fondo": (190, 70, 60), "arete": True},
     "marta": {**M, "piel": "clara", "pelo": "cola", "pelo_color": (98, 62, 42), "ropa": (214, 168, 64),
               "tipo": "delantal", "delantal": (44, 40, 46), "labios": (178, 84, 84), "fondo": (120, 80, 50), "ojeras": True},
-    "wilson": {"piel": "morena", "pelo": "corto", "sombrero": "gorra", "sombrero_color": (66, 112, 70),
+    "wilson": {"destruido": True, "piel": "morena", "pelo": "corto", "sombrero": "gorra", "sombrero_color": (66, 112, 70),
                "ropa": (232, 120, 40), "tipo": "chaleco", "camisa": (130, 128, 124), "mangas": (130, 128, 124),
                "fondo": (70, 110, 70), "sonrisa": True},
-    "samuel": {"piel": "media", "pelo": "corto", "pelo_color": (150, 146, 140), "barba": True,
+    "samuel": {"destruido": True, "piel": "media", "pelo": "corto", "pelo_color": (150, 146, 140), "barba": True,
                "barba_color": (200, 196, 190), "viejo": True, "sombrero": "gorra", "sombrero_color": (150, 50, 40),
                "ropa": (110, 84, 60), "tipo": "saco", "camisa": (70, 66, 64), "fondo": (100, 80, 60)},
     "victoria": {**M, "piel": "clara", "pelo": "largo", "pelo_color": (70, 44, 34), "ropa": (240, 140, 170),
@@ -578,7 +635,7 @@ CAST = {
     "camila": {**M, "piel": "clara", "pelo": "hongo", "pelo_color": (246, 214, 96), "raiz": (96, 66, 46),
                "ropa": (214, 64, 130), "tipo": "vestido", "labios": (220, 40, 60), "fondo": (200, 70, 140),
                "chiquita": True, "arete": True},
-    "mauricio": {"piel": "clara", "pelo": "calvo", "pelo_color": (120, 118, 116), "barba": True,
+    "mauricio": {"destruido": True, "piel": "clara", "pelo": "calvo", "pelo_color": (120, 118, 116), "barba": True,
                  "barba_color": (150, 148, 146), "ropa": (44, 38, 40), "tipo": "chaleco", "camisa": (200, 196, 186),
                  "mangas": (200, 196, 186), "fondo": (80, 60, 60), "viejo": True},
     "lisandro": {"piel": "media", "pelo": "engominado", "pelo_color": (24, 22, 26), "gafas": "oscuras",
@@ -596,10 +653,10 @@ CAST = {
              "fondo": (90, 120, 160)},
     "diana": {**M, "piel": "clara", "pelo": "cola", "pelo_color": (60, 42, 34), "audifonos": True,
               "ropa": (60, 180, 180), "tipo": "camiseta", "labios": (190, 90, 100), "fondo": (50, 140, 140)},
-    "raul": {"piel": "morena", "pelo": "corto", "pelo_color": (170, 168, 166), "bigote": True,
+    "raul": {"destruido": True, "piel": "morena", "pelo": "corto", "pelo_color": (170, 168, 166), "bigote": True,
              "barba_color": (150, 148, 146), "viejo": True, "ropa": (236, 206, 120), "tipo": "camiseta",
              "cadena": True, "fondo": (180, 150, 60)},
-    "alvarito": {"pelo": "largo", "pelo_color": (60, 44, 36), "barba": True, "barba_color": (80, 60, 48),
+    "alvarito": {"destruido": True, "pelo": "largo", "pelo_color": (60, 44, 36), "barba": True, "barba_color": (80, 60, 48),
                  "ropa": (100, 130, 180), "tipo": "saco", "camisa": (40, 38, 44), "fondo": (70, 90, 130)},
     "pecas": {"pelo": "corto", "pelo_color": (196, 96, 44), "pecas": True, "ropa": (226, 128, 70),
               "tipo": "camiseta", "fondo": (180, 100, 60), "sonrisa": True},
@@ -613,22 +670,22 @@ CAST = {
     "leonor": {**M, "pelo": "moño", "pelo_color": (236, 232, 226), "viejo": True, "ropa": (110, 60, 90),
                "tipo": "vestido", "chal": (236, 150, 176), "flor": (210, 40, 60), "fondo": (190, 110, 140),
                "labios": (170, 90, 100)},
-    "efrain": {"pelo": "corto", "pelo_color": (200, 198, 194), "sombrero": "sombrero", "sombrero_color": (90, 70, 50),
+    "efrain": {"destruido": True, "pelo": "corto", "pelo_color": (200, 198, 194), "sombrero": "sombrero", "sombrero_color": (90, 70, 50),
                "gafas": "claras", "chivera": True, "barba_color": (236, 234, 230), "viejo": True,
                "ropa": (110, 90, 60), "tipo": "chaleco", "camisa": (200, 60, 50), "mangas": (220, 214, 200),
                "fondo": (140, 100, 60)},
-    "mono": {"pelo": "largo", "pelo_color": (220, 190, 110), "barba": True, "barba_color": (200, 170, 90),
+    "mono": {"destruido": True, "pelo": "largo", "pelo_color": (220, 190, 110), "barba": True, "barba_color": (200, 170, 90),
              "ropa": (36, 34, 40), "tipo": "camiseta", "guitarra": True, "fondo": (160, 130, 60)},
     "octavio": {"pelo": "corto", "pelo_color": (180, 178, 176), "sombrero": "boina", "sombrero_color": (60, 60, 70),
                 "gafas": "claras", "viejo": True, "ropa": (120, 120, 126), "tipo": "saco", "camisa": (220, 216, 206),
                 "fondo": (90, 90, 110)},
-    "ramiro": {"piel": "morena", "pelo": "corto", "pelo_color": (170, 168, 166), "sombrero": "sombrero",
+    "ramiro": {"destruido": True, "piel": "morena", "pelo": "corto", "pelo_color": (170, 168, 166), "sombrero": "sombrero",
                "sombrero_color": (236, 230, 210), "cinta": (30, 26, 30), "viejo": True, "bigote": True,
                "barba_color": (200, 198, 194), "ropa": (120, 90, 70), "tipo": "camiseta",
                "chal": (150, 110, 80), "fondo": (130, 100, 60)},
     "yeison": {"piel": "morena", "pelo": "rizado", "pelo_color": (30, 26, 30), "ropa": (200, 50, 50),
                "tipo": "camiseta", "cadena": True, "fondo": (160, 60, 50), "arete": True},
-    "chaqueta": {"piel": "media", "pelo": "engominado", "pelo_color": (34, 30, 34), "bigote": True,
+    "chaqueta": {"destruido": True, "piel": "media", "pelo": "engominado", "pelo_color": (34, 30, 34), "bigote": True,
                  "ropa": (40, 34, 30), "tipo": "saco", "camisa": (220, 216, 206), "cadena": True,
                  "fondo": (90, 60, 40)},
     "funcionaria": {**M, "pelo": "melena", "pelo_color": (80, 50, 40), "gafas": "claras", "ropa": (90, 110, 140),
@@ -641,7 +698,7 @@ CAST = {
              "sonrisa": True},
     "mona": {**M, "pelo": "melena", "pelo_color": (240, 210, 120), "ropa": (40, 40, 48), "tipo": "saco",
              "camisa": (220, 60, 80), "labios": (200, 50, 70), "fondo": (170, 60, 90), "arete": True},
-    "maestro": {"piel": "morena", "pelo": "corto", "sombrero": "gorra", "sombrero_color": (226, 190, 60),
+    "maestro": {"destruido": True, "piel": "morena", "pelo": "corto", "sombrero": "gorra", "sombrero_color": (226, 190, 60),
                 "barba": True, "barba_color": (40, 34, 36), "ropa": (70, 100, 150), "tipo": "camiseta",
                 "fondo": (180, 140, 50)},
 }

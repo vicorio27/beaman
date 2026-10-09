@@ -304,6 +304,20 @@ func paint_commerce() -> void:
 	# Panadería y café: lo único cálido del barrio.
 	building("bakery", 520, 352, "res://scenes/world/Bakery.tscn")
 	building("cafe", 616, 352, "res://scenes/world/Cafe.tscn")
+	# TV RADIO (entre el café y la calle del este, en la vereda, no en la calle): electrodomésticos
+	# con teles prendidas en la vitrina. Desde la vereda se ve la tele
+	# (ver Conversations._vitrina_tv); de noche, la reja abajo (scripts/world/Vitrina.gd).
+	var tv := place_anim(["electro_a", "electro_b", "electro_a", "electro_c"], 1.5, Vector2(712, 352), Vector2(76, 24))
+	tv.sprite_frames.add_animation("noche")
+	tv.sprite_frames.add_frame("noche", load(ART % "electro_noche"))
+	tv.set_script(load("res://scripts/world/Vitrina.gd"))
+	shadow_rect(Rect2(680, 328, 76, 24))
+	add_service(world, "vitrina_tv", Vector2(712, 360), "VER TV", Vector2(40, 14))
+	# Carros, buses, bicis y motos que pasan de vez en cuando (avenida y calle principal).
+	var traffic := Node2D.new()
+	traffic.name = "Trafico"
+	traffic.set_script(load("res://scripts/world/Traffic.gd"))
+	add_node(world, traffic)
 	# Placita con baldosas rotas y una fuente seca.
 	g_rect(Rect2i(33, 24, 14, 9), PLAZA)
 	for i in 14:
@@ -326,7 +340,7 @@ func paint_commerce() -> void:
 	add_service(world, "pedir", Vector2(590, 372), "PEDIR", Vector2(18, 12))
 	add_spawn("FromPedir", Vector2(590, 384), "down")
 	add_spawn("FromBus", Vector2(500, 422), "down")
-	prop("trash", Vector2(700, 372))
+	prop("trash", Vector2(764, 374))
 	place_anim(["lamp_on"], 1.0, Vector2(512, 300), Vector2(4, 4))
 	place_anim(["lamp_on"], 1.0, Vector2(740, 300), Vector2(4, 4))
 

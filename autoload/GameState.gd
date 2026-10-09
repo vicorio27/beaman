@@ -15,6 +15,8 @@ signal hygiene_changed(value: float)
 ## El ánimo: lo bajan el desprecio de la gente, los robos y las malas noches; lo suben Lukas,
 ## la comida caliente, Germán, un cambuche mejor. Con ánimo bajo, el mundo se ve peor (MoodFilter).
 signal mood_changed(value: float)
+## La soledad cambió (0: acompañado, 100: hace mucho que no habla con nadie).
+signal loneliness_changed(value: float)
 signal skill_learned(id: String)
 ## El vínculo con alguien del barrio subió (0 a 3; se sube con favores).
 signal bond_changed(id: String, level: int)
@@ -26,6 +28,10 @@ const SLOTS := 8
 const HUNGER_PER_HOUR := 4.0
 ## Higiene: baja con las horas; debajo de DIRTY algunos negocios no lo atienden.
 const HYGIENE_PER_HOUR := 1.6
+## Soledad: sube sola con las horas; baja hablando con la gente, con Lukas, viendo fútbol con
+## desconocidos. Muy alta, el ánimo se va cayendo (ver pass_time). En el HUD se ve como "compañía".
+const LONELY_PER_HOUR := 5.0
+const LONELY := 70.0
 const DIRTY := 40.0
 ## Meta de la alcancía (el regalo para la hija).
 const GIFT_GOAL := 150000
@@ -48,6 +54,7 @@ var money := 0
 var hunger := 80.0
 var hygiene := 70.0
 var mood := 55.0
+var loneliness := 20.0
 ## Habilidades aprendidas (ver scripts/systems/Skills.gd).
 var skills: Array = []
 ## Vínculos con la gente del barrio: npc_id -> 0..3. Cada nivel abre algo (ver Conversations).
@@ -90,6 +97,7 @@ func new_game() -> void:
 	hunger = 80.0
 	hygiene = 70.0
 	mood = 55.0
+	loneliness = 20.0
 	skills = []
 	bonds = {}
 	calm_until = -1.0
@@ -120,11 +128,34 @@ func set_hunger(value: float) -> void:
 
 ## El reloj avanzó `minutes` minutos de juego.
 func pass_time(minutes: float) -> void:
+	# Con Lukas al lado la soledad sube más despacio. Sin él, más rápido.
+	set_loneliness(loneliness + LONELY_PER_HOUR * (0.7 if lukas_alive() else 1.5) * minutes / 60.0)
+	if loneliness >= LONELY:
+		change_mood(-1.5 * minutes / 60.0)
 	if not lukas_alive():
 		set_hygiene(hygiene - HYGIENE_PER_HOUR * minutes / 60.0)
 		return  # ya no le da hambre (ver grief)
 	set_hunger(hunger - HUNGER_PER_HOUR * (1.0 + 0.4 * diff("hambre")) * minutes / 60.0)
 	set_hygiene(hygiene - HYGIENE_PER_HOUR * (1.0 + 0.5 * diff("cuerpo")) * minutes / 60.0)
+
+
+func set_loneliness(value: float) -> void:
+	var old := loneliness
+	loneliness = clampf(value, 0.0, 100.0)
+	if not is_equal_approx(old, loneliness):
+		loneliness_changed.emit(loneliness)
+	if old < LONELY and loneliness >= LONELY and not flags.get("soledad_aviso", false):
+		flags["soledad_aviso"] = true
+		Narrator.say("(Hace horas que no habla con nadie. Se le baja la barra de compañía, arriba. A Lukas sí le puede hablar: su menú, Hablarle.)")
+
+
+## Alguien le habló (o él le habló a Lukas): baja la soledad.
+func company(amount: float) -> void:
+	set_loneliness(loneliness - amount)
+
+
+func is_lonely() -> bool:
+	return loneliness >= LONELY
 
 
 func set_hygiene(value: float) -> void:
@@ -725,7 +756,7 @@ func has_save() -> bool:
 
 
 func save_game(scene_path: String, spawn: String) -> void:
-	var data := {"version": 1, "money": money, "hunger": hunger, "hygiene": hygiene, "mood": mood, "day": day,
+	var data := {"version": 1, "money": money, "hunger": hunger, "hygiene": hygiene, "mood": mood, "day": day, "loneliness": loneliness,
 		"inventory": inventory, "quests": quests, "flags": flags, "stats": stats, "cambuche": cambuche,
 		"skills": skills, "bonds": bonds, "minutes": TimeManager.minutes, "scene": scene_path, "spawn": spawn}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -740,6 +771,7 @@ func load_game() -> Dictionary:
 	hunger = data["hunger"]
 	hygiene = data["hygiene"]
 	mood = data["mood"]
+	loneliness = data.get("loneliness", 20.0)
 	day = data["day"]
 	inventory = data["inventory"]
 	quests = data["quests"]
@@ -754,4 +786,5 @@ func load_game() -> Dictionary:
 	money_changed.emit(money)
 	hunger_changed.emit(hunger)
 	mood_changed.emit(mood)
+	loneliness_changed.emit(loneliness)
 	return data

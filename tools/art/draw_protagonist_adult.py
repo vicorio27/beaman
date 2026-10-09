@@ -1,4 +1,4 @@
-"""El protagonista, versión A ("el ejecutivo"): adulto, ~25 px de alto. Saco gris de otra vida que le
+"""El protagonista, versión A ("el ejecutivo"): adulto (ya no joven: barba tupida, canas), ~25 px de alto. Saco gris de otra vida que le
 queda grande (hombros más anchos que él), corbata roja floja y larga, camisa blanca, jean, un zapato de
 cada color, morral. Mechón parado. Es lo que quedó de La Empresa: da curiosidad por qué anda así.
 
@@ -16,10 +16,11 @@ CW, CH = 16, 26
 PAL = {
     ".": None,
     "o": (40, 32, 44),
-    "h": (40, 38, 46), "H": (80, 82, 96),
+    "h": (40, 38, 46), "H": (116, 114, 118),        # pelo oscuro; H: las canas
+
     "s": (214, 150, 120), "S": (172, 110, 90),
     "e": (28, 26, 34), "n": (120, 60, 56),        # ojos / boca abierta
-    "b": (118, 92, 82),
+    "b": (70, 62, 60),                             # la barba (oscura, con canas en el retrato)
     "w": (206, 200, 184), "W": (150, 144, 132),
     "z": (82, 86, 106), "Z": (54, 56, 72),         # el saco
     "y": (206, 48, 52), "Y": (140, 30, 38),        # la corbata
@@ -36,7 +37,7 @@ HEAD_FRONT = [
     "...ohHhhhho.",
     "...oHssso...",
     "...oesseo...",
-    "...obSSbo...",
+    "...obbbbo...",
     "....obbo....",
 ]
 BODY_FRONT = [

@@ -150,6 +150,8 @@ func run(id: String, npc: Node) -> void:
 			await _mauricio_plaza(npc)
 		"pedir":
 			await _pedir()
+		"vitrina_tv":
+			await _vitrina_tv()
 
 
 # ---------------------------------------------------------------- Don Germán (tienda-panadería)
@@ -1557,6 +1559,102 @@ func _banca() -> void:
 				["ÉL", "Esta banca era verde. Ahora es verde. Algo cambió. No sé qué. La banca tampoco me lo quiere decir."]]],
 	])
 	await Dialogue.talk(lines.pick_random())
+
+
+# ---------------------------------------------------------------- La vitrina de TV RADIO (ver tele desde la calle)
+
+## Lo que dan según la hora (sin sonido: se ve desde la vereda, a través del vidrio).
+const TV_SHOWS := {
+	"mañana": [
+		[["", "(Un programa de la mañana. Una señora sonríe demasiado y le enseña a otra a hacer arroz con pollo en cuatro minutos.)"],
+			["ÉL", "Sin sonido, la receta es más honesta: echa cosas, revuelve, sonríe. Así cocino yo. Menos la parte de la olla."]],
+		[["", "(El horóscopo. Una mujer de turbante señala un cartel de Géminis con mucha seriedad.)"],
+			["ÉL", "Lorena debe estar viendo esto. Está anotando cuánto le debo según Mercurio."]],
+		[["", "(Aeróbicos. Cinco personas en licra saltan en un set que parece una piscina sin agua.)"],
+			["ÉL", "Saltan para quemar calorías. Yo las quemo de otra manera: no comiéndolas. Es más barato y nadie lo transmite."]],
+	],
+	"noticias": [
+		[["", "(El noticiero. Un señor de corbata habla con cara de que se murió alguien. Abajo, en rojo: ÚLTIMA HORA.)"],
+			["ÉL", "Siempre es última hora. Nunca es la penúltima. Uno nunca se entera de la penúltima."]],
+		[["", "(Noticias. Muestran un trancón de dos horas. Muestran un perro que se subió solo a un bus. Muestran el dólar.)"],
+			["ÉL", "El perro del bus tuvo más cobertura que yo en toda mi vida. Bien por él. Se veía decidido."]],
+		[["", "(Noticias. Un experto en algo habla delante de una biblioteca. Abajo dice: \"LA ECONOMÍA CRECE\".)"],
+			["ÉL", "Crece. No dicen para dónde. A esta cuadra no ha llegado. Debe venir en bus, con el perro."]],
+	],
+	"novela": [
+		[["", "(Una telenovela. Una mujer le tira un vaso de agua en la cara a un hombre. El hombre no reacciona. Ella llora.)"],
+			["ÉL", "Sin sonido se entiende todo: ella lo quiere, él tiene un gemelo, alguien es hija de alguien. En el capítulo cien se casan todos."]],
+		[["", "(La telenovela. La villana: pelo largo y negro, moño rosado, boca pintada. Grita por teléfono.)"],
+			["ÉL", "Se parece a Lorena. No: Lorena grita más, y sin guion. Esta por lo menos tiene guionistas."]],
+		[["", "(La telenovela. Un señor despierta de un coma de veinte años y lo primero que hace es preguntar por la herencia.)"],
+			["ÉL", "Veinte años en coma y se despierta con las prioridades claras. Yo llevo semanas despierto y todavía no sé las mías."]],
+	],
+	# La Fórmula 1: los domingos en la mañana (en vivo) y a veces la repetición en la tarde.
+	"f1": [
+		[["", "(Fórmula 1. Veinte carros dando vueltas a la misma pista. Uno se sale y los señores de la vereda dicen \"¡uy!\" al tiempo.)"],
+			["ÉL", "Dan vueltas y vueltas para llegar al mismo lugar del que salieron. Yo hago lo mismo todos los días, pero a pie y sin patrocinio."]],
+		[["", "(Fórmula 1. Una parada en pits: cuatro llantas en dos segundos. Veinte mecánicos para un solo carro.)"],
+			["ÉL", "Dos segundos. La Registraduría me cambia un papel en tres semanas. Debería mandar la cédula con esos mecánicos."]],
+		[["", "(Fórmula 1. Llueve en la pista. Un carro da un trompo, queda mirando para atrás, y sigue como si nada.)"],
+			["ÉL", "Dio un trompo y siguió. Sin mirar atrás. Ese tipo no necesita terapia. O sí, pero no lo dejan parar."]],
+		[["", "(Fórmula 1. En el podio, tres pilotos se bañan en champaña. Botan la botella entera.)"],
+			["ÉL", "La botan. Entera. Wilson me paga doscientos pesos por esa botella vacía. Ellos no saben lo que tienen."]],
+		[["", "(Fórmula 1. Un señor de la vereda le explica a otro qué es el DRS. El otro asiente. Ninguno de los dos sabe.)"],
+			["ÉL", "Yo tampoco sé qué es el DRS. Pero asiento. Así funciona la amistad entre hombres: asentir juntos frente a algo que no entendemos."]],
+	],
+	"futbol": [
+		[["", "(Fútbol. Se juntan tres señores y un muchacho en la vereda. Gol. Los cuatro gritan. Él no grita, pero levanta un brazo.)"],
+			["ÉL", "Un gol. Por un segundo, cinco desconocidos frente a una vitrina somos un equipo. Después cada uno vuelve a lo suyo. Yo vuelvo al poste."]],
+		[["", "(Fútbol. Penalti. El arquero adivina el lado. La cuadra entera dice \"uuuh\". Un señor le pasa la gaseosa sin mirarlo.)"],
+			["ÉL", "Me pasó la gaseosa. Sin preguntar nada. El fútbol es la única religión que no pide el diezmo."]],
+		[["", "(Fútbol. Pierde el equipo de todos. Un señor patea un poste. El poste gana.)"],
+			["ÉL", "Perder en grupo duele menos. Lo dice la ciencia. Bueno, lo digo yo, que estoy en el grupo."]],
+	],
+}
+const TV_OWNER := [
+	["DON JAIRO", "—Hermano, esto no es cine. ... Bueno, quédese. Pero no se me recueste en el vidrio, que lo acabé de limpiar."],
+	["DON JAIRO", "—¿Va a comprar el televisor? ... Ya sé que no. Pregunto para que se sienta incluido."],
+	["DON JAIRO", "—Si se va a quedar, por lo menos ponga cara de cliente. Así, no. Esa es cara de testigo."],
+]
+
+
+## Ver tele desde la calle: el tiempo pasa más rápido, y un poco de ánimo (hasta 6 por día).
+func _vitrina_tv() -> void:
+	var h := TimeManager.hour()
+	if h < 8 or h >= 20:
+		await Dialogue.talk([["", "(La reja está abajo. En el vidrio de atrás se ve su reflejo.)"],
+			["ÉL", "El único programa que dan a esta hora. Mala actuación, poco presupuesto. Lo cancelan pronto."]])
+		return
+	var band := "mañana" if h < 12 else ("noticias" if h < 14 else ("novela" if h < 18 else "futbol"))
+	if (GameState.day % 7 == 0 and h < 12) or (band == "futbol" and randf() < 0.3):
+		band = "f1"  # domingo en la mañana, en vivo; en la tarde, la repetición
+	var show: Array = TV_SHOWS[band].pick_random()
+	var i := await Dialogue.talk([["", "(La vitrina de TV RADIO: nueve televisores, el mismo canal, sin sonido.)"]] + show,
+		["Ver un rato (1 hora)", "Quedarse la tarde (3 horas)", "Seguir"])
+	if i == 2:
+		return
+	var hours := 1.0 if i == 0 else 3.0
+	if i == 1 and randf() < 0.35:
+		await Dialogue.talk([TV_OWNER.pick_random()])
+		hours = 2.0
+	TimeManager.skip(hours)
+	if band in ["futbol", "f1"]:
+		GameState.company(12.0)  # gritar un gol con desconocidos también es compañía
+	var f := GameState.flags
+	if int(f.get("tv_dia", -1)) != GameState.day:
+		f["tv_dia"] = GameState.day
+		f["tv_animo"] = 0.0
+	var gain := minf(2.0 * hours, 6.0 - float(f["tv_animo"]))
+	if gain > 0.0:
+		f["tv_animo"] = float(f["tv_animo"]) + gain
+		GameState.change_mood(gain)
+	var end: String = ["(Pasa el tiempo. Eso era lo que había que hacer con él.)",
+		"(Se le duermen las piernas. El tiempo, en cambio, se fue rapidito.)",
+		"(Cuando mira el reloj de la vitrina, ya pasó. Eso es lo bueno de la tele: se come las horas y no deja platos.)"].pick_random()
+	var lines := [["", end]]
+	if GameState.lukas_alive():
+		lines.push_front(["", "(Lukas se echa a sus pies y se duerme. A Lukas la tele le da igual: él ve todo en olores.)"])
+	await Dialogue.talk(lines)
 
 
 func _palomas() -> void:

@@ -1399,8 +1399,15 @@ Los chibis de 16 px se van reemplazando por personajes en proporciones adultas (
 - Si le cuelgan, **vuelve a llamar** ("¿ME COLGÓ?"). A veces llama de otro número: aparece como DESCONOCIDO, así que cuando suena uno nunca sabe si es ella. Los desconocidos que no son ella: créditos preaprobados, Pollos Mario, Rapidito, una encuesta, el "mami, soy yo".
 - La gracia es la expectativa: cuando suena el celular, que el jugador quiera que sea Lorena.
 
-## Diálogos estilo Hades
+## Diálogos estilo Dredge
 
-- Retrato grande de busto a la izquierda (96x112, modelado con volumen y luz y bajado a pixel art: `tools/art/draw_retratos.py` → `assets/portraits/`), la placa con el nombre y lo que es ("su hija", "la panadería", "por dentro") montada sobre el cuadro, y el cuadro de papel con marco dorado (`tools/art/draw_dialogo.py`).
-- Quién tiene retrato: `Dialogue.SPEAKERS`. Sin retrato (desconocidos, narración): el cuadro ocupa todo el ancho.
+- Bohemio, serio: el que habla aparece de pie en el medio, detrás de un cuadro negro con letra blanca; el nombre centrado entre dos líneas finas (y lo que es, más apagado: "la panadería", "su hija"), y comillas.
+- Retratos (`tools/art/draw_retratos.py` → `assets/portraits/`, 96x112): caras serias y gastadas (ceño, párpados caídos, ojeras, barba de días, comisuras para abajo), luz dura por planos y facetas tipo low-poly, colores apagados. Algunos "destruidos" (ojos rojos, más barba): él, Samuel, Wilson, Mauricio, Efraín...
+- Quién tiene retrato: `Dialogue.SPEAKERS`. Lo que él piensa: en azul, "ÉL por dentro".
 - Todos iguales también en los retratos: a la gente de la ciudad se le va apagando la cara (`assets/shaders/retrato_iguales.gdshader`). Victoria y Lukas nunca.
+
+## Pasar el rato, la calle y la soledad
+
+- **Ver tele desde la calle:** la vitrina de TV RADIO (entre el café y la calle del este, en la vereda). Lo que dan depende de la hora: programa de la mañana, noticiero, telenovela, fútbol. Los domingos en la mañana, la Fórmula 1 (y a veces la repetición en la tarde). "Ver un rato" (1 hora) o "Quedarse la tarde" (3 horas; a veces Don Jairo, el dueño, lo corta). Pasa el tiempo y sube un poco el ánimo (hasta +6 por día). De 20 a 8, la reja abajo. `Conversations._vitrina_tv`, arte en `tools/art/draw_vitrina.py`.
+- **Tráfico:** carros, taxis, la buseta, bicis y motos pasan de vez en cuando por la avenida y por la calle principal (hasta el puente). De noche, menos. Si él o Lukas están en el carril, frenan y pitan. `scripts/world/Traffic.gd`, arte en `tools/art/draw_trafico.py`.
+- **Soledad (barra de compañía, arriba):** sube sola con las horas (más despacio con Lukas vivo, más rápido sin él). Baja cuando alguien le habla, acariciando a Lukas, gritando un gol con desconocidos frente a la vitrina, y sobre todo **hablándole a Lukas** (menú de Lukas → Hablarle): afuera es mudo, pero a Lukas sí le habla en voz alta. Arriba de 70, el ánimo se va cayendo. `GameState.loneliness`.

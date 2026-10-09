@@ -2,6 +2,7 @@
   touch_a.png  ACCIÓN (interact)     touch_b.png  ATRÁS (cancel)
   touch_i.png  INVENTARIO            touch_x.png  SOLTAR (drop)
   touch_l.png  LUKAS (sniff: su menú; una huellita)
+  compania.png el ícono de la barra de compañía del HUD
   touch_stick_base.png, touch_stick_knob.png  la palanca de la izquierda
 Salida: assets/ui/touch_*.png
 Uso: python tools/art/draw_touch.py  (desde la carpeta del proyecto)"""
@@ -38,6 +39,19 @@ def paw(name, size, color):
     img.save(OUT / f"touch_{name}.png")
 
 
+def company_icon():
+    """El ícono de la barra de compañía (HUD): dos cabecitas juntas. La de al lado es Lukas."""
+    img = Image.new("RGBA", (14, 12), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    ink = (38, 28, 44, 255)
+    d.ellipse([1, 1, 6, 6], fill=(214, 160, 122, 255), outline=ink)  # él
+    d.rectangle([1, 7, 6, 11], fill=(96, 98, 108, 255), outline=ink)
+    d.ellipse([7, 4, 12, 9], fill=(192, 118, 60, 255), outline=ink)  # Lukas
+    d.line([(7, 5), (7, 9)], fill=(140, 80, 40, 255))
+    d.point((11, 7), fill=ink)
+    img.save("assets/ui/compania.png")
+
+
 def stick():
     base = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
     d = ImageDraw.Draw(base)
@@ -60,4 +74,5 @@ if __name__ == "__main__":
     button("x", 18, "X", (230, 200, 110, 200))
     paw("l", 22, (192, 118, 60, 220))
     stick()
+    company_icon()
     print("botones táctiles:", OUT)

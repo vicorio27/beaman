@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqdog6sfy4mua"
-path="res://.godot/imported/dlg_plate.png-5f8fb20440003a1da36c87b55166fbc8.ctex"
+uid="uid://bu4r8rd368jny"
+path="res://.godot/imported/car_buseta_side_a.png-3bfb16c674b7be450a7777faceaa0cb1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/dlg_plate.png"
-dest_files=["res://.godot/imported/dlg_plate.png-5f8fb20440003a1da36c87b55166fbc8.ctex"]
+source_file="res://assets/barrio/trafico/car_buseta_side_a.png"
+dest_files=["res://.godot/imported/car_buseta_side_a.png-3bfb16c674b7be450a7777faceaa0cb1.ctex"]
 
 [params]
 
