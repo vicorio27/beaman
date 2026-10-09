@@ -218,7 +218,7 @@ func _ready() -> void:
 	_sign.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_sign.add_theme_color_override("font_color", Color(0.75, 1.0, 0.75))
 	_call = _label(ui, Vector2(4, 160), 8)  # abajo, sobre el delantal: no tapa el cartel ni la pantalla
-	_call.size = Vector2(312, 20)
+	_call.size = Vector2(Controls.right_edge() - 8, 20)
 	_call.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_call.add_theme_color_override("font_color", Color(1, 0.9, 0.55))
 	_center = _label(ui, Vector2(0, 70), 16)

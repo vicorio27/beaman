@@ -1,5 +1,8 @@
 extends CanvasLayer
-## Controles táctiles para jugar desde el celular (la versión web). Solo aparecen con pantalla táctil.
+## Controles táctiles para jugar desde el celular (la versión web). Aparecen según Controls.touch():
+## solos con pantalla táctil, o siempre / nunca si se eligió en el título (CONTROLES EN PANTALLA).
+## Tres disposiciones: caminando (la ciudad), minijuego (botones en la franja derecha, la palanca solo
+## se ve mientras se toca) y pantalla abierta (diálogo, mochila...: palanca invisible).
 ## Izquierda: una palanca (cualquier dedo en la mitad izquierda de la pantalla la mueve).
 ## Derecha: A (acción), B (atrás), I (inventario), X (soltar), la huellita (Lukas: su menú), el librito
 ## (la libreta). Con una pantalla abierta (diálogo, mochila, libreta...): la palanca no se dibuja (sigue
@@ -10,29 +13,26 @@ const STICK_CENTER := Vector2(38, 140)
 const STICK_RADIUS := 20.0
 const DEADZONE := 0.3
 const BUTTONS := [
-	# acción, textura, posición jugando, posición con una pantalla abierta (null: se esconde)
-	["interact", "touch_a", Vector2(286, 136), Vector2(292, 152)],
-	["cancel", "touch_b", Vector2(260, 154), Vector2(294, 128)],
-	["inventory", "touch_i", Vector2(296, 112), Vector2(298, 108)],
-	["drop", "touch_x", Vector2(264, 128), Vector2(298, 88)],
-	["sniff", "touch_l", Vector2(238, 132), null],
-	["libreta", "touch_lib", Vector2(274, 106), Vector2(298, 68)],
+	# acción, textura, posición caminando, con una pantalla abierta, en un minijuego (null: se esconde)
+	["interact", "touch_a", Vector2(286, 136), Vector2(292, 152), Vector2(292, 152)],
+	["cancel", "touch_b", Vector2(260, 154), Vector2(294, 128), Vector2(294, 128)],
+	["inventory", "touch_i", Vector2(296, 112), Vector2(298, 108), null],
+	["drop", "touch_x", Vector2(264, 128), Vector2(298, 88), Vector2(298, 108)],
+	["sniff", "touch_l", Vector2(238, 132), null, Vector2(298, 88)],
+	["libreta", "touch_lib", Vector2(274, 106), Vector2(298, 68), null],
 ]
 
 var _stick_finger := -1
 var _held := {}
 var _knob: Sprite2D
 var _base: Sprite2D
-var _buttons: Array = []  # [TouchScreenButton, posición jugando, posición en pantalla]
-var _ui_mode := false
+var _buttons: Array = []  # [TouchScreenButton, caminando, pantalla abierta, minijuego]
+var _mode := ""  # world, ui, mini, off
 
 
 func _ready() -> void:
 	layer = 120
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	if not _has_touch():
-		queue_free()
-		return
 	# Si no, cada dedo en la palanca también es un clic (y en PLOMO el clic dispara).
 	Input.emulate_mouse_from_touch = false
 	_base = Sprite2D.new()
@@ -54,27 +54,52 @@ func _ready() -> void:
 		t.shape = shape
 		t.shape_centered = true
 		add_child(t)
-		_buttons.append([t, b[2], b[3]])
+		_buttons.append([t, b[2], b[3], b[4]])
 	_apply_mode()
 
 
 func _process(_delta: float) -> void:
-	var ui: bool = GameState.ui_open or Dialogue.active
-	if ui != _ui_mode:
-		_ui_mode = ui
+	var m := _current_mode()
+	if m != _mode:
+		_mode = m
 		_apply_mode()
+	if _mode == "mini":  # la palanca del minijuego solo se ve mientras se toca
+		_base.visible = _stick_finger != -1
+		_knob.visible = _base.visible
 
 
-## Jugando: todo en su lugar. Con una pantalla abierta: palanca invisible y botones a la franja derecha.
+func _current_mode() -> String:
+	if not _has_touch():
+		return "off"
+	if GameState.ui_open or Dialogue.active:
+		return "ui"
+	var scene := get_tree().current_scene
+	if scene and scene.get_script() == preload("res://scripts/world/Location.gd"):
+		return "world"
+	return "mini"
+
+
+## Caminando: todo en su lugar. Pantalla abierta: palanca invisible, botones a la franja derecha.
+## Minijuego: botones a la franja derecha (solo los que sirven), palanca solo mientras se toca.
 func _apply_mode() -> void:
-	_base.visible = not _ui_mode
-	_knob.visible = not _ui_mode
+	if _mode == "off":
+		_release_all()
+	_base.visible = _mode == "world"
+	_knob.visible = _base.visible
+	var col: int = {"world": 1, "ui": 2, "mini": 3}.get(_mode, -1)
 	for b in _buttons:
 		var t: TouchScreenButton = b[0]
-		var at = b[2] if _ui_mode else b[1]
+		var at = b[col] if col > 0 else null
 		t.visible = at != null
 		if at != null:
 			t.position = at
+
+
+## Al apagar los controles: que no quede una dirección apretada.
+func _release_all() -> void:
+	_stick_finger = -1
+	if _knob:
+		_move_stick(STICK_CENTER)
 
 
 func _has_touch() -> bool:
@@ -82,6 +107,8 @@ func _has_touch() -> bool:
 
 
 func _input(event: InputEvent) -> void:
+	if _mode == "off" or _mode == "":
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed and _stick_finger == -1 and event.position.x < 160.0:
 			_stick_finger = event.index

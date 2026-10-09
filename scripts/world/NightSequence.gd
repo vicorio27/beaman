@@ -123,8 +123,9 @@ func _ready() -> void:
 	_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.position = Vector2(16, 118)
-	_text.size = Vector2(288, 56)
+	_text.size = Vector2(_text_w(), 56)
 	add_child(_text)
+	_text.add_to_group("under_dialogue")
 	_run()
 
 
@@ -180,7 +181,7 @@ func _run() -> void:
 		if skill != "" and GameState.learn(skill):
 			GameState.flags.erase("skill_toast")
 			_text.position = Vector2(16, 50)
-			_text.size = Vector2(288, 120)
+			_text.size = Vector2(_text_w(), 120)
 			await _say("Algo aprendió en el sueño.\nHABILIDAD: %s\n%s" % [Skills.name_of(skill).to_upper(), Skills.desc(skill)])
 		await _summary(spot)
 		return
@@ -250,7 +251,7 @@ func _show_back() -> void:
 func _summary(spot: String) -> void:
 	var s := GameState.stats
 	_text.position = Vector2(16, 40)
-	_text.size = Vector2(288, 120)
+	_text.size = Vector2(_text_w(), 120)
 	await _say("DIA %d\n\nDinero conseguido: $%d\nComida: %d\nDurmió en %s\nCabeza: en su sitio" % [
 		GameState.day, s["money_earned"], s["food_eaten"], SPOT_NAMES.get(spot, "la calle")])
 	if GameState.has_cambuche():
@@ -267,7 +268,7 @@ func _summary(spot: String) -> void:
 ## Después del último sueño. No se despierta. (El epílogo: los que lo querían, y los demás.)
 func _he_dies() -> void:
 	_text.position = Vector2(16, 50)
-	_text.size = Vector2(288, 110)
+	_text.size = Vector2(_text_w(), 110)
 	MusicDirector.force("")
 	var spot: String = GameState.flags.get("sleep_spot", "banco")
 	for line in [
@@ -285,7 +286,7 @@ func _lukas_dies() -> void:
 	var f := GameState.flags
 	f["lukas_muerto"] = GameState.day
 	_text.position = Vector2(16, 50)
-	_text.size = Vector2(288, 110)
+	_text.size = Vector2(_text_w(), 110)
 	MusicDirector.force("")
 	for line in [
 		"Esa noche Lukas no se acuesta en los pies. Se acuesta en el pecho. Nunca hacía eso.",
@@ -310,7 +311,7 @@ func _lukas_dies() -> void:
 func _defend(spot: String) -> void:
 	var c := GameState.cambuche
 	_text.position = Vector2(16, 60)
-	_text.size = Vector2(288, 80)
+	_text.size = Vector2(_text_w(), 80)
 	MusicDirector.force("")
 	await _say("Un ruido. Alguien está revolviendo la caja del cambuche.")
 	if c.get("alarma", false):
@@ -374,7 +375,7 @@ func _defend(spot: String) -> void:
 
 func _morning(spot: String, first: bool) -> void:
 	_text.position = Vector2(16, 118)
-	_text.size = Vector2(288, 56)
+	_text.size = Vector2(_text_w(), 56)
 	for line in GameState.new_day(spot):
 		await _say(line)
 	if first:
@@ -457,3 +458,8 @@ func _dream_when(id: String) -> bool:
 
 func _days_since(id: String) -> int:
 	return GameState.day - int(GameState.flags.get("dream_day_" + id, 999))
+
+
+## Ancho del texto: con controles en pantalla, no llega a la franja de los botones.
+func _text_w() -> float:
+	return Controls.right_edge() - 32.0

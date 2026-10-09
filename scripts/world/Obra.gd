@@ -43,8 +43,11 @@ func _ready() -> void:
 	var ui := CanvasLayer.new()
 	add_child(ui)
 	_top = _lab(ui, Vector2(4, 3))
-	_msg = _lab(ui, Vector2(4, 160))
-	_msg.size = Vector2(312, 20)
+	_msg = _lab(ui, Vector2(4, 150))
+	_msg.size = Vector2(Controls.right_edge() - 8, 30)  # a la derecha, los botones táctiles
+	_msg.clip_text = true
+	_msg.max_lines_visible = 3
+	_msg.add_to_group("under_dialogue")
 	_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	MusicDirector.force("city_day")
 	_intro()

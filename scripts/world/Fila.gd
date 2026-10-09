@@ -131,7 +131,8 @@ func _build_hud() -> void:
 	_clock = _label(ui, Vector2(6, 4))
 	_info = _label(ui, Vector2(6, 16))
 	_prompt = _label(ui, Vector2(0, 150))
-	_prompt.size = Vector2(320, 10)
+	_prompt.size = Vector2(Controls.right_edge(), 10)
+	_prompt.add_to_group("under_dialogue")
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_prompt.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
 

@@ -134,7 +134,8 @@ func _build() -> void:
 	add_child(ui)
 	_hud = _label(ui, Vector2(6, 4))
 	_legend = _label(ui, Vector2(0, 160))
-	_legend.size = Vector2(W, 20)
+	_legend.size = Vector2(Controls.right_edge(), 20)  # a la derecha, los botones táctiles
+	_legend.add_to_group("under_dialogue")
 	_legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_legend.text = "ARRIBA vaso  DER cartel\nABAJO %s  IZQ nada" % ("Lukas" if GameState.lukas_alive() else "-----")
 	_legend.add_theme_color_override("font_color", Color(0.75, 0.72, 0.68))
@@ -144,7 +145,7 @@ func _build() -> void:
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_bubble.size = Vector2(150, 30)
 	_me_line = _label(ui, Vector2(0, 116))
-	_me_line.size = Vector2(W, 20)
+	_me_line.size = Vector2(Controls.right_edge(), 20)
 	_me_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_me_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_me_line.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
@@ -197,7 +198,10 @@ func _process(delta: float) -> void:
 	spr.position.x += WALK_SPEED * delta * (0.4 if current["done"] and spr.position.x < ZONE.y else 1.0)
 	_type_label.text = current["type"]
 	_type_label.position = spr.position + Vector2(-_type_label.text.length() * 4.0, -34)
+	# Que no se salgan de la pantalla ("BRERO") ni se metan debajo de los botones táctiles.
+	_type_label.position.x = clampf(_type_label.position.x, 2.0, Controls.right_edge() - _type_label.text.length() * 8.0)
 	_bubble.position = spr.position + Vector2(-75, -60)
+	_bubble.position.x = clampf(_bubble.position.x, 2.0, Controls.right_edge() - _bubble.size.x)
 	if not current["done"] and spr.position.x > ZONE.y:
 		_choose("nada")
 	if spr.position.x > W + 16:

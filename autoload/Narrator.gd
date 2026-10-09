@@ -16,6 +16,7 @@ var _style_box: StyleBoxFlat   # abajo: la caja de siempre
 var _style_thin: StyleBoxFlat  # arriba (en la acción): fina y transparente, para ver a través
 var _pending: Array = []  # lo que llegó mientras había un diálogo o una llamada en pantalla
 var _current: Array = []  # lo que se está mostrando (si se abre una pantalla, se guarda y vuelve)
+var _scene: Node  # dónde se dijo: si cambia la escena, el aviso viejo se va (no tapa el título del sueño)
 
 
 func _ready() -> void:
@@ -27,7 +28,7 @@ func _ready() -> void:
 	_style_box.set_border_width_all(1)
 	_style_box.set_content_margin_all(5)
 	_style_thin = StyleBoxFlat.new()
-	_style_thin.bg_color = Color(0.04, 0.03, 0.04, 0.45)
+	_style_thin.bg_color = Color(0.04, 0.03, 0.04, 0.8)  # que no se lean los letreros de atrás
 	_style_thin.content_margin_left = 4
 	_style_thin.content_margin_right = 4
 	_style_thin.content_margin_top = 2
@@ -57,12 +58,13 @@ func say(text: String, top := false) -> void:
 		_pending = [text, top]
 		return
 	_current = [text, top]
+	_scene = get_tree().current_scene
 	_label.text = text
 	# Crece según el texto; abajo crece hacia arriba para no salirse de la pantalla.
 	if top:
 		# Arriba, en plena acción: fina, ancha (menos renglones) y casi transparente.
 		_panel.add_theme_stylebox_override("panel", _style_thin)
-		var th := FONT.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, 304, 8).y + 4.0
+		var th := _text_height(304.0) + 4.0
 		_panel.size = Vector2(312, th)
 		_panel.position = Vector2(4, top_y)
 	else:
@@ -70,7 +72,7 @@ func say(text: String, top := false) -> void:
 		# En el celular: entre la palanca (izquierda) y los botones (derecha).
 		var w := 166.0 if Controls.touch() else 280.0
 		var x := 66.0 if Controls.touch() else 20.0
-		var h := maxf(26.0, FONT.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, w - 10.0, 8).y + 10.0)
+		var h := maxf(26.0, _text_height(w - 10.0) + 10.0)
 		_panel.size = Vector2(w, h)
 		_panel.position = Vector2(x, 172 - h)
 	if _tween:
@@ -81,11 +83,22 @@ func say(text: String, top := false) -> void:
 	_tween.tween_property(_panel, "modulate:a", 0.0, 0.4)
 
 
+## Alto real del texto con ese ancho (los renglones como los corta el Label, no a ojo).
+func _text_height(width: float) -> float:
+	_label.custom_minimum_size = Vector2(width, 0)
+	_label.size = Vector2(width, 0)
+	var lines := _label.get_line_count()
+	return lines * _label.get_line_height() + (lines - 1) * _label.get_theme_constant("line_spacing")
+
+
 func _busy() -> bool:
 	return Dialogue.active or Phone.ringing() or GameState.ui_open
 
 
 func _process(_delta: float) -> void:
+	if _panel.modulate.a > 0.0 and _scene != get_tree().current_scene:
+		hide_now()
+		_current = []
 	# Se abrió una pantalla con el aviso a la vista: se esconde y vuelve a salir cuando se cierre.
 	if _busy() and _panel.modulate.a > 0.0:
 		if _pending.is_empty() and not _current.is_empty():

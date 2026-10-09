@@ -51,7 +51,8 @@ func _ready() -> void:
 	add_child(ui)
 	_hud = _label(ui, Vector2(6, 4))
 	_hint = _label(ui, Vector2(0, 168))
-	_hint.size = Vector2(W, 10)
+	_hint.size = Vector2(Controls.right_edge(), 10)  # a la derecha, los botones táctiles
+	_hint.add_to_group("under_dialogue")
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.text = "[E] agarrar  -  ¡que no te vea!"
 	_guard_mark = _label(ui, Vector2(156, 2))

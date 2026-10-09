@@ -42,13 +42,40 @@ const PAD_AXES := {
 ## ¿Se juega con los dedos? (la versión web en el celular). Las pantallas dejan libre la franja
 ## derecha (x > 286) para los botones, y los avisos de abajo se angostan entre la palanca y los botones.
 static var force_touch := false  # para probar el diseño del celular en el computador
+## Controles en pantalla: "auto" (solo si hay pantalla táctil), "si" o "no". Se elige en el título
+## y se guarda en user://ajustes.cfg.
+static var touch_pref := "auto"
+const SETTINGS := "user://ajustes.cfg"
+const TOUCH_PREFS := ["auto", "si", "no"]
 
 
 static func touch() -> bool:
-	return force_touch or DisplayServer.is_touchscreen_available() or OS.has_feature("web_android") or OS.has_feature("web_ios")
+	if force_touch or touch_pref == "si":
+		return true
+	if touch_pref == "no":
+		return false
+	return DisplayServer.is_touchscreen_available() or OS.has_feature("web_android") or OS.has_feature("web_ios")
+
+
+static func set_touch_pref(pref: String) -> void:
+	touch_pref = pref
+	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS)
+	cfg.set_value("controles", "en_pantalla", pref)
+	cfg.save(SETTINGS)
+
+
+## Hasta dónde llega el texto a la derecha: con controles en pantalla, la franja x > 286 es de los botones.
+static func right_edge() -> float:
+	return 286.0 if touch() else 320.0
 
 
 func _ready() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS) == OK:
+		var pref: String = cfg.get_value("controles", "en_pantalla", "auto")
+		if pref in TOUCH_PREFS:
+			touch_pref = pref
 	for action in ACTIONS:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action, 0.25)

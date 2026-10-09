@@ -1,7 +1,8 @@
 extends Control
 ## Pantalla de título: CONTINUAR (si hay partida guardada en un cuenco), NUEVA PARTIDA (el sueño 1) o
 ## SUEÑOS: cada minijuego suelto, sin la historia alrededor (al terminar vuelve acá; ver SceneRouter.go).
-## Arriba/abajo para elegir, interactuar para entrar.
+## Arriba/abajo para elegir, interactuar para entrar. CONTROLES EN PANTALLA: interactuar (o izq/der)
+## cambia entre AUTO (solo en el celular), SÍ y NO.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const PROLOGUE := "res://scenes/prologue/Fight.tscn"
@@ -60,6 +61,7 @@ func _ready() -> void:
 		_main_opts.append("CONTINUAR")
 	_main_opts.append("NUEVA PARTIDA")
 	_main_opts.append("SUEÑOS")
+	_main_opts.append(TOUCH_OPT)
 	for i in DREAMS.size():
 		var l := _label("", Vector2(0, 4 + i * 10), 8, Color.WHITE)
 		l.size = Vector2(320, 10)
@@ -104,6 +106,23 @@ func _show_dreams() -> void:
 	_refresh()
 
 
+const TOUCH_OPT := "CONTROLES"
+const TOUCH_NAMES := {"auto": "AUTO", "si": "SÍ", "no": "NO"}
+
+
+func _opt_text(o: String) -> String:
+	if o == TOUCH_OPT:
+		return "CONTROLES EN PANTALLA: " + TOUCH_NAMES[Controls.touch_pref]
+	return o
+
+
+func _cycle_touch(step: int) -> void:
+	var prefs := Controls.TOUCH_PREFS
+	var i := (prefs.find(Controls.touch_pref) + step + prefs.size()) % prefs.size()
+	Controls.set_touch_pref(prefs[i])
+	_refresh()
+
+
 ## En la lista de sueños se ven 16 a la vez: la ventana sigue al cursor.
 const ROWS := 16
 
@@ -117,7 +136,7 @@ func _refresh() -> void:
 		if i >= _opts.size():
 			continue
 		var sel := i == _cursor
-		_labels[i].text = ("> " if sel else "") + _opts[i] + (" <" if sel else "")
+		_labels[i].text = ("> " if sel else "") + _opt_text(_opts[i]) + (" <" if sel else "")
 		_labels[i].add_theme_color_override("font_color", Color(0.95, 0.78, 0.4) if sel else Color(0.75, 0.72, 0.68))
 
 
@@ -127,6 +146,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("move_down") or event.is_action_pressed("move_up"):
 		_cursor = (_cursor + (1 if event.is_action_pressed("move_down") else -1) + _opts.size()) % _opts.size()
 		_refresh()
+	elif not _in_dreams and _opts[_cursor] == TOUCH_OPT and (event.is_action_pressed("interact")
+			or event.is_action_pressed("move_left") or event.is_action_pressed("move_right")):
+		_cycle_touch(-1 if event.is_action_pressed("move_left") else 1)
 	elif event.is_action_pressed("interact"):
 		if _in_dreams:
 			var scene: String = DREAMS[_cursor][1]

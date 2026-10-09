@@ -914,19 +914,21 @@ func _build_hud() -> void:
 	_ui = CanvasLayer.new()
 	_ui.layer = 10
 	add_child(_ui)
-	for k in [["ammo", 6], ["hp", 70], ["armor", 196], ["weapon", 260]]:
+	# Con controles en pantalla, todo más a la izquierda: la franja derecha es de los botones.
+	var xs := [4, 50, 132, 196] if Controls.touch() else [6, 70, 196, 260]
+	for k in [["ammo", xs[0]], ["hp", xs[1]], ["armor", xs[2]], ["weapon", xs[3]]]:
 		var head := _label(Vector2(k[1], 152), 8, Color(0.75, 0.7, 0.65))
 		head.text = {"ammo": "BALAS", "hp": "VIDA", "armor": "CHALECO", "weapon": "ARMA"}[k[0]]
 		_hud_heads.append(head)
 		_hud_labels[k[0]] = _label(Vector2(k[1], 163), 8, Color(0.95, 0.25, 0.2))
 	_face = TextureRect.new()
-	_face.position = Vector2(148, 151)
+	_face.position = Vector2(100 if Controls.touch() else 148, 151)
 	_ui.add_child(_face)
 	_big = _label(Vector2(0, 40), 16, Color(0.95, 0.2, 0.15))
 	_big.size = Vector2(W, 20)
 	_big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_small = _label(Vector2(0, 70), 8, Color(0.95, 0.9, 0.8))
-	_small.size = Vector2(W, 70)
+	_small.size = Vector2(Controls.right_edge(), 70)
 	_small.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 

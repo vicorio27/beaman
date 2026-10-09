@@ -1433,3 +1433,29 @@ L (Select en el control, el librito en el celular, o L desde la mochila). Págin
 - **La gente:** cada favor y qué abre (pan gratis, baño del café, menos robos, fiado).
 
 **Ningún texto encima de otro:** todo texto de pantallas va en cajas fijas con máximo de renglones; los avisos (Narrator) esperan si hay un diálogo, una llamada o una pantalla abierta (y si estaban a la vista, vuelven después); en el celular las pantallas dejan libre la franja derecha (x > 286) y los botones se ponen en fila ahí, la palanca no se dibuja mientras hay una pantalla abierta, y los avisos de abajo van angostos entre la palanca y los botones. La mochila dice lo que pasa (comió, tiró, armó) en su propia caja.
+
+## Controles en pantalla y minijuegos sin textos encima
+
+- **Opción en el título:** CONTROLES EN PANTALLA: AUTO / SÍ / NO.
+  - AUTO muestra los controles solo con pantalla táctil.
+  - Se guarda en `user://ajustes.cfg` (`Controls.touch_pref`).
+- **Tres disposiciones de los botones (`TouchControls`):**
+  - Caminando por la ciudad: todo en su lugar de siempre.
+  - Pantalla abierta (diálogo, mochila, libreta, mejoras): la palanca no se dibuja y los botones van en fila en la franja derecha (x > 286).
+  - Minijuego o sueño: los botones que sirven van en la franja derecha, y la palanca solo se ve mientras se toca.
+- **Regla para los textos de un minijuego:**
+  - No pasan de `Controls.right_edge()`: 286 con controles en pantalla, 320 sin ellos.
+  - Los letreros de instrucciones de abajo entran al grupo `under_dialogue`; el diálogo los esconde mientras habla alguien.
+- **Narrador y caja de diálogo:**
+  - El aviso del narrador mide su alto con los renglones reales del Label.
+  - Si cambia la escena, el aviso viejo se va.
+  - La caja del diálogo es opaca.
+
+## El protagonista de los sueños de pelea
+
+- Lo genera `tools/art/heroe_suenos.py`, a partir de los originales y con `vestir_protagonista.dress(sleeves=False)`.
+- Es él como se sueña:
+  - canas, barba, saco gris sin mangas, corbata roja y jean;
+  - más alto (2 filas de pecho y 2 de piernas) y más ancho de hombros (2 columnas);
+  - la cabeza del mismo tamaño;
+  - brazos al aire, con sombra de músculo.

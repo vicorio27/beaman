@@ -63,10 +63,11 @@ func _ready() -> void:
 	_bubble = _label(ui, Vector2(0, 0))
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_bubble.size = Vector2(140, 30)
-	_legend = _label(ui, Vector2(0, 166))
-	_legend.size = Vector2(320, 10)
+	_legend = _label(ui, Vector2(0, 158))
+	_legend.size = Vector2(Controls.right_edge(), 20)  # a la derecha, los botones táctiles
 	_legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_legend.text = "IZQ empanada  ARRIBA arepa  DER aguapanela"
+	_legend.text = "IZQ empanada  ARRIBA arepa\nDER aguapanela"
+	_legend.add_to_group("under_dialogue")
 	_legend.add_theme_color_override("font_color", Color(0.75, 0.72, 0.68))
 	_intro()
 
@@ -178,6 +179,7 @@ func _say(text: String, color: Color) -> void:
 	_bubble.add_theme_color_override("font_color", color)
 	if is_instance_valid(_current):
 		_bubble.position = _current.position + Vector2(-70, -64)
+		_bubble.position.x = clampf(_bubble.position.x, 2.0, Controls.right_edge() - _bubble.size.x)
 
 
 ## El señor de negro. No compra nada.

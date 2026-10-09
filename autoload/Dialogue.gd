@@ -81,7 +81,7 @@ func _ready() -> void:
 	_portrait.visible = false
 	add_child(_portrait)
 	_box = ColorRect.new()
-	_box.color = Color(0.03, 0.03, 0.04, 0.9)
+	_box.color = Color(0.03, 0.03, 0.04, 1.0)  # opaca: lo que quede debajo no se lee a través
 	_box.position = BOX.position
 	_box.size = BOX.size
 	_box.visible = false
@@ -153,6 +153,7 @@ func talk(lines: Array, choices: Array = []) -> int:
 	active = true
 	GameState.ui_open = true
 	_box.visible = true
+	_hide_under(true)
 	_show_line()
 	var result: int = await _finished
 	return result
@@ -345,7 +346,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Los textos de un minijuego que quedarían debajo de la caja (grupo "under_dialogue"): se esconden
+## mientras dura el diálogo y vuelven como estaban.
+func _hide_under(hide: bool) -> void:
+	for n in get_tree().get_nodes_in_group("under_dialogue"):
+		if hide:
+			if not n.has_meta("dlg_vis"):
+				n.set_meta("dlg_vis", n.visible)
+			n.visible = false
+		elif n.has_meta("dlg_vis"):
+			n.visible = n.get_meta("dlg_vis")
+			n.remove_meta("dlg_vis")
+
+
 func _close(choice: int) -> void:
+	_hide_under(false)
 	active = false
 	_box.visible = false
 	_portrait.visible = false

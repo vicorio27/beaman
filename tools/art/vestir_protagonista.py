@@ -38,7 +38,8 @@ def _components(points: set) -> list:
     return comps
 
 
-def dress(im: Image.Image, cw: int) -> Image.Image:
+def dress(im: Image.Image, cw: int, sleeves: bool = True) -> Image.Image:
+    """sleeves=False: el saco queda sin mangas (los brazos al aire; ver heroe_suenos.py)."""
     im = im.convert("RGBA")
     px = im.load()
     ch = 48 if cw == 48 else im.height
@@ -78,7 +79,7 @@ def dress(im: Image.Image, cw: int) -> Image.Image:
             if y_last + 1 < cy + ch and px[mid_last, y_last + 1][3] > 0:
                 px[mid_last, y_last + 1] = TIE_D + (255,)
             # Los brazos: mangas del saco. De cada brazo queda de piel solo el puño (lo más lejos del cuerpo).
-            skin = {(x, y) for x, y in cell if y >= shirt_top and px[x, y][:3] in SKIN}
+            skin = {(x, y) for x, y in cell if y >= shirt_top and px[x, y][:3] in SKIN} if sleeves else set()
             for arm in _components(skin):
                 far = max(((x - scx) ** 2 + (y - scy) ** 2) ** 0.5 for x, y in arm)
                 for x, y in arm:

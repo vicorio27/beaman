@@ -200,10 +200,10 @@ func _ready() -> void:
 	add_child(ui)
 	_top = _lab(ui, Vector2(4, 3))
 	_msg = _lab(ui, Vector2(4, 158))
-	_msg.size = Vector2(312, 20)
+	_msg.size = Vector2(Controls.right_edge() - 8, 20)
 	_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint = _lab(ui, Vector2(0, 80))
-	_hint.size = Vector2(320, 20)
+	_hint.size = Vector2(Controls.right_edge(), 20)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.add_theme_font_size_override("font_size", 16)
 	me_node = AnimatedSprite2D.new()
