@@ -18,6 +18,7 @@ var _hint: Label
 
 
 func _ready() -> void:
+	add_to_group(Focus.GROUP)
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_hint = Label.new()
@@ -49,11 +50,12 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	Focus.dim(self, _hint)
 	if _player == null or SceneRouter.busy or GameState.input_blocked():
 		return
 	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var pushing := dir.dot(push_dir) > 0.6
-	if Input.is_action_just_pressed("interact"):
+	if Input.is_action_just_pressed("interact") and Focus.mine(self):
 		_use(true)
 	elif pushing:
 		_use(false)

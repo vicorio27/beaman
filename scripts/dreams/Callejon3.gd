@@ -110,6 +110,11 @@ func walk_bounds(who: Node = null) -> Rect2:
 	return r
 
 
+## Con las copias en pantalla no se da vuelta solo: pegarle a la de atrás puede ser pegarle a una copia.
+func auto_turn() -> bool:
+	return not _phase2
+
+
 ## Una maleta que vuela por el carril de quien la tira y le pega al primero que agarra.
 func enemy_throw(from: Brawler, kind: String) -> void:
 	var m := Sprite2D.new()
@@ -202,6 +207,7 @@ func _shuffle() -> void:
 			_add_face_label(b)
 		var line: String = REAL_LINES.pick_random() if b == _brenda else FACES[face].pick_random()
 		b.face_label.text = face  # arriba, solo el nombre; la frase la dice cuando le toca hablar
+		b.face_label.position.y = -58.0 - 10.0 * i  # cada una a su altura: si se juntan, no se pisan
 		b.set_meta("line", line)
 		b.face_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 		b.modulate = Color.from_hsv(randf(), 0.25, 1.0)

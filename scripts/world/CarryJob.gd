@@ -56,18 +56,30 @@ func _zone(pos: Vector2, text: String) -> Area2D:
 	return a
 
 
+var _lifting := false
+var _slow := 0.7  # con el bulto: así de rápido camina (alzado mal, más lento)
+
+
 func _process(_delta: float) -> void:
-	if _player == null or GameState.input_blocked():
+	if _player == null or GameState.input_blocked() or _lifting:
 		return
-	_player.carry_factor = 0.7 if _carrying else 1.0
+	_player.carry_factor = _slow if _carrying else 1.0
 	if not Input.is_action_just_pressed("interact"):
 		return
 	var on_pile := _pile.overlaps_body(_player)
 	var on_drop := _drop.overlaps_body(_player)
 	if not _carrying and on_pile:
+		# Alzarlo: con las piernas (a tiempo) o con la espalda (mal: camina más lento con ese).
+		_lifting = true
+		var ok: int = await Ritmo.play(self, "Alzarlo con las piernas", 1,
+			{"zone": 40.0, "speed": 130.0, "hit": "Arriba. Con técnica.", "miss": "Uy. La espalda."})
+		_lifting = false
+		_slow = 0.75 if ok > 0 else 0.5
 		_carrying = true
 		_sack.visible = true
-		Narrator.say("(Pesa como plomo.)")
+		Narrator.say("(Pesa como plomo.)" if ok > 0 else "(Lo alzó con la espalda. La espalda se va a acordar mañana.)")
+	elif _carrying and on_pile:
+		Narrator.say("(Ya lleva uno. Dos no: tiene cuarenta y pico, no veinte.)")
 	elif _carrying and on_drop:
 		_carrying = false
 		_sack.visible = false

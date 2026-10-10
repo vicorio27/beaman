@@ -39,6 +39,7 @@ func _ready() -> void:
 	if not GameState.lukas_alive():
 		concealed = false  # ya no hay quién lo encuentre olfateando: se ve, si uno mira bien
 	add_to_group("pickups")
+	add_to_group(Focus.GROUP)
 	_sprite = Sprite2D.new()
 	_sprite.texture = Items.icon(item_id)
 	_sprite.offset = Vector2(0, -8)
@@ -91,9 +92,10 @@ func _process(_delta: float) -> void:
 		return
 	# Brillito para que se vea entre la basura.
 	_sprite.modulate = Color(1, 1, 1) * (1.0 + 0.25 * sin(Time.get_ticks_msec() / 250.0))
+	Focus.dim(self, _hint)
 	if _player == null or concealed or GameState.input_blocked() or SceneRouter.busy:
 		return
-	if Input.is_action_just_pressed("interact"):
+	if Input.is_action_just_pressed("interact") and Focus.mine(self):
 		var it := Items.info(item_id)
 		var left := GameState.add_item(item_id, qty)
 		if left == qty:

@@ -23,6 +23,16 @@ const CLAIMS := [
 	"(Se le para al lado. No dice nada. Lo mira.)",
 	"(Señala la fila. Señala al colado. Señala la fila.)",
 ]
+## Mientras espera (E sin colado): algo que mirar, con su comentario. La fila es larga; que no sea muda.
+const WAIT_LINES := [
+	"(Lee el cartel de requisitos. Por cuarta vez. Sigue sin decir dónde se consiguen los requisitos.)",
+	"(La señora de adelante le muestra a Lukas una foto de su gato. Lukas la mira con respeto profesional.)",
+	"(Cuenta las baldosas hasta la puerta. Cuarenta y tres. Mañana van a ser las mismas. Eso es estabilidad.)",
+	"(El celador grita \"¡fotocopias aparte!\". Nadie sabe aparte de qué.)",
+	"(Un señor ofrece \"agilizar el trámite\" por veinte mil. Lukas le gruñe. Lukas es incorruptible.)",
+	"(Le da a Lukas el último pedazo de pan. Lukas lo recibe como si fuera la cédula.)",
+	"(Mira el reloj de la entidad. Está parado en las 9:15. Desde 2019. Nadie lo arregla: no es su trámite.)",
+]
 const EXCUSES := ["—¿Qué? ¿Qué me señala? ... Ay, ya, ya, me voy.", "—Yo estaba aquí desde las cinco. Bueno, desde las siete. Bueno, me voy.",
 	"—Es que yo solo venía a preg... Bueno. Bueno. Ya.", "—¿Y ese perro por qué me mira así? ... Ya, ya, al final."]
 
@@ -226,7 +236,17 @@ func _start_colado() -> void:
 	_prompt.text = Controls.keys_in("[E] ¡LA FILA!")
 
 
+var _wait_i := 0
+var _wait_cd := 0.0
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if state == "queue" and event.is_action_pressed("interact") and Time.get_ticks_msec() / 1000.0 > _wait_cd:
+		get_viewport().set_input_as_handled()
+		_wait_cd = Time.get_ticks_msec() / 1000.0 + 2.5
+		Narrator.say(WAIT_LINES[_wait_i % WAIT_LINES.size()], true)
+		_wait_i += 1
+		return
 	if state == "colado" and event.is_action_pressed("interact"):
 		get_viewport().set_input_as_handled()
 		_prompt.text = ""

@@ -114,8 +114,11 @@ func _foe_at(reach: float, dir: int) -> Brawler:
 	return best
 
 
-## Si adelante no hay nadie a tiro pero atrás sí: se da vuelta antes de pegar.
+## Si adelante no hay nadie a tiro pero atrás sí: se da vuelta antes de pegar. (No donde pegarle
+## al de atrás puede ser un error: las copias de Brenda.)
 func _face_threat() -> void:
+	if arena.has_method("auto_turn") and not arena.auto_turn():
+		return
 	if _foe_at(REACH_CHECK, facing) == null and _foe_at(REACH_CHECK, -facing) != null:
 		set_facing(-facing)
 

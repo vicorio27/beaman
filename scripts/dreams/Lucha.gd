@@ -563,7 +563,12 @@ func _player(delta: float) -> void:
 		if me.node.animation != "idle":
 			me.node.play("idle")
 	if Input.is_action_just_pressed("interact"):
-		_strike(me, him, 4.0)
+		if him.state == "down" and _near(me, him, 30):
+			_elbow_drop()  # E con él en el piso: codazo (antes: golpe al aire)
+		else:
+			if _near(me, him, REACH + 4) and signf(him.pos.x - me.pos.x) != me.face:
+				me.face = -me.face  # lo tiene atrás: se da vuelta y le pega
+			_strike(me, him, 4.0)
 	elif Input.is_action_just_pressed("drop"):
 		if him.state == "down" and _near(me, him, 30):
 			_start_pin(true)
@@ -724,6 +729,22 @@ func _strike(a: W, b: W, dmg: float) -> void:
 		_hit(b, dmg, a)
 	else:
 		_sfx["miss"].play()
+
+
+## Codazo al que está en el piso: poquito daño, mucho público. No lo levanta (para la cuenta, X).
+func _elbow_drop() -> void:
+	if me.cd > 0.0:
+		return
+	me.cd = 0.6
+	me.state = "punch"
+	me.t = 0.4
+	me.node.play("crouch")
+	him.hp -= 3.0
+	_special = minf(100.0, _special + 8.0)
+	_sfx["hit-1"].play()
+	_check_ko(him)
+	_say_call(["DON TITO: —¡Codazo al piso! ¡Sin elegancia, pero con fe!",
+		"LA MONA: —Le cae con el codo. Así le caía el papá a la nevera."].pick_random())
 
 
 func _hit(b: W, dmg: float, by: W) -> void:

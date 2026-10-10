@@ -113,6 +113,18 @@ var move_mult := 1.0
 var dmg_mult := 1.0
 ## Color con el que se tiñen las paredes (blanco: como son).
 var wall_tint := Color(1, 1, 1)
+## A lo Doom (opcional; sin flats_tex queda como antes, con degradé): pisos y techos con textura
+## (assets/shaders/plomo_piso.gdshader), luz por casilla (con faroles que titilan) y decorado.
+##   floor_map / ceil_map: [y][x] índice en el atlas flats_tex (techo -1 = cielo abierto).
+##   light_base: [y][x] 0..1; flicker: Vector2i -> velocidad (las que titilan).
+##   props: {"tex", "pos", "h", "r" (si estorba: radio), "anim" (cuadros)}.
+var flats_tex: Texture2D = null
+var flats_n := 1
+var floor_map: Array = []
+var ceil_map: Array = []
+var light_base: Array = []
+var flicker := {}
+var props: Array = []
 var lines := {
 	"start": "Tengo diez años, una pistola y el barrio lleno de demonios. Mi psicólogo estaría orgulloso. Si tuviera psicólogo. O diez años.",
 	"mini_wake": "LILATO: —Otra vez vos. ¡Pptt! Perdón. No, no perdón.",
@@ -178,6 +190,11 @@ var _small: Label
 var _hud_labels := {}
 var _hud_heads: Array[Label] = []
 var _face: TextureRect
+var _light := PackedFloat32Array()
+var _cells_img: Image
+var _cells_tex: ImageTexture
+var _floor: ColorRect
+var _light_t := 0.0
 
 
 func _ready() -> void:
@@ -202,6 +219,7 @@ func _ready() -> void:
 	_tex["face_grin"] = load("res://assets/shooter/%sgrin.png" % face_prefix)
 	_build_map()
 	_place()
+	_setup_flats()
 	_build_hud()
 	MusicDirector.force("")
 	_title()
@@ -286,6 +304,9 @@ func cell(x: int, y: int) -> String:
 
 
 func walkable(p: Vector2) -> bool:
+	for pr in props:
+		if pr.get("r", 0.0) > 0.0 and p.distance_to(pr["pos"]) < pr["r"] + RADIUS:
+			return false
 	for d in [Vector2(-RADIUS, -RADIUS), Vector2(RADIUS, -RADIUS), Vector2(-RADIUS, RADIUS), Vector2(RADIUS, RADIUS)]:
 		var c := cell(int(floor(p.x + d.x)), int(floor(p.y + d.y)))
 		if c != "." and c != "o":
@@ -319,6 +340,87 @@ func cast(from: Vector2, dir: Vector2, max_d := 40.0) -> float:
 		if c != "." and c != "o":
 			return d
 	return max_d
+
+
+## La luz de una casilla (1 si el episodio no tiene luces).
+func light_at(x: int, y: int) -> float:
+	if _light.is_empty():
+		return 1.0
+	return _light[clampi(y, 0, 23) * 32 + clampi(x, 0, 31)]
+
+
+func _setup_flats() -> void:
+	if light_base.is_empty() and flats_tex == null:
+		return
+	_light.resize(32 * 24)
+	for y in 24:
+		for x in 32:
+			_light[y * 32 + x] = light_base[y][x] if not light_base.is_empty() else 1.0
+	if flats_tex == null:
+		return
+	_cells_img = Image.create(32, 24, false, Image.FORMAT_RGBA8)
+	_paint_cells()
+	_cells_tex = ImageTexture.create_from_image(_cells_img)
+	_floor = ColorRect.new()
+	_floor.size = Vector2(W, VIEW_H)
+	_floor.show_behind_parent = true
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://assets/shaders/plomo_piso.gdshader")
+	mat.set_shader_parameter("flats", flats_tex)
+	mat.set_shader_parameter("cells", _cells_tex)
+	mat.set_shader_parameter("n_flats", float(flats_n))
+	mat.set_shader_parameter("view_h", VIEW_H)
+	mat.set_shader_parameter("sky_top", ceil_cols[0])
+	mat.set_shader_parameter("sky_bottom", ceil_cols[1])
+	_floor.material = mat
+	add_child(_floor)
+
+
+func _paint_cells() -> void:
+	for y in 24:
+		for x in 32:
+			var f: int = floor_map[y][x] if not floor_map.is_empty() else 0
+			var c: int = ceil_map[y][x] if not ceil_map.is_empty() else -1
+			_cells_img.set_pixel(x, y, Color8(f, 255 if c < 0 else c, int(clampf(light_at(x, y), 0.0, 1.0) * 255.0), 255))
+
+
+## Las luces que titilan (un tubo de la cocina, un farol que se está muriendo).
+func _update_light(delta: float) -> void:
+	if flicker.is_empty() or _light.is_empty():
+		return
+	_light_t -= delta
+	if _light_t > 0.0:
+		return
+	_light_t = 0.07
+	for c in flicker:
+		var base: float = light_base[c.y][c.x]
+		var on := sin(time * flicker[c] + c.x * 1.7) + randf_range(-0.6, 0.6) > -0.2
+		_light[c.y * 32 + c.x] = base if on else base * 0.35
+		if _cells_img:  # solo las que titilan (repintar todo el mapa cada vez pesa en el celular)
+			var px := _cells_img.get_pixel(c.x, c.y)
+			px.b = clampf(_light[c.y * 32 + c.x], 0.0, 1.0)
+			_cells_img.set_pixel(c.x, c.y, px)
+	if _cells_img:
+		_cells_tex.update(_cells_img)
+
+
+func _is_outdoors() -> bool:
+	return ceil_map.is_empty() or ceil_map[clampi(int(pos.y), 0, 23)][clampi(int(pos.x), 0, 31)] < 0
+
+
+func _prop_tex(pr: Dictionary) -> Texture2D:
+	var name: String = pr["tex"]
+	if pr.has("anim"):
+		var frames: Array = pr["anim"]
+		name = frames[int(time * 6.0 + pr["pos"].x) % frames.size()]
+	if not _tex.has(name):
+		_tex[name] = load("res://assets/shooter/%s.png" % name)
+	return _tex[name]
+
+
+## Para sobreescribir: cada perdigón (o bala), por dónde pasó y hasta dónde llegó.
+func _ray_hook(_from: Vector2, _dir: Vector2, _reach: float) -> void:
+	pass
 
 
 func los(a: Vector2, b: Vector2) -> bool:
@@ -378,6 +480,7 @@ func _process(delta: float) -> void:
 	match state:
 		"play":
 			time += delta
+			_update_light(delta)
 			_player(delta)
 			_doors(delta)
 			_enemies(delta)
@@ -515,6 +618,7 @@ func _fire() -> void:
 			if absf(rel.cross(rd)) < radius:
 				best = e
 				best_t = t
+		_ray_hook(pos, rd, best_t)
 		if best:
 			_damage(best, w["dmg"] * dmg_mult * randf_range(0.8, 1.2) * (1.15 if GameState.has_skill("sangre_fria") else 1.0))
 
@@ -794,11 +898,19 @@ func _draw() -> void:
 	if state == "title":
 		draw_rect(Rect2(0, 0, W, 180), Color(0.05, 0.02, 0.04))
 		return
+	var dir := Vector2(cos(ang), sin(ang))
+	var plane := Vector2(-dir.y, dir.x) * FOV_PLANE
+	if _floor:  # pisos y techos: los pinta el shader (el nodo de atrás); acá solo se le dice dónde está uno
+		var mat := _floor.material as ShaderMaterial
+		mat.set_shader_parameter("cam_pos", pos)
+		mat.set_shader_parameter("cam_dir", dir)
+		mat.set_shader_parameter("cam_plane", plane)
+		mat.set_shader_parameter("tint", wall_tint)
 	# Cielo de noche y asfalto (más claro cerca).
-	for i in 10:
+	for i in (0 if _floor else 10):
 		draw_rect(Rect2(0, i * VIEW_H / 20.0, W, VIEW_H / 20.0 + 1), ceil_cols[0].lerp(ceil_cols[1], i / 10.0))
 		draw_rect(Rect2(0, VIEW_H / 2.0 + i * VIEW_H / 20.0, W, VIEW_H / 20.0 + 1), floor_cols[0].lerp(floor_cols[1], i / 10.0))
-	if drawn_sky:  # estrellas de crayón y una luna con cara, que giran con la vista
+	if drawn_sky and _is_outdoors():  # estrellas de crayón y una luna con cara, que giran con la vista
 		for k in 14:
 			var sx := fposmod(k * 53.0 - ang * 160.0, W + 40.0) - 20.0
 			var sy := 8.0 + (k * 37) % 46
@@ -809,8 +921,6 @@ func _draw() -> void:
 		draw_circle(Vector2(mx + 5, 19), 9.0, ceil_cols[0].lerp(ceil_cols[1], 0.2))
 		draw_circle(Vector2(mx - 4, 20), 1.2, Color(0.2, 0.15, 0.2))
 		draw_arc(Vector2(mx - 4, 25), 3.0, 0.3, 2.6, 6, Color(0.2, 0.15, 0.2))
-	var dir := Vector2(cos(ang), sin(ang))
-	var plane := Vector2(-dir.y, dir.x) * FOV_PLANE
 	for x in W:
 		var cam := 2.0 * x / W - 1.0
 		var ray := dir + plane * cam
@@ -844,16 +954,20 @@ func _draw() -> void:
 		var wall_x := (pos.y + perp * ray.y) if side == 0 else (pos.x + perp * ray.x)
 		wall_x -= floor(wall_x)
 		var tex: Texture2D = _tex["wall_" + wall_tex.get(hit, "ladrillo")]
-		var tx := int(wall_x * 32.0)
+		var tw := tex.get_width()
+		var th := float(tex.get_height())
+		var tx := int(wall_x * tw)
 		if (side == 0 and ray.x > 0) or (side == 1 and ray.y < 0):
-			tx = 31 - tx
+			tx = tw - 1 - tx
 		var shade := clampf(1.25 - perp * 0.085, 0.12, 1.0) * (0.72 if side == 1 else 1.0)
+		if not _light.is_empty():  # la luz de la casilla desde donde se ve la pared
+			shade *= light_at(mx - sx, my) if side == 0 else light_at(mx, my - sy)
 		var col := Color(shade, shade * 0.93, shade * 1.02) * wall_tint
 		var opening: float = doors.get(Vector2i(mx, my), 0.0)
 		if opening > 0.0:  # la puerta sube
-			draw_texture_rect_region(tex, Rect2(x, top, 1, lh * (1.0 - opening)), Rect2(tx, 32.0 * opening, 1, 32.0 * (1.0 - opening)), col)
+			draw_texture_rect_region(tex, Rect2(x, top, 1, lh * (1.0 - opening)), Rect2(tx, th * opening, 1, th * (1.0 - opening)), col)
 		else:
-			draw_texture_rect_region(tex, Rect2(x, top, 1, lh), Rect2(tx, 0, 1, 32), col)
+			draw_texture_rect_region(tex, Rect2(x, top, 1, lh), Rect2(tx, 0, 1, th), col)
 	_draw_sprites(dir, plane)
 	_draw_weapon()
 	if _hurt > 0.0:
@@ -880,6 +994,8 @@ func _draw_sprites(dir: Vector2, plane: Vector2) -> void:
 		list.append([e.pos, _tex["%s_%s" % [e.kind, frame]], kinds[e.kind]["h"] * (0.45 if e.state == "dead" else 1.0), 0.0])
 	for p in pickups:
 		list.append([p["pos"], _tex[pickup_tex[p["kind"]]], 0.45 if p["kind"] == "caneca" else 0.22, 0.0])
+	for pr in props:
+		list.append([pr["pos"], _prop_tex(pr), pr["h"], 0.0])
 	list.append_array(extra_sprites())
 	for p in projectiles:
 		list.append([p["pos"], _tex[p["tex"]], 0.18, 0.35])
@@ -898,7 +1014,7 @@ func _draw_sprites(dir: Vector2, plane: Vector2) -> void:
 		var w := h * tex.get_width() / float(tex.get_height())
 		var bottom: float = VIEW_H / 2.0 + lh / 2.0 - s[3] * lh
 		var left := screen_x - w / 2.0
-		var shade := clampf(1.25 - ty * 0.085, 0.15, 1.0)
+		var shade := clampf(1.25 - ty * 0.085, 0.15, 1.0) * light_at(int(s[0].x), int(s[0].y))
 		# Corridas de columnas visibles (delante de la pared).
 		var run_start := -1
 		var x0 := maxi(0, int(left))
@@ -919,7 +1035,8 @@ func _draw_weapon() -> void:
 	var w: Dictionary = WEAPONS[weapon]
 	var tex: Texture2D = _tex["w_%s%s" % [w["tex"], "_fire" if _flash > 0.0 else ""]]
 	var bob := Vector2(sin(_bob) * 4.0, absf(cos(_bob)) * 3.0)
-	draw_texture(tex, Vector2(W / 2.0 - 40.0, VIEW_H - 54.0) + bob + Vector2(0, -4 if _flash > 0.0 else 0))
+	var lit := 1.0 if _flash > 0.0 else maxf(0.5, light_at(int(pos.x), int(pos.y)))
+	draw_texture(tex, Vector2(W / 2.0 - tex.get_width() / 2.0, VIEW_H + 2.0 - tex.get_height()) + bob + Vector2(0, -4 if _flash > 0.0 else 0), Color(lit, lit, lit))
 
 
 # ---------------------------------------------------------------- HUD

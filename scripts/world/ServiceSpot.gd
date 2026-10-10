@@ -14,6 +14,7 @@ var _hint: Label
 
 
 func _ready() -> void:
+	add_to_group(Focus.GROUP)
 	var s := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
 	r.size = area
@@ -49,7 +50,8 @@ func _on_exit(b: Node2D) -> void:
 
 func _process(_delta: float) -> void:
 	_hint.visible = _player != null and not GameState.input_blocked()
+	Focus.dim(self, _hint)
 	if _player == null or GameState.input_blocked() or SceneRouter.busy:
 		return
-	if Input.is_action_just_pressed("interact"):
+	if Input.is_action_just_pressed("interact") and Focus.mine(self):
 		Conversations.run(service_id, self)

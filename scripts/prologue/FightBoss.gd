@@ -4,11 +4,13 @@ extends FightEnemy
 ##   - Aguante: los golpes comunes casi nunca lo frenan (solo le bajan vida). Lo tiran los fuertes.
 ##   - Ataques: combo de piñas, patada que tira al piso y embestida corriendo por la calle.
 ##   - A veces se cubre (guardia): mientras tanto no le entra nada de frente.
+##   - Si la embestida no le pega a nadie y se estrella contra el borde: queda mareado (estrellitas)
+##     un rato; ahí no se cubre y los golpes le entran doble. Esquivarlo es la forma de ganarle.
 
 signal life_changed(ratio: float)
 
 const CHARGE_SPEED := 170.0
-const CHARGE_TIME := 1.1
+const CHARGE_TIME := 3.0  # corre hasta pegarle a alguien o estrellarse (tope por si acaso)
 const GUARD_TIME := 0.9
 
 var _charging := 0.0
@@ -66,8 +68,12 @@ func _start_charge() -> void:
 
 func _charge(delta: float) -> void:
 	_charging -= delta
+	var before := position.x
 	position.x += facing * CHARGE_SPEED * delta
 	_clamp()
+	if not _charge_hit and absf(position.x - before) < 0.5:
+		_crash_wall()
+		return
 	var p: Brawler = arena.player
 	if not _charge_hit and absf(p.position.y - position.y) < 8.0 and absf(p.position.x - position.x) < 14.0:
 		_charge_hit = true
@@ -79,15 +85,48 @@ func _charge(delta: float) -> void:
 		play("idle")
 
 
+const DAZE_TIME := 1.8
+var _dazed := 0.0
+
+
+## Se estrelló contra el borde (la embestida no le pegó a nadie): mareado.
+func _crash_wall() -> void:
+	_charging = 0.0
+	_cooldown = 2.0
+	_dazed = DAZE_TIME
+	state = State.HURT
+	_timer = DAZE_TIME
+	sprite.stop()
+	play("hurt")
+	if arena.has_method("shake"):
+		arena.shake(3.0)
+	Narrator.say(["¡PUM! Se estrelló. Está viendo estrellitas.", "Se comió el poste. Ahora es cuando."].pick_random(), true)
+	var t := create_tween().set_loops(int(DAZE_TIME / 0.3))
+	t.tween_property(sprite, "rotation", 0.08, 0.15)
+	t.tween_property(sprite, "rotation", -0.08, 0.15)
+	t.finished.connect(func(): sprite.rotation = 0.0)
+
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if _dazed > 0.0:
+		_dazed -= delta
+		if _dazed <= 0.0:
+			sprite.rotation = 0.0
+
+
 func take_hit(dmg: int, from_x: float, heavy := false) -> void:
 	if state in [State.DOWN, State.GETUP, State.OUT]:
 		return
+	if _dazed > 0.0:
+		dmg *= 2  # mareado: le entra todo, y doble
+		_guarding = 0.0
 	var from_front := signf(from_x - position.x) == facing
 	if _guarding > 0.0 and from_front:
 		arena.on_blocked(self)
 		return
 	# A veces levanta la guardia después de recibir.
-	if not heavy and from_front and randf() < 0.18 and _charging <= 0.0:
+	if not heavy and from_front and randf() < 0.18 and _charging <= 0.0 and _dazed <= 0.0:
 		_guarding = GUARD_TIME
 		state = State.ATTACK
 		play("guard")

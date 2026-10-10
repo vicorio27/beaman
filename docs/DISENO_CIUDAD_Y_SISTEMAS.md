@@ -1501,3 +1501,56 @@ Si `idle` gana, esa parte no pide nada. Si `mash` gana fácil, es plana.
 - **Teclas en el celular:**
   - `Controls.keys_in()` cambia "E", "Q", "F" por "A", "B", "huella" en diálogos, avisos y carteles.
   - Hay botón táctil C (armar) con la mochila abierta.
+
+**Segunda ronda (la vara es UnMetal: todo responde, jefes que se leen):**
+- **Un solo letrero, una sola acción (`Focus.gd`):** de todo lo que el jugador tiene al lado (persona, puerta, servicio, algo para agarrar, lugar para dormir), solo lo más cercano muestra su letrero y responde a E. Antes podían salir dos letreros encimados y agarrar dos cosas con un botón.
+- **Jefes del callejón (El Tuerto, Guillermo):** la embestida corre hasta pegarle a alguien o estrellarse contra el borde. Si se estrella, queda mareado 1.8 s: no se cubre y los golpes le entran doble. Esquivar es la forma de ganarle.
+- **Lucha libre:**
+  - E con el rival atrás: se da vuelta y le pega.
+  - E con el rival en el piso: codazo (antes, golpe al aire).
+- **Brenda, las mil caras:** sin volteo automático (pegarle a la de atrás puede ser pegarle a una copia). Cada nombre va a su altura, para que no se encimen.
+- **La fila:** E mientras se espera muestra algo que mirar, con su comentario.
+- **Los bultos de Germán:** alzarlo con las piernas (un toque de ritmo); mal alzado, camina más lento con ese bulto.
+
+## PLOMO, el Dealer: más a lo Doom, y Lisandro de cerca (2026-10-09)
+
+**Cómo se ve** (el motor es opcional por episodio; lo usa el Dealer, los demás quedan igual):
+- **Paredes de 64x64** con relieve, mugre que sube del piso y grietas (`tools/art/draw_plomo_doom.py`, `wall_dd_*`):
+  - ladrillo, concreto con el dibujo del niño tachado, persianas de local con la L de Lisandro;
+  - bloques con franjas de peligro, cajas de la bodega, baldosa de la cocina con humo verde;
+  - mármol y oro de la casa (con su L), y puertas de metal con franjas.
+  - La puerta con llave tiene luz roja y candado de oro; la SALIDA es un aviso rojo que alumbra.
+- **Pisos y techos con textura** (shader `assets/shaders/plomo_piso.gdshader`, atlas `dd_suelos.png`):
+  - asfalto con charcos, andén, madera, baldosa a cuadros, mármol con oro;
+  - techos de la cocina y de la casa; en la calle y el callejón, cielo con estrellas.
+- **Luz por casilla:** el callejón es oscuro. Los faroles y las canecas con fuego alumbran alrededor; el fuego titila, igual que un farol que se está muriendo y el tubo de la cocina.
+- **Decorado** que estorba: faroles, canecas con fuego, carros quemados, bolsas de basura, y en la casa una estatua dorada de Lisandro (más alta y más flaca que él) y un espejo.
+- **Mapa nuevo:** callejón con recodos, calle con locales y kioscos, cocina con cajas y mesón, casa con columnas. Las zonas y las puertas son las mismas de siempre.
+- **Armas nuevas en primera persona:** pistola y escopeta de oro con anillos (Lisandro), acero con guante verde (él).
+
+**Lisandro: despreciable, pero uno le toma cariño antes de matarlo.** Se le maneja los tres capítulos:
+- **Es un hijo de puta:**
+  - hace chistes cuando mata ("Mándenle flores a la mamá. Las pago yo. Con la plata de él.");
+  - al pelado que le pide trabajo lo pone de campanero, o le da un billete falso "con cariño";
+  - le miente a la mamá.
+- **Lo que lo hace querible:**
+  - La mamá lo llama al teléfono público del callejón, una vez por capítulo:
+    - "¿ya comió?" / "Estoy en el banco, amá. Gerente.";
+    - "Usted no es gente mala, ¿cierto?";
+    - "vino un señor verde, muy educado".
+  - **Billete (capítulo 2):** un perro flaco al que le da pan, o le pega una patada y vuelve igual: "por fin uno que me sigue sin que le pague".
+    - Lo sigue y gruñe cuando hay alguien escondido ("Billete gruñe a la izquierda").
+    - Se acuesta cuando él se mete una bolsita.
+  - **Capítulo 3:** una foto de los dos de pelados en la misma esquina. De ahí viene la envidia: "él siempre tenía con quién jugar; yo tenía la pistola".
+- **El giro:** Billete corre para el lado de Lisandro.
+- **La pelea con Lisandro es un acertijo** (ya no es esponja; 700 de vida):
+  - Tiene el maletín de plata adelante y le entra el 30%.
+  - Cada 6 s grita "¡mi bolsita!" y corre a una de las 4 bolsitas del piso.
+    - Si se la toma: 6 s de subida (rápido, le entra el 8%), y después el bajón: suelta el maletín y le entra el 125%. Ahí llama a la mamá y a Billete.
+    - **Si uno le revienta la bolsita de un tiro antes de que llegue:** el bajón es inmediato y más largo ("¡Esa era la última de la cuadra!").
+  - Sin bolsitas, "es un señor gordo con una pistola".
+- **Al morir:** "¿Llamó mi mamá?... dígale que estaba en el banco"; Billete le lame la cara un rato largo.
+  - "Lo maté. Lo odiaba. Le había tomado cariño. El sueño sabía las dos cosas y no me avisó."
+  - Billete no viene: se queda con él.
+  - El final cambia según lo del pelado (`flags.lis_pelado`).
+- **En la revancha** (el sueño final): arranca en subida y el acertijo es el mismo.

@@ -9,6 +9,8 @@ Salida (assets/shooter/):
   d_bolsita, d_pepas, d_maletin, d_caneca, bolso_p, cadena_p   (recogibles y proyectiles)
   dw_<arma>[_fire].png, dface_*.png   Lisandro (manos con anillos de oro, gafas oscuras)
   sw_<arma>[_fire].png, sface_*.png   él, con armadura (guante verde, casco con visor)
+Ojo: las paredes, el piso y las armas (dw_, sw_) que se usan ahora son las de draw_plomo_doom.py
+(64x64, a lo Doom): después de correr este, correr ese.
 Uso: python tools/art/draw_shooter_dealer.py  (desde la carpeta del proyecto)"""
 import random
 from PIL import Image, ImageDraw

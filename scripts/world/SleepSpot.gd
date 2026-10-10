@@ -35,6 +35,7 @@ var _visual: Node2D
 
 
 func _ready() -> void:
+	add_to_group(Focus.GROUP)
 	var s := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
 	r.size = Vector2(28, 16)
@@ -86,9 +87,10 @@ func _update_hint() -> void:
 
 
 func _process(_delta: float) -> void:
+	Focus.dim(self, _hint)
 	if _player == null or GameState.input_blocked() or SceneRouter.busy:
 		return
-	if not Input.is_action_just_pressed("interact"):
+	if not Input.is_action_just_pressed("interact") or not Focus.mine(self):
 		return
 	if is_cambuche_spot():
 		_cambuche()

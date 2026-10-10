@@ -168,7 +168,7 @@ var _note := ""  # lo último que pasó (comió, tiró, armó): se muestra en la
 
 
 func _say(line: String) -> void:
-	_note = line
+	_note = Controls.keys_in(line)
 
 
 func _refresh() -> void:

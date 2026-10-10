@@ -30,6 +30,7 @@ func _plain() -> void:
 
 func _ready() -> void:
 	add_to_group("npcs")
+	add_to_group(Focus.GROUP)
 	collision_layer = 1
 	collision_mask = 1
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
@@ -84,12 +85,13 @@ func _on_exit(body: Node2D) -> void:
 
 func _physics_process(_delta: float) -> void:
 	_hint.visible = _player != null and not talking and not GameState.input_blocked()
+	Focus.dim(self, _hint)
 	if talking:
 		velocity = Vector2.ZERO
 		return
 	if route.size() >= 2:
 		_walk_route()
-	if _player and Input.is_action_just_pressed("interact") and not GameState.input_blocked():
+	if _player and Input.is_action_just_pressed("interact") and not GameState.input_blocked() and Focus.mine(self):
 		_talk()
 
 
