@@ -23,6 +23,18 @@ extends "res://scripts/dreams/Plomo.gd"
 ## las bolsitas del piso: si se la toma, entra en subida (rápido, no le entra nada); después viene el
 ## bajón (suelta el maletín: AHORA). Si uno le revienta la bolsita de un tiro antes de que llegue,
 ## el bajón es inmediato y más largo. Sin bolsitas, es un señor gordo con una pistola.
+## EL MUNDO DE LAS DROGAS, COMO ES (no un shooter genérico):
+##   - el callejón es la olla: gente fumando contra las paredes (no pelean: son los clientes),
+##     hollín, "SAPO = MUERTO"; un mural de un pelado muerto con velas al pie, al lado del teléfono;
+##   - en la calle, carteles de desaparecidos; y en la esquina del farol, Camila y Verónica, que
+##     trabajan para Lisandro (no son enemigas: los tiros no les hacen nada). Verónica fue la novia
+##     de él (el protagonista); Camila, por celos, se metió en la mitad. Después de eso terminaron las
+##     dos en esa esquina;
+##   - los enemigos: los clientes (adictos: piden "una sola" y arañan), los de la otra banda (cuchillo),
+##     los sicarios de moto (mini-Uzi), los tombos que cobran; y los campaneros son pelados de doce
+##     años: no se pueden matar, se tiran al piso antes del tiro (ya saben);
+##   - las armas: el puño con anillos, la pistola de oro y la mini-Uzi del sicariato (gasta mucho; la
+##     pistola rinde más). Cuando uno pasa a ser él, vuelve la escopeta.
 ## LOS OTROS JEFES TAMBIÉN SON ACERTIJOS (ver "Los jefes de los capítulos 1 y 2"):
 ##   1. DON LUCHO: chaleco de los ochenta (casi no le entra). Le gusta pararse debajo de la luz, y en
 ##      la casa cuelgan lámparas de araña, cada una amarrada a un gancho en la pared: cuando él está
@@ -56,10 +68,12 @@ var _plasma_t := 3.0
 const BAG_SPOTS := [Vector2(23.0, 13.0), Vector2(30.0, 15.0), Vector2(23.0, 22.0), Vector2(30.0, 21.5)]
 const GUARD_TIME := 6.0
 const LIS_RUSH := 6.0
-const LIS_CRASH := 4.0
+const LIS_CRASH := 2.5      # el bajón después de una bolsita que sí se metió (corto)
+## Lo que se cura con cada bolsita que alcanza (dejarlo llegar sale caro).
+const LIS_HEAL := 90.0
 const LIS_DENIED := 5.5
 ## Cuánto le entra a Lisandro según cómo esté.
-const LIS_TAKE := {"guard": 0.3, "seek": 0.7, "rush": 0.08, "crash": 1.25, "naked": 1.4}
+const LIS_TAKE := {"guard": 0.12, "seek": 0.5, "rush": 0.05, "crash": 1.6, "naked": 1.4}
 const SEEK_LINES := ["LISANDRO: —¡Mi bolsita! ¡Nadie toca mi bolsita!", "LISANDRO: —¡Un pase! ¡Uno solo y lo mato!",
 	"LISANDRO: —¡Billete, cúbrame! ¡Es una orden! ... ¿Los perros reciben órdenes?"]
 const RUSH_LINES_LIS := ["LISANDRO: —¡SUBIDA! ¡Soy inmortal! ¡Soy usted!", "LISANDRO: —¡No siento nada! ¡Qué rico no sentir nada!",
@@ -67,6 +81,22 @@ const RUSH_LINES_LIS := ["LISANDRO: —¡SUBIDA! ¡Soy inmortal! ¡Soy usted!", 
 const CRASH_LINES_LIS := ["LISANDRO: —Amá... Amá, ¿ya comió?", "LISANDRO: —Billete... venga... usted no se va, ¿cierto?",
 	"LISANDRO: —Yo no quería ser así. Bueno, sí quería. Pero no tanto."]
 ## Lo que dice cuando mata (es un hijo de puta; con gracia, pero un hijo de puta).
+## Lo que dice cuando mata a un cliente. Lo peor de él.
+const ADICTO_QUIPS := ["LISANDRO: —Cliente que no paga no es cliente. Es estadística.",
+	"LISANDRO: —Ese me compraba desde los catorce. Fidelidad. Ya no se ve eso.",
+	"LISANDRO: —Mírelo. Y todavía me debe. Los muertos siempre deben.",
+	"LISANDRO: —Yo no lo maté. Lo mató la bolsita. Yo nomás la vendí.",
+	"LISANDRO: —Su mamá lo va a buscar en los carteles. Que busque. Es bonito que lo busquen a uno."]
+const ADICTO_LINES := ["CLIENTE: —Patrón... una sola... se la pago mañana...", "CLIENTE: —Fíeme, patrón, que yo era bueno. Yo era bueno.",
+	"CLIENTE: —Una papeleta, patrón. Le lavo el carro. Le lavo lo que sea."]
+## La mini-Uzi del sicariato (en vez de la escopeta): rápida, gasta balas como agua.
+const DEALER_WEAPONS := [
+	{"name": "PUÑO", "tex": "puno", "dmg": 15, "cd": 0.45, "ammo": "", "pellets": 1, "spread": 0.0, "reach": 1.2},
+	{"name": "PISTOLA", "tex": "pistola", "dmg": 14, "cd": 0.32, "ammo": "balas", "pellets": 1, "spread": 0.01, "reach": 40.0},
+	{"name": "MINIUZI", "tex": "uzi", "dmg": 7, "cd": 0.1, "ammo": "balas", "pellets": 1, "spread": 0.045, "reach": 40.0},
+]
+var _beg_cd := 4.0
+var _pelado_said := false
 const KILL_QUIPS := ["LISANDRO: —Mándenle flores a la mamá. Las pago yo. Con la plata de él.",
 	"LISANDRO: —Nada personal. Bueno, un poquito personal.", "LISANDRO: —Ese me debía. Todos me deben.",
 	"LISANDRO: —Uno menos en la nómina.", "LISANDRO: —Qué pecado. Tenía unos tenis lindos. Ya son míos."]
@@ -135,14 +165,16 @@ func setup() -> void:
 	# A lo Doom: paredes de 64x64, pisos y techos con textura, luz por casilla (ver _build_map).
 	wall_tex = {"#": "dd_ladrillo", "C": "dd_dibujos", "Z": "dd_persiana", "K": "dd_contenedor", "P": "dd_columna",
 		"W": "dd_cajas", "Q": "dd_cocina", "G": "dd_oro", "M": "dd_marmol",
-		"D": "dd_puerta", "L": "dd_puerta_llave", "E": "dd_salida"}
+		"D": "dd_puerta", "L": "dd_puerta_llave", "E": "dd_salida",
+		"O": "dd_olla", "H": "dd_hollin", "R": "dd_mural", "X": "dd_desaparecidos"}
 	flats_tex = load("res://assets/shooter/dd_suelos.png")
 	flats_n = 8
 	kinds = {
-		"rival": {"hp": 30, "speed": 1.8, "range": 0.9, "dmg": 10, "cd": 1.0, "attack": "melee", "h": 0.8, "sprite": "dl_rival"},
-		"campanero": {"hp": 15, "speed": 2.3, "range": 0.0, "dmg": 0, "cd": 2.0, "attack": "whistle", "h": 0.78, "sprite": "dl_sapo"},
+		"rival": {"hp": 30, "speed": 1.8, "range": 0.9, "dmg": 10, "cd": 1.0, "attack": "melee", "h": 0.8, "sprite": "dl_pandillero"},
+		"campanero": {"hp": 15, "speed": 2.3, "range": 0.0, "dmg": 0, "cd": 2.0, "attack": "whistle", "h": 0.62, "sprite": "dl_pelado"},
+		"adicto": {"hp": 12, "speed": 1.0, "range": 0.8, "dmg": 3, "cd": 1.4, "attack": "melee", "h": 0.76, "sprite": "dl_adicto"},
 		"tombo": {"hp": 40, "speed": 2.0, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "hitscan", "h": 0.82, "sprite": "dl_tombo"},
-		"motorizado": {"hp": 40, "speed": 2.4, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "hitscan", "h": 0.8, "sprite": "kid_motorizado"},
+		"motorizado": {"hp": 40, "speed": 2.4, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 0.82, "sprite": "dl_sicario"},
 		"coronel": {"hp": 220, "speed": 1.6, "range": 10.0, "dmg": 8, "cd": 1.5, "attack": "burst", "h": 1.15, "sprite": "dl_coronel"},
 		"slayer": {"hp": 560, "speed": 1.3, "range": 12.0, "dmg": 9, "cd": 1.3, "attack": "burst", "h": 1.6, "sprite": "dl_slayer"},
 		"lisandro": {"hp": 700, "speed": 1.4, "range": 12.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 1.05, "sprite": "kid_lisandro"},
@@ -163,7 +195,8 @@ func setup() -> void:
 	max_hp = 200.0
 	dmg_mult = 1.5
 	owned = [true, true, true]
-	ammo = {"balas": 80, "cartuchos": 16}
+	ammo = {"balas": 120, "cartuchos": 0}
+	weapons = DEALER_WEAPONS
 	lines = {
 		"start": "LISANDRO: —Mi barrio. Lo pinté yo. Con crayón y con la plata de otros. Camisa de lino. Italiana. Bueno, de Bello. Pero de lino.",
 		"mini_wake": "EL CORONEL: —Lisandro. Usted me debe este mes. Y el pasado.",
@@ -177,7 +210,7 @@ func setup() -> void:
 		"key_use": "La llave del Coronel abre la casa. El Estado al servicio del barrio.",
 		"locked": "Cerrada. El Coronel tiene la llave. Siempre hay un uniforme con la llave.",
 		"exit_wait": "SALIDA. Todavía no: él sigue ahí.",
-		"alert": "(Un sapo pita. El barrio sabe que llegué. Bien: que sepan.)",
+		"alert": "(Un pelado pita. Doce años. Ya trabaja para mí. El barrio sabe que llegué.)",
 		"vest": "Un maletín de plata. Samsonite. La mejor armadura: nadie le dispara al que paga.",
 		"shotgun": "Otra escopeta. Uno nunca tiene suficientes.",
 		"no_ammo": "Sin balas. A puño con anillos. Duele más.",
@@ -237,6 +270,8 @@ func _chapter_setup() -> void:
 				recap = [["", "Lisandro otra vez. Esta vez con la bolsita pegada a la nariz. No se le acaba nunca."]]
 				weapon_prefix = "sw_"
 				face_prefix = "sface_"
+				weapons = WEAPONS
+				ammo = {"balas": 80, "cartuchos": 16}
 				max_hp = 100.0
 				dmg_mult = 1.0
 				armor = 100.0
@@ -265,16 +300,18 @@ func _chapter_setup() -> void:
 
 ## El plano: el mismo orden de zonas del motor (callejón, calle, cocina, la casa), pero con recodos,
 ## locales con persiana, kioscos de concreto, la cocina con cajas y la casa con columnas de mármol.
+## Letras nuevas: H = la olla (hollín), O = la olla con "SAPO = MUERTO", R = el mural del pelado muerto,
+## X = desaparecidos.
 const MAP := [
-	"#CCCCCCCC#ZZZZZZZZZZZCQQQQQQQQQ#",
-	"#........#...........C...W.....Q",
-	"#........#...........C...W.....Q",
-	"#........D...........C...W..W..Q",
-	"#....#...#...........C.........Q",
-	"#....#...#...........D.........Q",
-	"######...#....KK...##C.........Q",
+	"#HOCCHHHH#ZZZZZZZZZZZCQQQQQQQQQ#",
+	"H........#...........X...W.....Q",
+	"H........#...........X...W.....Q",
+	"H........D...........X...W..W..Q",
+	"H....#...#...........C.........Q",
+	"H....#...#...........D.........Q",
+	"HHHOHH...#....KK...##C.........Q",
 	"C........Z....KK...##C...W.....Q",
-	"C........Z.........##C...W..QQ.Q",
+	"R........Z.........##C...W..QQ.Q",
 	"C.....P..Z...........C...W.....Q",
 	"C........Z..P........C.........Q",
 	"#........#...........GGGGGGGGGGG",
@@ -283,12 +320,12 @@ const MAP := [
 	"C........#ZZ.........G..M...M..G",
 	"C.....P..#ZZ.........G.........G",
 	"C........#ZZ....KK...G.........G",
-	"######...#......KK...L.........E",
-	"#........Z...........G.........G",
-	"#........Z...........G.........G",
-	"#..KK....ZZ..........G..M...M..G",
-	"#........ZZ..........G.........G",
-	"#........#Z..........G.........G",
+	"HHOHHH...#......KK...L.........E",
+	"H........Z...........G.........G",
+	"H........Z...........G.........G",
+	"O..KK....ZZ..........G..M...M..G",
+	"H........ZZ..........G.........G",
+	"H........#Z..........G.........G",
 	"#####################GGGGGGGGGG#",
 ]
 ## Pisos y techos (el atlas dd_suelos.png, en este orden).
@@ -304,6 +341,12 @@ const DECOR := [
 	["dd_bolsas", 14.5, 22.4, 0.3, 0.0], [["dd_caneca_fuego1", "dd_caneca_fuego2"], 26.5, 5.5, 0.5, 0.25],
 	["dd_bolsas", 30.4, 6.5, 0.3, 0.0], ["dd_estatua", 26.5, 12.6, 1.15, 0.3], ["dd_espejo", 30.6, 13.0, 0.75, 0.2],
 	[["dd_caneca_fuego1", "dd_caneca_fuego2"], 22.6, 12.5, 0.5, 0.25],
+	# La olla: los clientes fumando contra las paredes (no pelean), un colchón, el altarcito del mural.
+	["dd_fumador", 1.35, 13.6, 0.42, 0.2], ["dd_fumador", 1.35, 15.4, 0.42, 0.2], ["dd_fumador", 4.6, 22.6, 0.42, 0.2],
+	["dd_fumador", 1.35, 2.6, 0.42, 0.2], ["dd_fumador", 6.4, 1.35, 0.42, 0.2], ["dd_colchon", 3.0, 1.5, 0.16, 0.0],
+	["dd_colchon", 7.2, 18.6, 0.16, 0.0], ["dd_velas", 0.75, 8.5, 0.28, 0.0],
+	# La esquina del farol: Camila y Verónica (trabajan para Lisandro; los tiros no les hacen nada).
+	["dd_camila", 13.25, 16.15, 0.7, 0.18], ["dd_veronica", 13.3, 16.95, 0.8, 0.18],
 ]
 
 
@@ -324,10 +367,10 @@ func _build_map() -> void:
 		for x in 32:
 			var z := _zone_of(Vector2(x + 0.5, y + 0.5))
 			match z:
-				0:  # el callejón: tierra y asfalto, oscuro
+				0:  # el callejón (la olla): tierra y asfalto, más oscuro
 					fr.append(Flat.TIERRA if (x + y * 3) % 7 == 0 else Flat.ASFALTO)
 					cr.append(-1)
-					lr.append(0.5)
+					lr.append(0.42)
 				1:  # la calle: andén pegado a los locales, asfalto en el medio
 					fr.append(Flat.ANDEN if x <= 10 or x >= 20 or y <= 1 or y >= 22 else Flat.ASFALTO)
 					cr.append(-1)
@@ -378,6 +421,7 @@ func _build_map() -> void:
 
 func _place() -> void:
 	var list := [
+		["adicto", 3.5, 15.0], ["adicto", 6.5, 8.5], ["adicto", 3.0, 4.5], ["adicto", 15.5, 6.5], ["adicto", 14.5, 21.0],
 		["rival", 3.5, 14.5], ["rival", 6.5, 10.5], ["campanero", 2.5, 3.5], ["rival", 7.5, 2.5],
 		["tombo", 15.5, 3.5], ["motorizado", 19.5, 14.5], ["tombo", 11.5, 12.5], ["tombo", 19.5, 21.5],
 		["campanero", 12.5, 19.5], ["rival", 17.5, 8.5], ["rival", 13.5, 14.5], ["rival", 15.5, 18.5],
@@ -389,7 +433,7 @@ func _place() -> void:
 	list[-1][0] = boss_kind
 	for e in list:
 		_spawn(e[0], Vector2(e[1], e[2]))
-	total = enemies.size()
+	total = enemies.filter(func(e): return e.kind != "campanero").size()  # a los pelados no se les cuenta
 	for p in [["empanada", 4.5, 18.5], ["balas", 7.5, 19.5], ["aguapanela", 1.5, 8.5], ["caneca", 7.5, 4.5],
 			["empanada", 13.5, 9.5], ["cartuchos", 11.5, 2.5], ["aguapanela", 19.5, 2.5], ["chaleco", 12.5, 21.5],
 			["balas", 19.5, 10.5], ["caneca", 17.5, 19.5], ["cartuchos", 23.5, 2.5], ["empanada", 29.5, 9.5],
@@ -433,6 +477,7 @@ func _pickups() -> void:
 
 func _special(delta: float) -> void:
 	_white = maxf(0.0, _white - delta * 1.4)
+	_beggars(delta)
 	_quip_cd -= delta
 	for pf in _puffs.duplicate():
 		pf["t"] -= delta
@@ -577,6 +622,8 @@ func _role_swap(slayer: Ent) -> void:
 	lines["boss_p1"] = "LISANDRO: —¡Usted no era así! ¡Usted era el que corría!"
 	lines["boss_p2"] = "LISANDRO: —¡Era envidia, sí! ¡¿Y qué?! ¡Usted también la tendría!"
 	# Él: armadura, escopeta, sin drogas. Las bolsitas que quedaban ahora son empanadas.
+	weapons = WEAPONS  # la escopeta de él
+	owned = [true, true, true]
 	_load_kit("sw_", "sface_")
 	max_hp = 100.0
 	hp = 100.0
@@ -604,8 +651,51 @@ func _role_swap(slayer: Ent) -> void:
 	if not _dog_on:
 		_dog_on = true
 		_dog_pos = lis.pos
-	_say("Las bolsitas de afuera ahora son empanadas. Las de la casa no: esas son de él.", 2)
+	# La instrucción, cuando ya pasó el destello blanco (encima del blanco no se lee).
+	get_tree().create_timer(0.8).timeout.connect(func(): _say("Las bolsitas de afuera ahora son empanadas. Las de la casa no: esas son de él.", 2))
+	_big.text = "AHORA ES ÉL"
+	get_tree().create_timer(2.6).timeout.connect(func(): if state == "play" and _big.text == "AHORA ES ÉL": _big.text = "")
 	_guard_say = 6.0  # que el ¡TAC! no la pise
+
+
+# ---------------------------------------------------------------- El mundo de las drogas
+
+## Los clientes se acercan pidiendo. Y los cartuchos de escopeta que caen son balas (Lisandro no tiene
+## escopeta: tiene la mini-Uzi).
+func _beggars(delta: float) -> void:
+	if weapons != WEAPONS:
+		for p in pickups:
+			if p["kind"] == "cartuchos":
+				p["kind"] = "balas"
+	_beg_cd -= delta
+	if _beg_cd > 0.0:
+		return
+	for e in enemies:
+		if e.kind == "adicto" and e.state != "dead" and e.pos.distance_to(pos) < 3.0 and los(e.pos, pos):
+			_beg_cd = 7.0
+			_say(ADICTO_LINES.pick_random(), 0)
+			return
+	_beg_cd = 1.0
+
+
+## A los pelados no les entran los tiros: se tiran al piso antes (ya saben).
+func _shootable(e: Ent) -> bool:
+	return e.kind != "campanero"
+
+
+## Un tiro que pasa cerca de un pelado: se tira al piso, las manos en la cabeza.
+func _duck(from: Vector2, dir: Vector2, reach: float) -> void:
+	for e in enemies:
+		if e.kind != "campanero" or e.state == "dead":
+			continue
+		var rel := e.pos - from
+		var t := rel.dot(dir)
+		if t > 0.0 and t < reach + 1.0 and absf(rel.cross(dir)) < 1.0:
+			e.state = "pain"
+			e.timer = 1.4
+			if not _pelado_said:
+				_pelado_said = true
+				_say("(El pelado se tira al piso antes del tiro, las manos en la cabeza. Ya sabe. Tiene doce años y ya sabe.)", 2)
 
 
 # ---------------------------------------------------------------- Los jefes de los capítulos 1 y 2 (acertijos)
@@ -782,7 +872,7 @@ func _lamps_fall(delta: float) -> void:
 					"DON LUCHO: —¡Otra vez! ¡Cuarenta años de esquina y me mata la decoración!"][_lamps.filter(func(x): return x["state"] == "down").size() - 1], 2)
 				if e.hp <= 0.0:
 					_die(e)
-			else:
+			elif _shootable(e):
 				_damage(e, 80.0)
 		if not caught:
 			_say("(Se cayó la araña. Don Lucho no estaba debajo.) DON LUCHO: —¡Esa era de Murano, animal!", 2)
@@ -912,11 +1002,13 @@ func _lis_fight(delta: float) -> void:
 			if to.length() < 0.45:
 				_bags.remove_at(_lis_bag)
 				_lis_bag = -1
+				var max_l: float = kinds["lisandro"]["hp"] * (1.0 + dream_hard)
+				lis.hp = minf(max_l, lis.hp + LIS_HEAL)
 				_lis_mode = "rush"
 				_lis_t = LIS_RUSH * (1.5 if FinalRush.is_step("lisandro") else 1.0)
 				lis.state = "chase"
 				_lis_speed(true)
-				_say(RUSH_LINES_LIS[_lis_i % RUSH_LINES_LIS.size()] + " (Correr.)", 2)
+				_say(RUSH_LINES_LIS[_lis_i % RUSH_LINES_LIS.size()] + " (Se cura. Le vuelve la vida, prestada. Correr.)", 2)
 				return
 			var sp := 1.7 if _lis_i == 0 else 2.3  # la primera vez, más despacio: para alcanzar a entender
 			var next := _next_cell(lis.pos, _bags[_lis_bag])  # rodea las columnas (antes se trababa en una)
@@ -1020,6 +1112,7 @@ func _lis_guard() -> void:
 
 ## Un tiro que pasa por encima de una bolsita la revienta (si no la tapa nadie).
 func _ray_hook(from: Vector2, dir: Vector2, reach: float, wall: float) -> void:
+	_duck(from, dir, reach)
 	if not _twist:
 		_boss_ray(from, dir, reach, wall)
 	if not _twist or _bags.is_empty():
@@ -1062,7 +1155,7 @@ func extra_sprites() -> Array:
 	for pf in _puffs:
 		out.append([pf["pos"], _t("dd_polvo"), 0.5 * (1.4 - pf["t"] * 0.3), 0.1])
 	for sc in _scenes:
-		if not sc["done"] or sc["keep"]:
+		if sc["tex"] != "" and (not sc["done"] or sc["keep"]):
 			out.append([sc["pos"], _t(sc["tex"]), sc["h"], 0.0])
 	if _dog_on:
 		var frame := "dd_billete_sit" if not _dog_moving else ("dd_billete_walk1" if int(time * 8.0) % 2 == 0 else "dd_billete_walk2")
@@ -1139,8 +1232,10 @@ func _story_setup() -> void:
 		2:
 			_scenes.append(phone)
 			_scenes.append({"id": "billete", "pos": Vector2(14.0, 12.5), "tex": "dd_billete_sit", "h": 0.32, "done": false, "keep": false})
+			_scenes.append({"id": "esquina", "pos": Vector2(12.6, 16.55), "tex": "", "h": 0.0, "done": false, "keep": false})
 		3:
 			_scenes.append(phone)
+			_scenes.append({"id": "senora", "pos": Vector2(20.35, 3.0), "tex": "dd_senora", "h": 0.7, "done": false, "keep": true})
 			_scenes.append({"id": "foto", "pos": Vector2(23.0, 1.5), "tex": "dd_foto", "h": 0.45, "done": false, "keep": true})
 			_dog_on = true  # Billete ya es de él
 			_dog_pos = pos + Vector2(0.0, 1.0)
@@ -1221,6 +1316,53 @@ func _run_scene(id: String) -> void:
 			_dog_on = true
 			_dog_pos = sc_pos("billete")
 			_say("(Billete lo sigue. Si gruñe, es que hay alguien escondido.)")
+		"esquina":
+			var i := await _talk([
+				["CAMILA", "—Llegó el patrón. Mírelo, Vero: camisa blanca. Blanca, en este barrio. Eso es tener plata o no tener vergüenza."],
+				["LISANDRO", "—Verónica. La ex del que no se muere. Los ojos azules, todavía. Mire dónde vino a parar."],
+				["VERÓNICA", "—Vine a parar donde usted me puso, Lisandro."],
+				["CAMILA", "—Y yo por meterme en la mitad. Me dieron celos de ella, ¿sabe? De que él la quisiera así. Ya ve: ahora tenemos la misma esquina. Se me cumplió."],
+				["LISANDRO", "—La cuota. La suya y la de ella."],
+				["VERÓNICA", "—Esta semana no hubo. Llovió. Cuando llueve nadie para."],
+				["LISANDRO", "—La deuda no se moja."],
+				["", "Verónica tiene un morado debajo del ojo azul. Lisandro lo mira como se mira una cuenta: sabe cuánto costó y quién lo cobró."],
+			], ["Cobrar igual", "Dejarlo para la otra semana"])
+			GameState.flags["lis_esquina"] = i
+			if i == 0:
+				await _talk([
+					["CAMILA", "—Tome. (Le da la plata de las dos.) Cuéntela, que usted no confía ni en la plata."],
+					["LISANDRO", "—Completa. Así me gusta. Puntuales como el Metro."],
+					["VERÓNICA", "—El Metro para a medianoche, Lisandro. Nosotras no."],
+				])
+				ammo["balas"] = mini(200, ammo["balas"] + 25)
+				_say("(Con la plata de ellas, Lisandro compra balas. Así funciona: todo se convierte en balas.)")
+			else:
+				await _talk([
+					["LISANDRO", "—La otra semana. Con intereses."],
+					["CAMILA", "—Qué generoso. Así empieza siempre usted: generoso. Después cobra el doble."],
+					["VERÓNICA", "—Gracias. (No se lo dice a él. Se lo dice a la lluvia, que fue la que paró.)"],
+				])
+				_say("(Lisandro se siente buena persona durante cuatro segundos. Se le pasa.)")
+			await _talk([
+				["CAMILA", "—Oiga, Lisandro. ¿Usted conoce a uno grande, verde, que anda preguntando por usted?"],
+				["LISANDRO", "—No. ¿Por?"],
+				["VERÓNICA", "—Porque preguntó también por mí. Por el nombre. Nadie aquí me dice por el nombre."],
+				["CAMILA", "—Tenía cara de que iba a durar más que usted."],
+			])
+		"senora":
+			var j := await _talk([
+				["SEÑORA", "—Joven, ¿usted lo ha visto? Se llama Brayan. Tiene diecisiete. Tenía... no. Tiene. Tiene diecisiete."],
+				["", "Lisandro mira la foto. Lo conoce. El martes. Le debía cuarenta mil."],
+			], ["No, señora.", "(Quedarse callado)"])
+			if j == 0:
+				await _talk([
+					["LISANDRO", "—No, señora. No lo he visto."],
+					["SEÑORA", "—Gracias, joven. Dios le pague."],
+					["", "Dios no le paga a Lisandro. Le pagan otros. Por cosas como el martes."],
+				])
+			else:
+				await _talk([["", "Lisandro no dice nada. La señora le pone un cartel en la mano y sigue pegando, encima de los viejos, encima de los de otras mamás."]])
+			await _talk([["", "En la pared hay cuarenta carteles. Lisandro conoce a once."]])
 		"foto":
 			await _talk([
 				["", "Una foto vieja en una mesita: dos pelados en la misma esquina, con la misma pistola de agua."],
@@ -1300,6 +1442,10 @@ func _die(e: Ent) -> void:
 		])
 		return
 	super._die(e)
+	if not _twist and e.kind == "adicto" and _quip_cd <= 0.0:
+		_quip_cd = 9.0
+		_say(ADICTO_QUIPS.pick_random(), 0)
+		return
 	if not _twist and e.kind not in [mini_kind, boss_kind] and _quip_cd <= 0.0 and randf() < 0.3:
 		_quip_cd = 14.0
 		_say(KILL_QUIPS.pick_random(), 0)
@@ -1312,7 +1458,7 @@ func _respawn() -> void:
 
 
 func _load_kit(wp: String, fp: String) -> void:
-	for w in WEAPONS:
+	for w in weapons:
 		_tex["w_" + w["tex"]] = load("res://assets/shooter/%s%s.png" % [wp, w["tex"]])
 		_tex["w_%s_fire" % w["tex"]] = load("res://assets/shooter/%s%s_fire.png" % [wp, w["tex"]])
 	for i in 5:
@@ -1350,6 +1496,9 @@ func _on_exit() -> void:
 		["", "Billete no viene. Se queda con él, echado, con la cabeza en la camisa blanca."],
 		["", "Algunos perros no cambian de dueño. Ni cuando el dueño es malo. Sobre todo cuando el dueño es malo: alguien tiene que quedarse."],
 	]
+	if GameState.flags.get("lis_esquina", -1) == 0:
+		end.append(["", "En la esquina del farol, Camila y Verónica ya no le deben a Lisandro. Ahora le deben a otro. La deuda no se muere: cambia de dueño."])
+	end.append(["", "Al pasar por la esquina, Verónica me mira. Los ojos azules, todavía. No dice nada. Yo tampoco: no hay nada que decir que no haya dicho ya el barrio."])
 	match GameState.flags.get("lis_pelado", -1):
 		0:
 			end.append(["", "Afuera, en la esquina, el pelado pita. Ya trabaja para otro. Así se hereda esto."])

@@ -86,6 +86,8 @@ var subtitle := "EPISODIO 1: EL QUE ME MANDO A MATAR\n(cuando tenia diez años)"
 var recap: Array = []
 var wall_tex: Dictionary = WALL_TEX
 var kinds: Dictionary = KINDS
+## Las armas del episodio (Lisandro tiene la mini-Uzi del sicariato en vez de la escopeta).
+var weapons: Array = WEAPONS
 var pickup_tex: Dictionary = PICKUP_TEX
 var projectile_tex := ["pedido", "cuchillo", "saliva"]
 var checkpoints: Array = CHECKPOINTS
@@ -216,7 +218,7 @@ func _ready() -> void:
 			_tex["%s_%s" % [k, p]] = load("res://assets/shooter/%s_%s.png" % [spr, p])
 	for k in pickup_tex.values() + projectile_tex:
 		_tex[k] = load("res://assets/shooter/%s.png" % k)
-	for w in WEAPONS:
+	for w in weapons:
 		_tex["w_" + w["tex"]] = load("res://assets/shooter/%s%s.png" % [weapon_prefix, w["tex"]])
 		_tex["w_%s_fire" % w["tex"]] = load("res://assets/shooter/%s%s_fire.png" % [weapon_prefix, w["tex"]])
 	for i in 5:
@@ -430,6 +432,11 @@ func _ray_hook(_from: Vector2, _dir: Vector2, _reach: float, _wall: float) -> vo
 	pass
 
 
+## Para sobreescribir: a quién no le entran los tiros (ni la ayuda para apuntar se va hacia él).
+func _shootable(_e: Ent) -> bool:
+	return true
+
+
 ## Para sobreescribir: si la mira está sobre algo que se usa a tiros (y entonces la ayuda para
 ## apuntar no debe desviar el tiro hacia un enemigo).
 func _aim_object(_ang: float, _tol: float) -> bool:
@@ -595,7 +602,7 @@ func _next_weapon() -> void:
 
 
 func _fire() -> void:
-	var w: Dictionary = WEAPONS[weapon]
+	var w: Dictionary = weapons[weapon]
 	if w["ammo"] != "" and ammo[w["ammo"]] <= 0:
 		# Sin munición: la mejor arma que todavía tenga (la escopeta, la pistola; si no, el puño).
 		weapon = 2 if owned[2] and ammo["cartuchos"] > 0 else (1 if ammo["balas"] > 0 else 0)
@@ -617,7 +624,7 @@ func _fire() -> void:
 	if _aim_object(ang, best_da):  # apunta a algo del acertijo: la ayuda no se lo lleva para el enemigo
 		best_da = 0.0
 	for e in enemies:
-		if e.state == "dead":
+		if e.state == "dead" or not _shootable(e):
 			continue
 		var rel := e.pos - pos
 		if rel.length() > w["reach"]:
@@ -634,7 +641,7 @@ func _fire() -> void:
 		var best: Ent = null
 		var best_t := minf(wall, w["reach"])
 		for e in enemies:
-			if e.state == "dead":
+			if e.state == "dead" or not _shootable(e):
 				continue
 			var rel := e.pos - pos
 			var t := rel.dot(rd)
@@ -1084,7 +1091,7 @@ func _draw_sprites(dir: Vector2, plane: Vector2) -> void:
 
 
 func _draw_weapon() -> void:
-	var w: Dictionary = WEAPONS[weapon]
+	var w: Dictionary = weapons[weapon]
 	var tex: Texture2D = _tex["w_%s%s" % [w["tex"], "_fire" if _flash > 0.0 else ""]]
 	var bob := Vector2(sin(_bob) * 4.0, absf(cos(_bob)) * 3.0)
 	var lit := 1.0 if _flash > 0.0 else maxf(0.5, light_at(int(pos.x), int(pos.y)))
@@ -1128,7 +1135,7 @@ func _label(at: Vector2, size: int, color: Color) -> Label:
 
 
 func _update_hud() -> void:
-	var w: Dictionary = WEAPONS[weapon]
+	var w: Dictionary = weapons[weapon]
 	_hud_labels["ammo"].text = "--" if w["ammo"] == "" else str(ammo[w["ammo"]])
 	_hud_labels["hp"].text = "%d%%" % int(hp)
 	_hud_labels["armor"].text = "%d%%" % int(armor)
@@ -1139,6 +1146,8 @@ func _update_hud() -> void:
 	elif _face_grin > 0.0:
 		face = "face_grin"
 	_face.texture = _tex[face]
+	# En un diálogo, la caja tapa la barra: que no asomen pedazos de números por los lados.
+	var show := state != "title" and not Dialogue.active
 	for l in _hud_labels.values() + _hud_heads:
-		l.visible = state != "title"
-	_face.visible = state != "title"
+		l.visible = show
+	_face.visible = show

@@ -1588,3 +1588,16 @@ Antes eran esponjas de daño (caían en ~7 s). Ahora cada uno tiene su mecánica
 - **El puesto de Doña Rosa.** Pagaba $10.000 fijos (quieto, lo mismo que atendiendo). Ahora: $2.000 por cuidar el carrito y $1.000 por venta. En la segunda mitad (después del señor de negro): **pedidos dobles** ("una empanada y una aguapanela", "dos arepas"), en orden; y **Wilmer**, que pide fiado ("soy amigo de Rosa"): ABAJO = no fiar (señalar el letrero "HOY NO SE FÍA, MAÑANA SÍ"). Si se le da algo, Rosa lo descuenta ("Wilmer no paga ni el bus"). La burbuja del cliente va a la izquierda (no tapa el carrito ni a él) y crece para arriba.
   Con bots: atento $12.000-12.500; quieto $2.000; al azar, $0 (le fió a Wilmer).
 - Ojo con las pruebas sin pantalla: los cuadros van mucho más rápido que la física, y lo que se mueve al azar se promedia (todo parece fácil). Correr con `--fixed-fps 60`.
+
+## PLOMO, el Dealer: lo horrible del mundo de las drogas (2026-10-10)
+
+Esta parte tiene que mostrar cómo es vivir ahí (no un shooter genérico). Con humor negro, sin gore gratuito.
+
+- **La olla** (el callejón): paredes de hollín (`H`), "SAPO = MUERTO" en unas pocas (`O`), gente fumando sentada contra las paredes (decorado: no pelean, son los clientes), colchones. Más oscuro.
+- **El mural** de un pelado muerto (`R`: Q.E.P.D. 2005-2021, con un altarcito de velas al pie), al lado del teléfono donde llama la mamá.
+- **Desaparecidos** (`X`) en la calle. Capítulo 3: la señora que pega los carteles le pregunta a Lisandro por Brayan, diecisiete años. Él lo conoce ("el martes; le debía cuarenta mil"). "En la pared hay cuarenta carteles. Lisandro conoce a once."
+- **La esquina del farol: Camila y Verónica**, que trabajan para Lisandro (decorado: los tiros no les hacen nada). Verónica (mona, ojos azules, más alta) fue la novia de él, el protagonista; Camila, por celos, se metió en la mitad, y después de eso terminaron las dos en esa esquina. Capítulo 2: Lisandro les cobra la cuota (cobrar igual: balas, "todo se convierte en balas"; o dejarlo para la otra semana "con intereses"). Verónica tiene un morado debajo del ojo azul. En el final: la deuda cambia de dueño, y Verónica lo mira a él.
+- **Enemigos:** los clientes (adictos: lentos, piden "una sola, se la pago mañana", arañan; lo que dice Lisandro al matarlos es lo peor de él), los de la otra banda (capucha y cuchillo), los sicarios de moto (casco, mini-Uzi), los tombos. **Los campaneros son pelados de doce años y no se pueden matar:** se tiran al piso antes del tiro ("ya saben") y no cuentan en las bajas.
+- **Armas de Lisandro:** el puño con anillos, la pistola de oro y la **mini-Uzi de oro** del sicariato (rápida, gasta balas; la pistola rinde más). Los cartuchos que caen son balas. Cuando uno pasa a ser él (el protagonista), vuelve la escopeta; letrero grande: "AHORA ES ÉL".
+- **El acertijo de Lisandro ahora rinde:** con el maletín le entra 0,12; en el bajón 1,6. Si alcanza la bolsita, **se cura** (+90, "la vida, prestada") y el bajón es corto; si se la revientan antes, el bajón es largo. Con bots: capítulo 3, 51-58 s con el acertijo y 82-83 s a lo bruto; revancha, 81 s (2 muertes) contra 131 s (5 muertes).
+- Arte: `tools/art/draw_plomo_olla.py`.
