@@ -1554,3 +1554,10 @@ Si `idle` gana, esa parte no pide nada. Si `mash` gana fácil, es plana.
   - Billete no viene: se queda con él.
   - El final cambia según lo del pelado (`flags.lis_pelado`).
 - **En la revancha** (el sueño final): arranca en subida y el acertijo es el mismo.
+
+## PLOMO: lo que encontró el bot (2026-10-09)
+
+- Los avisos de arriba van por turnos (`_say(texto, prio)`): 0 = comentario (gruñido de Billete, ¡TAC!, chistes al matar; si hay otro aviso, se pierde), 1 = normal (espera), 2 = urgente (el giro, la bolsita, la subida y el bajón). Antes se pisaban: en el capítulo 3 se perdían 15 de 37.
+- Al reaparecer: 2 s sin daño, los enemigos se alejan sin atravesar paredes (antes mandaba a Lisandro a la cocina y la pelea no se acababa) y, en la pelea con Lisandro, con chaleco.
+- Si se quedó a puño porque no tenía balas, al recoger munición (o al reaparecer) vuelve solo al arma.
+- Lisandro busca la bolsita por la grilla (antes se trababa en una columna de mármol). Al bajón se le abre el maletín y se riegan balas; con poca munición aparece una caja lejos de él. Sin bolsitas queda lento ("un señor gordo con una pistola") y le entra más.

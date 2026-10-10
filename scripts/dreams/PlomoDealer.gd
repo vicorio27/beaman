@@ -51,7 +51,7 @@ const LIS_RUSH := 6.0
 const LIS_CRASH := 4.0
 const LIS_DENIED := 5.5
 ## Cuánto le entra a Lisandro según cómo esté.
-const LIS_TAKE := {"guard": 0.3, "seek": 0.7, "rush": 0.08, "crash": 1.25, "naked": 1.0}
+const LIS_TAKE := {"guard": 0.3, "seek": 0.7, "rush": 0.08, "crash": 1.25, "naked": 1.4}
 const SEEK_LINES := ["LISANDRO: —¡Mi bolsita! ¡Nadie toca mi bolsita!", "LISANDRO: —¡Un pase! ¡Uno solo y lo mato!",
 	"LISANDRO: —¡Billete, cúbrame! ¡Es una orden! ... ¿Los perros reciben órdenes?"]
 const RUSH_LINES_LIS := ["LISANDRO: —¡SUBIDA! ¡Soy inmortal! ¡Soy usted!", "LISANDRO: —¡No siento nada! ¡Qué rico no sentir nada!",
@@ -82,6 +82,9 @@ var _dog_bark := 5.0
 var _dog_owner := "player"    # player, lisandro (después del giro), body (cuando Lisandro se muere)
 var _dog_body := Vector2.ZERO
 var _dog_saw_bag := false
+var _resupply := 6.0
+var _resupply_said := false
+const AMMO_SPOTS := [Vector2(22.5, 13.5), Vector2(22.5, 21.5), Vector2(30.5, 18.5), Vector2(26.5, 22.3)]
 
 @export var chapter := 3
 
@@ -265,7 +268,7 @@ enum Flat { ASFALTO, ANDEN, BALDOSA, MADERA, MARMOL, TECHO_COCINA, TECHO_CASA, T
 const DECOR := [
 	["dd_farol", 1.4, 18.4, 1.1, 0.12], [["dd_caneca_fuego1", "dd_caneca_fuego2"], 7.4, 21.4, 0.5, 0.25],
 	["dd_bolsas", 1.5, 21.6, 0.3, 0.0], [["dd_caneca_fuego1", "dd_caneca_fuego2"], 1.6, 11.4, 0.5, 0.25],
-	["dd_farol", 8.5, 7.4, 1.1, 0.12], ["dd_bolsas", 8.4, 13.5, 0.3, 0.0], ["dd_farol", 10.5, 1.5, 1.1, 0.12],
+	["dd_farol", 8.7, 8.4, 1.1, 0.12], ["dd_bolsas", 8.4, 13.5, 0.3, 0.0], ["dd_farol", 10.5, 1.5, 1.1, 0.12],
 	["dd_carro", 12.5, 6.0, 0.45, 0.5], ["dd_carro", 18.5, 4.5, 0.45, 0.5], ["dd_carro", 17.0, 21.0, 0.45, 0.5],
 	["dd_farol", 20.5, 9.5, 1.1, 0.12], ["dd_farol", 12.5, 16.5, 1.1, 0.12],
 	[["dd_caneca_fuego1", "dd_caneca_fuego2"], 19.6, 18.5, 0.5, 0.25], ["dd_farol", 20.5, 22.5, 1.1, 0.12],
@@ -380,7 +383,7 @@ func _pickups() -> void:
 				_crash = 0.0
 				_bonus = 0.6
 				_face_grin = 1.5
-				_say(RUSH_LINES[_rush_i % RUSH_LINES.size()])
+				_say(RUSH_LINES[_rush_i % RUSH_LINES.size()], 0)
 				_rush_i += 1
 				if _dog_on and not _dog_saw_bag:
 					_dog_saw_bag = true
@@ -446,7 +449,7 @@ func _damage(e: Ent, dmg: float) -> void:
 		_guard_say -= 1.0
 		if _lis_mode in ["guard", "rush"] and _guard_say <= 0.0:
 			_guard_say = 6.0
-			_say("(¡TAC! El maletín de plata. Así no le entra.)" if _lis_mode == "guard" else "(No le entra nada: está en subida. Mejor correr.)")
+			_say("(¡TAC! El maletín de plata. Así no le entra.)" if _lis_mode == "guard" else "(No le entra nada: está en subida. Mejor correr.)", 0)
 	super._damage(e, dmg)
 	if e.kind == "lisandro" and e.state != "dead":
 		var max_l: float = kinds["lisandro"]["hp"] * (1.0 + dream_hard)
@@ -459,7 +462,8 @@ func _damage(e: Ent, dmg: float) -> void:
 			_say("LISANDRO: —¡Camila! ¡Guillermo! ¡Vengan, que este no se muere!")
 		elif not _called_lilato and e.hp < max_l * 0.33:
 			_called_lilato = true
-			var l := _spawn("lilato", e.pos + Vector2(-2.0, 0.0) if walkable(e.pos + Vector2(-2.0, 0.0)) else summon_points[0])
+			var at := e.pos + Vector2(-2.0, 0.0)
+			var l := _spawn("lilato", at if walkable(at) and los(e.pos, at) else summon_points[0])
 			l.alerted = true
 			total += 1
 			_say("LILATO: —¿Me extrañaste? Vine en el peor momento. Siempre vengo en el peor momento.")
@@ -484,7 +488,7 @@ func _slayer_plasma(delta: float) -> void:
 func _shake_say() -> void:
 	if randf() < 0.2:
 		_say(["EL QUE NO SE MUERE: —...", "Plasma. Verde. Como en las películas que él veía de chiquito.",
-			"EL QUE NO SE MUERE: —Usted pagó por esto, Lisandro."].pick_random())
+			"EL QUE NO SE MUERE: —Usted pagó por esto, Lisandro."].pick_random(), 0)
 
 
 ## Al que no se muere le queda un cuarto de vida: el sueño se da vuelta.
@@ -550,7 +554,8 @@ func _role_swap(slayer: Ent) -> void:
 	if not _dog_on:
 		_dog_on = true
 		_dog_pos = lis.pos
-	_say("Las bolsitas de afuera ahora son empanadas. Las de la casa no: esas son de él.")
+	_say("Las bolsitas de afuera ahora son empanadas. Las de la casa no: esas son de él.", 2)
+	_guard_say = 6.0  # que el ¡TAC! no la pise
 
 
 # ---------------------------------------------------------------- La pelea con Lisandro (acertijo)
@@ -571,11 +576,14 @@ func _lis_fight(delta: float) -> void:
 		_lis_t = LIS_RUSH * 1.5
 		_lis_speed(true)
 	_lis_t -= delta
+	_ammo_drop(delta)
 	match _lis_mode:
 		"guard":
 			if _lis_t <= 0.0:
 				if _bags.is_empty():
 					_lis_mode = "naked"
+					kinds["lisandro"]["speed"] = 1.0  # sin bolsitas: lento, y dispara como puede
+					kinds["lisandro"]["cd"] = 1.8
 					_say("LISANDRO: —¿Y las bolsitas? ... Sin bolsitas soy un señor gordo con una pistola. Siempre fui eso.")
 					return
 				var best := 0
@@ -585,13 +593,15 @@ func _lis_fight(delta: float) -> void:
 				_lis_bag = best
 				_lis_mode = "seek"
 				_lis_t = 8.0
-				_say(SEEK_LINES[_lis_i % SEEK_LINES.size()])
 				if not _taught:
 					_taught = true
-					await get_tree().create_timer(2.2).timeout
-					_say("(Va por una bolsita. Si se la reviento de un tiro antes de que llegue...)")
+					_say("LISANDRO: —¡Mi bolsita! (Va por una del piso. Si se la reviento de un tiro antes de que llegue...)", 2)
+				else:
+					_say(SEEK_LINES[_lis_i % SEEK_LINES.size()], 2)
 		"seek":
 			if _lis_bag < 0 or _lis_bag >= _bags.size() or _lis_t <= 0.0:
+				if _zone_of(lis.pos) != boss_zone:  # por si quedó fuera de la casa: vuelve (si no, la pelea no se acaba)
+					lis.pos = summon_points[0]
 				_lis_guard()
 				return
 			lis.state = "seek"  # el motor no lo mueve: lo mueve esto
@@ -603,12 +613,11 @@ func _lis_fight(delta: float) -> void:
 				_lis_t = LIS_RUSH * (1.5 if FinalRush.is_step("lisandro") else 1.0)
 				lis.state = "chase"
 				_lis_speed(true)
-				_say(RUSH_LINES_LIS[_lis_i % RUSH_LINES_LIS.size()])
+				_say(RUSH_LINES_LIS[_lis_i % RUSH_LINES_LIS.size()] + " (Correr.)", 2)
 				return
-			var before := lis.pos
-			_walk(lis, to.normalized(), 2.3, delta)
-			if lis.pos.distance_to(before) < 0.01:  # una columna en el medio: rodearla
-				_walk(lis, to.normalized().orthogonal(), 2.3, delta)
+			var sp := 1.7 if _lis_i == 0 else 2.3  # la primera vez, más despacio: para alcanzar a entender
+			var next := _next_cell(lis.pos, _bags[_lis_bag])  # rodea las columnas (antes se trababa en una)
+			_walk(lis, (next - lis.pos).normalized(), sp, delta)
 		"rush":
 			if _lis_t <= 0.0:
 				_lis_down(LIS_CRASH, CRASH_LINES_LIS[_lis_i % CRASH_LINES_LIS.size()])
@@ -617,6 +626,61 @@ func _lis_fight(delta: float) -> void:
 			lis.timer = 0.3
 			if _lis_t <= 0.0:
 				_lis_guard()
+
+
+## Hacia dónde dar el próximo paso para llegar a "to" sin chocar (BFS por casillas; la última, derecho).
+func _next_cell(from: Vector2, to: Vector2) -> Vector2:
+	var start := Vector2i(from.floor())
+	var goal := Vector2i(to.floor())
+	if start == goal or los(from, to) and _clear_line(from, to):
+		return to
+	var prev := {start: start}
+	var q := [start]
+	while not q.is_empty():
+		var c: Vector2i = q.pop_front()
+		if c == goal:
+			break
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + d
+			if prev.has(n) or not walkable(Vector2(n) + Vector2(0.5, 0.5)):
+				continue
+			prev[n] = c
+			q.append(n)
+	if not prev.has(goal):
+		return to
+	var c := goal
+	while prev[c] != start:
+		c = prev[c]
+	return Vector2(c) + Vector2(0.5, 0.5)
+
+
+## Que el cuerpo entero quepa por la línea (no solo el rayo del medio).
+func _clear_line(a: Vector2, b: Vector2) -> bool:
+	var n := int(a.distance_to(b) / 0.25) + 1
+	for i in n + 1:
+		if not walkable(a.lerp(b, float(i) / n)):
+			return false
+	return true
+
+
+## Con poca munición en la pelea larga, aparece una caja en la casa (lejos de él): a puño no se le gana.
+func _ammo_drop(delta: float) -> void:
+	_resupply -= delta
+	if _resupply > 0.0 or ammo["balas"] >= 20 or ammo["cartuchos"] >= 4:
+		return
+	_resupply = 10.0
+	for p in pickups:
+		if p["kind"] in ["balas", "cartuchos"] and _zone_of(p["pos"]) == boss_zone:
+			return
+	var lis := _lisandro()
+	var spot: Vector2 = AMMO_SPOTS[0]
+	for sp in AMMO_SPOTS:
+		if lis and sp.distance_to(lis.pos) > spot.distance_to(lis.pos):
+			spot = sp
+	pickups.append({"kind": "balas" if randf() < 0.6 else "cartuchos", "pos": spot})
+	if not _resupply_said:
+		_resupply_said = true
+		_say("(Una caja de balas en el piso, lejos de él. El sueño ayuda poco, pero ayuda.)")
 
 
 func _lis_speed(rush: bool) -> void:
@@ -629,10 +693,16 @@ func _lis_down(t: float, line: String) -> void:
 	_lis_t = t
 	_lis_i += 1
 	_lis_speed(false)
-	_say(line)
+	_say(line, 2)
+	# El maletín se abre al caer: plata, balas y un rosario. Las balas sirven (así nunca se queda sin).
+	var lis := _lisandro()
+	if lis:
+		for k in [["balas", Vector2(0.6, 0.0)], ["cartuchos", Vector2(-0.6, 0.0)]]:
+			var at: Vector2 = lis.pos + k[1]
+			pickups.append({"kind": k[0], "pos": at if walkable(at) and los(lis.pos, at) else lis.pos})
 	await get_tree().create_timer(2.0).timeout
 	if _lis_mode == "crash" and _lis_i <= 2:
-		_say("(Soltó el maletín. AHORA.)")
+		_say("(Soltó el maletín. Se riegan las balas. AHORA.)")
 
 
 func _lis_guard() -> void:
@@ -668,7 +738,7 @@ func _ray_hook(from: Vector2, dir: Vector2, reach: float) -> void:
 	else:
 		if hit < _lis_bag:
 			_lis_bag -= 1
-		_say("(Una bolsita menos. Lisandro lo vio. Se le cayó la cara.)")
+		_say("(Una bolsita menos. Lisandro lo vio. Se le cayó la cara.)", 0)
 
 
 func extra_sprites() -> Array:
@@ -738,7 +808,7 @@ func _dog(delta: float) -> void:
 	_dog_bark = 9.0
 	var a := wrapf((near.pos - pos).angle() - ang, -PI, PI)
 	var side := "adelante, detrás de algo" if absf(a) <= 0.6 else ("atrás" if absf(a) > 2.3 else ("a la derecha" if a > 0.0 else "a la izquierda"))
-	_say("(Billete gruñe %s. Hay alguien.)" % side)
+	_say("(Billete gruñe %s. Hay alguien.)" % side, 0)
 
 
 # ---------------------------------------------------------------- La historia de Lisandro
@@ -918,7 +988,13 @@ func _die(e: Ent) -> void:
 	super._die(e)
 	if not _twist and e.kind not in [mini_kind, boss_kind] and _quip_cd <= 0.0 and randf() < 0.3:
 		_quip_cd = 14.0
-		_say(KILL_QUIPS.pick_random())
+		_say(KILL_QUIPS.pick_random(), 0)
+
+
+func _respawn() -> void:
+	super._respawn()
+	if _twist:
+		armor = 60.0
 
 
 func _load_kit(wp: String, fp: String) -> void:

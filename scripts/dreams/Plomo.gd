@@ -195,6 +195,11 @@ var _cells_img: Image
 var _cells_tex: ImageTexture
 var _floor: ColorRect
 var _light_t := 0.0
+## Los avisos de arriba, por turnos: el que está en pantalla se alcanza a leer antes del siguiente.
+var _say_q: Array = []          # [texto, se vence]
+var _say_hold := 0.0
+## Al reaparecer, un momento sin que le entre nada (si no, lo matan en la puerta una y otra vez).
+var _grace := 0.0
 
 
 func _ready() -> void:
@@ -477,9 +482,15 @@ func _process(delta: float) -> void:
 	_face_hurt -= delta
 	_face_grin -= delta
 	_msg_cd -= delta
+	_say_hold -= delta
+	while _say_hold <= 0.0 and not _say_q.is_empty():
+		var q: Array = _say_q.pop_front()
+		if q[1] > time:
+			_show_say(q[0])
 	match state:
 		"play":
 			time += delta
+			_grace -= delta
 			_update_light(delta)
 			_player(delta)
 			_doors(delta)
@@ -704,7 +715,7 @@ func _enemies(delta: float) -> void:
 			"chase":
 				if e.kind == "campanero":
 					if sees:
-						_say(lines["alert"])
+						_say(lines["alert"], 0)
 						for o in enemies:
 							if o.state != "dead" and o.pos.distance_to(e.pos) < 10.0 and o.kind != boss_kind:
 								o.alerted = true
@@ -792,6 +803,8 @@ func _projectiles(delta: float) -> void:
 
 
 func _hit(dmg: float) -> void:
+	if _grace > 0.0:
+		return
 	dmg *= 1.0 + 0.5 * dream_hard
 	if GameState.has_skill("aguante"):
 		dmg *= 0.8
@@ -815,8 +828,12 @@ func _pickups() -> void:
 		match p["kind"]:
 			"balas":
 				ammo["balas"] = mini(200, ammo["balas"] + 12)
+				if weapon == 0:  # estaba a puño porque no tenía: vuelve al arma solo (como Doom)
+					weapon = 1
 			"cartuchos":
 				ammo["cartuchos"] = mini(50, ammo["cartuchos"] + 6)
+				if weapon == 0 and owned[2]:
+					weapon = 2
 			"empanada", "aguapanela":
 				if hp >= max_hp:
 					took = false
@@ -839,8 +856,21 @@ func _pickups() -> void:
 			_bonus = 0.4
 
 
-func _say(text: String) -> void:
+## prio 0: un comentario (si hay otro aviso a la vista, se pierde); 1: normal (espera su turno,
+## hasta 5 s); 2: urgente (pisa lo que haya).
+func _say(text: String, prio := 1) -> void:
+	if _say_hold > 0.0 and prio < 2:
+		if prio == 1:
+			_say_q.append([text, time + 5.0])
+			if _say_q.size() > 3:
+				_say_q.pop_front()
+		return
+	_show_say(text)
+
+
+func _show_say(text: String) -> void:
 	Narrator.say(text, true)
+	_say_hold = clampf(text.length() * 0.035, 1.6, 3.2)
 
 
 func _die_player() -> void:
@@ -849,6 +879,8 @@ func _die_player() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_big.text = "HAS MUERTO"
 	projectiles.clear()
+	_say_q.clear()
+	Narrator.hide_now()  # que no quede un aviso viejo encima de HAS MUERTO
 
 
 func _respawn() -> void:
@@ -856,16 +888,21 @@ func _respawn() -> void:
 	hp = max_hp
 	armor = 0.0
 	ammo["balas"] = maxi(ammo["balas"], 30)
+	if weapon == 0:
+		weapon = 2 if owned[2] and ammo["cartuchos"] > 0 else 1
 	pos = checkpoints[checkpoint]
 	ang = 0.0 if checkpoint > 0 else -PI / 2.0
 	_big.text = ""
 	_small.text = ""
+	_grace = 2.0
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	for e in enemies:  # los que estaban encima se alejan un poco
-		if e.state != "dead" and e.pos.distance_to(pos) < 4.0:
-			var away := e.pos + (e.pos - pos).normalized() * 3.0
-			if walkable(away):
-				e.pos = away
+		if e.state != "dead" and e.pos.distance_to(pos) < 5.0:
+			for k in [4.0, 3.0, 2.0]:
+				var away: Vector2 = e.pos + (e.pos - pos).normalized() * k
+				if walkable(away) and los(e.pos, away):  # sin atravesar paredes
+					e.pos = away
+					break
 
 
 func _finish() -> void:
