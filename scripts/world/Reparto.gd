@@ -2,22 +2,40 @@ extends "res://scripts/world/MotoRide.gd"
 ## RAPIDITO: un pedido en bicicleta (alquilada a Yeison). Mismo motor que el recuerdo de la moto:
 ## esquivar el tráfico y los huecos y llegar al cliente. Paga $5.000 y propina según el tiempo; cada
 ## golpe aplasta el pedido (menos propina). Si pasa del tiempo límite, el cliente cancela.
+## Cada pedido se juega distinto (los cuatro primeros salen en orden; después, al azar):
+##   hamburguesa: normal.
+##   sushi: frágil. Cada golpe cuesta el triple de propina, pero hay más tiempo.
+##   medicamentos: urgente. Menos tiempo y más propina; el cliente llama a mitad de camino.
+##   torta: no se puede ir a fondo. Más de 80% de velocidad un rato y la torta se ladea (cuenta como golpe).
 
 const PAY := 5000
 const LIMIT := 75.0
+## [pedido, línea de la mitad, tipo, tiempo límite, propina rápida, costo por golpe, [rápido, a tiempo]]
+## (una vuelta limpia: ~43 s a fondo; ~54 s con la torta, sin pasar del 80%)
 const ORDERS := [
-	["Hamburguesa doble. Con todo.", "El cliente puso en la app: \"Rápido, que tengo hambre\". Yo también, señor. Yo también."],
-	["Sushi. Para una sola persona. Que pidió para dos.", "Lo llevo con cuidado. Cuesta lo que yo me gano en tres días."],
-	["Medicamentos. Urgente.", "En la caja va el remedio de alguien. Pedaleo distinto."],
-	["Una torta de cumpleaños.", "\"Feliz cumpleaños, mi amor\", dice. Pedaleo sin pensar en ningún cumpleaños. No me sale."],
+	["Hamburguesa doble. Con todo.", "El cliente puso en la app: \"Rápido, que tengo hambre\". Yo también, señor. Yo también.", "", 75.0, 3000, 500, [50.0, 62.0]],
+	["Sushi. FRÁGIL. Para una persona que pidió para dos.", "Lo llevo con cuidado. Cuesta lo que yo me gano en tres días. Cada hueco me duele en el arroz.", "sushi", 90.0, 4000, 1500, [58.0, 72.0]],
+	["Medicamentos. URGENTE.", "El cliente llama: \"¿Ya viene? Es para mi mamá\". En la caja va el remedio de alguien. Pedaleo distinto.", "remedio", 58.0, 6000, 500, [47.0, 53.0]],
+	["Una torta de cumpleaños. NO CORRA.", "\"Feliz cumpleaños, mi amor\", dice. Pedaleo sin pensar en ningún cumpleaños. No me sale.", "torta", 85.0, 4000, 1000, [62.0, 72.0]],
 ]
+const TORTA_SPEED := 0.8
+const TORTA_TIME := 1.6
 
 var order: Array = []
 var _cancelled := false
+var _limit := LIMIT
+var _torta := 0.0  # cuánto se viene ladeando la torta
+
+
+## El pedido de hoy: los cuatro primeros en orden (cada uno se juega distinto); después, al azar.
+func _pick_order() -> Array:
+	var n := int(GameState.flags.get("reparto_n", 0))
+	return ORDERS[n] if n < ORDERS.size() else ORDERS[randi() % ORDERS.size()]
 
 
 func setup() -> void:
-	order = ORDERS[randi() % ORDERS.size()]
+	order = _pick_order()
+	_limit = order[3]
 	sky_top = Color(0.45, 0.62, 0.85)
 	sky_low = Color(0.82, 0.9, 0.95)
 	haze = Color(0.8, 0.86, 0.9)
@@ -41,8 +59,24 @@ func _countdown() -> void:
 
 func _ride(dt: float) -> void:
 	super._ride(dt)
-	if time > LIMIT and not _cancelled:
+	if order[2] == "torta" and state == "ride":
+		if speed > MAX_SPEED * TORTA_SPEED:
+			_torta += dt
+			if _torta > TORTA_TIME * 0.5:
+				_hud_center.text = "¡LA TORTA!" if int(time * 6) % 2 == 0 else ""
+		else:
+			_torta = maxf(0.0, _torta - dt * 1.5)
+			if _hud_center.text == "¡LA TORTA!" or _hud_center.text == "":
+				_hud_center.text = ""
+		if _torta > TORTA_TIME:
+			_torta = 0.0
+			_hud_center.text = ""
+			_crash(["La torta se ladeó. Ahora dice \"Feliz cumpl\". El resto está en la tapa.",
+				"Otra vez. El muñequito de los novios ya no se casa: se separaron en la curva.",
+				"La torta es ahora una torta abstracta. Arte moderno. Vale más."], 0.6)
+	if time > _limit and not _cancelled:
 		_cancelled = true
+		f_reparto_n()
 		state = "arrival"
 		_hud_center.text = "CANCELADO"
 		await get_tree().create_timer(1.0).timeout
@@ -56,11 +90,14 @@ func _arrival() -> void:
 		return
 	_engine.stop()
 	var tip := 0
-	if time < 50.0:
-		tip = 3000
-	elif time < 62.0:
-		tip = 1500
-	tip = maxi(0, tip - crashes * 500)
+	var fast: int = order[4]
+	var tiers: Array = order[6]
+	if time < tiers[0]:
+		tip = fast
+	elif time < tiers[1]:
+		tip = fast / 2
+	tip = maxi(0, tip - crashes * int(order[5]))
+	f_reparto_n()
 	var pay := PAY + tip
 	GameState.add_money(pay)
 	var f := GameState.flags
@@ -72,11 +109,19 @@ func _arrival() -> void:
 	TimeManager.skip(1.0)
 	GameState.set_hunger(GameState.hunger - 8.0)
 	var squashed := "Llegó entero." if crashes == 0 else ("Llegó un poco aplastado. %d golpes." % crashes)
+	var who: String = {"sushi": "—¿Esto es sushi o es arroz con sorpresa?" if crashes > 0 else "—Perfecto. Ni un grano fuera de lugar. ¿Usted es japonés?",
+		"remedio": "—¡Gracias, gracias! Mi mamá... gracias." if time < order[6][0] else "—Ya llegó. Ya. Gracias.",
+		"torta": "—¡Está perfecta! ¡Mi amor, mira!" if crashes == 0 else "—... Bueno. Igual se va a comer."}.get(order[2],
+		["—¿Por qué tan demorado?", "—Gracias, joven. ... ¿Ese perro es suyo?", "—Déjelo en la puerta. No me mire."].pick_random())
 	await Dialogue.talk([
-		["CLIENTE", ["—¿Por qué tan demorado?", "—Gracias, joven. ... ¿Ese perro es suyo?", "—Déjelo en la puerta. No me mire."].pick_random()],
+		["CLIENTE", who],
 		["", "%s $%d de pedido y $%d de propina." % [squashed, PAY, tip]],
 	])
 	_back("Un pedido. La app ya me está pidiendo otro. La app no duerme. Yo tampoco.")
+
+
+func f_reparto_n() -> void:
+	GameState.flags["reparto_n"] = int(GameState.flags.get("reparto_n", 0)) + 1
 
 
 func _back(line: String) -> void:
@@ -89,4 +134,4 @@ func _back(line: String) -> void:
 
 func _update_hud() -> void:
 	super._update_hud()
-	_hud_time.text = "%s/%s" % [_clock(time), _clock(LIMIT)]  # corto: no tapa la barra
+	_hud_time.text = "%s/%s" % [_clock(time), _clock(_limit)]  # corto: no tapa la barra

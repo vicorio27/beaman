@@ -103,7 +103,7 @@ func _run() -> void:
 		for i in 30:
 			await process_frame
 		var nxt: String = current_scene.scene_file_path.get_file() if current_scene else "?"
-		print("BOT %s %-28s t=%5.1f fin=%-7s -> %-18s ganó=%s puntos=%d presses=%d min=%s" % [policy, path.get_file(), t, ended if ended != "" else "TIEMPO", nxt, gs.flags.get("dream_won", "?"), load("res://scripts/prologue/Dream.gd").score, presses, notes])
+		print("BOT %s %-28s t=%5.1f fin=%-7s -> %-18s ganó=%s puntos=%d plata=%d ánimo=%d presses=%d min=%s" % [policy, path.get_file(), t, ended if ended != "" else "TIEMPO", nxt, gs.flags.get("dream_won", "?"), load("res://scripts/prologue/Dream.gd").score, gs.money, int(gs.mood), presses, notes])
 		Engine.time_scale = 1.0
 	quit()
 

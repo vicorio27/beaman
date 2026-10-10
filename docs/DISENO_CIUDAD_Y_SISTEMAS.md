@@ -1633,3 +1633,20 @@ el de ritmo, 1-2.
 
 Resultado: ritmo, 77-152 s, 0-2 caídas, sin rebobinar; machaca, 111-287 s, 3-13 caídas, hasta 2 rebobinadas
 por escena. El prólogo sigue suave (el que machaca cae 3-4 veces y casi no rebobina).
+
+## Trabajos de la ciudad: que el día 5 no se juegue igual que el día 1 (2026-10-10)
+
+Lo que aburría en los trabajos no era cada turno: era que se repetían idénticos todos los días.
+
+- **La Obra, un giro por turno** (`obra_turnos`), encima de los tres eventos de cada viaje:
+  1. normal; 2. **LLUVIA** (todo resbala; bono de $3.000 si sube 14 o más);
+  3. **EL INGENIERO** (casco blanco, "o_o" o "(cel)": si mira, botar ladrillos cuesta $2.000 y quedarse
+     quieto $1.000; en el celular, afirmarse es gratis); 4. **WÍLINTON**, el cuñado de Germán, camina
+     adelante y se para de golpe a contestar el celular ("¿Aló? ¡Mamá! Sí, sí comí."): frenar a tiempo o
+     tumbarlo (y tumbarse). Del 5 en adelante se turnan.
+  - Arreglado: los textos largos de abajo salían cortados (sobre todo en el celular): ahora la caja crece para arriba.
+- **Rapidito, cada pedido se juega distinto** (los cuatro primeros en orden, `reparto_n`):
+  hamburguesa (normal); **sushi FRÁGIL** (cada golpe cuesta el triple, más tiempo); **medicamentos URGENTE**
+  (58 s, propina de $6.000 si llega en menos de 47); **torta NO CORRA** (más del 80% de velocidad un rato y
+  la torta se ladea: "Ahora dice 'Feliz cumpl'"). El cliente reacciona según cómo llegó.
+  Una vuelta limpia: ~43 s a fondo, ~54 s con la torta.

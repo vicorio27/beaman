@@ -11,6 +11,13 @@ extends Node2D
 ##   2. VENTARRÓN: se avisa de qué lado viene; empuja la pila un rato (afirmarse o contrapesar).
 ##   3. LA PALOMA y EL CHARCO: una paloma se le para encima (la pila baila; se va si él se queda
 ##      quieto un rato); en el charco de mezcla se resbala (no frena en seco).
+## Y cada TURNO trae su giro (para que el día 5 no se juegue igual que el día 1):
+##   turno 1: normal.  turno 2: LLUVIA (todo resbala; bono si sube bastante).
+##   turno 3: EL INGENIERO (casco blanco: cuando mira, botar ladrillos o quedarse quieto se descuenta;
+##            cuando está en el celular, afirmarse es gratis).
+##   turno 4: WÍLINTON, el cuñado de Germán, camina adelante con su pila y se para de golpe a contestar
+##            el celular: soltar E a tiempo o se lo lleva por delante.
+##   del 5 en adelante: los giros se turnan.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const CITY := "res://scenes/world/City.tscn"
@@ -49,6 +56,28 @@ var _event_done := false
 var _wind_dir := 0.0
 var _brick: Dictionary = {}          # el ladrillo que viene volando: {"p", "v"}
 var _pigeon := false
+## El giro del turno: "", "lluvia", "ingeniero", "cunado".
+var twist := ""
+var _penalty := 0
+var _eng_look := false
+var _eng_t := 3.0
+var _eng_idle_t := 0.0
+var _eng_idle_said := false
+var _cx := 0.0          # Wílinton (x); se para a contestar
+var _c_stop := 0.0
+var _c_next := 3.0
+var _c_bumped := false
+var _cunado: AnimatedSprite2D
+var _eng: AnimatedSprite2D
+var _eng_label: Label
+const TWISTS := ["", "lluvia", "ingeniero", "cunado"]
+const TWIST_INTRO := {
+	"lluvia": ["MAESTRO RAMIRO", "—Hoy llueve. El piso es jabón. El que suba catorce o más se gana un bono de lluvia. El que se caiga, se gana un chiste."],
+	"ingeniero": ["MAESTRO RAMIRO", "—Hoy viene el ingeniero. Casco blanco. Cuando mira, nadie bota nada y nadie se queda quieto. Cuando está en el celular... bueno. Siempre está en el celular."],
+	"cunado": ["MAESTRO RAMIRO", "—Hoy sube con Wílinton, el cuñado de Germán. Camina adelante y se para a contestar el celular. No lo vaya a tumbar."],
+}
+const CUNADO_CALLS := ["WÍLINTON: —¿Aló? ¿Mor? No, aquí trabajando...", "WÍLINTON: —¿Aló? No, no tengo plata. ¿Quién habla?",
+	"WÍLINTON: —¿Aló? ¡Mamá! Sí, sí comí.", "WÍLINTON: —¿Aló? ... Colgaron. Igual paro."]
 
 const FOREMAN := [
 	"MAESTRO RAMIRO: —¡Derechito, cédula! ¡Que esos ladrillos cuestan más que usted!",
@@ -71,9 +100,7 @@ func _ready() -> void:
 	add_child(ui)
 	_top = _lab(ui, Vector2(4, 3))
 	_msg = _lab(ui, Vector2(4, 150))
-	_msg.size = Vector2(Controls.right_edge() - 8, 30)  # a la derecha, los botones táctiles
-	_msg.clip_text = true
-	_msg.max_lines_visible = 3
+	_msg.size = Vector2(Controls.right_edge() - 8, 10)  # a la derecha, los botones táctiles
 	_msg.add_to_group("under_dialogue")
 	_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	# El aviso de la acción ("¡ARRIBA: ATAJAR!", "¡VIENTO →!"): debajo de la barra de equilibrio.
@@ -83,6 +110,28 @@ func _ready() -> void:
 	_prompt.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	_prompt.add_to_group("under_dialogue")
 	MusicDirector.force("city_day")
+	var n := int(GameState.flags.get("obra_turnos", 0))
+	twist = TWISTS[n] if n < TWISTS.size() else TWISTS[1 + (n - TWISTS.size()) % (TWISTS.size() - 1)]
+	if twist == "cunado":
+		_cunado = AnimatedSprite2D.new()
+		_cunado.sprite_frames = _me.sprite_frames
+		_cunado.offset = Vector2(0, -22)
+		_cunado.modulate = Color(0.75, 0.9, 0.7)
+		add_child(_cunado)
+		move_child(_cunado, 0)
+		_cx = START_X + 40.0
+	if twist == "ingeniero":
+		_eng = AnimatedSprite2D.new()
+		_eng.sprite_frames = _me.sprite_frames
+		_eng.offset = Vector2(0, -22)
+		_eng.modulate = Color(0.85, 0.85, 1.0)
+		_eng.position = Vector2(196, 104)
+		_eng.scale = Vector2(0.8, 0.8)
+		_eng.play("idle")
+		add_child(_eng)
+		move_child(_eng, 0)
+		_eng_label = _lab(self, Vector2(182, 62))
+		_eng_label.z_index = 5
 	_intro()
 
 
@@ -105,6 +154,8 @@ func _intro() -> void:
 		GameState.flags["obra_tutorial2"] = true
 		lines.append(["", "E mantenido: caminar. Soltarlo: afirmarse (se para y la pila se calma). Flechas: equilibrar la pila."])
 		lines.append(["", "El turno tiene reloj. Lo que no sube, no se paga."])
+	if TWIST_INTRO.has(twist):
+		lines.append(TWIST_INTRO[twist])
 	await Dialogue.talk(lines)
 	state = "walk"
 
@@ -126,6 +177,9 @@ func _process(delta: float) -> void:
 				_event = ""
 				_event_done = false
 				_pigeon = false
+				_cx = START_X + 40.0
+				_c_stop = 0.0
+				_c_next = randf_range(1.5, 3.0)
 				state = "walk"
 	for b in _falling.duplicate():
 		b["v"].y += 300.0 * delta
@@ -133,6 +187,16 @@ func _process(delta: float) -> void:
 		if b["p"].y > 150:
 			_falling.erase(b)
 	_me.position = Vector2(x, 140)
+	if _cunado:
+		_cunado.visible = state in ["walk", "drop"] and _cx < DROP_X
+		_cunado.position = Vector2(_cx, 140)
+		var cw := _c_stop <= 0.0 and state == "walk"
+		if _cunado.animation != ("walk" if cw else "idle"):
+			_cunado.play("walk" if cw else "idle")
+	if _eng:
+		_eng.flip_h = _eng_look  # mirando al jugador (a la izquierda) o de espaldas con el celular
+		_eng_label.text = "o_o" if _eng_look else "(cel)"
+		_eng_label.add_theme_color_override("font_color", Color(1, 0.5, 0.4) if _eng_look else Color(0.75, 0.8, 0.9))
 	var walking := (state == "walk" and absf(v) > 6.0) or state == "back"
 	if _me.animation != ("walk" if walking else "idle"):
 		_me.play("walk" if walking else "idle")
@@ -147,12 +211,13 @@ func _walk(delta: float) -> void:
 	if GameState.has_skill("paso_firme"):
 		hard *= 0.6
 	var slip := x > PUDDLE.x and x < PUDDLE.y and trip == 2  # el charco: no frena en seco
-	v = move_toward(v, WALK if going else 0.0, (30.0 if slip else 140.0) * delta)
+	var rain := twist == "lluvia"
+	v = move_toward(v, WALK if going else 0.0, (30.0 if slip else (60.0 if rain else 140.0)) * delta)
 	x += v * delta
 	var moving := v > 8.0
 	# La pila es inestable: se va para donde ya está ladeada (más alta = más rápido), y caminando más.
 	var g := (3.4 + 0.25 * stack) * (1.0 if moving else 0.45)
-	var noise := randf_range(-1.0, 1.0) * (2.8 if moving else 0.25) * (2.0 if _pigeon else 1.0) * (1.5 if slip else 1.0)
+	var noise := randf_range(-1.0, 1.0) * (2.8 if moving else 0.25) * (2.0 if _pigeon else 1.0) * (1.5 if slip else 1.0) * (1.25 if rain else 1.0)
 	spin += (tilt * g + noise * hard + _wind()) * delta
 	if Input.is_action_pressed("move_left"):
 		spin -= 1.9 * delta
@@ -167,6 +232,9 @@ func _walk(delta: float) -> void:
 	if _idle > 4.0:
 		_idle = -5.0
 		_say(IDLE_LINES.pick_random())
+	_twist_tick(delta, moving)
+	if state != "walk":
+		return
 	shift -= delta
 	if shift <= 0.0:
 		_say("MAESTRO RAMIRO: —¡Se acabó el turno! Lo que no subió, no subió.")
@@ -190,6 +258,46 @@ func _walk(delta: float) -> void:
 			_end()
 		else:
 			state = "back"
+
+
+## El giro del turno: el ingeniero que mira, Wílinton que se para.
+func _twist_tick(delta: float, moving: bool) -> void:
+	if twist == "ingeniero":
+		_eng_t -= delta
+		if _eng_t <= 0.0:
+			_eng_look = not _eng_look
+			_eng_t = randf_range(2.5, 4.0) if _eng_look else randf_range(2.5, 4.5)
+			_eng_idle_said = false
+		if _eng_look and not moving and v < 2.0:
+			_eng_idle_t += delta
+			if _eng_idle_t > 1.2 and not _eng_idle_said:
+				_eng_idle_said = true
+				_penalty += 1000
+				_say(["INGENIERO: —¿Y ese por qué está quieto? ¿Le pagamos por posar? Mil pesos menos.",
+					"INGENIERO: —Quieto no se construye nada. Anote, maestro: mil.",
+					"INGENIERO: —Otro que medita. Mil."].pick_random())
+		else:
+			_eng_idle_t = 0.0
+	elif twist == "cunado" and _cx < DROP_X:
+		if _c_stop > 0.0:
+			_c_stop -= delta
+		else:
+			_cx += 31.0 * delta
+			_c_next -= delta
+			if _c_next <= 0.0 and _cx < DROP_X - 30.0:
+				_c_stop = randf_range(1.4, 2.4)
+				_c_next = randf_range(2.5, 4.5)
+				_say(CUNADO_CALLS.pick_random())
+		if not _c_bumped and x > _cx - 12.0:
+			_c_bumped = true
+			x = _cx - 14.0
+			_say(["WÍLINTON: —¡Ey! ¡Mor, se me cayó todo! ... Ah, no, se le cayó a usted.",
+				"WÍLINTON: —Hermano, ¿no ve que estoy en una llamada?"].pick_random())
+			_drop()
+		elif x < _cx - 20.0:
+			_c_bumped = false
+		if _c_bumped:
+			x = minf(x, _cx - 12.0)  # no lo atraviesa
 
 
 ## El empujón del ventarrón (cuando sopla).
@@ -262,6 +370,9 @@ func _events(delta: float) -> void:
 func _drop() -> void:
 	var lost := maxi(1, stack / 2)
 	stack -= lost
+	var seen: bool = _eng != null and _eng_look
+	if seen:
+		_penalty += 2000
 	for i in lost:
 		_falling.append({"p": Vector2(x, 140 - 26 - i * 4), "v": Vector2(signf(tilt) * randf_range(40, 90), -randf_range(20, 80))})
 	tilt = 0.0
@@ -270,8 +381,11 @@ func _drop() -> void:
 	if _pigeon:
 		_pigeon = false
 		_event = ""
-	_say(["(Se caen %d. El maestro anota algo.)" % lost,
-		"MAESTRO RAMIRO: —¡%d al piso! ¿No va a decir ni \"uy\"? Nada. Este man no se queja ni cuando se le cae la obra encima." % lost][randi() % 2])
+	if seen:
+		_say("INGENIERO: —¡Eso lo vi! Dos mil. Los ladrillos no rebotan, joven.")
+	elif not _c_bumped or x < _cx - 20.0:
+		_say(["(Se caen %d. El maestro anota algo.)" % lost,
+			"MAESTRO RAMIRO: —¡%d al piso! ¿No va a decir ni \"uy\"? Nada. Este man no se queja ni cuando se le cae la obra encima." % lost][randi() % 2])
 	state = "drop"
 	await get_tree().create_timer(0.8).timeout
 	if stack <= 0:
@@ -288,7 +402,11 @@ func _end() -> void:
 	state = "end"
 	_prompt.text = ""
 	var pay := int(round(PAY_FULL * float(delivered) / (TRIPS * BRICKS) / 500.0)) * 500
+	var bonus := 3000 if twist == "lluvia" and delivered >= 14 else 0
+	var base_pay := pay
+	pay = maxi(0, pay + bonus - _penalty)
 	GameState.add_money(pay)
+	GameState.flags["obra_turnos"] = int(GameState.flags.get("obra_turnos", 0)) + 1
 	GameState.set_hunger(GameState.hunger - 22.0)
 	GameState.flags["obra_dia"] = GameState.day
 	var f := GameState.flags
@@ -299,7 +417,7 @@ func _end() -> void:
 	GameState.change_mood(6.0 if delivered >= 14 else 1.0)
 	await Dialogue.talk([
 		["MAESTRO RAMIRO", "—%d de %d. %s" % [delivered, TRIPS * BRICKS, "Bien, cédula. Mañana a las siete." if delivered >= 14 else "Algo es algo. Mañana, mejor."]],
-		["MAESTRO RAMIRO", "—Tome: $%d. Contados. No me los gaste en bobadas. Bueno, sí: en comida." % pay],
+		["MAESTRO RAMIRO", _pay_line(base_pay, bonus, pay)],
 		["MAESTRO RAMIRO", "—Y firme el recibo. ... Uy, qué firma tan bonita. Firma de gerente. ¿Usted qué hacía antes?"],
 		["ÉL", "Firmaba. Eso hacía. Firmaba cosas que otros cargaban. Ahora cargo cosas que otros firman. El universo tiene sentido de la simetría."],
 	])
@@ -310,8 +428,19 @@ func _end() -> void:
 	SceneRouter.go(CITY, "FromCafe", "", "Seis horas de ladrillo. La espalda me odia. Yo, por primera vez en meses, no me odio tanto.")
 
 
+func _pay_line(base_pay: int, bonus: int, pay: int) -> String:
+	if bonus > 0:
+		return "—Tome: $%d, más $%d de bono de lluvia. La plata no se mojó. Usted sí." % [base_pay, bonus]
+	if _penalty > 0:
+		return "—Eran $%d. El ingeniero le descontó $%d. Quedan $%d. Él gana en un día lo que usted en un mes. Y descuenta." % [base_pay, _penalty, pay]
+	return "—Tome: $%d. Contados. No me los gaste en bobadas. Bueno, sí: en comida." % pay
+
+
 func _say(line: String) -> void:
 	_msg.text = line
+	# Crece para arriba: lo largo no se corta (y en el celular la franja es más angosta).
+	_msg.size = Vector2(Controls.right_edge() - 8, 10)
+	_msg.position.y = 178.0 - _msg.get_line_count() * 10.0
 	_msg.modulate.a = 1.0
 	var tw := create_tween()
 	tw.tween_interval(maxf(2.8, line.length() * 0.05))
@@ -322,6 +451,13 @@ func _draw() -> void:
 	draw_rect(Rect2(0, 0, 320, 180), Color(0.62, 0.74, 0.86))
 	draw_rect(Rect2(0, 100, 320, 80), Color(0.55, 0.46, 0.36))     # tierra
 	draw_rect(Rect2(0, 140, 320, 40), Color(0.48, 0.4, 0.32))
+	if twist == "lluvia":
+		draw_rect(Rect2(0, 0, 320, 180), Color(0.2, 0.25, 0.35, 0.25))
+		draw_rect(Rect2(0, 139, 320, 2), Color(0.7, 0.75, 0.8, 0.6))  # el piso mojado brilla
+		for k in 40:
+			var rx := fposmod(k * 37.0 + _t * 40.0, 330.0)
+			var ry := fposmod(k * 53.0 + _t * 260.0, 180.0)
+			draw_line(Vector2(rx, ry), Vector2(rx - 2, ry + 7), Color(0.8, 0.85, 0.95, 0.5), 1.0)
 	if trip == 2:  # el charco de mezcla del tercer viaje
 		draw_rect(Rect2(PUDDLE.x, 139, PUDDLE.y - PUDDLE.x, 4), Color(0.62, 0.62, 0.6))
 		draw_rect(Rect2(PUDDLE.x + 4, 138, PUDDLE.y - PUDDLE.x - 8, 2), Color(0.75, 0.75, 0.72))
@@ -362,6 +498,11 @@ func _draw() -> void:
 		var r := absf(tilt) / LIMIT
 		draw_rect(Rect2(110, 16, 100, 5), Color(0.2, 0.2, 0.2))
 		draw_rect(Rect2(160 + tilt / LIMIT * 50 - 2, 14, 4, 9), Color(0.3, 0.9, 0.3).lerp(Color(1, 0.2, 0.2), r))
+	if _eng:  # el casco blanco del ingeniero
+		draw_rect(Rect2(_eng.position.x - 4, _eng.position.y - 24, 8, 3), Color(0.97, 0.97, 0.95))
+	if _cunado and _cunado.visible:  # la pila de Wílinton (derechita, el desgraciado)
+		for i in 5:
+			draw_rect(Rect2(_cx - 6, 140 - 26 - i * 5 - 4, 12, 4), Color(0.7, 0.3, 0.2))
 	if not _brick.is_empty() and _event == "brick":
 		draw_rect(Rect2(_brick["p"] - Vector2(4, 2), Vector2(8, 4)), Color(0.75, 0.33, 0.22))
 	for b in _falling:
