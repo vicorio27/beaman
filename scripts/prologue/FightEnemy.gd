@@ -134,7 +134,7 @@ func _counter() -> void:
 	_guard = 0.0
 	_blocks = 0
 	set_facing(1 if arena.player.position.x > position.x else -1)
-	_attack = ["counter", 1, attack_range + 8.0, damage + 5, true]
+	_attack = ["counter", 1, attack_range + 8.0, damage + 8, true]
 	_begin_attack()
 	if arena.has_method("on_counter"):
 		arena.on_counter(self)

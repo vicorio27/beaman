@@ -1619,3 +1619,17 @@ y 13-14 las tumbaban las carretillas solas. Perder daba igual (caerse también l
 
 Resultado: machacando, 2-3 caídas y la mitad de las veces no termina (110-160 s); jugando bien, 70-90 s con
 0-2 caídas (el bot casi no esquiva botellas; una persona sí).
+
+## Beat 'em up: que caerse cueste (2026-10-10)
+
+Antes, quedar sin vida no costaba nada (machacar para levantarse, media vida, -1000 puntos): machacando se
+ganaba todo, solo 1,5 veces más lento. Con bots (`machaca` contra `ritmo`), el que machaca caía 3-8 veces;
+el de ritmo, 1-2.
+
+- **Tres caídas en la misma oleada rebobinan el sueño** (como el camión y como UnMetal): "—No. No, no. Así
+  no fue. A mí no me tumbaron tres veces." La oleada vuelve entera y él, con la vida llena. Dos veces por
+  oleada; a la tercera lo acepta ("Sí me tumbaron. Pero me levanté."). Solo en oleadas de matones, no de jefe.
+- **El contragolpe pega más** (daño +8 en vez de +5): machacar contra la guardia tumba.
+
+Resultado: ritmo, 77-152 s, 0-2 caídas, sin rebobinar; machaca, 111-287 s, 3-13 caídas, hasta 2 rebobinadas
+por escena. El prólogo sigue suave (el que machaca cae 3-4 veces y casi no rebobina).

@@ -3,6 +3,8 @@ extends Node2D
 ## Oleadas de matones: la cámara se traba en cada una hasta que no queda ninguno en pie.
 ## Armas en el piso (botella, caño) y cuchillos que sueltan los matones armados.
 ## La última oleada es el jefe. Al ganarle, "GO" y salida hacia la avenida (el camión).
+## Caer tres veces en la misma oleada (de matones, no de jefe) rebobina el sueño, como en UnMetal:
+## "—No. Así no fue." La oleada vuelve entera y él, con la vida llena. Dos veces; después lo acepta.
 
 const NEXT_SCENE := "res://scenes/prologue/Truck.tscn"
 const LEVEL_WIDTH := 1280.0
@@ -12,6 +14,13 @@ const VIEW_W := 320.0
 ## Cuántos matones pueden pegar a la vez.
 const MAX_AGGRESSIVE := 2
 const BOTTLE_SPEED := 230.0
+const KO_REWIND := 3
+const REWIND_KINDS := ["goon", "punk", "thug"]
+const REWIND_LINES := [
+	"—No. No, no. Así no fue. A mí no me tumbaron tres veces. Otra vez, bien contado.",
+	"—Tampoco así. En mi sueño yo peleo bonito. Desde el principio.",
+]
+const ACCEPT_LINE := "—Bueno. Sí me tumbaron. Pero me levanté. Eso también cuenta."
 
 ## Oleadas: posición de la cámara (borde izquierdo) y quiénes aparecen.
 ## "+knife" = viene con cuchillo (y lo suelta al caer).
@@ -65,6 +74,9 @@ var _alive: Array = []
 var _items: Array = []  # [{kind, node, pos}]
 var _cam_left := 0.0
 var _aggro_timer := 0.0
+var _wave_ko := 0
+var _rewinds := 0
+var _wave_defeated := 0  # los derrotados al empezar la oleada (para rebobinar el contador)
 
 @onready var mood: CanvasLayer = $MoodFilter
 var camera: Camera2D
@@ -227,7 +239,11 @@ func _physics_process(delta: float) -> void:
 
 
 func _start_wave(i: int) -> void:
+	if i != _wave:
+		_rewinds = 0
 	_wave = i
+	_wave_ko = 0
+	_wave_defeated = defeated
 	phase = Phase.FIGHT
 	var list: Array = waves[i]["enemies"]
 	for n in list.size():
@@ -235,7 +251,7 @@ func _start_wave(i: int) -> void:
 		var x := _cam_left + (VIEW_W + 20.0 + n * 18.0 if from_right else -20.0 - n * 10.0)
 		var y := randf_range(BAND.x + 4.0, BAND.y - 4.0)
 		_spawn(list[n], Vector2(x, y))
-	if i > 0:
+	if i > 0 and _rewinds == 0:  # rebobinando: que se lea lo de "así no fue"
 		Narrator.say(lines[mini(i, lines.size() - 1)], true)
 
 
@@ -335,6 +351,51 @@ func on_guard(e: Brawler) -> void:
 	stats["guardias"] = stats.get("guardias", 0) + 1
 	_pop("GUARDIA", e.position + Vector2(0, -50), Color(0.75, 0.85, 1.0))
 	_hint("guard", "(Se cubre. De frente ya no le entra: mantené [E] y soltá, patada giratoria. O por la espalda.)")
+
+
+## Lo tumbaron. A la tercera en la misma oleada, el sueño rebobina (salvo en las de jefe).
+func on_player_ko() -> void:
+	_wave_ko += 1
+	if _wave_ko < KO_REWIND or phase != Phase.FIGHT or _wave < 0:
+		return
+	for k in waves[_wave]["enemies"]:
+		if not str(k).get_slice("+", 0) in REWIND_KINDS:
+			return
+	if _rewinds >= REWIND_LINES.size():
+		if _rewinds == REWIND_LINES.size():
+			_rewinds += 1
+			Narrator.say(ACCEPT_LINE, true)
+		return
+	_rewind()
+
+
+func _rewind() -> void:
+	var line: String = REWIND_LINES[_rewinds]
+	_rewinds += 1
+	stats["rebobinadas"] = stats.get("rebobinadas", 0) + 1
+	phase = Phase.INTRO  # nadie pega mientras rebobina
+	var black := ColorRect.new()
+	black.color = Color(0, 0, 0, 0)
+	black.size = Vector2(VIEW_W + 40, 200)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.get_parent().add_child(black)
+	var t := create_tween()
+	t.tween_property(black, "color:a", 1.0, 0.3)
+	await t.finished
+	Narrator.say(line, true)
+	for e in _alive.duplicate():
+		if is_instance_valid(e):
+			e.queue_free()
+	_alive.clear()
+	defeated = _wave_defeated
+	player.revive_full()
+	player.position = Vector2(_cam_left + 70.0, (BAND.x + BAND.y) * 0.5)
+	await get_tree().create_timer(0.9).timeout
+	_start_wave(_wave)
+	_update_hud()
+	var u := create_tween()
+	u.tween_property(black, "color:a", 0.0, 0.4)
+	u.tween_callback(black.queue_free)
 
 
 func on_counter(e: Brawler) -> void:

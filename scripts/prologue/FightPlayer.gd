@@ -269,6 +269,10 @@ func _go_out() -> void:
 	_ko_presses = 0
 	_ko_t = 0.0
 	Dream.score = maxi(0, Dream.score - KO_PENALTY)
+	if arena and arena.get("stats") is Dictionary:
+		arena.stats["ko"] = arena.stats.get("ko", 0) + 1
+	if arena and arena.has_method("on_player_ko"):
+		arena.on_player_ko()
 	if _ko_label == null:
 		_ko_label = Label.new()
 		_ko_label.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
@@ -280,6 +284,18 @@ func _go_out() -> void:
 		_ko_label.z_index = 500
 		add_child(_ko_label)
 	_ko_label.visible = true
+
+
+## El sueño rebobinó: de pie, con la vida llena.
+func revive_full() -> void:
+	_ko = false
+	if _ko_label:
+		_ko_label.visible = false
+	sprite.position.x = 0.0
+	hp = max_hp
+	state = State.IDLE
+	play("idle")
+	hurt.emit(1.0)
 
 
 func _physics_process(delta: float) -> void:
