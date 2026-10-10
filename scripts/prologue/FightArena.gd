@@ -21,10 +21,12 @@ const WAVES := [
 	{"at": 640.0, "enemies": ["thug", "goon+knife", "punk"]},
 	{"at": 960.0, "enemies": ["boss"]},
 ]
+## "guard": probabilidad de cubrirse después de dos golpes seguidos (el grandote, desde el primero:
+## es el que pide la patada giratoria o pegarle por la espalda).
 const TYPES := {
-	"goon": {"sheet": "res://assets/prologue/enemy_goon.png", "hp": 20, "speed": 42.0, "damage": 4},
-	"punk": {"sheet": "res://assets/prologue/enemy_punk.png", "hp": 15, "speed": 58.0, "damage": 3},
-	"thug": {"sheet": "res://assets/prologue/enemy_thug.png", "hp": 34, "speed": 34.0, "damage": 6},
+	"goon": {"sheet": "res://assets/prologue/enemy_goon.png", "hp": 20, "speed": 42.0, "damage": 4, "guard": 0.6},
+	"punk": {"sheet": "res://assets/prologue/enemy_punk.png", "hp": 15, "speed": 58.0, "damage": 3, "guard": 0.3},
+	"thug": {"sheet": "res://assets/prologue/enemy_thug.png", "hp": 34, "speed": 34.0, "damage": 6, "guard": 1.0, "guard_after": 1},
 	"boss": {"sheet": "res://assets/prologue/enemy_boss.png", "hp": 150, "speed": 40.0, "damage": 6},
 }
 const BOSS_NAME := "EL TUERTO"
@@ -246,6 +248,9 @@ func _spawn(kind_spec: String, pos: Vector2) -> void:
 	e.speed = t["speed"]
 	e.damage = t["damage"]
 	e.has_knife = kind_spec.ends_with("+knife")
+	if not e is FightBoss:
+		e.guard_chance = t.get("guard", 0.0)
+		e.guard_after = t.get("guard_after", 2)
 	e.body_scale = t.get("scale", Vector2.ONE)
 	e.position = pos
 	e.arena = self
@@ -272,7 +277,8 @@ func foes() -> Array:
 	return _alive
 
 
-func resolve_attack(attacker: Brawler, reach: float, damage: int, heavy: bool) -> void:
+## breaks = rompe la guardia (patada giratoria, botella, caño).
+func resolve_attack(attacker: Brawler, reach: float, damage: int, heavy: bool, breaks := false) -> void:
 	var targets: Array = _alive if attacker == player else [player]
 	var landed := false
 	for t in targets:
@@ -280,7 +286,14 @@ func resolve_attack(attacker: Brawler, reach: float, damage: int, heavy: bool) -
 			continue
 		var dx: float = (t.position.x - attacker.position.x) * attacker.facing
 		if absf(t.position.y - attacker.position.y) <= 8.0 and dx >= -4.0 and dx <= reach:
+			if breaks and t.has_method("break_guard"):
+				t.break_guard()
 			t.take_hit(damage, attacker.position.x, heavy)
+			if t.get("blocked_last"):  # lo paró la guardia
+				t.blocked_last = false
+				on_blocked(t)
+				landed = true
+				continue
 			on_hit_landed(t, heavy)
 			landed = true
 	if not landed and attacker == player:
@@ -300,6 +313,76 @@ func on_hit_landed(target: Brawler, heavy: bool) -> void:
 func on_blocked(target: Brawler) -> void:
 	_sfx["miss"].play()
 	_spark(target.position + Vector2(target.facing * 8, -20))
+	_pop("¡TOC!", target.position + Vector2(0, -50), Color(0.75, 0.85, 1.0))
+
+
+# ---------------------------------------------------------------- Guardia, contragolpe y patada giratoria
+# Los avisos de cómo se juega salen una vez por escena; después solo los letreritos (¡TOC!, ¡CRAC!).
+var _hints := {}
+## Cuántas veces pasó cada cosa (para las pruebas con bots: tools/bot_jugar.gd).
+var stats := {}
+var _pops: Array = []
+
+
+func _hint(key: String, text: String) -> void:
+	if _hints.has(key):
+		return
+	_hints[key] = Time.get_ticks_msec()
+	Narrator.say(text, true)
+
+
+func on_guard(e: Brawler) -> void:
+	stats["guardias"] = stats.get("guardias", 0) + 1
+	_pop("GUARDIA", e.position + Vector2(0, -50), Color(0.75, 0.85, 1.0))
+	_hint("guard", "(Se cubre. De frente ya no le entra: mantené [E] y soltá, patada giratoria. O por la espalda.)")
+
+
+func on_counter(e: Brawler) -> void:
+	stats["contras"] = stats.get("contras", 0) + 1
+	_pop("¡CONTRA!", e.position + Vector2(0, -50), Color(1.0, 0.45, 0.35))
+	_hint("counter", "(Contragolpe. Machacar contra uno que se cubre sale caro.)")
+
+
+func on_guard_broken(e: Brawler) -> void:
+	stats["rotas"] = stats.get("rotas", 0) + 1
+	_pop("¡CRAC!", e.position + Vector2(0, -50), Color(1.0, 0.85, 0.3))
+	_hit_stop(0.12)
+
+
+func on_charged(_p: Brawler) -> void:
+	stats["cargas"] = stats.get("cargas", 0) + 1
+	# Solo si el aviso de la guardia ya se alcanzó a leer (si no, lo taparía; el brillo ya avisa).
+	if Time.get_ticks_msec() - int(_hints.get("guard", -99999)) > 5000:
+		_hint("charged", "(Cargada. Soltá: patada giratoria.)")
+
+
+## Un letrerito que sube y se borra, encima de alguien (no es texto del narrador: dura medio segundo).
+func _pop(text: String, at: Vector2, color: Color) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_color_override("font_color", color)
+	l.position = at - Vector2(text.length() * 4.0, 0)
+	l.z_index = 600
+	# Que no se encime con otro letrerito (dos matones juntos) ni con el ¡LEVANTATE!.
+	_pops = _pops.filter(func(o): return is_instance_valid(o))
+	var size := Vector2(text.length() * 8.0, 10.0)
+	var busy: Array = _pops.map(func(o): return Rect2(o.position, Vector2(o.text.length() * 8.0, 10.0)))
+	if player._ko_label and player._ko_label.visible:
+		busy.append(Rect2(player._ko_label.global_position - Vector2(0, 2), Vector2(player._ko_label.text.length() * 8.0, 12.0)))
+	for i in 8:
+		if not busy.any(func(r): return r.intersects(Rect2(l.position, size))):
+			break
+		l.position.y -= 11.0
+	_pops.append(l)
+	add_child(l)
+	var t := create_tween()
+	t.tween_property(l, "position:y", at.y - 12.0, 0.5)
+	t.parallel().tween_property(l, "modulate:a", 0.0, 0.5).set_delay(0.2)
+	t.tween_callback(l.queue_free)
 
 
 func _spark(pos: Vector2) -> void:
@@ -362,6 +445,8 @@ func throw_item(p: FightPlayer, kind: String) -> void:
 		for e in _alive:
 			if is_instance_valid(e) and e.state not in [Brawler.State.OUT, Brawler.State.DOWN] \
 					and absf(e.position.y - lane) <= 9.0 and absf(e.position.x - b.position.x) < 10.0:
+				if e.has_method("break_guard"):  # un botellazo no lo para ninguna guardia
+					e.break_guard()
 				e.take_hit(12, b.position.x - dir * 10.0, true)
 				on_hit_landed(e, true)
 				break_item(kind, Vector2(b.position.x, lane))

@@ -1571,3 +1571,12 @@ Antes eran esponjas de daño (caían en ~7 s). Ahora cada uno tiene su mecánica
 - Con el bot: con el acertijo, Don Lucho cae en ~20 s y el Coronel en ~35 s; a lo bruto, 80-180 s y varias muertes.
 - Motor: `Ent.pose` (poses especiales: "stun", "count"), `_ray_hook(..., wall)`, `_aim_object()` (si la mira está sobre un gancho, una caja o una bolsita, la ayuda para apuntar no se lleva el tiro hacia un enemigo). Sin munición pasa a la mejor arma que tenga balas (antes iba al puño aunque tuviera cartuchos). Las paredes ya no se ven al revés (las letras de SALIDA y la L de Lisandro).
 - Arte: `tools/art/draw_plomo_jefes.py` (Don Lucho, el Coronel, arañas, ganchos, cajas fuertes, fajos).
+
+## Beat 'em up: que machacar no alcance (2026-10-10)
+
+- **Los matones se cubren.** Después de dos golpes seguidos (el grandote, desde el primero) levantan el brazo: "GUARDIA". De frente ya no les entra nada; por la espalda, sí. Probabilidad: grandote 100%, normal 60%, flaco 30% (`TYPES[...]["guard"]`, `"guard_after"`).
+- **Contragolpe.** Tres golpes contra la guardia (lo que hace el que machaca) y contragolpea fuerte: lo tira al piso ("¡CONTRA!").
+- **Ataque nuevo: la patada giratoria.** Mantener el botón y soltarlo (cuenta desde que se aprieta: el primer golpe sale igual). Brilla cuando está cargada. Pega adelante y, en la vuelta, atrás; tira al piso y rompe la guardia ("¡CRAC!"). Machacando nunca se carga. Ya estaba dibujada en la hoja del protagonista (fila 5) y nunca se usaba; la guardia y el contragolpe de los matones también (fila 6).
+- También rompen la guardia: la botella (tirada o en la cabeza) y el caño. El cuchillo no.
+- Avisos una vez por escena (arriba): cómo se rompe la guardia y que machacar sale caro. Los letreritos (GUARDIA, ¡TOC!, ¡CRAC!, ¡CONTRA!) se apilan para no encimarse entre ellos ni con el ¡LEVANTATE!.
+- Con bots (150 s por nivel): el que machaca recibe 1-4 contragolpes y muere en 2 de 4 niveles; el que reacciona a la guardia con la giratoria no recibe ninguno y no muere. `tools/bot_jugar.gd` tiene las políticas `ritmo` y `machaca`, y la arena cuenta `stats`.

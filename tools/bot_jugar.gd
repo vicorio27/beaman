@@ -2,10 +2,15 @@ extends SceneTree
 ## Juega cada escena con una política tonta y anota qué pasa (prueba de jugabilidad).
 ##   idle: no hace nada (solo pasa los diálogos).
 ##   mash: machaca la acción, cambia de dirección al azar, a veces suelta/olfatea.
+##   ritmo (beat 'em up): se alinea con el matón más cercano, pega con pausas y, si se cubre,
+##     carga la patada giratoria (mantener y soltar). Es lo que haría alguien que entendió.
+##   machaca (beat 'em up): se alinea igual, pero machaca el botón sin parar (el que no entendió).
 ## Uso: godot --headless --path . -s res://tools/bot_jugar.gd -- <politica> <segundos> <escena> [<escena>...]
 ## Sirve para encontrar partes débiles: si "idle" gana, la parte no pide nada; si "mash" gana fácil, es plana.
 
 var _held := {}
+var _seq: Array = []  # ritmo: [interact apretado, segundos de juego]
+var _phys := 0
 
 
 func _init() -> void:
@@ -63,6 +68,13 @@ func _run() -> void:
 				_press("interact", talk and f % 8 < 4)
 				_track(scene_node, notes)
 				continue
+			if policy in ["ritmo", "machaca"] and scene_node.has_method("foes") and scene_node.get("player") != null:
+				if talk:
+					_press("interact", f % 8 < 4)
+				else:
+					_ritmo(scene_node, policy == "machaca", f)
+				_track(scene_node, notes)
+				continue
 			if f % 36 == 0:
 				dir = [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN, Vector2(1, -1), Vector2(-1, 1), Vector2.ZERO].pick_random()
 			_press("move_left", dir.x < 0)
@@ -87,6 +99,57 @@ func _run() -> void:
 	quit()
 
 
+func _ritmo(arena: Node, mash := false, f := 0) -> void:
+	var p = arena.player
+	var best = null
+	for e in arena.foes():
+		if is_instance_valid(e) and e.state != 6 and (best == null or e.position.distance_to(p.position) < best.position.distance_to(p.position)):
+			best = e
+	var mv := Vector2.ZERO
+	if best == null:
+		mv.x = 1.0  # avanzar
+	else:
+		var side := -1.0 if p.position.x < best.position.x else 1.0
+		var want: Vector2 = best.position + Vector2(side * 22.0, 0.0)
+		var to: Vector2 = want - p.position
+		if absf(to.y) > 3.0:
+			mv.y = signf(to.y)
+		if absf(to.x) > 6.0:
+			mv.x = signf(to.x)
+		elif p.facing != int(-side):
+			mv.x = -side  # mirarlo
+	var busy: bool = not _seq.is_empty()
+	_press("move_left", mv.x < 0 and not busy)
+	_press("move_right", mv.x > 0 and not busy)
+	_press("move_up", mv.y < 0 and not busy)
+	_press("move_down", mv.y > 0 and not busy)
+	if mash:
+		_press("move_left", mv.x < 0)
+		_press("move_right", mv.x > 0)
+		_press("move_up", mv.y < 0)
+		_press("move_down", mv.y > 0)
+		_press("interact", f % 6 < 3 and best != null and best.position.distance_to(p.position) < 40.0)
+		return
+	if _seq.is_empty() and best != null and mv == Vector2.ZERO:
+		var guarding: bool = best.get("_guard") != null and best._guard > 0.0 or best.get("_guarding") != null and best._guarding > 0.0
+		if guarding:
+			_seq = [[true, 0.75], [false, 0.3]]  # cargar y soltar: patada giratoria
+		else:
+			_seq = [[true, 0.05], [false, 0.07]]  # pega rápido, pero mirando
+	elif not _seq.is_empty() and _seq.size() == 2 and _seq[0][1] < 0.06 and best != null:
+		pass
+	# El tiempo del juego (los cuadros de dibujo sin pantalla van mucho más rápido que la física).
+	var dt := (Engine.get_physics_frames() - _phys) / 60.0 * Engine.time_scale
+	_phys = Engine.get_physics_frames()
+	if not _seq.is_empty():
+		_press("interact", _seq[0][0])
+		_seq[0][1] -= dt
+		if _seq[0][1] <= 0.0:
+			_seq.pop_front()
+	else:
+		_press("interact", false)
+
+
 func _track(scene_node: Node, notes: Dictionary) -> void:
 	for holder in [scene_node, scene_node.get("player")]:
 		if holder == null or not (holder is Object):
@@ -95,6 +158,10 @@ func _track(scene_node: Node, notes: Dictionary) -> void:
 			var v = holder.get(k)
 			if v != null and (v is int or v is float):
 				notes[k] = mini(notes.get(k, 99999), int(v))
+	var st = scene_node.get("stats")
+	if st is Dictionary:
+		for k in st:
+			notes[k] = st[k]
 	for k in ["defeated", "phase", "level", "round", "deaths", "caught", "lap", "position"]:
 		var v = scene_node.get(k)
 		if v != null and (v is int or v is float or v is String):

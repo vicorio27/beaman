@@ -123,7 +123,7 @@ func take_hit(dmg: int, from_x: float, heavy := false) -> void:
 		_guarding = 0.0
 	var from_front := signf(from_x - position.x) == facing
 	if _guarding > 0.0 and from_front:
-		arena.on_blocked(self)
+		blocked_last = true
 		return
 	# A veces levanta la guardia después de recibir.
 	if not heavy and from_front and randf() < 0.18 and _charging <= 0.0 and _dazed <= 0.0:
@@ -140,6 +140,15 @@ func take_hit(dmg: int, from_x: float, heavy := false) -> void:
 		t.tween_property(sprite, "modulate", Color(1, 0.4, 0.4), 0.05)
 		t.tween_property(sprite, "modulate", Color.WHITE, 0.1)
 	life_changed.emit(float(hp) / max_hp)
+
+
+func break_guard() -> void:
+	if _guarding <= 0.0:
+		return
+	_guarding = 0.0
+	state = State.IDLE
+	if arena.has_method("on_guard_broken"):
+		arena.on_guard_broken(self)
 
 
 func _go_out() -> void:

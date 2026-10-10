@@ -160,7 +160,7 @@ func foes() -> Array:
 	return []
 
 
-func resolve_attack(attacker: Brawler, reach: float, damage: int, heavy: bool) -> void:
+func resolve_attack(attacker: Brawler, reach: float, damage: int, heavy: bool, _breaks := false) -> void:
 	var landed := false
 	if attacker == player:
 		if lilato and is_instance_valid(lilato) and phase == Phase.LILATO \

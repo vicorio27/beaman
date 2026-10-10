@@ -11,6 +11,7 @@ const PLAYER := {
 	"punch": [2, 4, 16.0, false, 0],
 	"punch2": [3, 3, 14.0, false, 0],
 	"kick": [4, 6, 16.0, false, 0],
+	"spin": [5, 6, 14.0, false, 0],      # la patada giratoria (botón mantenido y soltado)
 	"hurt": [7, 3, 12.0, false, 0],
 	"fall": [8, 3, 8.0, false, 0],
 	"crouch": [6, 1, 1.0, false, 0],
@@ -25,6 +26,8 @@ const ENEMY := {
 	"fall": [5, 3, 8.0, false, 0],
 	"getup": [7, 1, 1.0, false, 0],
 	"stab": [3, 3, 10.0, false, 0],
+	"guard": [6, 1, 1.0, true, 1],       # se cubre la cara con el brazo
+	"counter": [6, 3, 12.0, false, 1],   # desde la guardia: contragolpe
 }
 
 ## Jefe.

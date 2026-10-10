@@ -2,6 +2,8 @@ class_name FightPlayer
 extends Brawler
 ## Protagonista en el sueño beat 'em up.
 ##   - Sin arma: golpe, golpe, patada (la patada tira al piso).
+##   - Botón mantenido y soltado (sin arma): patada giratoria. Pega adelante y atrás, tira al piso
+##     y rompe la guardia de los que se cubren. Machacando nunca se carga: pide calma.
 ##   - Parado sobre un arma + botón: la agarra.
 ##   - Cuchillo / caño: cada botón es un ataque con el arma; se gastan con el uso.
 ##   - Botella: si hay alguien al lado, se la rompe en la cabeza; si están lejos, se la tira.
@@ -20,6 +22,9 @@ const COMBO := [
 	["kick", 3, 30.0, 9, true],
 ]
 const COMBO_WINDOW := 0.45
+## Cuánto hay que mantener el botón (sin pegar) para que salga la patada giratoria.
+const CHARGE_TIME := 0.5
+const SPIN := {"reach": 34.0, "damage": 9}
 
 const WEAPONS := {
 	"knife": {"sheet": "res://assets/prologue/player_knife.png", "reach": 32.0, "damage": 9, "heavy": false, "uses": 12},
@@ -39,6 +44,9 @@ var _queued := false
 var _since_attack := 99.0
 var _hit_done := false
 var _weapon_frames := {}
+var _hold := 0.0
+var _charged := false
+var _spin_hits := 0
 var _ko := false  # tirado sin vida: hay que machacar para levantarse
 var _ko_presses := 0
 var _ko_t := 0.0
@@ -72,9 +80,13 @@ func tick(delta: float) -> void:
 		walk(Vector2.ZERO, delta)
 		return
 	var attack := Input.is_action_just_pressed("interact")
+	_charge(delta)  # cuenta desde que aprieta (el primer golpe sale igual)
 	if state == State.ATTACK:
 		if attack:
 			_queued = true
+		return
+	if _charged and not Input.is_action_pressed("interact"):  # soltó cargado
+		_start_spin()
 		return
 
 	# Agacharse (solo donde la escena lo permite, p. ej. el techo del camión).
@@ -123,6 +135,35 @@ func _face_threat() -> void:
 		set_facing(-facing)
 
 
+## Botón mantenido: se carga (brilla). Al soltarlo cargado (y sin estar pegando), patada giratoria.
+func _charge(delta: float) -> void:
+	if weapon != "" or crouching:
+		_hold = 0.0
+		_charged = false
+	elif Input.is_action_pressed("interact"):
+		_hold += delta
+		if _hold >= CHARGE_TIME and not _charged:
+			_charged = true
+			if arena.has_method("on_charged"):
+				arena.on_charged(self)
+	elif not _charged:
+		_hold = 0.0
+	sprite.modulate = Color(1.5, 1.3, 0.55) if _charged and int(Time.get_ticks_msec() / 90) % 2 == 0 else Color.WHITE
+
+
+func _start_spin() -> void:
+	_step = -3  # -3 = patada giratoria
+	_queued = false
+	_spin_hits = 0
+	_charged = false
+	_hold = 0.0
+	sprite.modulate = Color.WHITE
+	state = State.ATTACK
+	_push = facing * 70.0  # sale hacia adelante
+	sprite.stop()
+	play("spin")
+
+
 func _start_attack(step: int) -> void:
 	_step = step
 	_queued = false
@@ -142,7 +183,19 @@ func _start_weapon_attack() -> void:
 
 
 func _on_frame_changed() -> void:
-	if state != State.ATTACK or _hit_done:
+	if state != State.ATTACK:
+		return
+	if _step == -3:  # la giratoria pega dos veces: adelante y, en la vuelta, atrás
+		if sprite.frame == 2 and _spin_hits == 0:
+			_spin_hits = 1
+			arena.resolve_attack(self, SPIN["reach"], SPIN["damage"], true, true)
+		elif sprite.frame == 4 and _spin_hits == 1:
+			_spin_hits = 2
+			facing = -facing
+			arena.resolve_attack(self, SPIN["reach"] - 6.0, SPIN["damage"], true, true)
+			facing = -facing
+		return
+	if _hit_done:
 		return
 	if _step == -2:
 		if sprite.frame == WEAPON_HIT_FRAME:
@@ -159,15 +212,15 @@ func _use_weapon() -> void:
 	var w: Dictionary = WEAPONS[weapon]
 	if w.get("throw", false):
 		if _foe_at(28.0, facing) != null:
-			# Pegado a él: no se la tira, se la rompe en la cabeza.
-			arena.resolve_attack(self, 28.0, 12, true)
+			# Pegado a él: no se la tira, se la rompe en la cabeza (eso no lo para ninguna guardia).
+			arena.resolve_attack(self, 28.0, 12, true, true)
 			if arena.has_method("break_item"):
 				arena.break_item(weapon, position + Vector2(facing * 12, 0))
 		else:
 			arena.throw_item(self, weapon)
 		unequip()
 		return
-	arena.resolve_attack(self, w["reach"], w["damage"], w["heavy"])
+	arena.resolve_attack(self, w["reach"], w["damage"], w["heavy"], weapon == "pipe")  # el caño rompe la guardia
 	_uses -= 1
 	if _uses <= 0:
 		if arena.has_method("break_item"):
@@ -182,7 +235,7 @@ func _on_animation_finished() -> void:
 	if _step >= 0 and _queued and _step < COMBO.size() - 1:
 		_start_attack(_step + 1)
 	else:
-		if _step == COMBO.size() - 1 or _step == -2:
+		if _step == COMBO.size() - 1 or _step < -1:
 			_step = -1
 		state = State.IDLE
 		play("idle")
@@ -203,6 +256,9 @@ func getup_anim() -> String:
 func _on_hurt(_damage: int) -> void:
 	_step = -1
 	_queued = false
+	_hold = 0.0
+	_charged = false
+	sprite.modulate = Color.WHITE
 	hurt.emit(clampf(float(hp) / max_hp, 0.0, 1.0))
 
 
