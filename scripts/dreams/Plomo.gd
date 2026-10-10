@@ -54,6 +54,7 @@ class Ent:
 	var alerted := false
 	var moving := false
 	var phase := 0
+	var pose := ""             # una pose especial (el episodio la carga: "<kind>_<pose>" en _tex)
 
 
 var grid: Array = []
@@ -423,9 +424,21 @@ func _prop_tex(pr: Dictionary) -> Texture2D:
 	return _tex[name]
 
 
-## Para sobreescribir: cada perdigón (o bala), por dónde pasó y hasta dónde llegó.
-func _ray_hook(_from: Vector2, _dir: Vector2, _reach: float) -> void:
+## Para sobreescribir: cada perdigón (o bala), por dónde pasó, hasta dónde llegó (el enemigo que
+## pegó o la pared) y dónde está la pared (lo que cuelga del techo pasa por encima de la gente).
+func _ray_hook(_from: Vector2, _dir: Vector2, _reach: float, _wall: float) -> void:
 	pass
+
+
+## Para sobreescribir: si la mira está sobre algo que se usa a tiros (y entonces la ayuda para
+## apuntar no debe desviar el tiro hacia un enemigo).
+func _aim_object(_ang: float, _tol: float) -> bool:
+	return false
+
+
+## Para que el episodio pregunte si un punto está casi en la mira (y a la vista).
+func in_sight(p: Vector2, a: float, tol: float) -> bool:
+	return absf(wrapf((p - pos).angle() - a, -PI, PI)) < tol and los(pos, p)
 
 
 func los(a: Vector2, b: Vector2) -> bool:
@@ -584,8 +597,8 @@ func _next_weapon() -> void:
 func _fire() -> void:
 	var w: Dictionary = WEAPONS[weapon]
 	if w["ammo"] != "" and ammo[w["ammo"]] <= 0:
-		# Sin munición: la mejor arma que todavía tenga (la pistola; si no, el puño).
-		weapon = 1 if ammo["balas"] > 0 else 0
+		# Sin munición: la mejor arma que todavía tenga (la escopeta, la pistola; si no, el puño).
+		weapon = 2 if owned[2] and ammo["cartuchos"] > 0 else (1 if ammo["balas"] > 0 else 0)
 		if weapon == 0:
 			_say(lines["no_ammo"])
 		_fire_cd = 0.3
@@ -601,6 +614,8 @@ func _fire() -> void:
 	# En el celular (girar con la palanca es grueso) la ayuda es más generosa.
 	var aim := ang
 	var best_da: float = 0.13 if Controls.touch() else 0.06
+	if _aim_object(ang, best_da):  # apunta a algo del acertijo: la ayuda no se lo lleva para el enemigo
+		best_da = 0.0
 	for e in enemies:
 		if e.state == "dead":
 			continue
@@ -629,7 +644,7 @@ func _fire() -> void:
 			if absf(rel.cross(rd)) < radius:
 				best = e
 				best_t = t
-		_ray_hook(pos, rd, best_t)
+		_ray_hook(pos, rd, best_t, wall)
 		if best:
 			_damage(best, w["dmg"] * dmg_mult * randf_range(0.8, 1.2) * (1.15 if GameState.has_skill("sangre_fria") else 1.0))
 
@@ -870,7 +885,7 @@ func _say(text: String, prio := 1) -> void:
 
 func _show_say(text: String) -> void:
 	Narrator.say(text, true)
-	_say_hold = clampf(text.length() * 0.035, 1.6, 3.2)
+	_say_hold = clampf(text.length() * 0.045, 1.8, 3.6)
 
 
 func _die_player() -> void:
@@ -994,7 +1009,7 @@ func _draw() -> void:
 		var tw := tex.get_width()
 		var th := float(tex.get_height())
 		var tx := int(wall_x * tw)
-		if (side == 0 and ray.x > 0) or (side == 1 and ray.y < 0):
+		if (side == 0 and ray.x < 0) or (side == 1 and ray.y > 0):  # que las letras no se vean al revés
 			tx = tw - 1 - tx
 		var shade := clampf(1.25 - perp * 0.085, 0.12, 1.0) * (0.72 if side == 1 else 1.0)
 		if not _light.is_empty():  # la luz de la casilla desde donde se ve la pared
@@ -1027,7 +1042,7 @@ func _draw_sprites(dir: Vector2, plane: Vector2) -> void:
 	for e in enemies:
 		var frame := "dead"
 		if e.state != "dead":
-			frame = "attack" if e.state == "attack" else ("hurt" if e.state == "pain" else ("walk1" if not e.moving or int(time * 4.0) % 2 == 0 else "walk2"))
+			frame = e.pose if e.pose != "" else "attack" if e.state == "attack" else ("hurt" if e.state == "pain" else ("walk1" if not e.moving or int(time * 4.0) % 2 == 0 else "walk2"))
 		list.append([e.pos, _tex["%s_%s" % [e.kind, frame]], kinds[e.kind]["h"] * (0.45 if e.state == "dead" else 1.0), 0.0])
 	for p in pickups:
 		list.append([p["pos"], _tex[pickup_tex[p["kind"]]], 0.45 if p["kind"] == "caneca" else 0.22, 0.0])

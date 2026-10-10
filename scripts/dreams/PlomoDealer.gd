@@ -23,6 +23,14 @@ extends "res://scripts/dreams/Plomo.gd"
 ## las bolsitas del piso: si se la toma, entra en subida (rápido, no le entra nada); después viene el
 ## bajón (suelta el maletín: AHORA). Si uno le revienta la bolsita de un tiro antes de que llegue,
 ## el bajón es inmediato y más largo. Sin bolsitas, es un señor gordo con una pistola.
+## LOS OTROS JEFES TAMBIÉN SON ACERTIJOS (ver "Los jefes de los capítulos 1 y 2"):
+##   1. DON LUCHO: chaleco de los ochenta (casi no le entra). Le gusta pararse debajo de la luz, y en
+##      la casa cuelgan lámparas de araña, cada una amarrada a un gancho en la pared: cuando él está
+##      debajo, uno le dispara a la cuerda (no a él). Aplastado, sí le entra. Cada lámpara que cae deja
+##      la casa más oscura.
+##   2. EL CORONEL: el uniforme lo protege. Pero es codicioso: si uno le revienta una caja fuerte, el
+##      fajo que cae lo hace correr a contarlo, y contando no se defiende. (Con Lisandro uno le quita
+##      la carnada; con el Coronel uno se la pone.)
 
 const RUSH_TIME := 7.0
 const CRASH_TIME := 3.0
@@ -84,6 +92,27 @@ var _dog_body := Vector2.ZERO
 var _dog_saw_bag := false
 var _resupply := 6.0
 var _resupply_said := false
+## Capítulo 1: las lámparas de araña de la casa de Don Lucho ({"pos", "hook", "state" up/falling/down, "t"}),
+## cada una con el gancho de la pared donde está amarrada su cuerda (en la pared más cercana).
+const LAMP_SPOTS := [Vector2(25.4, 15.5), Vector2(29.4, 18.2), Vector2(26.4, 21.2)]
+const HOOK_SPOTS := [Vector2(27.6, 12.18), Vector2(30.82, 15.8), Vector2(28.3, 22.82)]
+const LUCHO_TAKE := {"armor": 0.1, "stun": 0.7, "dark": 0.6}
+## Cuánto se queda debajo de cada lámpara antes de cambiarse a otra.
+const LUCHO_POSE_TIME := 5.0
+var _lamps: Array = []
+## Capítulo 2: las cajas fuertes ({"pr" (el decorado), "open"}) y los fajos que se riegan.
+const SAFE_SPOTS := [Vector2(22.5, 15.9), Vector2(30.5, 14.0), Vector2(30.5, 19.6), Vector2(22.5, 19.1)]
+const CORONEL_TAKE := {"fight": 0.1, "greed": 0.4, "count": 0.8, "broke": 0.7}
+var _safes: Array = []
+var _fajos: Array = []
+var _boss_mode := ""
+var _boss_t := 0.0
+var _boss_hint := false
+var _boss_fajo := Vector2.ZERO
+var _lucho_lamp := -1          # debajo de cuál lámpara se va a parar (le gusta que lo vean)
+var _lucho_said := false
+var _lucho_blind := 0.0        # cuánto lleva sin verlo desde su lámpara
+var _lucho_hunt := 0.0         # salió a buscarlo (después vuelve a la luz)
 const AMMO_SPOTS := [Vector2(22.5, 13.5), Vector2(22.5, 21.5), Vector2(30.5, 18.5), Vector2(26.5, 22.3)]
 
 @export var chapter := 3
@@ -114,7 +143,7 @@ func setup() -> void:
 		"campanero": {"hp": 15, "speed": 2.3, "range": 0.0, "dmg": 0, "cd": 2.0, "attack": "whistle", "h": 0.78, "sprite": "dl_sapo"},
 		"tombo": {"hp": 40, "speed": 2.0, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "hitscan", "h": 0.82, "sprite": "dl_tombo"},
 		"motorizado": {"hp": 40, "speed": 2.4, "range": 9.0, "dmg": 8, "cd": 1.3, "attack": "hitscan", "h": 0.8, "sprite": "kid_motorizado"},
-		"coronel": {"hp": 220, "speed": 1.6, "range": 10.0, "dmg": 8, "cd": 1.5, "attack": "burst", "h": 1.1, "sprite": "dl_tombo"},
+		"coronel": {"hp": 220, "speed": 1.6, "range": 10.0, "dmg": 8, "cd": 1.5, "attack": "burst", "h": 1.15, "sprite": "dl_coronel"},
 		"slayer": {"hp": 560, "speed": 1.3, "range": 12.0, "dmg": 9, "cd": 1.3, "attack": "burst", "h": 1.6, "sprite": "dl_slayer"},
 		"lisandro": {"hp": 700, "speed": 1.4, "range": 12.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 1.05, "sprite": "kid_lisandro"},
 		"devoradora": {"hp": 150, "speed": 1.1, "range": 9.0, "dmg": 9, "cd": 1.7, "attack": "fan:bolso_p", "h": 1.15, "sprite": "dl_devoradora"},
@@ -161,7 +190,7 @@ func _chapter_setup() -> void:
 	match chapter:
 		1:
 			subtitle = "CAPITULO 1: LA ESQUINA\n(esta noche usted es Lisandro)"
-			kinds["capo"] = {"hp": 380, "speed": 1.3, "range": 11.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 1.4, "sprite": "dl_rival"}
+			kinds["capo"] = {"hp": 600, "speed": 1.3, "range": 11.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 0.72, "sprite": "dl_lucho"}
 			boss_kind = "capo"
 			summon_kind = "rival"
 			finish_note = "(la esquina es suya. Nadie aplaudió)"
@@ -183,7 +212,7 @@ func _chapter_setup() -> void:
 			]
 			wall_tex["W"] = "dd_cocina"  # la bodega ya es cocina
 			kinds["quimico"] = {"hp": 200, "speed": 1.4, "range": 9.0, "dmg": 9, "cd": 1.5, "attack": "fan:d_pepas", "h": 1.05, "sprite": "dl_sapo"}
-			kinds["coronel"] = {"hp": 450, "speed": 1.4, "range": 11.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 1.35, "sprite": "dl_tombo"}
+			kinds["coronel"] = {"hp": 900, "speed": 1.4, "range": 11.0, "dmg": 8, "cd": 1.3, "attack": "burst", "h": 1.3, "sprite": "dl_coronel"}
 			mini_kind = "quimico"
 			boss_kind = "coronel"
 			summon_kind = "tombo"
@@ -340,6 +369,7 @@ func _build_map() -> void:
 					light_base[y][x] = l
 					if is_fire and dist < 1.6:
 						flicker[Vector2i(x, y)] = 11.0
+	_boss_props()
 	for c in [Vector2i(8, 7), Vector2i(8, 8), Vector2i(7, 7)]:  # un farol que se está muriendo
 		flicker[c] = 2.3
 	for c in [Vector2i(27, 4), Vector2i(27, 5), Vector2i(28, 5), Vector2i(26, 4)]:  # el tubo de la cocina
@@ -374,6 +404,16 @@ func _place() -> void:
 
 ## La bolsita: siempre se la toma (aunque tenga la vida llena). Así es esto.
 func _pickups() -> void:
+	for f in _fajos.duplicate():
+		if f.distance_to(pos) <= 0.5:
+			_fajos.erase(f)
+			_bonus = 0.4
+			_say("(Lisandro se guarda el fajo. Costumbre. El Coronel lo vio: ahora le sube la cuota.)", 2)
+			if _boss_mode == "greed" and f == _boss_fajo:
+				_boss_mode = "fight"
+				var c := _boss()
+				if c:
+					c.state = "chase"
 	if not _twist:
 		for p in pickups.duplicate():
 			if p["kind"] == "empanada" and p["pos"].distance_to(pos) <= 0.5:
@@ -402,6 +442,8 @@ func _special(delta: float) -> void:
 	if _twist:
 		_lis_fight(delta)
 	_story(delta)
+	if not _twist:
+		_boss_fight(delta)
 	if chapter == 3 and not _twist and boss_awake:
 		_slayer_plasma(delta)
 	if _twist:
@@ -444,6 +486,14 @@ func _damage(e: Ent, dmg: float) -> void:
 			e.hp = max_e * 0.25
 			_role_swap(e)
 			return
+	if e.kind == boss_kind and not _twist and chapter in [1, 2] and _boss_mode != "":
+		var take: Dictionary = LUCHO_TAKE if chapter == 1 else CORONEL_TAKE
+		dmg *= take.get(_boss_mode, 1.0)
+		_guard_say -= 1.0
+		if _boss_mode in ["armor", "fight"] and _guard_say <= 0.0:
+			_guard_say = 7.0
+			_say("(¡TAC! Chaleco de los ochenta. De cuando los chalecos eran chalecos.)" if chapter == 1 else
+				"(¡TAC! El uniforme. Dispararle a un Coronel sale caro, hasta en un sueño.)", 0)
 	if e.kind == "lisandro" and _twist:
 		dmg *= LIS_TAKE.get(_lis_mode, 1.0)
 		_guard_say -= 1.0
@@ -558,6 +608,259 @@ func _role_swap(slayer: Ent) -> void:
 	_guard_say = 6.0  # que el ¡TAC! no la pise
 
 
+# ---------------------------------------------------------------- Los jefes de los capítulos 1 y 2 (acertijos)
+
+## Las lámparas (cap. 1, con su luz) y las cajas fuertes (cap. 2, estorban) de la casa.
+func _boss_props() -> void:
+	_lamps.clear()
+	_safes.clear()
+	_fajos.clear()
+	if FinalRush.is_step("lisandro"):
+		return
+	if chapter == 1:
+		for y in range(12, 23):  # la casa de Don Lucho, en penumbra: la luz es de las lámparas
+			for x in range(22, 31):
+				light_base[y][x] = 0.45
+		for i in LAMP_SPOTS.size():
+			_lamps.append({"pos": LAMP_SPOTS[i], "hook": HOOK_SPOTS[i], "state": "up", "t": 0.0})
+			_lamp_light(LAMP_SPOTS[i], 1.0)
+	elif chapter == 2:
+		for sp in SAFE_SPOTS:
+			var pr := {"tex": "dd_cajafuerte", "pos": sp, "h": 0.42, "r": 0.3}
+			props.append(pr)
+			_safes.append({"pr": pr, "open": false})
+
+
+## La luz alrededor de una lámpara: k = 1 la prende; menos, la apaga (se cayó).
+func _lamp_light(at: Vector2, k: float) -> void:
+	for y in range(int(at.y) - 3, int(at.y) + 4):
+		for x in range(int(at.x) - 3, int(at.x) + 4):
+			if x < 22 or x > 30 or y < 12 or y > 22:
+				continue
+			var l: float = clampf(1.2 - Vector2(x + 0.5, y + 0.5).distance_to(at) * 0.22, 0.0, 1.0)
+			if k >= 1.0:
+				light_base[y][x] = maxf(light_base[y][x], l)
+			else:
+				light_base[y][x] = maxf(0.22, light_base[y][x] - l * (1.0 - k))
+			if not _light.is_empty():
+				_light[y * 32 + x] = light_base[y][x]
+	if _cells_img:
+		_paint_cells()
+		_cells_tex.update(_cells_img)
+
+
+func _aim_object(a: float, tol: float) -> bool:
+	for l in _lamps:
+		if l["state"] == "up" and in_sight(l["hook"], a, tol):
+			return true
+	for sf in _safes:
+		if not sf["open"] and in_sight(sf["pr"]["pos"], a, tol):
+			return true
+	for b in _bags:
+		if in_sight(b, a, tol):
+			return true
+	return false
+
+
+func _boss() -> Ent:
+	for e in enemies:
+		if e.kind == boss_kind and e.state != "dead":
+			return e
+	return null
+
+
+func _boss_fight(delta: float) -> void:
+	if chapter == 1:
+		_lamps_fall(delta)
+	var b := _boss()
+	if b == null or not boss_awake or chapter > 2 or FinalRush.is_step("lisandro"):
+		return
+	if _boss_mode == "":
+		_boss_mode = "armor" if chapter == 1 else "fight"
+		_tex["capo_stun"] = _t("dl_lucho_stun")
+		_tex["coronel_count"] = _t("dl_coronel_count")
+	if not _boss_hint:
+		_boss_hint = true
+		_say("(Arañas italianas, cada una amarrada a un gancho en la pared. A Don Lucho le gusta pararse debajo de la luz.)" if chapter == 1 else
+			"(Cajas fuertes en la casa del Coronel. Él no resiste un billete en el piso. Nadie de uniforme lo resiste.)")
+	_boss_t -= delta
+	_ammo_drop(delta)
+	if chapter == 1:
+		_lucho(b)
+	else:
+		_coronel(b, delta)
+
+
+func _lucho(b: Ent) -> void:
+	match _boss_mode:
+		"stun":
+			b.state = "pain"  # aplastado: quieto, sin disparar
+			b.timer = 0.3
+			b.pose = "stun"
+			if _boss_t <= 0.0:
+				b.pose = ""
+				b.state = "chase"
+				_boss_mode = "armor"
+				_lucho_lamp = -1
+				_say("DON LUCHO: —Me levanto. Siempre me levanto. Por eso sigo siendo el dueño.")
+		"armor":
+			if _lamps.all(func(l): return l["state"] == "down"):
+				_boss_mode = "dark"
+				_lucho_lamp = -1
+				b.state = "chase"
+				_say("DON LUCHO: —¡Apagaron mi casa! ... A oscuras el viejo no ve. Ni el chaleco le sirve de nada.", 2)
+				return
+			_lucho_pose(b, get_process_delta_time())
+
+
+## Don Lucho se para debajo de una lámpara (le gusta que lo vean) y dispara desde ahí; cada rato se
+## cambia a otra. Eso es lo que hay que aprovechar.
+func _lucho_pose(b: Ent, delta: float) -> void:
+	if _lucho_lamp < 0 or _lamps[_lucho_lamp]["state"] != "up" or _boss_t <= 0.0:
+		var choices := []
+		for i in _lamps.size():
+			if _lamps[i]["state"] == "up" and (i != _lucho_lamp or _lamps.filter(func(l): return l["state"] == "up").size() == 1):
+				choices.append(i)
+		if choices.is_empty():  # la última se está cayendo
+			return
+		_lucho_lamp = choices.pick_random()
+		_boss_t = LUCHO_POSE_TIME + 2.5  # lo que se demora en llegar, más lo que se queda
+	var spot: Vector2 = _lamps[_lucho_lamp]["pos"]
+	if b.state in ["attack", "pain"]:
+		return
+	if _lucho_hunt > 0.0:  # buscándolo: el motor lo persigue un rato
+		_lucho_hunt -= delta
+		if b.state in ["seek", "plant"]:
+			b.state = "chase"
+		return
+	if b.pos.distance_to(spot) > 0.15:
+		b.state = "seek"  # caminando a su lámpara (el motor no lo mueve)
+		var next := _next_cell(b.pos, spot)
+		_walk(b, (next - b.pos).normalized(), 1.7, delta)
+		return
+	if not _lucho_said:
+		_lucho_said = true
+		_say("DON LUCHO: —Aquí, debajo de la luz. Un capo que no se ve no es capo.")
+	b.state = "plant"  # quieto debajo de la lámpara: dispara desde ahí
+	b.moving = false
+	_lucho_blind = 0.0 if los(b.pos, pos) else _lucho_blind + delta
+	if _lucho_blind > 3.0:  # no lo ve desde la luz: sale a buscarlo
+		_lucho_blind = 0.0
+		_lucho_hunt = 4.0
+		b.state = "chase"
+		_say(["DON LUCHO: —¿Dónde se metió, pelado? En mi casa nadie se esconde de mí.",
+			"DON LUCHO: —Salga. Le prometo que no le hago nada. (Mentira.)"].pick_random(), 0)
+		return
+	var to := pos - b.pos
+	if b.cd <= 0.0 and to.length() < kinds[boss_kind]["range"] and los(b.pos, pos):
+		b.state = "attack"
+		b.timer = 0.35
+		b.cd = kinds[boss_kind]["cd"]
+
+
+func _lamps_fall(delta: float) -> void:
+	for l in _lamps:
+		if l["state"] != "falling":
+			continue
+		l["t"] -= delta
+		if l["t"] > 0.0:
+			continue
+		l["state"] = "down"
+		_lamp_light(l["pos"], 0.0)
+		_puffs.append({"pos": l["pos"], "t": 1.0})
+		var caught := false
+		for e in enemies.duplicate():
+			if e.state == "dead" or e.pos.distance_to(l["pos"]) > 1.2:
+				continue
+			if e.kind == boss_kind:
+				caught = true
+				_boss_mode = "stun"
+				_boss_t = 3.5
+				e.hp -= 50.0
+				_say(["DON LUCHO: —¡Mi espalda! ¡Mi columna! ¡Mi lámpara!",
+					"DON LUCHO: —¡Murano! ¡Era de Murano! ... ¡Y yo era de acá!",
+					"DON LUCHO: —¡Otra vez! ¡Cuarenta años de esquina y me mata la decoración!"][_lamps.filter(func(x): return x["state"] == "down").size() - 1], 2)
+				if e.hp <= 0.0:
+					_die(e)
+			else:
+				_damage(e, 80.0)
+		if not caught:
+			_say("(Se cayó la araña. Don Lucho no estaba debajo.) DON LUCHO: —¡Esa era de Murano, animal!", 2)
+
+
+func _coronel(b: Ent, delta: float) -> void:
+	match _boss_mode:
+		"fight":
+			if not _fajos.is_empty():
+				_boss_fajo = _fajos[0]
+				for f in _fajos:
+					if f.distance_to(b.pos) < _boss_fajo.distance_to(b.pos):
+						_boss_fajo = f
+				_boss_mode = "greed"
+				_boss_t = 8.0
+				_say("EL CORONEL: —¡Eso es evidencia! ¡La decomiso!", 2)
+			elif _safes.all(func(sf): return sf["open"]):
+				_boss_mode = "broke"
+				_say("EL CORONEL: —¿Se acabó la plata? Entonces esto ya es personal.", 2)
+		"greed":
+			if not _fajos.has(_boss_fajo) or _boss_t <= 0.0:
+				if _zone_of(b.pos) != boss_zone:
+					b.pos = summon_points[0]
+				_boss_mode = "fight"
+				b.state = "chase"
+				return
+			b.state = "seek"  # el motor no lo mueve: lo mueve la plata
+			if b.pos.distance_to(_boss_fajo) < 0.5:
+				_fajos.erase(_boss_fajo)
+				_boss_mode = "count"
+				_boss_t = 3.5
+				_say("EL CORONEL: —Uno... dos... (se lame el dedo) ... tres... AHORA.", 2)
+				return
+			var next := _next_cell(b.pos, _boss_fajo)
+			_walk(b, (next - b.pos).normalized(), 2.4, delta)
+		"count":
+			b.state = "pain"
+			b.timer = 0.3
+			b.pose = "count"
+			if _boss_t <= 0.0:
+				b.pose = ""
+				b.state = "chase"
+				_boss_mode = "fight"
+				_say("EL CORONEL: —Faltan doscientos. Usted me debe doscientos.", 0)
+
+
+## Los tiros de los capítulos 1 y 2: las lámparas (cuelgan: el tiro pasa por encima de la gente) y
+## las cajas fuertes (en el piso: si hay alguien adelante, no le llega).
+func _boss_ray(from: Vector2, dir: Vector2, reach: float, wall: float) -> void:
+	for l in _lamps:  # la cuerda, en el gancho de la pared (si hay alguien adelante, el tiro no llega)
+		if l["state"] != "up":
+			continue
+		var rel: Vector2 = l["hook"] - from
+		var t := rel.dot(dir)
+		if t <= 0.0 or t >= reach or absf(rel.cross(dir)) > 0.3:
+			continue
+		l["state"] = "falling"
+		l["t"] = 0.35
+		_say("(¡Tas! La cuerda se suelta.)", 0)
+		return
+	for sf in _safes:
+		if sf["open"]:
+			continue
+		var rel: Vector2 = sf["pr"]["pos"] - from
+		var t := rel.dot(dir)
+		if t <= 0.0 or t >= reach or absf(rel.cross(dir)) > 0.32:
+			continue
+		sf["open"] = true
+		sf["pr"]["tex"] = "dd_cajafuerte_abierta"
+		var center := Vector2(26.5, 17.5)
+		var at: Vector2 = sf["pr"]["pos"] + (center - sf["pr"]["pos"]).normalized() * 0.8
+		_fajos.append(at if walkable(at) else sf["pr"]["pos"])
+		_puffs.append({"pos": sf["pr"]["pos"], "t": 0.6})
+		_bonus = 0.3
+		_say("(¡PUM! La caja fuerte se abre. Un fajo al piso. Al Coronel le brillan las gafas.)", 0)
+		return
+
+
 # ---------------------------------------------------------------- La pelea con Lisandro (acertijo)
 
 func _lisandro() -> Ent:
@@ -663,7 +966,7 @@ func _clear_line(a: Vector2, b: Vector2) -> bool:
 	return true
 
 
-## Con poca munición en la pelea larga, aparece una caja en la casa (lejos de él): a puño no se le gana.
+## Con poca munición en una pelea con jefe, aparece una caja en la casa (lejos de él): a puño no se le gana.
 func _ammo_drop(delta: float) -> void:
 	_resupply -= delta
 	if _resupply > 0.0 or ammo["balas"] >= 20 or ammo["cartuchos"] >= 4:
@@ -672,7 +975,7 @@ func _ammo_drop(delta: float) -> void:
 	for p in pickups:
 		if p["kind"] in ["balas", "cartuchos"] and _zone_of(p["pos"]) == boss_zone:
 			return
-	var lis := _lisandro()
+	var lis := _lisandro() if _twist else _boss()  # lejos del jefe que haya
 	var spot: Vector2 = AMMO_SPOTS[0]
 	for sp in AMMO_SPOTS:
 		if lis and sp.distance_to(lis.pos) > spot.distance_to(lis.pos):
@@ -716,7 +1019,9 @@ func _lis_guard() -> void:
 
 
 ## Un tiro que pasa por encima de una bolsita la revienta (si no la tapa nadie).
-func _ray_hook(from: Vector2, dir: Vector2, reach: float) -> void:
+func _ray_hook(from: Vector2, dir: Vector2, reach: float, wall: float) -> void:
+	if not _twist:
+		_boss_ray(from, dir, reach, wall)
 	if not _twist or _bags.is_empty():
 		return
 	var hit := -1
@@ -743,6 +1048,15 @@ func _ray_hook(from: Vector2, dir: Vector2, reach: float) -> void:
 
 func extra_sprites() -> Array:
 	var out := []
+	for l in _lamps:
+		if l["state"] == "down":
+			out.append([l["pos"], _t("dd_arana_rota"), 0.13, 0.0])
+		else:  # colgando cerca del techo (cayendo: baja)
+			var elev: float = 0.6 if l["state"] == "up" else 0.6 * maxf(0.0, l["t"] / 0.35)
+			out.append([l["pos"], _t("dd_arana"), 0.42, elev])
+		out.append([l["hook"], _t("dd_gancho" if l["state"] == "up" else "dd_gancho_suelto"), 0.5, 0.2])
+	for f in _fajos:
+		out.append([f, _t("dd_fajo"), 0.12, 0.0])
 	for b in _bags:
 		out.append([b, _t("d_bolsita"), 0.26, 0.0])
 	for pf in _puffs:

@@ -1561,3 +1561,13 @@ Si `idle` gana, esa parte no pide nada. Si `mash` gana fácil, es plana.
 - Al reaparecer: 2 s sin daño, los enemigos se alejan sin atravesar paredes (antes mandaba a Lisandro a la cocina y la pelea no se acababa) y, en la pelea con Lisandro, con chaleco.
 - Si se quedó a puño porque no tenía balas, al recoger munición (o al reaparecer) vuelve solo al arma.
 - Lisandro busca la bolsita por la grilla (antes se trababa en una columna de mármol). Al bajón se le abre el maletín y se riegan balas; con poca munición aparece una caja lejos de él. Sin bolsitas queda lento ("un señor gordo con una pistola") y le entra más.
+
+## PLOMO: los jefes de los capítulos 1 y 2, como acertijos (2026-10-09)
+
+Antes eran esponjas de daño (caían en ~7 s). Ahora cada uno tiene su mecánica, distinta a la de Lisandro (a él se le quita la carnada):
+
+- **Don Lucho (cap. 1), las arañas.** Viejo bajito de sombrero aguadeño y ruana, con chaleco de los ochenta: casi no le entra nada (0,1). Le gusta pararse debajo de la luz ("un capo que no se ve no es capo") y va de lámpara en lámpara; si no lo ve a uno desde ahí, sale a buscarlo un rato. Cada araña está amarrada a un gancho en la pared: con él debajo, uno le dispara a la cuerda (no a él) y queda aplastado 3,5 s (le entra 0,7). Si cae sin él debajo: "¡Esa era de Murano, animal!". Cada araña que cae oscurece la casa; sin arañas, "a oscuras el viejo no ve" (le entra 0,6).
+- **El Coronel (cap. 2), las cajas fuertes.** El uniforme lo protege (0,1). Uno le revienta una caja fuerte y el fajo que cae lo hace correr ("¡Eso es evidencia! ¡La decomiso!"); contando ("uno... dos... se lame el dedo") no se defiende 3,5 s (0,8). Si uno se guarda el fajo primero, lo pierde. Sin cajas: "esto ya es personal" (0,7). Aquí uno pone la carnada.
+- Con el bot: con el acertijo, Don Lucho cae en ~20 s y el Coronel en ~35 s; a lo bruto, 80-180 s y varias muertes.
+- Motor: `Ent.pose` (poses especiales: "stun", "count"), `_ray_hook(..., wall)`, `_aim_object()` (si la mira está sobre un gancho, una caja o una bolsita, la ayuda para apuntar no se lleva el tiro hacia un enemigo). Sin munición pasa a la mejor arma que tenga balas (antes iba al puño aunque tuviera cartuchos). Las paredes ya no se ven al revés (las letras de SALIDA y la L de Lisandro).
+- Arte: `tools/art/draw_plomo_jefes.py` (Don Lucho, el Coronel, arañas, ganchos, cajas fuertes, fajos).
