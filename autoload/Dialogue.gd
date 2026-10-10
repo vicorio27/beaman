@@ -7,6 +7,9 @@ extends CanvasLayer
 ## Lo que él piensa va con quien habla = INNER ("ÉL"): otro color, y la placa dice "por dentro".
 ## Estilo Dredge: el que habla, de pie, en el medio (retrato serio y gastado, SPEAKERS), detrás de
 ## un cuadro negro con letra blanca; el nombre centrado entre dos líneas finas, y comillas.
+## Cara a cara (face_off = [retrato izq, retrato der]): los dos de pie, mirándose (el de la derecha,
+## volteado); el que habla, con luz, el otro apagado. Una línea puede traer un tercer elemento (otro
+## retrato para el que habla: "lukas_ladra") y un cuarto ("sacude": el retrato tiembla).
 
 signal _finished(choice: int)
 
@@ -41,7 +44,7 @@ const SPEAKERS := {
 	"DON OCTAVIO": ["octavio", "el ajedrez"], "DON RAMIRO": ["ramiro", "el ajedrez"], "YEISON": ["yeison", ""],
 	"EL DE LA CHAQUETA": ["chaqueta", ""], "FUNCIONARIA": ["funcionaria", ""], "FOTOGRAFO": ["fotografo", ""],
 	"DON TITO": ["tito", ""], "LA MONA": ["mona", ""], "MAESTRO RAMIRO": ["maestro", ""],
-	"LORENA": ["lilato", "su ex"], "ÉL, A LUKAS": ["el", "en voz alta, a Lukas"],
+	"LORENA": ["lilato", "su ex"], "ÉL, A LUKAS": ["el", "en voz alta, a Lukas"], "LUKAS": ["lukas", "beagle"],
 }
 ## Los de la ciudad: a esos se les va apagando la cara (todos iguales, GameState.sameness), como a
 ## su muñeco en el mapa. Los de los sueños, no. Retrato -> id de la persona.
@@ -52,6 +55,8 @@ const CITY := {"german": "german", "marta": "marta", "samuel": "samuel", "wilson
 const SAME_SHADER := preload("res://assets/shaders/retrato_iguales.gdshader")
 
 var active := false
+## Cara a cara: [retrato de la izquierda, retrato de la derecha]. Se vacía al cerrar.
+var face_off: Array = []
 var _lines: Array = []
 var _choices: Array = []
 var _index := 0
@@ -61,6 +66,7 @@ var _guard := 0.0
 
 var _box: ColorRect
 var _portrait: TextureRect
+var _portrait2: TextureRect  # el de la derecha, en el cara a cara
 var _plate: Control
 var _name: Label
 var _sub: Label
@@ -80,6 +86,10 @@ func _ready() -> void:
 	_portrait.position = Vector2(112, 24)
 	_portrait.visible = false
 	add_child(_portrait)
+	_portrait2 = TextureRect.new()
+	_portrait2.flip_h = true
+	_portrait2.visible = false
+	add_child(_portrait2)
 	_box = ColorRect.new()
 	_box.color = Color(0.03, 0.03, 0.04, 1.0)  # opaca: lo que quede debajo no se lee a través
 	_box.position = BOX.position
@@ -147,7 +157,7 @@ func talk(lines: Array, choices: Array = []) -> int:
 	# En el celular, "E: golpe" dice "A: golpe" (antes de partir en páginas: puede cambiar el largo).
 	var shown := []
 	for l in lines:
-		shown.append([l[0], Controls.keys_in(str(l[1]))] if l is Array else Controls.keys_in(str(l)))
+		shown.append([l[0], Controls.keys_in(str(l[1]))] + l.slice(2) if l is Array else Controls.keys_in(str(l)))
 	_lines = _paginate(shown)
 	_choices = choices
 	_keep_company(lines)
@@ -196,7 +206,7 @@ func _paginate(lines: Array) -> Array:
 		if cur != "":
 			pages.append(cur)
 		for pg in pages:
-			out.append([who, pg] if who != null else pg)
+			out.append([who, pg] + line.slice(2) if who != null else pg)
 	return out
 
 
@@ -236,6 +246,9 @@ func _show_line() -> void:
 		_portrait.texture = load("res://assets/portraits/%s.png" % info[0])
 		_portrait.modulate = Color(0.8, 0.88, 1.0) if who == INNER else Color.WHITE
 		_set_sameness(info[0])
+	_portrait2.visible = false
+	if face_off.size() == 2:
+		_show_face_off(line, info)
 	_more.position = BOX.size - Vector2(26, 9)
 	# El nombre (y lo que es, más apagado), centrado entre dos líneas.
 	_plate.visible = who != ""
@@ -259,6 +272,36 @@ func _show_line() -> void:
 	_shown = 0.0
 	_text.visible_characters = 0
 	_choice_panel.visible = false
+
+
+## Cara a cara: los dos de pie, mirándose. El que habla, con luz (y su retrato de la línea, si trae).
+func _show_face_off(line, info: Array) -> void:
+	var speaker: String = info[0] if not info.is_empty() else ""
+	var right: bool = speaker == face_off[1]
+	var faces := [face_off[0], face_off[1]]
+	if line is Array and line.size() > 2 and str(line[2]) != "":
+		faces[1 if right else 0] = line[2]
+	_portrait.material = null
+	_portrait.texture = load("res://assets/portraits/%s.png" % faces[0])
+	_portrait2.texture = load("res://assets/portraits/%s.png" % faces[1])
+	_portrait.position = Vector2(46, 24)
+	_portrait2.position = Vector2(178, 24)
+	_portrait.visible = true
+	_portrait2.visible = true
+	var lit := Color.WHITE
+	var dim := Color(0.42, 0.42, 0.5)
+	var talking := speaker != ""
+	_portrait.modulate = lit if talking and not right else dim
+	_portrait2.modulate = lit if right else dim
+	if talking and speaker == face_off[0] and line[0] == INNER:
+		_portrait.modulate = Color(0.8, 0.88, 1.0)
+	if line is Array and line.size() > 3 and line[3] == "sacude":
+		var who: TextureRect = _portrait2 if right else _portrait
+		var base := who.position
+		var t := create_tween()
+		for k in 6:
+			t.tween_property(who, "position", base + Vector2(randf_range(-3, 3), randf_range(-2, 1)), 0.04)
+		t.tween_property(who, "position", base, 0.04)
 
 
 ## Todos iguales: a la gente de la ciudad se le va apagando la cara.
@@ -368,6 +411,9 @@ func _close(choice: int) -> void:
 	active = false
 	_box.visible = false
 	_portrait.visible = false
+	_portrait.position = Vector2(112, 24)
+	_portrait2.visible = false
+	face_off = []
 	_plate.visible = false
 	_choice_panel.visible = false
 	GameState.ui_open = false

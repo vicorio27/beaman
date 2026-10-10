@@ -10,6 +10,7 @@ extends CharacterBody2D
 ##     · Comida: concentrado o compartir lo que haya. Una vez por día (flags.lukas_fed_day).
 ##     · Jugar: con la pelota de trapo; se la tira, la va a buscar y (casi siempre) la trae.
 ##     · Hablarle: a Lukas sí le habla, en voz alta. Baja la soledad (barra de compañía del HUD).
+##     · Juego de miradas: cara a cara (Dialogue.face_off). Él, Lukas, él... y Lukas ladra: "dame algo".
 
 signal found_something(item_id: String)
 signal at_bowl
@@ -164,7 +165,7 @@ func _other_interactable() -> bool:
 
 ## El menú de Lukas (F).
 func menu() -> void:
-	var opts := ["Buscá", "Acariciar", "Comida", "Jugar", "Truco", "Hablarle", "Nada"]
+	var opts := ["Buscá", "Acariciar", "Comida", "Jugar", "Truco", "Hablarle", "Juego de miradas", "Nada"]
 	var head := "(Me mira. Mueve la cola. Espera instrucciones, o comida, o las dos.)"
 	if GameState.lukas_sick():
 		head = "(Me mira desde el piso. La cola apenas se mueve. Está enfermo.)"
@@ -180,6 +181,9 @@ func menu() -> void:
 		return
 	if i == 5:
 		await talk_to()
+		return
+	if i == 6:
+		await stare()
 		return
 	match i:
 		0:
@@ -315,6 +319,70 @@ func talk_to() -> void:
 	GameState.company(30.0 if fresh else 10.0)
 	if fresh:
 		GameState.change_mood(3.0)
+
+
+## Juego de miradas: los dos cara a cara. Él mira, Lukas mira, él aguanta... y Lukas ladra.
+## (Traducción del ladrido: no me jodás, ¿para qué juego de miradas? Dame algo.)
+const STARES := [
+	["(Juego de miradas. El que parpadee primero, pierde. Lo miro fijo. Soy una piedra.)",
+		"(Humano mirándome. Sin comida en la mano. Raro. Sigo mirando: así es como llega la comida.)",
+		"(Me arden los ojos. Se me aguan. He perdido casa, trabajo y familia. Esto no lo pierdo.)"],
+	["(Revancha. Me acomodo. Lo miro como miraba el jefe cuando pedía aumento.)",
+		"(Otra vez el humano. Ladeo la cabeza. Esto le funciona a los perros de los comerciales.)",
+		"(Un ojo me tiembla. Pienso en cosas secas. El desierto. Una galleta de soda. Mi vida.)"],
+	["(Tercera vez. Hoy entrené: estuve mirando un poste toda la mañana.)",
+		"(Lo miro como miro la nevera de la panadería. Con fe. Con hambre. Él no es una nevera.)",
+		"(Ya no siento la cara. Si gano, me lo merezco. Si pierdo, también.)"],
+]
+const BARK_MEANING := [
+	"(Traducción: «No me jodás. ¿Juego de miradas? ¿Para qué? Dame algo.»)",
+	"(Traducción: «Otra vez con esto. Yo miro por comida, no por deporte. Dame algo.»)",
+	"(Traducción: «Usted parpadea o no parpadea, igual tengo hambre. DAME ALGO.»)",
+]
+
+
+func stare() -> void:
+	var f := GameState.flags
+	var n := int(f.get("miradas", 0))
+	f["miradas"] = n + 1
+	var s: Array = STARES[n % STARES.size()]
+	# En el mundo: se sienta enfrente, mirándolo.
+	state = "found"
+	_found_time = 30.0
+	sprite.flip_h = player.global_position.x > global_position.x
+	sprite.play("sit")
+	_bubble.text = "o_o"
+	_bubble.visible = true
+	Dialogue.face_off = ["el", "lukas"]
+	await Dialogue.talk([[Dialogue.INNER, s[0]], ["LUKAS", s[1]], [Dialogue.INNER, s[2]]])
+	# Y ladra.
+	sprite.play("bark")
+	_bubble.text = "!!"
+	Dialogue.face_off = ["el", "lukas"]
+	var i := await Dialogue.talk([
+		["LUKAS", "¡GUAU!", "lukas_ladra", "sacude"],
+		["LUKAS", BARK_MEANING[n % BARK_MEANING.size()], "lukas_ladra"],
+		[Dialogue.INNER, "(Parpadeé. Perdí contra un perro. Otra vez.)" if n > 0 else "(Parpadeé del susto. Perdí contra un perro.)"],
+	], ["Darle algo", "Sostenerle la mirada"])
+	_bubble.visible = false
+	_found_time = 1.0
+	if TimeManager.minutes - float(f.get("miradas_at", -999.0)) > 60.0:
+		f["miradas_at"] = TimeManager.minutes
+		GameState.change_mood(3.0)
+		GameState.company(10.0)
+	if i == 0:
+		var has_food: bool = GameState.count("concentrado") > 0
+		for st in GameState.inventory:
+			if st != null and Items.info(st["id"])["type"] == "comida":
+				has_food = true
+		if has_food or f.get("lukas_fed_day", -1) == GameState.day:
+			await feed()
+		else:
+			sprite.play("sit")
+			Narrator.say("(Me reviso los bolsillos. Nada. Le muestro las manos vacías. Lukas me mira como me miró el banco.)")
+	else:
+		sprite.play("sit")
+		Narrator.say("(Lo miro otra vez. Lukas se da vuelta y se echa de espaldas. Ofendido. Gana él, por abandono.)")
 
 
 func pet() -> void:
