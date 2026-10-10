@@ -5,6 +5,8 @@ extends SceneTree
 ##   ritmo (beat 'em up): se alinea con el matón más cercano, pega con pausas y, si se cubre,
 ##     carga la patada giratoria (mantener y soltar). Es lo que haría alguien que entendió.
 ##   machaca (beat 'em up): se alinea igual, pero machaca el botón sin parar (el que no entendió).
+##   camion (el camión del prólogo): patea cuando la moto pasa el umbral, encoge las piernas con el
+##     aviso, tira harina a los lejanos y se vuelve a agarrar rápido. Lo que haría alguien que entendió.
 ## Uso: godot --headless --path . -s res://tools/bot_jugar.gd -- <politica> <segundos> <escena> [<escena>...]
 ## Sirve para encontrar partes débiles: si "idle" gana, la parte no pide nada; si "mash" gana fácil, es plana.
 
@@ -66,6 +68,13 @@ func _run() -> void:
 			var talk: bool = dlg.active
 			if policy == "idle":
 				_press("interact", talk and f % 8 < 4)
+				_track(scene_node, notes)
+				continue
+			if policy == "camion" and scene_node.has_method("_nearest_ahead"):
+				if talk:
+					_press("interact", f % 8 < 4)
+				else:
+					_camion(scene_node, f)
 				_track(scene_node, notes)
 				continue
 			if policy in ["ritmo", "machaca"] and scene_node.has_method("foes") and scene_node.get("player") != null:
@@ -148,6 +157,47 @@ func _ritmo(arena: Node, mash := false, f := 0) -> void:
 			_seq.pop_front()
 	else:
 		_press("interact", false)
+
+
+func _camion(tr: Node, f: int) -> void:
+	if tr.phase == 0:  # avenida: correr y saltar
+		_press("move_right", true)
+		_press("interact", f % 6 < 3)
+		return
+	_press("move_right", false)
+	if tr._slip > 0.0:
+		_press("interact", f % 4 < 2)
+		return
+	var coming: bool = tr._warned
+	for o in tr._obstacles:
+		var n = o["node"]
+		if is_instance_valid(n) and n.position.x < tr._px + 60.0 and n.position.x + n.texture.get_width() > tr._px - 10.0:
+			coming = true
+	_press("move_up", coming)
+	if coming:
+		_press("interact", false)
+		return
+	var best = null
+	for b in tr._bikers:
+		if best == null or absf(tr._bx(b) - tr._px) < absf(tr._bx(best) - tr._px):
+			best = b
+	var want := false
+	if best != null and tr._attack <= 0.0 and tr._recover <= 0.0 and not tr._warned:
+		var d: float = absf(tr._bx(best) - tr._px)
+		var open: bool = best["kind"] == "punk" or best["state"] in ["windup", "stagger", "punch"]
+		if d > 8.0 and d < 40.0 and open:
+			want = true
+		elif d > 70.0 and tr._bags > 0 and tr._throw_cd <= 0.0 and f % 20 == 0:
+			want = true
+	_press("interact", want and f % 4 < 2)
+	# Con uno tirando botellas, se corre un poco cada tanto (la botella va a donde estaba).
+	var thrower := false
+	for b in tr._bikers:
+		thrower = thrower or b["thrower"]
+	var step: bool = thrower and not want and f % 40 < 8
+	var left: bool = (f / 40) % 2 == 0
+	_press("move_left", step and left)
+	_press("move_right", step and not left)
 
 
 func _track(scene_node: Node, notes: Dictionary) -> void:

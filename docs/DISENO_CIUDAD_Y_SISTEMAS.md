@@ -1601,3 +1601,21 @@ Esta parte tiene que mostrar cómo es vivir ahí (no un shooter genérico). Con 
 - **Armas de Lisandro:** el puño con anillos, la pistola de oro y la **mini-Uzi de oro** del sicariato (rápida, gasta balas; la pistola rinde más). Los cartuchos que caen son balas. Cuando uno pasa a ser él (el protagonista), vuelve la escopeta; letrero grande: "AHORA ES ÉL".
 - **El acertijo de Lisandro ahora rinde:** con el maletín le entra 0,12; en el bajón 1,6. Si alcanza la bolsita, **se cura** (+90, "la vida, prestada") y el bajón es corto; si se la revientan antes, el bajón es largo. Con bots: capítulo 3, 51-58 s con el acertijo y 82-83 s a lo bruto; revancha, 81 s (2 muertes) contra 131 s (5 muertes).
 - Arte: `tools/art/draw_plomo_olla.py`.
+
+## El camión del prólogo: que machacar no alcance (2026-10-10)
+
+Con bots (`tools/bot_jugar.gd`, política nueva `camion`), antes: machacando se tumbaban las 22 motos en ~60 s,
+y 13-14 las tumbaban las carretillas solas. Perder daba igual (caerse también llevaba a Lilato).
+
+- **Los de casco se cubren** (goon, thug): solo se destapan cuando cargan el golpe (rojos) o tambalean.
+  Pegarles antes: ¡CLANC!, se desbalancea, 0,75 s sin poder pegar, y le contraatacan. Los punks caen con lo que sea.
+- **Patear al aire cuesta**: balanceo, 0,4 s sin pegar, y los de cerca se le tiran encima ("¡FIU!").
+- **La harina se acaba**: 6 bolsas; cada uno tumbado a golpes devuelve una (máx. 9). Con harina no se recarga.
+- **Las motos saltan las carretillas**, salvo las que están cargando o tambaleando: patearlas justo antes
+  de que pase la carretilla es la jugada (¡JA!).
+- **Caerse rebobina el sueño** (como UnMetal): "—No. Así no fue. Yo no me caí." Vida llena, las motos que
+  faltaban. A la tercera: "Bueno, sí me caí. Pero rodé hasta el puente. Con estilo." (va a Lilato igual).
+- Botellas un poco más espaciadas (2,4-3,4 s) para que el primer nivel no sea un muro.
+
+Resultado: machacando, 2-3 caídas y la mitad de las veces no termina (110-160 s); jugando bien, 70-90 s con
+0-2 caídas (el bot casi no esquiva botellas; una persona sí).

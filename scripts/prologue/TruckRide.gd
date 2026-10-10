@@ -13,9 +13,16 @@ extends Node2D
 ##      umbral, la patada (o el puño) le llega justo: el golpeado se acomoda al pie / al puño.
 ##      Los que tiran botellas se quedan lejos: moverse esquiva la botella, y un golpe a tiempo
 ##      la devuelve.
+##      Los de casco (goon, thug) se cubren mientras manejan: solo se destapan cuando cargan el golpe
+##      (rojos) o cuando están tambaleando. Pegarles antes: ¡CLANC!, se desbalancea y le contraatacan.
+##      Patear al aire cuesta: el cuerpo se va para el otro lado, tarda en volver a pegar y los de
+##      cerca aprovechan para tirársele encima (el que machaca, se cae).
+##      La harina se acaba (FLOUR_BAGS): cada uno que tumba a golpes le devuelve una bolsa. Así
+##      machacar no alcanza: hay que dejarlos pasar el umbral y patear a tiempo.
 ##      Largo y frenético: 22 motos, curvas, baches y cosas parqueadas.
 ##   2. GANÓ: STAGE CLEAR, el camión frena en el puente: abajo lo espera Lilato (jefa final).
-##      PERDIÓ (sin vida): se cae del camión y rueda hasta el puente: también va a Lilato.
+##      PERDIÓ (sin vida): se cae... y el sueño rebobina ("No. Así no fue."): vuelve a colgar con la
+##      vida llena y las motos que faltaban. A la tercera caída lo acepta: rueda hasta el puente (Lilato).
 
 const NEXT_SCENE := "res://scenes/prologue/Lilato.tscn"
 const SPEED := 330.0  # velocidad del mundo con el camión lanzado (px/s)
@@ -61,6 +68,12 @@ const COMBO_WINDOW := 0.4
 const THROW_RANGE := 190.0  # hasta dónde tira la bolsa de harina
 const THROW_SPEED := 230.0
 const THROW_COOLDOWN := 0.55
+const FLOUR_BAGS := 6
+const FLOUR_MAX := 9
+const REWINDS := [
+	"—No. No, no, no. Así no fue. Yo no me caí. Otra vez, bien contado.",
+	"—Tampoco así. Es mi sueño: yo decido cómo me caigo. Y no me caigo.",
+]
 ## Dónde quedan el pie (patada estirada) y el puño (pegando abajo), desde las manos, mirando a la izquierda.
 const FOOT := Vector2(-17, 39)
 const FIST := Vector2(-16, 34)
@@ -107,6 +120,15 @@ var _hit_done := false
 var _combo := 0.0
 var _throw_cd := 0.0
 var _throw_target = null  # la moto a la que va la bolsa
+var _bags := FLOUR_BAGS
+var _recover := 0.0  # después de patear al aire: no puede pegar
+var _whiffs := 0
+var _blocks := 0
+var stats := {"golpes": 0, "botellas": 0, "carretillas": 0, "soltadas": 0, "clanc": 0, "aire": 0}  # para el bot
+var _bags_said := false
+var deaths := 0  # caídas (rebobinadas o no)
+var defeated := 0  # los que tumbó (para el bot de pruebas)
+var _bags_label: Label
 var _next_obstacle := 9.0
 var _warned := false
 var _obstacles: Array = []  # [{node, h, hit}]
@@ -267,6 +289,8 @@ func _build_ui() -> void:
 	_banner = _make_label(Color(1, 0.85, 0.3))
 	_banner.text = "STAGE CLEAR"
 	_banner.position = Vector2(116, 60)
+	_bags_label = _make_label(Color(0.96, 0.94, 0.86))
+	_bags_label.position = Vector2(222, 15)
 	_flash = ColorRect.new()
 	_flash.color = Color(0.6, 0.05, 0.05, 0.0)
 	_flash.size = Vector2(320, 180)
@@ -452,6 +476,7 @@ func _grab_truck() -> void:
 	_theta = 0.3
 	_to_spawn = BIKERS.duplicate()
 	hud.set_counter("0/%d" % BIKERS.size())
+	_update_bags()
 	var keys := "A" if Controls.touch() else "E"
 	Narrator.say("<- -> moverse   %s patada (dos: puño)   ^ encoger las piernas" % keys, true)
 	for c in _chasers:
@@ -513,7 +538,8 @@ func _hang(delta: float) -> void:
 			else:
 				_attack_hit()
 	_throw_cd -= delta
-	if Input.is_action_just_pressed("interact") and not _tuck and _attack < 0.08:
+	_recover -= delta
+	if Input.is_action_just_pressed("interact") and not _tuck and _attack < 0.08 and _recover <= 0.0:
 		# Si adelante no hay nadie y atrás sí: se da vuelta (el botón es para el que está).
 		if _nearest_ahead(THROW_RANGE) == null:
 			_face = -_face
@@ -522,7 +548,7 @@ func _hang(delta: float) -> void:
 			_hanging.flip_h = _face > 0.0
 		# Si nadie pasó el umbral de la patada pero hay alguien más lejos: harina.
 		var far = _nearest_ahead(THROW_RANGE)
-		if _nearest_ahead(KICK_REACH.y) == null and far != null:
+		if _nearest_ahead(KICK_REACH.y) == null and far != null and _bags > 0:
 			if _throw_cd <= 0.0:
 				_throw_target = far
 				_start_attack("throw")
@@ -587,6 +613,7 @@ func _slipping(delta: float) -> void:
 		_presses += 1
 	if _presses >= REGRAB_PRESSES or _slip <= 0.0:
 		if _presses < REGRAB_PRESSES:
+			stats["soltadas"] += 1
 			_lose_life(HIT_DAMAGE)
 		_slip = 0.0
 		_prompt.visible = false
@@ -640,7 +667,7 @@ func _update_obstacles(delta: float) -> void:
 		var h: float = OBSTACLES[kind]
 		var node := _spawn("obstacle", "res://assets/prologue/%s.png" % kind, BIKE_Y - h, self, false, 340.0)
 		node.z_index = 22
-		_obstacles.append({"node": node, "h": h, "hit": false})
+		_obstacles.append({"node": node, "h": h, "hit": false, "jumped": []})
 	for o in _obstacles.duplicate():
 		if not is_instance_valid(o["node"]):  # ya pasó (la soltó _scroll)
 			_obstacles.erase(o)
@@ -648,16 +675,26 @@ func _update_obstacles(delta: float) -> void:
 		var node: Sprite2D = o["node"]
 		var x0 := node.position.x
 		var x1 := x0 + node.texture.get_width()
-		# Se lleva a las motos que estén en el camino.
+		# Las motos la ven venir y la saltan... salvo las que están cargando el golpe o tambaleando:
+		# a esas se las lleva (¡JA!). Patearlas justo antes de que pase es la jugada.
 		for b in _bikers.duplicate():
 			var bx: float = b["node"].position.x
-			if bx + BIKE_W > x0 + 4.0 and bx < x1 - 4.0:
+			if o["jumped"].has(b):
+				continue
+			if bx + BIKE_W > x0 - 10.0 and bx < x1 + 4.0 and b["state"] in ["approach", "ride"]:
+				o["jumped"].append(b)
+				var bn: Node2D = b["node"]
+				var j := create_tween()
+				j.tween_property(bn, "position:y", BIKE_Y - o["h"] - 6.0, 0.14).set_ease(Tween.EASE_OUT)
+				j.tween_property(bn, "position:y", BIKE_Y, 0.16).set_ease(Tween.EASE_IN)
+			elif bx + BIKE_W > x0 + 4.0 and bx < x1 - 4.0:
 				_crash(b, true)
 		# Y a él, si cuelga con las piernas abajo.
 		if not o["hit"] and phase == Phase.HANG and _px + 6.0 > x0 and _px - 6.0 < x1:
 			if _feet_y() > BIKE_Y - o["h"] + 2.0:
 				o["hit"] = true
 				_omega += 3.2
+				stats["carretillas"] += 1
 				_lose_life(HIT_DAMAGE * 2)
 				_sfx["hit-1"].play()
 				_pop_text("¡PUM!", Vector2(_px + 20, GRIP_Y - 14))
@@ -728,7 +765,7 @@ func _biker_tick(b: Dictionary, delta: float) -> void:
 			node.position.x = move_toward(node.position.x, target + wobble, BIKER_FOLLOW * delta)
 			if b["timer"] <= 0.0:
 				if b["thrower"]:
-					b["timer"] = randf_range(1.6, 2.6)
+					b["timer"] = randf_range(2.4, 3.4)
 					_throw_bottle(b)
 				else:
 					# Se le tira encima para pegar (avisa poniéndose rojo).
@@ -746,6 +783,7 @@ func _biker_tick(b: Dictionary, delta: float) -> void:
 			if b["timer"] <= 0.0:
 				rider.modulate = Color.WHITE
 				if absf(_bx(b) - _px) < 26.0 and _slip <= 0.0:
+					stats["golpes"] += 1
 					_omega += -side * 2.6  # el golpe lo empuja para el otro lado
 					_lose_life(HIT_DAMAGE)
 					_sfx["hit-1"].play()
@@ -799,6 +837,7 @@ func _throw_bottle(b: Dictionary) -> void:
 		back.chain().tween_callback(bottle.queue_free)
 		return
 	bottle.queue_free()
+	stats["botellas"] += 1
 	_omega += 1.8 * signf(_px - from.x)
 	_lose_life(HIT_DAMAGE)
 	_sfx["hit-1"].play()
@@ -860,6 +899,10 @@ func _attack_hit() -> void:
 			best_d = d
 	if best == null:
 		_sfx["miss"].play()
+		_whiff()
+		return
+	if best["kind"] != "punk" and best["state"] in ["approach", "ride"]:
+		_blocked(best)
 		return
 	var contact := _body_point(FOOT if _attack_kind == "kick" else FIST)
 	best["contact_x"] = contact.x + _face * 5.0 - 12.0  # el cuerpo del que maneja (rider en x+12) contra el pie
@@ -873,11 +916,48 @@ func _attack_hit() -> void:
 	_knock(best)
 
 
+## Pateó al aire: el cuerpo se va para el otro lado y tarda en volver. Los de cerca lo ven y se
+## le tiran encima, rápido.
+const WHIFF_LINES := ["¡FIU!", "¡AIRE!", "¡NADA!"]
+
+
+func _whiff() -> void:
+	_omega += -_face * 1.4
+	_recover = 0.4
+	_whiffs += 1
+	stats["aire"] += 1
+	if _whiffs % 3 == 1:
+		_pop_text(WHIFF_LINES[(_whiffs / 3) % WHIFF_LINES.size()], Vector2(_px + _face * 30.0, 0))
+	if _whiffs == 4:
+		Narrator.say("(Patear al viento no tumba a nadie. Esperar a que se acerquen: cuando se ponen rojos.)", true)
+	for b in _bikers:
+		if b["state"] == "ride" and not b["thrower"] and absf(_bx(b) - _px) < 90.0:
+			b["state"] = "windup"
+			b["timer"] = 0.35
+			b["rider"].modulate = Color(1, 0.4, 0.4)
+
+
+## Le pegó a uno de casco que no estaba cargando: se cubre. ¡CLANC! Y le devuelve el golpe, rápido.
+func _blocked(b: Dictionary) -> void:
+	_sfx["miss"].play()
+	_shake = 1.5
+	_omega += -_face * 1.8
+	_recover = 0.75
+	_pop_text("¡CLANC!", Vector2(_bx(b) - 24, 0))
+	b["state"] = "windup"
+	b["timer"] = 0.45
+	b["rider"].modulate = Color(1, 0.4, 0.4)
+	_blocks += 1
+	stats["clanc"] += 1
+	if _blocks == 1 or _blocks == 5:
+		Narrator.say("(Se cubrió con el casco. Pegarle cuando se pone rojo: ahí se destapa.)", true)
+
+
 ## Le pegaron (patada, puño o harina): pierde vida; se tambalea para atrás, o se cae de la moto.
-func _knock(b: Dictionary) -> void:
+func _knock(b: Dictionary, by_flour := false) -> void:
 	var rider: AnimatedSprite2D = b["rider"]
 	if b["hp"] <= 0:
-		_crash(b)
+		_crash(b, false, by_flour)
 		return
 	var away: float = signf(_bx(b) - _px)
 	if away == 0.0:
@@ -905,8 +985,13 @@ func _throw_flour() -> void:
 	var b = _throw_target
 	_throw_target = null
 	_throw_cd = THROW_COOLDOWN
-	if b == null or b["state"] == "crash":
+	if b == null or b["state"] == "crash" or _bags <= 0:
 		return
+	_bags -= 1
+	_update_bags()
+	if _bags == 0 and not _bags_said:
+		_bags_said = true
+		Narrator.say("(Se acabó la harina. Harinas El Sol no patrocina tanto. A patear: cada uno que tumbe, una bolsa.)", true)
 	var bag := Sprite2D.new()
 	bag.texture = load("res://assets/prologue/bolsa_harina.png")
 	bag.z_index = 26
@@ -936,7 +1021,14 @@ func _throw_flour() -> void:
 	_sfx["hit-2"].play()
 	_pop_text("¡PUF!", Vector2(_bx(b) - 14, BIKE_Y - 62))
 	b["rider"].modulate = Color.WHITE
-	_knock(b)
+	_knock(b, true)
+
+
+## Las bolsas que quedan (arriba a la derecha, debajo del contador de motos).
+func _update_bags() -> void:
+	_bags_label.visible = phase == Phase.HANG
+	_bags_label.text = "HARINA x%d" % _bags
+	_bags_label.add_theme_color_override("font_color", Color(0.96, 0.94, 0.86) if _bags > 0 else Color(0.9, 0.35, 0.3))
 
 
 ## La nube de harina donde revienta la bolsa.
@@ -958,12 +1050,18 @@ func _flour_puff(at: Vector2) -> void:
 
 ## Se cae de la moto: la moto da vueltas hacia atrás y el que manejaba sale volando.
 ## by_obstacle: se la llevó una carretilla (también cuenta).
-func _crash(b: Dictionary, by_obstacle := false) -> void:
+func _crash(b: Dictionary, by_obstacle := false, by_flour := false) -> void:
 	if b["state"] == "crash":
 		return
 	b["state"] = "crash"
 	_bikers.erase(b)
 	Dream.add(500)
+	defeated += 1
+	var how: String = "x_carretilla" if by_obstacle else ("x_harina" if by_flour else "x_golpe")
+	stats[how] = int(stats.get(how, 0)) + 1
+	if not by_obstacle and not by_flour and phase == Phase.HANG and _bags < FLOUR_MAX:  # tumbado a golpes: otra bolsa
+		_bags += 1
+		_update_bags()
 	var node: Node2D = b["node"]
 	var rider: AnimatedSprite2D = b["rider"]
 	rider.play("fall")
@@ -992,6 +1090,7 @@ func _crash(b: Dictionary, by_obstacle := false) -> void:
 ## Ganó: STAGE CLEAR; el camión frena en el puente y él se baja. Abajo lo espera Lilato.
 func _stage_clear() -> void:
 	phase = Phase.CLEAR
+	_bags_label.visible = false
 	_meter.visible = false
 	_prompt.visible = false
 	_warned = false
@@ -1013,22 +1112,74 @@ func _clear() -> void:
 	pass
 
 
-## Perdió: se suelta y cae a la calle (rueda hasta el puente: igual lo espera Lilato).
+## Perdió: se suelta y cae a la calle. Las dos primeras veces el sueño rebobina ("así no fue");
+## a la tercera, rueda hasta el puente (igual lo espera Lilato).
 func _fall_off() -> void:
 	phase = Phase.FALL
 	_meter.visible = false
+	_bags_label.visible = false
 	_prompt.visible = false
+	_warned = false
 	mood.forced_distress = 1.0
 	Engine.time_scale = 0.4
 	_hanging.play("slip")
+	var from := _hands.position
 	_hands.reparent(self)
 	var t := create_tween().set_parallel()
 	t.tween_property(_hands, "position", _hands.position + Vector2(-70, 50), 0.7).set_ease(Tween.EASE_IN)
 	t.tween_property(_hands, "rotation", 2.5, 0.7)
 	await t.finished
+	Engine.time_scale = 1.0
+	if deaths < REWINDS.size():
+		await _rewind(from)
+		return
 	phase = Phase.DONE
 	_flash.color = Color(0, 0, 0, 1)
+	Narrator.say("—Bueno, sí me caí. Pero rodé hasta el puente. Con estilo.", true)
 	SceneRouter.go(NEXT_SCENE)
+
+
+## El sueño se corrige solo: fundido, la cinta para atrás, y vuelve a estar colgado.
+## Las motos que estaban en pantalla vuelven a la fila; las que ya tumbó, tumbadas quedan.
+func _rewind(hands_at: Vector2) -> void:
+	_flash.color = Color(0, 0, 0, 0)
+	var f := create_tween()
+	f.tween_property(_flash, "color:a", 1.0, 0.25)
+	await f.finished
+	Narrator.say(REWINDS[deaths], true)
+	deaths += 1
+	for b in _bikers.duplicate():
+		_to_spawn.push_front(b["kind"])
+		b["state"] = "crash"  # la bolsa que iba en el aire ya no lo busca
+		b["node"].queue_free()
+	_bikers.clear()
+	for o in _obstacles:
+		for m in _movers.duplicate():
+			if m["node"] == o["node"]:
+				_movers.erase(m)
+		if is_instance_valid(o["node"]):
+			o["node"].queue_free()
+	_obstacles.clear()
+	_next_obstacle = 6.0
+	_next_biker = 2.0
+	_hands.reparent(_rig)
+	_hands.position = hands_at
+	_hands.rotation = 0.0
+	_theta = 0.0
+	_omega = 0.0
+	_slip = 0.0
+	_attack = 0.0
+	life = MAX_LIFE
+	hud.set_life(1.0)
+	_bags = maxi(_bags, FLOUR_BAGS)
+	phase = Phase.HANG
+	_bags_label.visible = false
+	_hanging.play("hang")
+	await get_tree().create_timer(0.6).timeout
+	_update_bags()
+	_meter.visible = true
+	var u := create_tween()
+	u.tween_property(_flash, "color:a", 0.0, 0.4)
 
 
 func _hurt() -> void:
