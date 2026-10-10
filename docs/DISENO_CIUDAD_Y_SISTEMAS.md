@@ -1580,3 +1580,11 @@ Antes eran esponjas de daño (caían en ~7 s). Ahora cada uno tiene su mecánica
 - También rompen la guardia: la botella (tirada o en la cabeza) y el caño. El cuchillo no.
 - Avisos una vez por escena (arriba): cómo se rompe la guardia y que machacar sale caro. Los letreritos (GUARDIA, ¡TOC!, ¡CRAC!, ¡CONTRA!) se apilan para no encimarse entre ellos ni con el ¡LEVANTATE!.
 - Con bots (150 s por nivel): el que machaca recibe 1-4 contragolpes y muere en 2 de 4 niveles; el que reacciona a la guardia con la giratoria no recibe ninguno y no muere. `tools/bot_jugar.gd` tiene las políticas `ritmo` y `machaca`, y la arena cuenta `stats`.
+
+## La obra y el puesto: sin tramos pasivos (2026-10-10)
+
+- **La obra.** Antes él caminaba solo: sin tocar nada el turno terminaba igual (con menos ladrillos). Ahora: **E mantenido = caminar**, soltarlo = afirmarse; flechas = equilibrar. El turno tiene reloj (110 s): sin caminar no se sube nada. Más ladrillos en la pila = más inestable. Una cosa nueva por viaje: (1) **el ladrillo de más** que tira el maestro: ARRIBA a tiempo = atajarlo (pila de 7, paga más); si no, "¡TOC!, el casco suena"; (2) **el ventarrón**, avisado con flechas de qué lado viene; (3) **la paloma** que se le para encima (la pila baila; se va si él se queda quieto) y **el charco de mezcla** (no frena en seco). El maestro se queja si se queda quieto.
+  Con bots (a 60 cuadros por segundo): quieto, 0 de 18; con reacción lenta, 13-19; atento, 19 (con el de más).
+- **El puesto de Doña Rosa.** Pagaba $10.000 fijos (quieto, lo mismo que atendiendo). Ahora: $2.000 por cuidar el carrito y $1.000 por venta. En la segunda mitad (después del señor de negro): **pedidos dobles** ("una empanada y una aguapanela", "dos arepas"), en orden; y **Wilmer**, que pide fiado ("soy amigo de Rosa"): ABAJO = no fiar (señalar el letrero "HOY NO SE FÍA, MAÑANA SÍ"). Si se le da algo, Rosa lo descuenta ("Wilmer no paga ni el bus"). La burbuja del cliente va a la izquierda (no tapa el carrito ni a él) y crece para arriba.
+  Con bots: atento $12.000-12.500; quieto $2.000; al azar, $0 (le fió a Wilmer).
+- Ojo con las pruebas sin pantalla: los cuadros van mucho más rápido que la física, y lo que se mueve al azar se promedia (todo parece fácil). Correr con `--fixed-fps 60`.

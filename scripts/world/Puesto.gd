@@ -3,6 +3,10 @@ extends Node2D
 ## Llegan clientes de a uno y piden algo; hay que darles lo que pidieron a tiempo:
 ##   izquierda = empanada, arriba = arepa, derecha = aguapanela.
 ## A la mitad aparece un señor de negro preguntando por ella. La vacuna (la extorsión).
+## Después del señor de negro se pone más difícil (una cosa nueva por mitad):
+##   - pedidos dobles ("una empanada y una aguapanela"): las dos, en orden;
+##   - Wilmer, el que pide fiado ("soy amigo de Rosa"): abajo = no fiar (señalar el letrero).
+##     Si se le da algo, no lo paga.
 ## Al final vuelve Rosa: paga, y queda el miedo. Vínculo con Rosa +1.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
@@ -16,6 +20,15 @@ const ORDERS := {
 	"arepa": ["move_up", "—Una arepa con queso.", 3000],
 	"aguapanela": ["move_right", "—Una aguapanela, que hace frío.", 1000],
 }
+const DOUBLES := {
+	"empanada": "una empanada", "arepa": "una arepa", "aguapanela": "una aguapanela",
+}
+## Los que piden fiado (en qué cliente llegan, contando desde el último).
+const MOOCHERS := [3, 1]
+const MOOCH_LINES := [
+	["WILMER", "—Fíeme una arepa, mijo, que mañana le pago. Soy amigo de Rosa."],
+	["WILMER", "—Otra vez yo. Lo de ahorita y una empanada, todo junto, el viernes. Rosa sabe."],
+]
 const COMPLAINTS := ["—¡Yo pedí otra cosa!", "—¿Usted es nuevo? Se le nota.", "—Doña Rosa no se equivoca nunca."]
 
 var state := "intro"
@@ -31,6 +44,11 @@ var _hud: Label
 var _bubble: Label
 var _legend: Label
 var _brave := false
+var _want2 := ""       # pedido doble: lo segundo (después de _want)
+var _mooch := false     # este es Wilmer
+var _mooch_n := 0
+var _fiado := 0         # lo que se le fió a Wilmer
+var _icon2: Sprite2D
 
 
 func _ready() -> void:
@@ -56,13 +74,16 @@ func _ready() -> void:
 	_icon = Sprite2D.new()
 	_icon.visible = false
 	add_child(_icon)
+	_icon2 = Sprite2D.new()
+	_icon2.visible = false
+	add_child(_icon2)
 	var ui := CanvasLayer.new()
 	ui.layer = 10
 	add_child(ui)
 	_hud = _label(ui, Vector2(6, 4))
 	_bubble = _label(ui, Vector2(0, 0))
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_bubble.size = Vector2(140, 30)
+	_bubble.size = Vector2(146, 10)
 	_legend = _label(ui, Vector2(0, 158))
 	_legend.size = Vector2(Controls.right_edge(), 20)  # a la derecha, los botones táctiles
 	_legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -111,6 +132,13 @@ func _next() -> void:
 		await _man_in_black()
 	_left -= 1
 	_want = ORDERS.keys().pick_random()
+	_want2 = ""
+	var second_half: bool = _left < CUSTOMERS / 2
+	_mooch = second_half and _mooch_n < MOOCHERS.size() and _left == MOOCHERS[_mooch_n]
+	if _mooch:
+		_mooch_n += 1
+	elif second_half and randf() < 0.55:
+		_want2 = ORDERS.keys().pick_random()
 	_current = AnimatedSprite2D.new()
 	CharacterFrames.dress(_current, ROWS.pick_random())
 	_current.modulate = GameState.same_tint(Color.from_hsv(randf(), 0.2, 1.0))
@@ -125,10 +153,28 @@ func _next() -> void:
 		return
 	_current.play("idle_up")
 	_icon.texture = Items.icon(_want)
-	_icon.position = _current.position + Vector2(0, -30)
+	_icon.position = _current.position + Vector2(-9 if _want2 != "" else 0, -30)
 	_icon.visible = true
-	_say(ORDERS[_want][1], Color(0.95, 0.92, 0.85))
+	_icon2.visible = _want2 != ""
+	if _want2 != "":
+		_icon2.texture = Items.icon(_want2)
+		_icon2.position = _current.position + Vector2(9, -30)
+		_icon2.modulate = Color(1, 1, 1, 0.55)  # lo segundo, más clarito hasta que se entregue lo primero
+		var first: String = DOUBLES[_want]
+		if _want == _want2:  # "dos arepas", no "una arepa y una arepa"
+			_say("—Dos %ss, porfa." % _want, Color(0.95, 0.92, 0.85))
+		else:
+			_say("—%s y %s." % [first.left(1).to_upper() + first.substr(1), DOUBLES[_want2]], Color(0.95, 0.92, 0.85))
+	elif _mooch:
+		_current.modulate = Color(0.85, 0.75, 0.6)
+		var line: Array = MOOCH_LINES[_mooch_n - 1]
+		_say(line[1], Color(0.95, 0.92, 0.85))
+		_legend.text = "IZQ empanada  ARRIBA arepa\nDER aguapanela  ABAJO no fiar"
+	else:
+		_say(ORDERS[_want][1], Color(0.95, 0.92, 0.85))
 	_timer = PATIENCE * (1.0 - 0.35 * GameState.diff("reflejos")) * (1.5 if GameState.has_skill("sangre_fria") else 1.0)
+	if _want2 != "":
+		_timer *= 1.6
 	state = "order"
 
 
@@ -144,9 +190,20 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if state != "order":
 		return
+	if _mooch and event.is_action_pressed("move_down"):
+		get_viewport().set_input_as_handled()
+		_refuse()
+		return
 	for id in ORDERS:
 		if event.is_action_pressed(ORDERS[id][0]):
 			get_viewport().set_input_as_handled()
+			if _want2 != "" and id == _want:  # lo primero del pedido doble: falta lo segundo
+				_want = _want2
+				_want2 = ""
+				_icon.visible = false
+				_icon2.modulate = Color.WHITE
+				sales += ORDERS[id][2]
+				return
 			_serve(id)
 			return
 
@@ -154,6 +211,17 @@ func _unhandled_input(event: InputEvent) -> void:
 func _serve(id: String) -> void:
 	state = "leaving"
 	_icon.visible = false
+	_icon2.visible = false
+	if _mooch:
+		_legend.text = "IZQ empanada  ARRIBA arepa\nDER aguapanela"
+		if id == "":  # se cansó de esperar
+			_say("—Bueno, mañana vuelvo. Mañana sí.", Color(0.95, 0.92, 0.85))
+		else:  # se lo fió
+			_fiado += ORDERS[id][2]
+			_say("—¡Gracias, papito! El viernes sin falta. (No dice de qué año.)", Color(1, 0.75, 0.7))
+			GameState.change_mood(-1.0)
+		_leave()
+		return
 	if id == _want:
 		served += 1
 		sales += ORDERS[id][2]
@@ -163,6 +231,22 @@ func _serve(id: String) -> void:
 	else:
 		_say(COMPLAINTS.pick_random() if id != "" else "—Ay, no, qué demora. Me voy.", Color(1, 0.75, 0.7))
 		GameState.change_mood(-1.0)
+	_leave()
+
+
+## Wilmer: abajo = no fiar. Señala el letrero.
+func _refuse() -> void:
+	state = "leaving"
+	_icon.visible = false
+	_icon2.visible = false
+	_legend.text = "IZQ empanada  ARRIBA arepa\nDER aguapanela"
+	_say(["(Señala el letrero: \"HOY NO SE FÍA, MAÑANA SÍ\". Wilmer lee \"mañana sí\" y se va feliz.)",
+		"(Señala el letrero otra vez. Wilmer: —Ya sé, ya sé. Mañana. Usted es igualito a Rosa.)"][mini(_mooch_n - 1, 1)],
+		Color(0.7, 0.95, 0.7))
+	_leave()
+
+
+func _leave() -> void:
 	var c := _current
 	var t := create_tween()
 	t.tween_interval(0.7)
@@ -178,8 +262,13 @@ func _say(text: String, color: Color) -> void:
 	_bubble.text = text
 	_bubble.add_theme_color_override("font_color", color)
 	if is_instance_valid(_current):
-		_bubble.position = _current.position + Vector2(-70, -64)
-		_bubble.position.x = clampf(_bubble.position.x, 2.0, Controls.right_edge() - _bubble.size.x)
+		# Que termine justo encima del ícono del pedido (lo largo crece para arriba, no lo tapa).
+		_bubble.size = Vector2(146, 10)
+		var lines := _bubble.get_line_count()
+		var h := lines * _bubble.get_line_height() + (lines - 1) * _bubble.get_theme_constant("line_spacing")
+		# A la izquierda del cliente (no encima del carrito ni de él); lo largo crece para arriba.
+		_bubble.position = Vector2(4.0, _current.position.y - 24.0 - h)
+		_bubble.position.y = maxf(_bubble.position.y, 16.0)  # debajo de la barra de arriba
 
 
 ## El señor de negro. No compra nada.
@@ -236,9 +325,18 @@ func _end() -> void:
 	]
 	if _brave:
 		lines.append(["DOÑA ROSA", "—¿Lo miró a los ojos? Ay, mijito. Usted no sabe con quién se mete. Pero gracias."])
-	lines.append(["DOÑA ROSA", "—Tome lo suyo: diez mil. Las propinas también son suyas."])
+	if _fiado > 0:
+		lines.append(["DOÑA ROSA", "—¿Y esto que falta? ... ¿Le fió a Wilmer? Ay, mijito. Wilmer no paga ni el bus. Eso se lo descuento, ¿sí? Con cariño."])
+	elif _mooch_n > 0:
+		lines.append(["DOÑA ROSA", "—¿Vino Wilmer y no le fió? ¡Usted sí aprende rápido! Wilmer me debe desde el Mundial. El de Brasil. El primero."])
+	# Paga por lo que vendió (dos mil por cuidarle el carrito, mil por venta), menos lo fiado.
+	var pay := maxi(0, 2000 + served * 1000 - _fiado)
+	if served == 0:
+		lines.append(["DOÑA ROSA", "—¿No vendió nada? ... Bueno. Por lo menos no se robaron el carrito. Tome dos mil, por vigilante."])
+	else:
+		lines.append(["DOÑA ROSA", "—Tome lo suyo: $%d, mil por cada venta. Las propinas también son suyas." % pay])
 	await Dialogue.talk(lines)
-	GameState.add_money(10000 + tips)
+	GameState.add_money(pay + tips)
 	GameState.raise_bond("rosa")
 	GameState.flags["vacuna_rosa"] = true
 	TimeManager.skip(1.0)
