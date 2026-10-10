@@ -1650,3 +1650,24 @@ Lo que aburría en los trabajos no era cada turno: era que se repetían idéntic
   (58 s, propina de $6.000 si llega en menos de 47); **torta NO CORRA** (más del 80% de velocidad un rato y
   la torta se ladea: "Ahora dice 'Feliz cumpl'"). El cliente reacciona según cómo llegó.
   Una vuelta limpia: ~43 s a fondo, ~54 s con la torta.
+
+## Pedir: que no sea una tabla aprendida (2026-10-10)
+
+El problema: cuando ya se conocen los siete tipos, pedir se vuelve buscar en una tabla. Lo que cambió (`scripts/world/Pedir.gd`):
+- **Un especial por vez.** No sigue la tabla: al entrar dice una frase y hay que leerla. Los seis primeros salen en orden; después, al azar.
+
+| Especial | Frase al entrar | Lo que funciona |
+|---|---|---|
+| El gringo | "Oh my God, a beagle! Is he famous?" | Lukas ($5.000, una foto). El chiste: "No Spanish. But I feel judged." |
+| El colega | "(Viene uno con un vaso igualito al suyo.)" | El cartel. Pedirle: "¿Me pide a mí? Somos competencia." |
+| La influencer | "¡Hola, mi gente! Aquí en la calle, re real..." | El cartel ($3.000, #humildad). Callarse también se castiga: "Ni para contenido sirve." |
+| El predicador | "¡Hermano! ¿Usted ya conoce la Palabra?" | Quedarse callado y escucharlo ($2.000). |
+| El borracho | "¡Feliz cumpleaños! ... ¿No es? ¡Igual!" | Pedir ($3.000), casi cualquier cosa. |
+| El del banco | "(Es el del banco. El que le negó el crédito.)" | Pedir paga ($2.000); no pedirle nada sube el ánimo (+3): "Frente en alto. Panza en el piso." |
+
+- **El día cambia la calle:**
+  - **Quincena** (días 15, 30 y 45): todo paga el doble.
+  - **Domingo:** salen de misa y hay más señoras.
+  - **Lunes:** todo rinde un 25% menos.
+- **Racha:** tres aciertos seguidos dan $1.000 de más, con su línea.
+- **El globo de lo que dicen** crece hacia arriba desde el cartelito del tipo (antes se le montaba encima) y tiene fondo oscuro, para que se lea sobre los letreros.
