@@ -208,7 +208,7 @@ func talk(_npc: Node) -> void:
 	var f := GameState.flags
 	var kind: String = f.get("nino_hoy", "")
 	if f.get("nino_estado", "") == "fin":  # ya pasó lo de hoy: se quedó sentado un rato
-		await Dialogue.talk([[_who(), "—Váyase tranquilo. Yo me quedo otro rato. Aquí no estorbo."]])
+		await Dialogue.talk([[_who(), "—Váyase tranquilo. Yo me quedo. Tengo el andén separado hasta las cinco."]])
 		return
 	if _loop:
 		_loop.kill()
@@ -244,8 +244,8 @@ func talk(_npc: Node) -> void:
 			await Recuerdo.show("infancia")
 		if int(f["nino_bond"]) >= 3 and not f.get("nino_nombre", false):
 			f["nino_nombre"] = true
-			await Dialogue.talk([["EL PELAO", "—Me llamo Alejandro. Completo. Nadie me dice Alejo: para eso toca que a uno lo quieran. Usted no me preguntó, pero ya van tres veces. A la tercera uno dice el nombre."],
-				["ALEJANDRO", "—Usted no me diga el suyo. Yo le digo \"el del perro\". Así le dicen todos. Bueno, los que le dicen algo."]])
+			await Dialogue.talk([["EL PELAO", "—Me llamo Alejandro. Completo. Alejo no: Alejo es para los amigos, y usted todavía está en periodo de prueba."],
+				["ALEJANDRO", "—Usted no me diga el suyo. Yo le digo \"el del perro\". Así le dicen todos. Al perro le dicen \"el perro\". Él salió ganando."]])
 	_bad_leaves()
 	if not f.get("nino_quieto", false):
 		_kid_leaves()
@@ -271,24 +271,24 @@ func _escoba() -> bool:
 	var i := await Dialogue.talk([
 		["", "(Un niño flaco, de unos ocho años, con una camiseta que le llega a las rodillas. Miraba el pan de una vitrina. Solo miraba.)"],
 		["SEÑOR DE LA TIENDA", "—¡Fuera! ¡Fuera, gamín! ¡Que me espanta la clientela! ¡Y la clientela ya venía espantada!"],
-		["", "(Le da con la escoba en las piernas. El niño no llora. Se cubre la cabeza con los brazos: ya sabe dónde duele más.)"]], opts)
+		["", "(Le da con la escoba en las piernas. El niño se cubre la cabeza con una técnica impecable. Eso no se improvisa.)"]], opts)
 	match opts[i]:
 		"Ponerse en medio":
 			GameState.change_mood(4.0)
 			await Dialogue.talk([
 				["", "(Él se para entre la escoba y el niño. No dice nada. La escoba le da a él, una vez. Después se queda en el aire.)"],
 				["SEÑOR DE LA TIENDA", "—... ¿Y este qué? ¿Es suyo? Lléveselo, pues. Dos gamines en vez de uno. Hoy es promoción."],
-				["EL PELAO", "—Yo no le pedí nada, señor. ... ¿Le dolió? A mí ahí ya no me duele."]])
+				["EL PELAO", "—Yo lo tenía controlado, señor. ... ¿Le dolió? Esa escoba es de las baratas. La de la droguería sí pega."]])
 		"Comprarle un pan ($1.500)":
 			GameState.add_money(-1500)
 			GameState.change_mood(6.0)
 			await Dialogue.talk([
 				["", "(Él pone la plata en el mostrador. Señala el pan. Señala al niño.)"],
 				["SEÑOR DE LA TIENDA", "—... Plata es plata. Pero se lo come afuera."],
-				["EL PELAO", "—(con la boca llena) ¿Usted por qué no habla? ¿Le pegaron por hablar? A mí sí. Por eso hablo rápido."]])
+				["EL PELAO", "—(con la boca llena) ¿Usted no habla? Mejor. Yo hablo por los dos. Eso sí: cobro aparte."]])
 		_:
-			return await _pass("(Sigue de largo. Atrás, la escoba suena dos veces más. Él cuenta los golpes sin querer. Siempre los contó.)")
-	await _mirror("(A él lo sacaban así de la tienda de la esquina, a los ocho. Tampoco lloraba. Llorar era darles la razón.)")
+			return await _pass("(Sigue de largo. Atrás, la escoba suena dos veces más. Él las cuenta. No sabe para qué.)")
+	await _mirror("(A los ocho, a él lo sacaban igual de la tienda de don Octavio. Escoba de palo azul. Don Octavio le fiaba a todo el barrio, menos a uno.)")
 	return true
 
 
@@ -300,7 +300,7 @@ func _correa() -> bool:
 	var i := await Dialogue.talk([
 		["", "(Un señor tiene al niño agarrado del brazo. En la otra mano, la correa, doblada en dos.)"],
 		["SEÑOR", "—¡Ladrón! ¡Me sacó la billetera! ... Ah, no, aquí está. Igual. Por si acaso. Para que aprenda."],
-		["", "(Levanta la correa. El niño cierra los ojos antes de tiempo. Eso solo lo hace el que ya sabe cuánto se demora.)"]], opts)
+		["", "(Levanta la correa. El niño cierra los ojos medio segundo antes. Tiene el tiempo medido.)"]], opts)
 	match opts[i]:
 		"Agarrarle la correa":
 			GameState.change_mood(5.0)
@@ -308,7 +308,7 @@ func _correa() -> bool:
 				["", "(Él le agarra la correa en el aire. Por la hebilla. Le queda marcada en la palma. No la suelta.)"],
 				["SEÑOR", "—¡Suélteme! ¡Este no es su hijo! ... ¿Qué mira? ¿Qué me mira así? ¡Diga algo!"],
 				["", "(El señor suelta al niño. Se pone la correa con las manos temblando. Se va rápido, sin correr, para que no parezca.)"],
-				[_who(), "—Usted la agarró por la hebilla. Esa es la parte que más duele. ¿Cómo sabía?"]])
+				[_who(), "—Usted la agarró por la hebilla. Eso no lo hace un aficionado. ¿Dónde estudió?"]])
 		"Soltar a Lukas":
 			GameState.change_mood(5.0)
 			await Dialogue.talk([
@@ -317,7 +317,7 @@ func _correa() -> bool:
 				["", "(Se va. Lukas le lame al niño la marca del brazo. El niño se deja.)"],
 				[_who(), "—¿Cómo se llama? ... ¿No me va a decir? Entonces le pongo yo: Tiburón."]])
 		_:
-			return await _pass("(Sigue de largo. La correa suena atrás. Él aprieta la mano sin darse cuenta, como agarrando una hebilla.)")
+			return await _pass("(Sigue de largo. La correa suena atrás. A él se le cierra la mano sola, como agarrando una hebilla.)")
 	await _mirror("(La correa de Mauricio, su papá, era café, con hebilla de caballo. Él todavía sabe cuántos huecos tenía. Siete.)")
 	return true
 
@@ -337,17 +337,17 @@ func _grandes() -> bool:
 				["", "(Él camina hacia ellos. Despacio. Sin decir nada. Un hombre grande, sucio y callado, que camina derecho hacia uno.)"],
 				["EL GRANDE", "—... Vámonos. Ese es el loco del perro. Ese no habla: ese muerde."],
 				["", "(Sueltan las chanclas. Una, mejor dicho. La otra no aparece.)"],
-				[_who(), "—No importa. Con una camino. Con ninguna también."]])
+				[_who(), "—Fresco. Con una chancla se camina. Es como media bicicleta."]])
 		"Pagarles para que lo suelten ($2.000)":
 			GameState.add_money(-2000)
 			GameState.change_mood(2.0)
 			await Dialogue.talk([
 				["", "(Él les tira dos billetes al piso. Los grandes los recogen sin dejar de mirarlo.)"],
 				["EL GRANDE", "—Con usted sí da gusto, cucho."],
-				[_who(), "—No les hubiera dado. Mañana cobran más. ... Pero gracias. Nadie había pagado por mí. Ni para que me soltaran ni para nada."]])
+				[_who(), "—¿Dos mil? Yo pensé que valía más. ... No les vuelva a pagar, que me suben la tarifa."]])
 		_:
 			return await _pass("(Sigue de largo. Uno de los grandes se ríe. Él conoce esa risa: es la misma en todos los patios de todos los colegios.)")
-	await _mirror("(En el colegio le quitaban la lonchera. Después dejó de llevar. No porque se la quitaran: porque ya no había qué echarle.)")
+	await _mirror("(En el colegio a él le quitaban la lonchera. Era de los Thundercats. Adentro casi nunca había nada: se la robaban por la lonchera.)")
 	return true
 
 
@@ -365,13 +365,13 @@ func _celador() -> bool:
 	await Dialogue.talk([
 		["", "(Él se sienta ahí mismo. Le da una palmada al piso, al lado. El niño se zafa y se sienta.)"],
 		["CELADOR", "—... Sentados sí se puede. Acostados no. Es la norma. Yo no hice la norma. A mí también me sacan de sitios."],
-		["", "(El niño se duerme sentado, en dos minutos, recostado en él. Pesa menos que la mochila.)"]])
+		["", "(El niño se duerme sentado, en dos minutos, recostado en él. Pesa menos que la mochila. Ronca como un señor de cincuenta.)"]])
 	TimeManager.skip(0.5)
 	GameState.change_mood(7.0)
 	var p := get_tree().get_first_node_in_group("player")
 	if p and p.has_method("stand_up"):
 		await p.stand_up()
-	await _mirror("(Él también aprendió a dormir sentado. En la sala, con los zapatos puestos, por si había que salir corriendo.)")
+	await _mirror("(Él también duerme sentado desde chiquito. En la sala, con los zapatos puestos. Uno nunca sabía a qué hora tocaba salir.)")
 	return true
 
 
@@ -380,16 +380,17 @@ func _agua() -> bool:
 	var i := await Dialogue.talk([
 		["", "(El niño dormía en un cartón, en una puerta. Arriba se abre una ventana. Un balde de agua fría.)"],
 		["UNA VOZ", "—¡A dormir a otra parte! ¡Que me daña el andén!"],
-		["", "(El niño no grita. Se para, sacude el cartón, busca otra puerta. Tirita.)"]],
+		["", "(El niño se para, sacude el cartón y mira para arriba.)"],
+		[_who(), "—¡Ya me bañé ayer, señora! ¡Guarde para el domingo!"]],
 		["Ponerle el saco encima", "Seguir de largo"])
 	if i != 0:
-		return await _pass("(Sigue de largo. El niño lo ve pasar. No le pide nada. Los que ya pidieron mucho dejan de pedir.)")
+		return await _pass("(Sigue de largo. El niño le hace con la mano que tranquilo, que él tiene todo bajo control. No tiene nada bajo control.)")
 	GameState.flags["nino_saco"] = true
 	GameState.change_mood(7.0)
 	await Dialogue.talk([
 		["", "(Él se quita el saco y se lo pone encima. Le llega a los tobillos. Le sobran las dos mangas.)"],
 		[_who(), "—Huele a perro. ... Me gusta. Mañana se lo devuelvo. Yo devuelvo las cosas. Pregunte."]])
-	await _mirror("(Las noches en que Mauricio llegaba tomado, él dormía en el patio. El frío era mejor. El frío no pegaba.)")
+	await _mirror("(Las noches en que Mauricio llegaba tomado, él dormía en el patio. Hacía frío. El frío, por lo menos, no opinaba.)")
 	return true
 
 
@@ -397,22 +398,22 @@ func _agua() -> bool:
 func _solo() -> bool:
 	var i := await Dialogue.talk([
 		["", "(El niño está sentado en el andén, solo. El labio partido. Un ojo que mañana va a estar morado.)"],
-		[_who(), "—No fue nadie. Me caí. ... Uno siempre se cae, ¿no?"]],
+		[_who(), "—No fue nadie. Me caí. Tres veces. Encima de un puño."]],
 		["Sentarse al lado", "Seguir de largo"])
 	if i != 0:
-		return await _pass("(Sigue de largo. \"Me caí.\" Él conoce esa frase. La dijo tantas veces que le salía sin pensar.)")
+		return await _pass("(Sigue de largo. \"Me caí.\" Esa excusa él la conoce. Es de él. El niño se la está usando sin permiso.)")
 	GameState.flags["nino_quieto"] = true
 	await Conversations._sit_ground("down")
 	await Dialogue.talk([
 		["", "(Se sienta al lado. No pregunta. %s)" % ("Lukas le pone la cabeza en las piernas al niño." if GameState.lukas_alive() else "El niño se le recuesta un poco, sin querer.")],
-		[_who(), "—Mi mamá también decía que yo me caía. A la profesora. Yo le ayudaba a decir."],
-		["", "(Se quedan un rato. Nadie los mira. Dos que nadie quiere, sentados, no le estorban la vista a nadie.)"]])
+		[_who(), "—Mi mamá le decía a la profesora que yo era muy torpe. La profesora me metió a danzas. Para la coordinación."],
+		["", "(Se quedan un rato. Pasa gente. Nadie los mira: sentados quedan por debajo de donde la gente mira.)"]])
 	TimeManager.skip(0.5)
 	GameState.change_mood(6.0)
 	var p := get_tree().get_first_node_in_group("player")
 	if p and p.has_method("stand_up"):
 		await p.stand_up()
-	await _mirror("(\"Me caí.\" En tercero, la profesora dejó de preguntarle. Era más fácil para los dos.)")
+	await _mirror("(\"Me caí.\" Él la usó hasta tercero. Ese año la profesora le regaló unas rodilleras.)")
 	return true
 
 
@@ -421,24 +422,24 @@ func _hogar() -> bool:
 	var i := await Dialogue.talk([
 		["", "(Alejandro está sentado en el andén, mirando para la iglesia. Hace tres días no duerme: se le nota en cómo parpadea.)"],
 		["ALEJANDRO", "—Allá adentro hay catres. Me dijeron. Pero uno entra y le preguntan cosas. El nombre de la mamá. Yo no me acuerdo si es Sandra o Zandra."],
-		["ALEJANDRO", "—Y si uno no sabe, lo mandan a otra parte. A mí ya me mandaron a tres otras partes."]],
+		["ALEJANDRO", "—Y si uno no sabe, lo mandan a otra parte. Yo ya conozco tres otras partes. La segunda tenía televisor."]],
 		["Darle la mano y llevarlo", "Todavía no"])
 	if i != 0:
-		await Dialogue.talk([["ALEJANDRO", "—Tranquilo. Yo espero. Yo sé esperar: es lo que mejor hago."]])
+		await Dialogue.talk([["ALEJANDRO", "—Fresco. Yo espero. No tengo nada en la agenda."]])
 		GameState.flags["nino_quieto"] = true
 		return false
 	await Dialogue.talk([
-		["", "(Él le estira la mano. El niño la mira un rato, como una cosa que no sabe para qué sirve. Después la agarra.)"],
+		["", "(Él le estira la mano. El niño la mira, se limpia la suya en la camiseta y la agarra. Queda igual de sucia.)"],
 		["", "(Caminan hasta la iglesia. El niño cuenta los pasos en voz baja. Son ciento cuarenta.)"],
 		["PADRE HERNANDO", "—¿Y este quién es? ... No me diga. Usted no dice. ¿Cómo se llama, mijo?"],
-		["ALEJANDRO", "—Alejandro. Completo. Y él no tiene nombre, pero es bueno. No le pregunte cosas, padre. A él tampoco le gusta."],
+		["ALEJANDRO", "—Alejandro. Completo. Y este es el del perro. No habla, pero paga pan. No le pregunte cosas, padre, que se pone raro."],
 		["PADRE HERNANDO", "—Aquí no se pregunta, mijo. Hay sopa y hay un catre. Lo de la mamá se averigua después. O no se averigua."],
 		["", "(Alejandro entra. En la puerta se voltea.)"],
 		["ALEJANDRO", "—¿Usted viene mañana? ... No me diga. Yo sé que viene."]])
 	GameState.flags["nino_hogar"] = true
 	GameState.change_mood(14.0)
 	GameState.complete_quest("nino")
-	await _mirror("(A él nadie lo llevó de la mano a ninguna parte. Por eso se sabía el camino.)")
+	await _mirror("(Ciento cuarenta pasos. A los ocho él contó los suyos, solo, hasta otra iglesia. Esa vez no había sopa: era martes.)")
 	return true
 
 
@@ -468,11 +469,11 @@ func _help(kind: String) -> bool:
 			lines.append(["", "(El niño lo alcanza corriendo. Trae algo apretado en el puño.)"])
 			lines.append([who, "—Se le cayó. Yo vi. Me lo iba a quedar. ... No me lo quedé. Son $%d. Cuéntelos." % coins])
 			lines.append(["", "(Él le pone la mano en la cabeza. Un segundo. El niño se encoge primero, por costumbre. Después no.)"])
-			memory = "(Una vez él devolvió una billetera. Mauricio le pegó, por bobo. Nadie le puso nunca la mano en la cabeza para otra cosa.)"
+			memory = "(A los ocho él devolvió una billetera. El dueño le dio las gracias. Mauricio le dio otra cosa, por bobo.)"
 		"tombos":
 			f["ficha_oida"] = true
 			f["es_el_oido"] = true
-			lines.append([who, "—¡Pst! Los tombos tienen su foto pegada en la estación. Yo la vi cuando me llevaron. Al lado de los que roban."])
+			lines.append([who, "—¡Pst! Los tombos tienen su foto pegada en la estación. Al lado de los que roban. Sale feo. Sin barba. La barba le ayuda."])
 			lines.append([who, "—Usted no roba. Yo sí, y no tengo foto. Debajo dice \"que circule\". ¿Qué es circular? ¿Es que no lo dejan quedarse?"])
 			lines.append(["", "(Él no contesta. El niño entiende igual.)"])
 			lines.append([who, "—A mí tampoco me dejan. Pero a mí es por chiquito. A usted es por algo que alguien firmó."])
@@ -487,7 +488,7 @@ func _help(kind: String) -> bool:
 			lines.append(["", "(El niño le pone al lado una botella de agua, casi llena.)"])
 			lines.append([who, "—Usted hoy está caminando feo. Como yo cuando no he comido. Tome. Era de un señor del gimnasio. No la babié."])
 			GameState.set_hunger(GameState.hunger + 8.0)
-			memory = "(A los ocho nadie le alcanzó agua. Por eso ahora no sabe bien cómo se recibe. La recibe con las dos manos.)"
+			memory = "(Él recibe la botella con las dos manos, como un trofeo. No tiene mucha práctica recibiendo cosas.)"
 	GameState.change_mood(6.0)
 	await Dialogue.talk(lines)
 	await _mirror(memory)

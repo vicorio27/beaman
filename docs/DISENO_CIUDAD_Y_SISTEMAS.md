@@ -1831,8 +1831,9 @@ Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuer
   - Él se mete sin hablar (se para en medio, agarra la correa por la hebilla, suelta a Lukas, se sienta al lado, le pone el saco) o sigue de largo (baja el ánimo).
 - **El niño lo ayuda a él** (desde la primera vez que se ayudaron): medio pan y el dato de la caneca, una moneda devuelta, el aviso (esa noche no le rajan el bolsillo), una botella de agua.
   - Además, con dos o más encuentros: si se desmaya en la calle, 60% de que el niño le cuide la mochila y no le roben.
+- **El tono:** nada de lástima directa. El niño es canchero y rápido, como él: negocia, se burla y nunca se queja. Lo triste está en el detalle que se le escapa, y la lástima la pone el jugador.
 - **El espejo:** cada encuentro cierra con una línea de la infancia de él, en tercera persona (la correa de Mauricio, dormir en el patio, "me caí", la lonchera). La primera vez sale el recuerdo `infancia`: la foto del colegio, de manga larga todo el año.
-- **El nombre:** a la tercera vez dice que se llama Alejandro ("completo: nadie me dice Alejo").
+- **El nombre:** a la tercera vez dice que se llama Alejandro ("Completo. Alejo es para los amigos, y usted todavía está en periodo de prueba").
 - **El final:** a la sexta, él lo lleva de la mano donde el Padre Hernando (`flags.nino_hogar`). Ya no duerme en la calle; desde ahí solo aparece para ayudar, peinado y con los dos zapatos.
 - Misión secundaria `nino` ("El pelao de la calle"), con el conteo de veces que se ayudaron.
 
