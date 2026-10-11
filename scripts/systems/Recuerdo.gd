@@ -32,6 +32,11 @@ const ALL := {
 			"(La sonrisa es la de las fotos de la empresa: la que se pone para que no la quiten.)"],
 		"Marzo. Empleado del mes.\nEl único mes.",
 		["(Seis horas cargando ladrillo le dolieron menos que ese año firmando.)"]],
+	"infancia": ["recuerdo_infancia",
+		["(Una foto del colegio. Él, a los ocho. Peinado con agua, la camisa abotonada hasta arriba.)",
+			"(Manga larga. Todos los demás, en la foto del salón, estaban de manga corta. Hacía calor ese año.)"],
+		"Segundo B.\nManga larga todo el año.",
+		["(El pelao se para igual que él en la foto: de lado. Listo para correr.)"]],
 }
 
 

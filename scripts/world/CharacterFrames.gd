@@ -51,6 +51,7 @@ const OWN := {
 	"diana": preload("res://assets/characters/diana.png"),
 	"raul": preload("res://assets/characters/raul.png"),
 	"alvarito": preload("res://assets/characters/alvarito.png"),
+	"nino": preload("res://assets/characters/nino.png"),
 }
 const ADULT_W := 16
 const ADULT_H := 26

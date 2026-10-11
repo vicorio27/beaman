@@ -95,6 +95,8 @@ const DEFS := {
 		"detail": "¿Quién vive en la casa de tejas? Pistas: una carta vieja de Madrid, Samuel y Don Germán. Al tablero del cambuche."},
 	"m_negro": {"title": "El señor de negro (tablero)", "kind": "side",
 		"detail": "El señor de negro que cobra en el barrio. Pistas: Doña Rosa, Don Aurelio (Parque) y el Padre. Al tablero del cambuche."},
+	"nino": {"title": "El pelao de la calle", "kind": "side",
+		"detail": "Un niño de la calle, de unos ocho años. Nadie lo quiere. Aparece algunos días en el barrio o en el Parque, y casi siempre le está pasando algo. Se puede meter o seguir de largo. A veces es él el que ayuda."},
 	# Del Día 2 en adelante (una vez)
 	"regalo_hija": {"title": "Regalo para Victoria", "kind": "side",
 		"detail": "Juntar $150.000 en la alcancía del cambuche para el regalo de Victoria (cambuche > Alcancía > meter). Lo que está en la alcancía no se gasta ni se lo roban dormido."},
@@ -190,6 +192,13 @@ static func detail(id: String) -> String:
 				d += " Es el día %d (hoy es el %d)." % [int(g.flags["audiencia_dia"]), g.day]
 		"regalo_hija":
 			d += " Van $%d." % int(g.cambuche.get("alcancia", 0))
+		"nino":
+			var nb := int(g.flags.get("nino_bond", 0))
+			d += "\nVeces que se ayudaron: %d." % nb
+			if g.flags.get("nino_nombre", false):
+				d += " Se llama Duván. Con uve."
+			if nb >= 6 and not g.flags.get("nino_hogar", false):
+				d += " Lleva días sin dormir. En la iglesia hay catres."
 	return Controls.keys_in(d)
 
 

@@ -1819,3 +1819,19 @@ Hablarle a Lukas ahora se narra ("le habla bajito, al oído"). En el juego de mi
 | Dealer 1 | En el bloque de la calle | Martín, el hijo de Lisandro (9 años), jugando Switch: Mario y la luna del sombrero. Sentarse a jugar con él (vida llena; "No le cuente a nadie. Que el Gato juega Mario.") o irse a trabajar ("Eso dijo ayer."; balas) |
 | Dealer 2 | En el bloque del callejón | El escondite de Lisandro: la plata de verdad y la carta de la mamá sin abrir |
 | Dealer 3 | En el bloque de la calle | El colchón y la pistola de agua de la foto |
+
+
+## Duván, el pelao de la calle (el espejo de su infancia)
+
+Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuera). Arte: `tools/art/draw_nino.py`.
+
+- **Quién es:** un niño de unos ocho años, de la calle. Nadie lo quiere. Es lo que el protagonista fue a esa edad.
+- **Cuándo sale:** desde el día 2, algunos días (85% hasta conocerlo, después 60%), a una hora y en un lugar al azar del barrio o del Parque, por tres horas. Un aviso del narrador dice que algo pasa cerca.
+- **Le hacen daño** (en orden la primera vez, después al azar): el tendero a escobazos, un señor con la correa, solo y golpeado ("me caí"), los grandes que le quitan las chanclas, el celador que lo saca de una oreja, el balde de agua de noche.
+  - Él se mete sin hablar (se para en medio, agarra la correa por la hebilla, suelta a Lukas, se sienta al lado, le pone el saco) o sigue de largo (baja el ánimo).
+- **El niño lo ayuda a él** (desde la primera vez que se ayudaron): medio pan y el dato de la caneca, una moneda devuelta, el aviso (esa noche no le rajan el bolsillo), una botella de agua.
+  - Además, con dos o más encuentros: si se desmaya en la calle, 60% de que el niño le cuide la mochila y no le roben.
+- **El espejo:** cada encuentro cierra con una línea de la infancia de él, en tercera persona (la correa de Mauricio, dormir en el patio, "me caí", la lonchera). La primera vez sale el recuerdo `infancia`: la foto del colegio, de manga larga todo el año.
+- **El nombre:** a la tercera vez dice que se llama Duván, "con uve".
+- **El final:** a la sexta, él lo lleva de la mano donde el Padre Hernando (`flags.nino_hogar`). Ya no duerme en la calle; desde ahí solo aparece para ayudar, peinado y con los dos zapatos.
+- Misión secundaria `nino` ("El pelao de la calle"), con el conteo de veces que se ayudaron.

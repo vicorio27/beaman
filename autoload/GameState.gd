@@ -599,6 +599,8 @@ func new_day(spot: String) -> Array:
 	var pickpocket: bool = in_cambuche and defense != "lost"  # mientras dormía, sin pelea: solo el bolsillo
 	if pickpocket and money <= 0:
 		theft = 0.0
+	if int(flags.get("nino_aviso", -1)) == day - 1 or int(flags.get("nino_aviso", -1)) == day:
+		theft = 0.0  # Duván les dijo que tenía sarna (scripts/systems/Nino.gd)
 	if randf() < theft:
 		if not pickpocket:
 			flags["violencia"] = true  # lo violento despierta a PLOMO (ver NightSequence)
