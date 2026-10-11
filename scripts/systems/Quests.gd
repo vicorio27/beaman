@@ -196,7 +196,7 @@ static func detail(id: String) -> String:
 			var nb := int(g.flags.get("nino_bond", 0))
 			d += "\nVeces que se ayudaron: %d." % nb
 			if g.flags.get("nino_nombre", false):
-				d += " Se llama Duván. Con uve."
+				d += " Se llama Alejandro."
 			if nb >= 6 and not g.flags.get("nino_hogar", false):
 				d += " Lleva días sin dormir. En la iglesia hay catres."
 	return Controls.keys_in(d)

@@ -1,4 +1,4 @@
-"""Duván, el pelao de la calle (scripts/systems/Nino.gd), y la foto de cuando el protagonista tenía su edad.
+"""Alejandro, el pelao de la calle (scripts/systems/Nino.gd), y la foto de cuando el protagonista tenía su edad.
   assets/characters/nino.png          la hoja del niño (celdas de 16x26, como los adultos, pero más bajito):
                                       flaco, pelo al rape, una camiseta roja desteñida que le queda grande,
                                       pantaloneta, chanclas

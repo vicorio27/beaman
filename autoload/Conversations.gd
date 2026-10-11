@@ -66,7 +66,7 @@ func run(id: String, npc: Node) -> void:
 	if id.begins_with("noche_"):
 		await _noche(id)
 		return
-	if id == "nino":  # Duván, el pelao de la calle (scripts/systems/Nino.gd)
+	if id == "nino":  # Alejandro, el pelao de la calle (scripts/systems/Nino.gd)
 		var d := get_tree().current_scene.get_node_or_null("NinoDirector")
 		if d:
 			await d.talk(npc)

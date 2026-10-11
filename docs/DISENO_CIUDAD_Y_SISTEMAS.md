@@ -1821,7 +1821,7 @@ Hablarle a Lukas ahora se narra ("le habla bajito, al oído"). En el juego de mi
 | Dealer 3 | En el bloque de la calle | El colchón y la pistola de agua de la foto |
 
 
-## Duván, el pelao de la calle (el espejo de su infancia)
+## Alejandro, el pelao de la calle (el espejo de su infancia)
 
 Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuera). Arte: `tools/art/draw_nino.py`.
 
@@ -1832,7 +1832,7 @@ Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuer
 - **El niño lo ayuda a él** (desde la primera vez que se ayudaron): medio pan y el dato de la caneca, una moneda devuelta, el aviso (esa noche no le rajan el bolsillo), una botella de agua.
   - Además, con dos o más encuentros: si se desmaya en la calle, 60% de que el niño le cuide la mochila y no le roben.
 - **El espejo:** cada encuentro cierra con una línea de la infancia de él, en tercera persona (la correa de Mauricio, dormir en el patio, "me caí", la lonchera). La primera vez sale el recuerdo `infancia`: la foto del colegio, de manga larga todo el año.
-- **El nombre:** a la tercera vez dice que se llama Duván, "con uve".
+- **El nombre:** a la tercera vez dice que se llama Alejandro ("completo: nadie me dice Alejo").
 - **El final:** a la sexta, él lo lleva de la mano donde el Padre Hernando (`flags.nino_hogar`). Ya no duerme en la calle; desde ahí solo aparece para ayudar, peinado y con los dos zapatos.
 - Misión secundaria `nino` ("El pelao de la calle"), con el conteo de veces que se ayudaron.
 
@@ -1846,5 +1846,5 @@ Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuer
   - el cambuche del Parque: la policía se lleva solo el de él;
   - el tablero de "¿Quién es él?": dos líneas nuevas al resolverlo;
   - el agente del operativo lo confiesa en la iglesia;
-  - Duván vio su foto en la estación, con un letrero que dice "que circule" (`Nino.gd`, ayuda `tombos`).
+  - Alejandro vio su foto en la estación, con un letrero que dice "que circule" (`Nino.gd`, ayuda `tombos`).
 - **Cómo se acaba:** en la Defensoría, con la página 14 y el testigo, la defensora oficia a la estación (`flags.ficha_cerrada`). Desde ahí las redadas no son con él y la policía no le toca el cambuche.

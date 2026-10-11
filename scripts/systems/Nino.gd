@@ -1,5 +1,5 @@
 extends Node
-## Duván, el pelao de la calle. Ocho años, nadie lo quiere. Algunos días (no todos), a una hora y en un
+## Alejandro, el pelao de la calle. Ocho años, nadie lo quiere. Algunos días (no todos), a una hora y en un
 ## lugar al azar del barrio o del Parque, a él le está pasando algo: lo sacan a escobazos, le pegan con
 ## la correa, los grandes le quitan los zapatos, le echan agua dormido. El protagonista puede meterse
 ## (sin hablar: se para en medio, agarra la correa, se sienta al lado) o seguir de largo.
@@ -199,7 +199,7 @@ func _kid_leaves() -> void:
 
 
 func _who() -> String:
-	return "DUVAN" if GameState.flags.get("nino_nombre", false) else "EL PELAO"
+	return "ALEJANDRO" if GameState.flags.get("nino_nombre", false) else "EL PELAO"
 
 
 # ---------------------------------------------------------------- Lo que pasa
@@ -244,8 +244,8 @@ func talk(_npc: Node) -> void:
 			await Recuerdo.show("infancia")
 		if int(f["nino_bond"]) >= 3 and not f.get("nino_nombre", false):
 			f["nino_nombre"] = true
-			await Dialogue.talk([["EL PELAO", "—Me llamo Duván. Con uve. Usted no me preguntó, pero ya van tres veces. A la tercera uno dice el nombre."],
-				["DUVAN", "—Usted no me diga el suyo. Yo le digo \"el del perro\". Así le dicen todos. Bueno, los que le dicen algo."]])
+			await Dialogue.talk([["EL PELAO", "—Me llamo Alejandro. Completo. Nadie me dice Alejo: para eso toca que a uno lo quieran. Usted no me preguntó, pero ya van tres veces. A la tercera uno dice el nombre."],
+				["ALEJANDRO", "—Usted no me diga el suyo. Yo le digo \"el del perro\". Así le dicen todos. Bueno, los que le dicen algo."]])
 	_bad_leaves()
 	if not f.get("nino_quieto", false):
 		_kid_leaves()
@@ -419,22 +419,22 @@ func _solo() -> bool:
 ## Después de seis veces: lo lleva donde el Padre. Ya no duerme en la calle.
 func _hogar() -> bool:
 	var i := await Dialogue.talk([
-		["", "(Duván está sentado en el andén, mirando para la iglesia. Hace tres días no duerme: se le nota en cómo parpadea.)"],
-		["DUVAN", "—Allá adentro hay catres. Me dijeron. Pero uno entra y le preguntan cosas. El nombre de la mamá. Yo no me acuerdo si es Sandra o Zandra."],
-		["DUVAN", "—Y si uno no sabe, lo mandan a otra parte. A mí ya me mandaron a tres otras partes."]],
+		["", "(Alejandro está sentado en el andén, mirando para la iglesia. Hace tres días no duerme: se le nota en cómo parpadea.)"],
+		["ALEJANDRO", "—Allá adentro hay catres. Me dijeron. Pero uno entra y le preguntan cosas. El nombre de la mamá. Yo no me acuerdo si es Sandra o Zandra."],
+		["ALEJANDRO", "—Y si uno no sabe, lo mandan a otra parte. A mí ya me mandaron a tres otras partes."]],
 		["Darle la mano y llevarlo", "Todavía no"])
 	if i != 0:
-		await Dialogue.talk([["DUVAN", "—Tranquilo. Yo espero. Yo sé esperar: es lo que mejor hago."]])
+		await Dialogue.talk([["ALEJANDRO", "—Tranquilo. Yo espero. Yo sé esperar: es lo que mejor hago."]])
 		GameState.flags["nino_quieto"] = true
 		return false
 	await Dialogue.talk([
 		["", "(Él le estira la mano. El niño la mira un rato, como una cosa que no sabe para qué sirve. Después la agarra.)"],
 		["", "(Caminan hasta la iglesia. El niño cuenta los pasos en voz baja. Son ciento cuarenta.)"],
 		["PADRE HERNANDO", "—¿Y este quién es? ... No me diga. Usted no dice. ¿Cómo se llama, mijo?"],
-		["DUVAN", "—Duván. Con uve. Y él no tiene nombre, pero es bueno. No le pregunte cosas, padre. A él tampoco le gusta."],
+		["ALEJANDRO", "—Alejandro. Completo. Y él no tiene nombre, pero es bueno. No le pregunte cosas, padre. A él tampoco le gusta."],
 		["PADRE HERNANDO", "—Aquí no se pregunta, mijo. Hay sopa y hay un catre. Lo de la mamá se averigua después. O no se averigua."],
-		["", "(Duván entra. En la puerta se voltea.)"],
-		["DUVAN", "—¿Usted viene mañana? ... No me diga. Yo sé que viene."]])
+		["", "(Alejandro entra. En la puerta se voltea.)"],
+		["ALEJANDRO", "—¿Usted viene mañana? ... No me diga. Yo sé que viene."]])
 	GameState.flags["nino_hogar"] = true
 	GameState.change_mood(14.0)
 	GameState.complete_quest("nino")
@@ -452,7 +452,7 @@ func _help(kind: String) -> bool:
 		lines.append(["", "(El niño le devuelve el saco, doblado. Mal doblado. Pero doblado.)"])
 		lines.append([who, "—Le dije que yo devolvía."])
 	if f.get("nino_hogar", false):
-		lines.append(["", "(Duván. Peinado. Con zapatos. Los dos zapatos.)"])
+		lines.append(["", "(Alejandro. Peinado. Con zapatos. Los dos zapatos.)"])
 	var memory := ""
 	match kind:
 		"pan":

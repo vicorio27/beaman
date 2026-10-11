@@ -170,7 +170,7 @@ func _faint_street() -> void:
 	TimeManager.skip(FAINT_HOURS)
 	GameState.set_hunger(WAKE_HUNGER)
 	if int(GameState.flags.get("nino_bond", 0)) >= 2 and randf() < 0.6:
-		# Duván lo cuidó mientras estaba en el piso (scripts/systems/Nino.gd).
+		# Alejandro lo cuidó mientras estaba en el piso (scripts/systems/Nino.gd).
 		GameState.change_mood(-2.0)
 		SceneRouter.go(CITY, FAINT_SPAWN, "...", "(Se desmayó en la calle. Cuando abre los ojos, el pelao está sentado encima de la mochila, con un palo. No dejó arrimar a nadie.)")
 		return
