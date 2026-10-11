@@ -7,6 +7,9 @@ extends Control
 ## Del Día 2 en adelante: acomodarse, resumen y la mañana siguiente (GameState.new_day: robos,
 ## lluvia, la policía). Después despierta en la ciudad, donde durmió ("Wake_<lugar>").
 ## Botón: avanzar.
+## Algunos textos llevan una viñeta arriba (tools/art/draw_vinetas.py): acostarse con Lukas, despertar
+## al amanecer debajo del puente (sin Lukas: el hueco y el collar), despertar golpeado (un sueño
+## perdido, un robo, la defensa perdida).
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const CITY := "res://scenes/world/City.tscn"
@@ -103,6 +106,7 @@ const SPOT_NAMES := {"banco": "el banco de la plaza", "kiosco": "el kiosco viejo
 var _bg: ColorRect
 var _text: Label
 var _photo: TextureRect
+var _pic: TextureRect  # la viñeta de arriba
 var _go := false
 
 
@@ -116,6 +120,11 @@ func _ready() -> void:
 	_photo.pivot_offset = Vector2(60, 44)  # se da vuelta desde el centro
 	_photo.modulate.a = 0.0
 	add_child(_photo)
+	_pic = TextureRect.new()
+	_pic.position = Vector2(40, 10)
+	_pic.pivot_offset = Vector2(120, 50)
+	_pic.modulate.a = 0.0
+	add_child(_pic)
 	_text = Label.new()
 	_text.add_theme_font_override("font", FONT)
 	_text.add_theme_font_size_override("font_size", 8)
@@ -140,6 +149,22 @@ func _wait() -> void:
 		if not is_inside_tree():
 			return
 		await get_tree().process_frame
+
+
+## La viñeta de arriba: entra despacio y se acerca un poquito mientras se lee (como una foto que se mira).
+func _vignette(id: String) -> void:
+	_pic.texture = load("res://assets/ui/vineta_%s.png" % id)
+	_pic.scale = Vector2.ONE
+	var t := create_tween()
+	t.tween_property(_pic, "modulate:a", 1.0, 1.2)
+	t.parallel().tween_property(_pic, "scale", Vector2(1.03, 1.03), 9.0)
+	_text.position = Vector2(16, 118)
+	_text.size = Vector2(_text_w(), 56)
+
+
+func _vignette_off() -> void:
+	if _pic.modulate.a > 0.0:
+		create_tween().tween_property(_pic, "modulate:a", 0.0, 0.6)
 
 
 func _say(line: String) -> void:
@@ -169,6 +194,10 @@ func _run() -> void:
 			seen_b.erase(back)
 			GameState.flags["lucha_revancha_dia"] = GameState.day + 3
 		var w: Array = WAKE.get(back, ["Se despierta.", "Se despierta.", ""]).duplicate()
+		if not GameState.flags.get("dream_won", true):
+			_vignette("golpeado")  # perdió: se despierta como si le hubieran pegado
+		else:
+			_vignette("despierta" if GameState.lukas_alive() else "despierta_solo")
 		if not GameState.lukas_alive():
 			for k in w.size():
 				if str(w[k]).contains("Lukas"):
@@ -178,6 +207,7 @@ func _run() -> void:
 			await _say(w[2])
 		# Lo que aprendió soñando (le sirve en los dos mundos).
 		var skill: String = Skills.DREAM_SKILL.get(back, "")
+		_vignette_off()
 		if skill != "" and GameState.learn(skill):
 			GameState.flags.erase("skill_toast")
 			_text.position = Vector2(16, 50)
@@ -188,7 +218,10 @@ func _run() -> void:
 	# Del Día 2 en adelante: corto.
 	if GameState.day >= 2:
 		var settle: Dictionary = SETTLE if GameState.lukas_alive() else SETTLE_SOLO
+		if GameState.lukas_alive():
+			_vignette("acostarse")
 		await _say(settle.get(spot, settle["banco"]))
+		_vignette_off()
 		# La noche en que Lukas se muere (no hay sueño esa noche).
 		if GameState.lukas_dies_tonight():
 			await _lukas_dies()
@@ -249,6 +282,7 @@ func _show_back() -> void:
 
 
 func _summary(spot: String) -> void:
+	_vignette_off()
 	var s := GameState.stats
 	_text.position = Vector2(16, 40)
 	_text.size = Vector2(_text_w(), 120)
@@ -309,6 +343,7 @@ func _lukas_dies() -> void:
 ## Alguien se mete al cambuche mientras duerme: tres reacciones rápidas (la flecha que diga).
 ## La alarma da más tiempo; con Lukas de guardia, el primero ya está ganado; la trampa lo castiga.
 func _defend(spot: String) -> void:
+	_vignette_off()
 	var c := GameState.cambuche
 	_text.position = Vector2(16, 60)
 	_text.size = Vector2(_text_w(), 80)
@@ -376,7 +411,19 @@ func _defend(spot: String) -> void:
 func _morning(spot: String, first: bool) -> void:
 	_text.position = Vector2(16, 118)
 	_text.size = Vector2(_text_w(), 56)
-	for line in GameState.new_day(spot):
+	var lost_fight: bool = str(GameState.flags.get("defense_result", "")) == "lost"
+	var lines: Array = GameState.new_day(spot)
+	var robbed := lost_fight
+	var rained := false
+	for line in lines:
+		if str(line).contains("menos") or str(line).contains("Se llevaron") or str(line).contains("Abrieron"):
+			robbed = true
+		if str(line).contains("Llovió"):
+			rained = true
+	if not first:
+		_vignette("golpeado" if robbed else ("despierta_lluvia" if rained and GameState.lukas_alive()
+			else ("despierta" if GameState.lukas_alive() else "despierta_solo")))
+	for line in lines:
 		await _say(line)
 	if first:
 		await _say("Victoria, su hija, cumple doce años el 29 de octubre. En mes y medio.\nMeta: $150.000 para un regalo. Tiene $%d." % GameState.money)

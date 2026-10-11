@@ -61,6 +61,11 @@ func setup() -> void:
 	}
 
 
+func _secrets_setup() -> void:
+	super._secrets_setup()
+	secret_story = "(Un cuartico. En la pared, con cinta, un dibujo de crayón: un señor con barba y un perro café. Abajo dice: EL DEL PERRO.)"
+
+
 func _place() -> void:
 	var list := [
 		["tombo", 3.5, 14.5], ["soldado", 6.5, 9.5], ["campanero", 2.5, 3.5],

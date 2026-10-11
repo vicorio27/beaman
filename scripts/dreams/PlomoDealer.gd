@@ -1221,6 +1221,39 @@ func _dog(delta: float) -> void:
 
 # ---------------------------------------------------------------- La historia de Lisandro
 
+## Los secretos del Dealer, uno por capítulo, metidos en los bloques del mapa.
+##   1: el cuarto de Martín, el hijo de Lisandro (nueve años), jugando Switch: Mario, la luna.
+##   2: el escondite de Lisandro: la plata de verdad, y una carta de la mamá.
+##   3: un colchón y la pistola de agua de la foto (la de los dos pelados en la esquina).
+func _secrets_setup() -> void:
+	match chapter:
+		1:
+			add_secret(Vector2i(19, 7), "martin")
+			grid[7][20] = "."
+			_scenes.append({"id": "martin", "pos": Vector2(20.55, 7.5), "tex": "dd_martin", "h": 0.42, "done": false, "keep": true})
+			_scenes.append({"id": "deco", "pos": Vector2(20.85, 7.15), "tex": "dd_lampara", "h": 0.62, "done": true, "keep": true})
+		2:
+			add_secret(Vector2i(11, 14), "escondite")
+			grid[14][10] = "."
+			grid[15][10] = "."
+			pickups.append({"kind": "chaleco", "pos": Vector2(10.5, 14.5)})
+			pickups.append({"kind": "balas", "pos": Vector2(10.5, 15.5)})
+		3:
+			add_secret(Vector2i(19, 7), "pistola_agua")
+			grid[7][20] = "."
+			pickups.append({"kind": "chaleco", "pos": Vector2(20.5, 7.5)})
+
+
+func _on_secret(id: String) -> void:
+	match id:
+		"martin":
+			_say("(Atrás de la pared, un cuarto con luz. Un niño en el piso. Un ruidito: \"¡Ua-hú!\")", 1)
+		"escondite":
+			_say("(El escondite de Lisandro: la plata de verdad, en una caja de galletas. Y una carta de la mamá, sin abrir: \"Mijo, coma.\")", 1)
+		"pistola_agua":
+			_say("(Un colchón y una pistola de agua de plástico verde. La de la foto. Lisandro la carga igual, por si acaso.)", 1)
+
+
 func _story_setup() -> void:
 	_scenes.clear()
 	if FinalRush.is_step("lisandro"):
@@ -1382,6 +1415,8 @@ func _run_scene(id: String) -> void:
 				["VERÓNICA", "—Porque preguntó también por mí. Por el nombre. Nadie aquí me dice por el nombre."],
 				["CAMILA", "—Tenía cara de que iba a durar más que usted."],
 			])
+		"martin":
+			await _martin()
 		"senora":
 			var j := await _talk([
 				["SEÑORA", "—Joven, ¿usted lo ha visto? Se llama Brayan. Tiene diecisiete. Tenía... no. Tiene. Tiene diecisiete."],
@@ -1403,6 +1438,39 @@ func _run_scene(id: String) -> void:
 				["LISANDRO", "—Él siempre tenía con quién jugar. Yo tenía la pistola."],
 				["LISANDRO", "—Después yo tuve todo. Y él seguía teniendo con quién jugar. ... No se puede comprar eso, Billete. Lo intenté."],
 			])
+
+
+## Martín, el hijo de Lisandro. Nueve años. Juega Switch en un cuarto escondido: es el único lugar del
+## barrio donde Lisandro no es el Gato. Ahí es el papá. (Lisandro no es el protagonista: es él quien
+## lo encuentra, en su propio sueño.)
+func _martin() -> void:
+	var i := await _talk([
+		["", "Martín, nueve años, sentado en el piso con las piernas cruzadas. Juega Switch con el volumen bajito. En la pantalla, Mario salta con la gorra."],
+		["LISANDRO", "—¿Martín? ¿Usted qué hace aquí? ¿Quién lo trajo?"],
+		["MARTÍN", "—Shh, pa. Me falta una luna. La del sombrero. Llevo toda la tarde."],
+		["MARTÍN", "—Afuera hay mucho ruido. Aquí no. ¿Usted me pasa esta parte? Usted es bueno saltando. Mi mamá dice que usted salta de todo."],
+		["", "Afuera suenan tiros. Martín no levanta la cabeza. Ya sabe cuáles son lejos y cuáles son cerca."],
+	], ["Sentarse a jugar con él", "Irse a trabajar"])
+	GameState.flags["lis_martin"] = i
+	if i == 0:
+		await _talk([
+			["", "Lisandro se sienta en el piso. Le queda pequeño el piso. Martín le pasa el control."],
+			["", "Mario se cae al vacío. Otra vez. Otra vez. A la cuarta, salta."],
+			["MARTÍN", "—¡LA LUNA! ¡Pa, la luna! ¡La sacó usted!"],
+			["LISANDRO", "—... No le cuente a nadie. Que el Gato juega Mario."],
+			["MARTÍN", "—¿Quién es el Gato?"],
+			["LISANDRO", "—Nadie, mijo. Nadie que usted conozca."],
+		])
+		hp = max_hp
+		_say("(Lisandro sale con la vida llena. Y con algo más que no sabe dónde guardar.)", 1)
+	else:
+		await _talk([
+			["LISANDRO", "—Ahorita vengo, mijo. Tengo que trabajar."],
+			["MARTÍN", "—Eso dijo ayer."],
+			["", "Martín no levanta la cabeza. Mario salta. Se cae."],
+		])
+		ammo["balas"] = mini(200, ammo["balas"] + 30)
+		_say("(Debajo del colchón de Martín había una caja de balas. Lisandro se la lleva. No mira para atrás.)", 1)
 
 
 func sc_pos(id: String) -> Vector2:

@@ -59,6 +59,11 @@ func setup() -> void:
 	}
 
 
+func _secrets_setup() -> void:
+	super._secrets_setup()
+	secret_story = "(El cuarto de las fotocopiadoras. Aquí se encerraba los viernes. En una caja con su nombre: la taza, el portarretratos, el cactus. El cactus sigue vivo.)"
+
+
 func _build_map() -> void:
 	super._build_map()
 	# Mismo plano que el episodio 1, otro edificio: se cambian las paredes.

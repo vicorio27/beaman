@@ -74,6 +74,13 @@ var state := "title"            # title, play, dead, done
 var checkpoint := 0
 var kills := 0
 var total := 0
+## Los secretos (mínimo uno por nivel): paredes "S" que se ven como la de al lado, apenas más oscuras.
+## De frente se abren como una puerta, y atrás hay un cuarto. Cada nivel pone los suyos en
+## _secrets_setup() y cuenta lo que hay en _on_secret().
+var secrets := {}               # Vector2i -> {"look": la pared que imita, "id": nombre}
+var secrets_found := 0
+## Lo que se cuenta al encontrar el secreto del nivel (base: el cuartito del callejón, PLOMO 1: él de niño).
+var secret_story := "(Un cuartico con un afiche del Mundial 94 y una pelota de trapo. Aquí se escondía de chiquito cuando en la casa gritaban. Todavía cabe. Casi.)"
 var time := 0.0
 var boss_awake := false
 var mini_awake := false
@@ -227,6 +234,7 @@ func _ready() -> void:
 	_tex["face_grin"] = load("res://assets/shooter/%sgrin.png" % face_prefix)
 	_build_map()
 	_place()
+	_secrets_setup()
 	_setup_flats()
 	_build_hud()
 	MusicDirector.force("")
@@ -276,6 +284,38 @@ func _build_map() -> void:
 		grid[p.y][p.x] = "G"
 	grid[17][21] = "L"
 	grid[17][31] = "E"
+
+
+## El secreto de los niveles con este plano (PLOMO 1, 2 y 3): un cuartito en la esquina de arriba del
+## callejón (dos casillas), detrás de una pared falsa. Adentro, chaleco y comida.
+func _secrets_setup() -> void:
+	var wall: String = grid[2][0]
+	grid[2][1] = wall
+	grid[2][2] = wall
+	grid[1][3] = wall  # la pared falsa imita la del callejón
+	add_secret(Vector2i(3, 1), "cuartito")
+	pickups.append({"kind": "chaleco", "pos": Vector2(1.5, 1.5)})
+	pickups.append({"kind": "empanada", "pos": Vector2(2.5, 1.5)})
+
+
+func add_secret(c: Vector2i, id: String) -> void:
+	secrets[c] = {"look": grid[c.y][c.x], "id": id}
+	grid[c.y][c.x] = "S"
+
+
+## Se abrió una pared falsa.
+func _secret_open(c: Vector2i) -> void:
+	doors[c] = 0.0
+	secrets_found += 1
+	_bonus = 1.0
+	_say("¡SECRETO! (%d de %d)" % [secrets_found, secrets.size()], 2)
+	_on_secret(str(secrets[c]["id"]))
+
+
+## Para sobreescribir: lo que pasa al encontrar el secreto (un recuerdo, alguien adentro).
+func _on_secret(_id: String) -> void:
+	if secret_story != "":
+		_say(secret_story, 1)
 
 
 func _place() -> void:
@@ -570,6 +610,9 @@ func _player(delta: float) -> void:
 		"D":
 			if not doors.has(c):
 				doors[c] = 0.0
+		"S":
+			if not doors.has(c):
+				_secret_open(c)
 		"L":
 			if has_key and not doors.has(c):
 				doors[c] = 0.0
@@ -933,8 +976,8 @@ func _finish() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	MusicDirector.force("")
 	_big.text = "NIVEL COMPLETO"
-	_small.text = Controls.keys_in("TIEMPO %02d:%02d\nBAJAS %d/%d\nSECRETOS 0/0\n%s\n\n[E] despertar") % [
-		int(time) / 60, int(time) % 60, kills, total, finish_note]
+	_small.text = Controls.keys_in("TIEMPO %02d:%02d\nBAJAS %d/%d\nSECRETOS %d/%d\n%s\n\n[E] despertar") % [
+		int(time) / 60, int(time) % 60, kills, total, secrets_found, secrets.size(), finish_note]
 
 
 func _wake(won: bool) -> void:
@@ -1012,7 +1055,8 @@ func _draw() -> void:
 		var top := VIEW_H / 2.0 - lh / 2.0
 		var wall_x := (pos.y + perp * ray.y) if side == 0 else (pos.x + perp * ray.x)
 		wall_x -= floor(wall_x)
-		var tex: Texture2D = _tex["wall_" + wall_tex.get(hit, "ladrillo")]
+		var look: String = secrets[Vector2i(mx, my)]["look"] if hit == "S" else hit
+		var tex: Texture2D = _tex["wall_" + wall_tex.get(look, "ladrillo")]
 		var tw := tex.get_width()
 		var th := float(tex.get_height())
 		var tx := int(wall_x * tw)
@@ -1021,6 +1065,8 @@ func _draw() -> void:
 		var shade := clampf(1.25 - perp * 0.085, 0.12, 1.0) * (0.72 if side == 1 else 1.0)
 		if not _light.is_empty():  # la luz de la casilla desde donde se ve la pared
 			shade *= light_at(mx - sx, my) if side == 0 else light_at(mx, my - sy)
+		if hit == "S":
+			shade *= 0.88  # la pared falsa: apenas más oscura (para el que mira bien)
 		var col := Color(shade, shade * 0.93, shade * 1.02) * wall_tint
 		var opening: float = doors.get(Vector2i(mx, my), 0.0)
 		if opening > 0.0:  # la puerta sube

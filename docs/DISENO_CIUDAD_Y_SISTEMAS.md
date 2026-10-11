@@ -1797,3 +1797,25 @@ Hablarle a Lukas ahora se narra ("le habla bajito, al oído"). En el juego de mi
   - CONTINUAR.
   - CONTROLES: AUTO / SI / NO (los mismos del título).
   - SALIR POR AHORA, con confirmación: en la vida real guarda ahí mismo y se sigue en la entrada de ese lugar; en un sueño no se guarda y se sigue desde el último cuenco.
+
+## Las viñetas de la noche y los secretos de PLOMO (2026-10-10)
+
+**Las viñetas** (`tools/art/draw_vinetas.py`, `NightSequence._vignette`): cuadros de 240x100 arriba del texto de la noche. Tienen degradados tramados, luz de lado y siluetas con borde de luz. Entran despacio y se acercan un poquito mientras se lee.
+- **acostarse:** el farol con la lluvia fina; él sentado en el cartón contra el pilar del puente, y Lukas dando la vuelta antes de echarse.
+- **despierta:** el amanecer por el arco del puente; él dormido de lado con Lukas hecho un ovillo contra el pecho, y el primer rayo de sol encima.
+- **despierta_lluvia:** el mismo amanecer, gris y lloviendo (las mañanas que "Llovió toda la noche").
+- **despierta_solo:** sin Lukas, el hueco en el cartón, el collar en la mano y el color lavado.
+- **golpeado:** contra la pared, la mano en la cara, la caja volteada y las latas regadas; Lukas le lame la mano. Sale con un sueño perdido, un robo o la defensa de la noche perdida.
+
+**Los secretos de PLOMO** (`Plomo.gd`: `add_secret`, la pared "S"; mínimo uno por nivel):
+- La pared falsa imita la de al lado, un poco más oscura. De frente se abre como una puerta y aparece "¡SECRETO! (1 de 1)". El resumen del nivel cuenta SECRETOS x/y.
+
+| Nivel | Dónde | Qué hay |
+|---|---|---|
+| PLOMO 1 (él de niño) | Un cuartito en la esquina de arriba del callejón | El afiche del Mundial 94 y la pelota de trapo; chaleco y comida |
+| PLOMO 2 (la oficina) | El mismo lugar | El cuarto de las fotocopiadoras, la caja con su nombre, el cactus |
+| PLOMO 3 (el hospital) | El mismo lugar | Su historia clínica: "Paciente colaborador. Habla poco." |
+| El operativo (sueño final) | El mismo lugar | El dibujo de Victoria: "EL DEL PERRO" |
+| Dealer 1 | En el bloque de la calle | Martín, el hijo de Lisandro (9 años), jugando Switch: Mario y la luna del sombrero. Sentarse a jugar con él (vida llena; "No le cuente a nadie. Que el Gato juega Mario.") o irse a trabajar ("Eso dijo ayer."; balas) |
+| Dealer 2 | En el bloque del callejón | El escondite de Lisandro: la plata de verdad y la carta de la mamá sin abrir |
+| Dealer 3 | En el bloque de la calle | El colchón y la pistola de agua de la foto |

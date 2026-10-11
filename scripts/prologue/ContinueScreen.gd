@@ -5,7 +5,7 @@ extends Control
 
 const NEXT_SCENE := "res://scenes/world/City.tscn"
 const NEXT_TITLE := "DIA 1 — 06:17"
-const WAKE_LINE := "Otra vez ese sueño. Siempre termina igual: yo quedo de pie. Los demás, no. Desayuno, tampoco."
+const WAKE_LINE := "(Otra vez ese sueño. Siempre termina igual: él queda de pie. Los demás, no. El desayuno, tampoco.)"
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const TICK := 0.9
 

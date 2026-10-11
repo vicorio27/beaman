@@ -62,6 +62,11 @@ func setup() -> void:
 	}
 
 
+func _secrets_setup() -> void:
+	super._secrets_setup()
+	secret_story = "(Un consultorio vacío. En el escritorio, su historia clínica: \"Paciente colaborador. Habla poco.\" Alguien subrayó \"colaborador\" dos veces.)"
+
+
 func _build_map() -> void:
 	super._build_map()
 	var swap := {"#": "#", "C": "B", "Z": "B", "W": "B", "G": "F"}
