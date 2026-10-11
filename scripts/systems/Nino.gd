@@ -18,7 +18,7 @@ const SPOTS := {
 ## Le están haciendo daño (en orden la primera vez; después, al azar). "agua" es de noche.
 const HURT := ["escoba", "correa", "solo", "grandes", "celador", "agua"]
 ## Él ayuda al protagonista.
-const HELP := ["pan", "moneda", "aviso", "agua_botella"]
+const HELP := ["pan", "tombos", "moneda", "aviso", "agua_botella"]
 ## Quién le pega en cada una: [fila de desconocido, hacia dónde está del niño]. Sin entrada: nadie a la vista.
 const BAD := {"escoba": [3, Vector2(15, 0)], "correa": [0, Vector2(-14, 1)], "grandes": [2, Vector2(14, 3)], "celador": [-1, Vector2(13, -1)]}
 const HINTS := {
@@ -469,6 +469,14 @@ func _help(kind: String) -> bool:
 			lines.append([who, "—Se le cayó. Yo vi. Me lo iba a quedar. ... No me lo quedé. Son $%d. Cuéntelos." % coins])
 			lines.append(["", "(Él le pone la mano en la cabeza. Un segundo. El niño se encoge primero, por costumbre. Después no.)"])
 			memory = "(Una vez él devolvió una billetera. Mauricio le pegó, por bobo. Nadie le puso nunca la mano en la cabeza para otra cosa.)"
+		"tombos":
+			f["ficha_oida"] = true
+			f["es_el_oido"] = true
+			lines.append([who, "—¡Pst! Los tombos tienen su foto pegada en la estación. Yo la vi cuando me llevaron. Al lado de los que roban."])
+			lines.append([who, "—Usted no roba. Yo sí, y no tengo foto. Debajo dice \"que circule\". ¿Qué es circular? ¿Es que no lo dejan quedarse?"])
+			lines.append(["", "(Él no contesta. El niño entiende igual.)"])
+			lines.append([who, "—A mí tampoco me dejan. Pero a mí es por chiquito. A usted es por algo que alguien firmó."])
+			memory = "(A los ocho, el vecino llamaba a la policía cuando oía los golpes. Llegaban, hablaban con Mauricio en la puerta, se reían. Se iban. Él aprendió temprano de qué lado se paran.)"
 		"aviso":
 			f["nino_aviso"] = GameState.day
 			lines.append([who, "—¡Pst! ¡Señor del perro! Esta noche duerma tranquilo. Los de la esquina andan esculcando a los dormidos, pero yo les dije que usted tiene sarna."])

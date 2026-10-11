@@ -1835,3 +1835,16 @@ Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuer
 - **El nombre:** a la tercera vez dice que se llama Duván, "con uve".
 - **El final:** a la sexta, él lo lleva de la mano donde el Padre Hernando (`flags.nino_hogar`). Ya no duerme en la calle; desde ahí solo aparece para ayudar, peinado y con los dos zapatos.
 - Misión secundaria `nino` ("El pelao de la calle"), con el conteo de veces que se ayudaron.
+
+
+## La policía es la que lo tiene en la calle (la ficha)
+
+- **Qué pasó:** después del operativo no hubo cargos y la denuncia se retiró, pero la ficha quedó abierta. El sargento firmó que estaba armado; si él consigue casa, trabajo o abogado, alguien pregunta por esa firma.
+- **La orden:** que no se quede quieto en ningún lado, que no tenga dirección. Esa noche le sellaron la casa y le guardaron la cédula en un cajón de la estación (por eso tiene que sacar el duplicado).
+- **Dónde se ve:**
+  - la redada `ficha` (`Conversations._redada_ficha`): no le piden papeles a nadie más; lo reportan por radio y lo mueven;
+  - el cambuche del Parque: la policía se lleva solo el de él;
+  - el tablero de "¿Quién es él?": dos líneas nuevas al resolverlo;
+  - el agente del operativo lo confiesa en la iglesia;
+  - Duván vio su foto en la estación, con un letrero que dice "que circule" (`Nino.gd`, ayuda `tombos`).
+- **Cómo se acaba:** en la Defensoría, con la página 14 y el testigo, la defensora oficia a la estación (`flags.ficha_cerrada`). Desde ahí las redadas no son con él y la policía no le toca el cambuche.

@@ -2464,6 +2464,8 @@ const CASES := {
 			["", "(Un operativo en el sur. Policía y ejército. Por una denuncia de Diana Carolina. Un hombre huyó por el río.)"],
 			["", "(Página 14, meses después: la denuncia fue retirada. No hubo cargos.)"],
 			["", "(Todo el barrio vio la portada. Nadie leyó la página 14.)"],
+			["", "(Y lo que no sale en ningún recorte: esa noche le sellaron la casa y le guardaron la cédula. Nadie le devolvió ninguna de las dos.)"],
+			["", "(No hubo cargos. Pero cada patrulla que pasa lo conoce. Lo mueven de la plaza, del parque, del puente. Hace meses.)"],
 			["", "(Se queda mirando el cartón. Una hora. No se mueve.)"]]},
 	"tejas": {"title": "LA CASA DE TEJAS", "quest": "m_tejas", "start": "casa_tejas_misterio",
 		"clues": [["carta_ines", "La carta de Madrid"], ["npc:samuel", "Lo que sabe Samuel"], ["npc:german", "Lo que sabe Germán"]],
@@ -2590,9 +2592,22 @@ func _ev_done() -> void:
 		n.queue_free()
 
 
+## La policía es la que lo tiene en la calle: después del operativo no hubo cargos, pero la ficha quedó
+## abierta (el sargento firmó que estaba armado: si él se para, alguien pregunta). La orden es que no se
+## quede quieto en ningún lado. Por eso las redadas lo buscan a él. Se acaba cuando la Defensoría oficia
+## a la estación (flags.ficha_cerrada, en _verdad).
 func _ev_redada() -> void:
 	_ev_done()
-	match _ev_variant("redada", ["cedula", "novato", "perros", "otro"]):
+	if GameState.flags.get("ficha_cerrada", false):
+		GameState.change_mood(4.0)
+		await Dialogue.talk([["", "(Los mismos policías de siempre. Hoy lo ven venir y no se le atraviesan.)"],
+			["POLICIA", "—... Buenas tardes. (mira para otro lado) Siga. Hoy no es con usted. Ya no es con usted."],
+			["", "(Llegó un oficio a la estación. Tres renglones. Él camina por la plaza sin que nadie lo pare. Se le había olvidado cómo era.)"]])
+		return
+	match _ev_variant("redada", ["cedula", "ficha", "novato", "perros", "otro"]):
+		"ficha":
+			await _redada_ficha()
+			return
 		"novato":
 			await _redada_novato()
 			return
@@ -2613,6 +2628,21 @@ func _ev_redada() -> void:
 		await Dialogue.talk([["", "(Se toca los bolsillos. No tiene cédula.)"],
 			["POLICIA", "—¿No tiene? ¿Y tampoco habla? Entonces no existe. Y lo que no existe no tiene cosas."],
 			["", "(Se lleva %s. Para verificar.)" % (lost.to_lower() if lost != "" else "nada: no había nada")]])
+
+
+## No piden papeles a todos: lo piden a él. Por radio.
+func _redada_ficha() -> void:
+	GameState.flags["ficha_oida"] = true
+	GameState.flags["es_el_oido"] = true
+	GameState.change_mood(-7.0)
+	await Dialogue.talk([
+		["", "(Pasa gente. A nadie le piden nada. Cuando pasa él, el patrullero levanta el radio.)"],
+		["POLICIA", "—Central, lo tengo. El de la ficha. Sí, el del perro. ... En la plaza. Sentado. ... Copiado."],
+		["POLICIA", "—Usted aquí no se puede quedar. Ni aquí ni en el parque ni en el puente. ¿Dónde sí? Eso no me lo dijeron. A mí me dijeron dónde no."],
+		["", "(Le muestra la cédula nueva. El policía ni la mira: no es el papel lo que buscan.)" if GameState.count("cedula") > 0
+			else "(No le piden la cédula. Saben que no la tiene: está en un cajón de la estación, desde la noche del operativo.)"],
+		["POLICIA", "—No es personal. Es una orden. Bueno: es personal, pero no es mía."]])
+	Narrator.say("(No lo paran por estar en la calle. Está en la calle porque lo paran.)")
 
 
 ## El patrullero nuevo: lee el procedimiento en el celular, paso por paso.
@@ -2939,6 +2969,9 @@ func _agente() -> void:
 		["AGENTE", "—Usted no se acuerda de mí. Yo sí de usted. Yo estaba en el operativo."],
 		["AGENTE", "—La mamá de la niña nos dio la dirección. Y la foto. Y nos dijo que usted estaba armado. Que iba a hacerle algo a la niña."],
 		["AGENTE", "—No era cierto. Lo supimos esa misma noche. Nadie lo escribió. La denuncia la retiraron meses después. En silencio."],
+		["AGENTE", "—Pero la ficha no la cerraron. El sargento firmó que usted estaba armado. Si usted consigue casa, trabajo, abogado... alguien pregunta por esa firma."],
+		["AGENTE", "—Entonces la orden fue otra: que no se quede quieto. Que no tenga dirección. Un hombre sin dirección no demanda a nadie."],
+		["AGENTE", "—Su cédula está en un cajón de la estación. Evidencia de un caso que no existe. Y cada vez que le pidieron papeles en la plaza, no fue casualidad. Yo fui dos veces."],
 		["", "(...)"],
 		["AGENTE", "—Usted no me pregunta por qué se lo cuento ahora. Se le ve en la cara. Porque yo tengo una hija. Y porque no duermo. Si me necesita, declaro. Donde sea."],
 	])
@@ -2958,11 +2991,14 @@ func _verdad() -> void:
 		["DEFENSORA", "—Todo el mundo vio la portada, señora. Yo estoy leyendo la página 14."],
 		["LORENA", "—..."],
 		["DEFENSORA", "—Visitas sin supervisión. Y el cumpleaños de la niña, con el papá. La custodia la revisamos con otra audiencia. Y con otra actitud."],
+		["AGENTE", "—Y hay una ficha abierta en la estación, doctora. Con una firma que no es cierta. Por esa ficha no lo dejan dormir dos noches en el mismo sitio."],
+		["DEFENSORA", "—¿Meses moviéndolo de andén en andén por una denuncia retirada? ... Hoy mismo oficio a la estación. Que la cierren. Y que me expliquen el cajón."],
 		["", "(Lorena no lo mira. No tiene a quién llamar.)"],
 		["DEFENSORA", "—¿Quiere decir algo, señor? ... ¿Algo? ... Bueno. Usted ya habló con esa página. Mejor que cualquier abogado."],
 		["", "(Sale de la oficina. Afuera, Lukas mueve la cola.)" if GameState.lukas_alive() else "(Sale de la oficina. Afuera no lo espera nadie. Toca el collar en la mochila.)"],
 	])
 	f["lilato_mentira_caida"] = true
+	f["ficha_cerrada"] = true  # la policía deja de moverlo (redadas, el cambuche del parque)
 	GameState.complete_quest("v_verdad")
 	GameState.change_mood(25.0)
 	MusicDirector.release()

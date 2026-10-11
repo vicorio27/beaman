@@ -38,7 +38,7 @@ const DEFS := {
 	"hablar_german": {"title": "Don Germán te quiere decir algo", "kind": "main",
 		"detail": "Don Germán, en la panadería de la plaza, tiene algo que decirle. Hablarle."},
 	"cedula": {"title": "Sacá la cédula en el centro", "kind": "main",
-		"detail": "Sacar el duplicado de la cédula en la Registraduría del centro (bus en la plaza, $2.500). Se hace fila: abren de 8 a 11 de la mañana; hay que llegar temprano."},
+		"detail": "Sacar el duplicado de la cédula en la Registraduría del centro (bus en la plaza, $2.500). Se hace fila: abren de 8 a 11 de la mañana; hay que llegar temprano. La que tenía se la quedó la policía la noche del operativo."},
 	"c_plata": {"title": "Juntá $55.000 para el trámite", "kind": "side",
 		"detail": "Juntar $55.000 para el trámite de la cédula. Trabajos: la obra (de 6 a 10, menos domingos), Rapidito (desde el día 4), la ruta de Wilson, pedir."},
 	"c_foto": {"title": "Fotos tipo documento (centro)", "kind": "side",
@@ -90,7 +90,7 @@ const DEFS := {
 		"detail": "El 29 de octubre Victoria cumple doce. Con visitas: en el Parque, de 10 a 2. Sin visitas: sale del colegio a las 12. Llevarle el regalo."},
 	# Misterios (las pistas van al tablero del cambuche)
 	"m_el": {"title": "¿Quién es \"él\"? (tablero)", "kind": "side",
-		"detail": "¿Quién es \"él\", del que habla la gente? Pistas: tres recortes de periódico (el barrio, el centro, el Parque), Marta y Wilson. Se ponen en el tablero del cambuche."},
+		"detail": "¿Quién es \"él\", del que habla la gente? Pistas: tres recortes de periódico (el barrio, el centro, el Parque), Marta y Wilson. Se ponen en el tablero del cambuche. Y de paso: por qué la policía lo para siempre a él."},
 	"m_tejas": {"title": "La casa de tejas (tablero)", "kind": "side",
 		"detail": "¿Quién vive en la casa de tejas? Pistas: una carta vieja de Madrid, Samuel y Don Germán. Al tablero del cambuche."},
 	"m_negro": {"title": "El señor de negro (tablero)", "kind": "side",

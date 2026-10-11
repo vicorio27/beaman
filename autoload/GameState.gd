@@ -623,13 +623,13 @@ func new_day(spot: String) -> Array:
 		lines.append("Abrieron la caja del cambuche. Se llevaron todo y la mitad de la alcancía.")
 		change_mood(-8.0)
 	# La policía en el parque.
-	if has_cambuche() and cambuche["spot"] == "parque" and randf() < 0.2:
+	if has_cambuche() and cambuche["spot"] == "parque" and randf() < 0.2 and not flags.get("ficha_cerrada", false):
 		for s in cambuche["box"]:
 			add_item(s["id"], s["qty"])
 		add_money(cambuche["alcancia"])
 		stats["money_earned"] -= cambuche["alcancia"]
 		cambuche = {}
-		lines.append("Pasó la policía por el parque y se llevó el cambuche. La caja quedó tirada.")
+		lines.append("Pasó la policía por el parque y se llevó el cambuche. Solo el de él: los otros siguen ahí. La caja quedó tirada.")
 		change_mood(-12.0)
 	# Después de Lukas: no hay hambre; el mundo pierde el color; él se apaga.
 	if not lukas_alive():

@@ -16,7 +16,7 @@ const NAMES := {"banco": "el banco de la plaza", "kiosco": "el techito del kiosc
 const ABOUT := {
 	"rio": "(Debajo del puente, donde se despertó el primer día. Tranquilo y húmedo. Lo más parecido a una casa.)",
 	"callejon": "(Entre las bodegas: seco, pero de noche pasa de todo.)",
-	"parque": "(En el parque: bonito. La policía pasa seguido.)",
+	"parque": "(En el parque: bonito. La policía pasa seguido. Y cuando pasa, lo busca a él.)",
 }
 const UPGRADE_LINES := {
 	"toldo": "(Toldo puesto.)",
