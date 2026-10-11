@@ -51,7 +51,7 @@ const LEVELS := {
 			"WALTER: —¡Epa! ¿Y este papelito en la espalda? ... ¿Post-it amarillo? Esos son de mi cajón. Me los roban todos.",
 			"WALTER: —\"SOY EL SAPO DE JOSE MARIO\". ... ¿Quién escribió la verdad en mi espalda? ¿Y con mi lapicero?"],
 		"outro": [["WALTER", "—Yo solo le contaba lo que veía, pana. Él preguntaba. Yo no sabía decir que no."],
-			["YO", "—Usted sí sabía. Le gustaba. A cambio le dieron el puesto al lado de la ventana."],
+			["", "(Él no le contesta. Señala la ventana: el puesto que le dieron a cambio.)"],
 			["WALTER", "—... La ventana da a un muro. Un muro de ladrillo. Lo he mirado cuatro años."],
 			["WALTER", "—Tiene treinta y dos ladrillos de ancho. Los conté. No le dije a nadie. ¿A quién le iba a decir? Yo era el que contaba."]],
 		"tease": [["", "En el escritorio de Walter hay una lista. Cinco nombres tachados. El de él, primero. Con resaltador verde."],
@@ -80,9 +80,9 @@ const LEVELS := {
 			"NICOLAS: —¡Esto es acoso laboral! ¡Lo voy a reportar a Talento Humano! ¡Talento Humano soy yo los jueves!",
 			"NICOLAS: —... ¿Usted? ¿El que yo saqué? ¿Qué hace aquí? Seguridad no lo dejó entrar. Yo firmé esa orden. Con mi Montblanc."],
 		"outro": [["NICOLAS", "—Yo solo decía lo que todos pensaban. Duro. Alguien tenía que decirlo."],
-			["YO", "—Nadie lo pensaba, Nicolás. Usted lo pensaba duro para que pareciera de todos."],
-			["NICOLAS", "—... ¿Y ahora quién me va a escuchar?"], ["YO", "—El mug. El mug lo escucha."],
-			["NICOLAS", "—El mug dice que soy el mejor jefe del mundo."], ["YO", "—El mug no tiene criterio, Nicolás. Es un mug."]],
+			["", "(Él no dice nada. Nadie lo pensaba. Nicolás lo pensaba duro, para que pareciera de todos.)"],
+			["NICOLAS", "—... ¿Y ahora quién me va a escuchar?"], ["", "(Él le pone enfrente el mug del escritorio: \"EL MEJOR JEFE DEL MUNDO\".)"],
+			["NICOLAS", "—El mug dice que soy el mejor jefe del mundo."], ["", "(Él se encoge de hombros. El mug no tiene criterio. Es un mug.)"]],
 		"tease": [["", "En el computador de Nicolás hay un correo sin enviar. Para: Eddy. Asunto: \"Su puesto\". Prioridad: alta. Con un emoji de un cohete."],
 			["", "Eddy lleva gafas, sonríe en las reuniones y quiere el puesto de todos. Hasta el de él, que ya no tiene puesto."]]},
 	3: {"boss": "EDDY", "id": "eddy", "boss_speed": 34.0, "tags": 3, "cups": 4, "seeker": true,
@@ -106,9 +106,9 @@ const LEVELS := {
 			"EDDY: —¿Usted quiere mi puesto? ... Yo también quiero el suyo. Ah, no tiene. Bueno, quiero el que tenía.",
 			"EDDY: —Se me cayeron las gafas. No veo nada. Igual no tienen aumento. Nunca vi nada, en realidad. Es estético."],
 		"outro": [["EDDY", "—Yo solo quería subir. Usted estaba en la escalera. No era personal. Era estratégico."],
-			["YO", "—Usted me empujó y después subió un escalón. Un escalón, Eddy. Ni siquiera dos. Me cambió por un aumento del cuatro por ciento."],
+			["", "(Él levanta un dedo. Un escalón. Eddy lo empujó para subir un escalón. Lo cambió por un aumento del cuatro por ciento.)"],
 			["EDDY", "—El tres coma ocho."],
-			["EDDY", "—... José Mario me prometió su puesto. Después se lo dio a otro. A un sobrino. Que no habla inglés."], ["YO", "—Bienvenido."]],
+			["EDDY", "—... José Mario me prometió su puesto. Después se lo dio a otro. A un sobrino. Que no habla inglés."], ["", "(Él le da una palmadita en el hombro. Bienvenido.)"]],
 		"tease": [["", "El ascensor se abre solo. Último piso. Suena una versión instrumental de \"Hotel California\". Una sola oficina, con vidrio, y alguien adentro que no se mueve."],
 			["", "José Mario. Vicepresidente. Nunca levanta la voz. Nunca la necesitó."]]},
 	4: {"boss": "JOSE MARIO", "id": "josemario", "boss_speed": 0.0, "tags": 1, "cups": 4, "cameras": true,
@@ -130,14 +130,14 @@ const LEVELS := {
 			["", "Último piso. Cámaras en cada esquina. José Mario no las mira: no le hace falta. Él sabe."],
 			["", "Apagá los tres tableros (P, con E). Juntá... no hay documentos: él es el documento. Llegale."]],
 		"tag_lines": ["JOSE MARIO: —Llegó. Tarde. Como siempre. Siéntese."],
-		"outro": [["JOSE MARIO", "—Siéntese."], ["YO", "—Prefiero quedarme de pie. Ya me senté suficiente en su piso."],
+		"outro": [["JOSE MARIO", "—Siéntese."], ["", "(Él se queda de pie. Ya se sentó suficiente en ese piso.)"],
 			["JOSE MARIO", "—¿Agua? Es de Noruega. Viene en botella de vidrio. No sabe a nada. Eso es lo que uno paga: que no sepa a nada."],
 			["JOSE MARIO", "—Yo no le conté a nadie. Lo dejé en un correo, abierto, en una pantalla. En la pantalla de Walter. A las 11:39. La gente lee lo que quiere."],
-			["YO", "—Usted sabía quién iba a leer."], ["JOSE MARIO", "—Claro. Yo siempre sé. Walter almuerza a las 11:40."],
+			["", "(Él lo mira. José Mario sabía quién iba a leer.)"], ["JOSE MARIO", "—Claro. Yo siempre sé. Walter almuerza a las 11:40."],
 			["JOSE MARIO", "—Usted era bueno. Demasiado. Y tenía un pasado. Eso, en una empresa, es una oportunidad. Para mí."],
-			["YO", "—Yo estaba limpio. Hacía dos años."], ["JOSE MARIO", "—Nadie lee esa parte del correo. Está en el tercer párrafo. Nadie llega al tercer párrafo."],
+			["", "(Estaba limpio. Hacía dos años. Lo tiene escrito en la cara.)"], ["JOSE MARIO", "—Nadie lee esa parte del correo. Está en el tercer párrafo. Nadie llega al tercer párrafo."],
 			["", "(Él le saca el carné del cuello. Lo pone en el escritorio, con la foto hacia arriba. Esa, cuando sonreía.)"],
-			["YO", "—Quédese con él. Yo ya no lo necesito para entrar. Ni para salir."]],
+			["", "(Él se va sin decir nada. Ya no necesita el carné para entrar. Ni para salir.)"]],
 		"tease": []},
 }
 
@@ -597,7 +597,7 @@ func _win() -> void:
 	state = "end"
 	MusicDirector.force("")
 	if FinalRush.is_step("sigilo"):
-		await Dialogue.talk([["JOSE MARIO", "—... Usted ya no necesita mi permiso para nada."], ["", "—Nunca lo necesité. Tardé en saberlo."]])
+		await Dialogue.talk([["JOSE MARIO", "—... Usted ya no necesita mi permiso para nada."], ["", "(Nunca lo necesitó. Tardó en saberlo.)"]])
 		FinalRush.next()
 		return
 	await Dialogue.talk(L["outro"])

@@ -144,8 +144,8 @@ func _guillermo_gives_up() -> void:
 		["GUILLERMO", "—Usted era mi amigo, parce. Yo los cambié a todos por ella."],
 	], ["Perdonarlo", "Terminar la pelea"])
 	if i == 0:
-		await Dialogue.talk([["YO", "—Yo también lo quería, hermano. Por eso dolió."], ["GUILLERMO", "—..."],
-			["GUILLERMO", "—¿Todavía tiene la camiseta del Mundial del 2014? La que cambiamos."], ["YO", "—Me la robaron con la mochila."],
+		await Dialogue.talk([["", "(Él le pone la mano en el hombro. No dice nada. Guillermo entiende igual: también lo quería, y por eso dolió.)"], ["GUILLERMO", "—..."],
+			["GUILLERMO", "—¿Todavía tiene la camiseta del Mundial del 2014? La que cambiamos."], ["", "(Él niega con la cabeza. Se la robaron con la mochila.)"],
 			["GUILLERMO", "—La mía me la botó ella. Dijo que era de pobre."]])
 		GameState.flags["dream_forgave_guillermo"] = true
 		Dream.add(3000)

@@ -600,7 +600,7 @@ func _role_swap(slayer: Ent) -> void:
 		["EL QUE NO SE MUERE", "—¿Sabe qué es lo peor de jugar con usted? Que se siente bien. Por eso nadie lo deja."],
 		["", "Algo se da vuelta. El arma pesa distinto. Las manos ya no tienen anillos."],
 		["", "El del otro lado ahora es Lisandro. Y el que tiene la escopeta..."],
-		["", "... soy yo."],
+		["", "... es él. El que duerme debajo del puente."],
 		["", "Billete corre para el otro lado. Hacia Lisandro. Claro. Uno no elige a quién quiere el perro."],
 		["", "Lisandro tiene el maletín de plata adelante, como un escudo. Y en el piso de la casa hay bolsitas. Él las está mirando."],
 	])
@@ -1532,15 +1532,15 @@ func _die(e: Ent) -> void:
 		_dog_owner = "body"
 		_dog_body = e.pos
 		await _talk([
-			["", "Lisandro, en el piso de mármol. Sin gafas. Más chiquito de lo que me acordaba."],
+			["", "Lisandro, en el piso de mármol. Sin gafas. Más chiquito de lo que parecía."],
 			["LISANDRO", "—¿Llamó mi mamá?"],
-			["", "—No."],
+			["", "(Él niega con la cabeza.)"],
 			["LISANDRO", "—Si llama... dígale que estaba en el banco. Que era gerente."],
-			["", "—Le digo."],
+			["", "(Él asiente.)"],
 			["LISANDRO", "—Y a Billete no lo deje comer basura. Come basura. Como yo."],
 			["", "Se muere con los ojos abiertos, mirando la puerta, como esperando a alguien."],
 			["", "Billete le lame la cara. Le sigue lamiendo un rato largo. Por si acaso."],
-			["", "Lo maté. Lo odiaba. Le había tomado cariño. El sueño sabía las dos cosas y no me avisó."],
+			["", "Lo mató. Lo odiaba. Le había tomado cariño. El sueño sabía las dos cosas y no le avisó."],
 		])
 		return
 	super._die(e)
@@ -1600,7 +1600,7 @@ func _on_exit() -> void:
 	]
 	if GameState.flags.get("lis_esquina", -1) == 0:
 		end.append(["", "En la esquina del farol, Camila y Verónica ya no le deben a Lisandro. Ahora le deben a otro. La deuda no se muere: cambia de dueño."])
-	end.append(["", "Al pasar por la esquina, Verónica me mira. Los ojos azules, todavía. No dice nada. Yo tampoco: no hay nada que decir que no haya dicho ya el barrio."])
+	end.append(["", "Al pasar por la esquina, Verónica lo mira. Los ojos azules, todavía. No dice nada. Él tampoco: no hay nada que decir que no haya dicho ya el barrio."])
 	match GameState.flags.get("lis_pelado", -1):
 		0:
 			end.append(["", "Afuera, en la esquina, el pelado pita. Ya trabaja para otro. Así se hereda esto."])

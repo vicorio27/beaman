@@ -137,7 +137,7 @@ func _on_exit() -> void:
 	], ["Creerle", "No creerle"])
 	GameState.flags["zaida_trust"] = i == 0
 	if i == 0:
-		await Dialogue.talk([["", "—... Gracias."], ["ZAIDA", "—Nos vemos afuera. Siempre nos vemos."]])
+		await Dialogue.talk([["", "(Él le aprieta la mano. No dice nada. Ella entiende.)"], ["ZAIDA", "—Nos vemos afuera. Siempre nos vemos."]])
 	else:
 		await Dialogue.talk([["ZAIDA", "—Está bien. Algún día vas a necesitarme."]])
 	await Dialogue.talk([["", "EPISODIO 3 COMPLETO. Fin de la temporada."]])

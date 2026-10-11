@@ -56,19 +56,18 @@ func _level_done() -> void:
 		return
 	await Dialogue.talk([
 		["GUILLERMO", "—... ¿Por qué no me dijo nada?"],
-		["YO", "—Se lo dije. Usted le creyó a ella."],
 		["GUILLERMO", "—Ella me dijo que usted se le tiró encima."],
-		["YO", "—Ella se me sentó encima. Yo le dije que no. Por usted, güevón. Y porque me debía ciento ochenta mil del perfume."],
+		["", "(Él saca del bolsillo un papel doblado mil veces. La factura de un perfume: ciento ochenta mil. Pagado por él. Con la fecha del cumpleaños.)"],
 		["GUILLERMO", "—... ¿El Carolina Herrera?"],
-		["YO", "—El de la botella dorada."],
+		["", "(Él asiente. El de la botella dorada.)"],
 		["GUILLERMO", "—Ella me dijo que se lo había regalado la hermana."],
-		["YO", "—Ella no tiene hermana, Guillermo."],
+		["", "(Él lo mira. Camila no tiene hermana. Guillermo lo sabe hace cinco años.)"],
 		["GUILLERMO", "—... ¿Y por qué le creo ahora?"],
-		["YO", "—Porque está en el piso. Desde el piso se ve todo más claro. Créame: yo vivo ahí."],
+		["", "(Él señala el piso, donde está Guillermo. Desde el piso se ve todo más claro. Él vive ahí.)"],
 		["CAMILA", "—¡Guillermo! ¡Nos vamos!"],
-		["", "Guillermo se levanta. Me mira. La mira a ella. Duda."],
+		["", "Guillermo se levanta. Lo mira. La mira a ella. Duda."],
 		["", "Y se va con ella. Igual. Algunos prefieren una mentira que los abrace a una verdad que los deje solos."],
-		["", "Pero esta vez se fue sabiendo. Eso ya no es mi problema."],
+		["", "Pero esta vez se fue sabiendo. Eso ya no es problema de él."],
 		["", "EPISODIO 3 COMPLETO."],
 	])
 	GameState.flags["guillermo_sabe"] = true

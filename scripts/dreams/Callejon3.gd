@@ -266,7 +266,7 @@ func _on_brenda_out(b: Brawler) -> void:
 				f.queue_free()
 		_fakes.clear()
 		_alive.erase(b)
-		await Dialogue.talk([["BRENDA", "—..."], ["YO", "—Ya no te tengo miedo, ma. Ni a vos ni a tus caras."]])
+		await Dialogue.talk([["BRENDA", "—..."], ["", "(Él la mira de frente. Ya no le tiene miedo. Ni a ella ni a sus caras.)"]])
 		FinalRush.next()
 		return
 	for f in _fakes:
@@ -292,12 +292,12 @@ func _on_brenda_out(b: Brawler) -> void:
 		await Dialogue.talk([
 			["", "(Ella tiembla. Huele a la misma crema de cuando él era chiquito.)"],
 			["BRENDA", "—Usted siempre fue el fuerte. Yo no."],
-			["YO", "—No era fuerte, ma. No me quedaba otra."],
+			["", "(Él no contesta. No era fuerte. No le quedaba otra.)"],
 		])
 	else:
 		GameState.flags["dream_brenda"] = "irse"
 		await Dialogue.talk([
-			["YO", "—Váyase, ma. Ya sé el camino a la terminal."],
+			["", "(Él le señala la terminal con la cabeza. Ya se sabe el camino.)"],
 			["", "(Ella se sube a otro bus. Esta vez él no corre detrás.)"],
 		])
 	_sfx["gogogo"].play()

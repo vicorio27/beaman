@@ -22,9 +22,9 @@ func _intro() -> void:
 	await Dialogue.talk([
 		["", "Bajo el puente. Donde empezó todo. El agua sube hasta las rodillas."],
 		["LILATO", "—¿Todavía? ¿Después de todo lo que hice?"],
-		["YO", "—Por todo lo que hiciste."],
+		["", "(Él no contesta. Se mete al agua hasta la cintura. Por todo lo que ella hizo.)"],
 		["LILATO", "—Estás más flaco. Te queda mal."],
-		["YO", "—Vos estás igual. Eso es lo que te queda mal."],
+		["", "(Ella está igual. Eso es lo que le queda mal. Él no se lo dice: no hace falta.)"],
 	])
 	hud.show_boss("LILATO")
 	hud.set_boss(1.0)
@@ -46,7 +46,7 @@ func _on_serpent_died() -> void:
 		["", "Denuncias. La foto borrosa. La portada del periódico, con su cara en grande. Todo flotando en el río."],
 		["", "Abajo de todo, chiquita, la página 14."],
 		["LILATO", "—Yo solo quería que la niña fuera mía."],
-		["YO", "—Nunca fue tuya. Ni mía. Es de ella."],
+		["", "(Él no dice nada. La niña nunca fue de ella. Ni de él. Es de ella misma.)"],
 		["", "Lilato se vuelve humo. El humo se lo lleva el río. Después, nada."],
 		["", "Ya no va a volver a ningún sueño. Ni a ningún callejón. Ni a ningún domingo."],
 	])

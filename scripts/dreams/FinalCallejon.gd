@@ -50,7 +50,7 @@ func _spawn(kind_spec: String, pos: Vector2) -> void:
 func _level_done() -> void:
 	await Dialogue.talk([
 		["EL SARGENTO", "—(desde el piso) La señora... nos dio la dirección. Y la foto. Dijo que usted tenía un arma."],
-		["YO", "—Nunca tuve un arma. Tenía una hija."],
+		["", "(Él abre las manos. Ningún arma. En una, la foto de la niña.)"],
 		["EL SARGENTO", "—... Eso no venía en el informe."],
 		["", "En el balcón, Lilato baja el celular. Por primera vez, lo mira con miedo. Se va corriendo."],
 		["LILATO", "—¡Refuerzos! ¡Que entre el ejército! ¡Que entre todo!"],
