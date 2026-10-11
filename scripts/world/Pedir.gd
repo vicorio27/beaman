@@ -15,6 +15,10 @@ extends Node2D
 ##   - El día cambia la calle: quincena (todo paga el doble), domingo (salen de misa: señoras),
 ##     lunes (nadie tiene plata ni ganas).
 ##   - Racha: tres aciertos seguidos dan $1.000 de más.
+## De noche (de 19 a 23) pasa otra gente: menos y más peligrosa (NIGHT). Algunos vienen por el vaso.
+## Se suma una acción: [E] pararse (defenderse). Contra el ladrón, pararse o el ladrido de Lukas lo
+## espantan; quedarse quieto, pedirle o hacerle un chiste es entregarle la plata. Si sale mal, además,
+## un golpe (y el ánimo al piso).
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const W := 320.0
@@ -105,14 +109,50 @@ const SPECIALS := {
 			"lukas": [0.4, 1000, "—El perro sí parece buen pagador.", "—Los perros no son garantía."],
 			"nada": [1.0, 0, "", ""]}},
 }
+## La gente de la noche: como los especiales (se anuncian al entrar), y "rob" = qué parte de lo juntado
+## se lleva si sale mal; "hit" = además, un golpe.
+const NIGHT := {
+	"LADRÓN": {"row": 9, "tint": Color(0.42, 0.42, 0.48), "pace": 1.3, "rob": 0.6, "hit": true,
+		"hint": "—Uy, qué vasito tan lleno. ¿Me lo presta?",
+		"rules": {"pedir": [0.0, 0, "", "—¿Me pide a mí? Ja. Deme eso."],
+			"chiste": [0.2, 0, "—Jaja. Usted es más pobre que yo. Siga.", "—Muy chistoso. Deme el vaso."],
+			"lukas": [0.8, 0, "—¡Ey, ey! ¡Quieto ese perro! Ya me voy.", "—Ese perro no me asusta. Deme eso."],
+			"nada": [0.0, 0, "", "—Gracias por la colaboración."],
+			"defender": [0.65, 0, "—... Tranquilo, cucho. Tranquilo. Ya me voy.", "—Quieto, abuelo. Quieto."]}},
+	"LOS DE LA ESQUINA": {"row": 15, "tint": Color(0.5, 0.45, 0.55), "pace": 0.9, "rob": 0.4, "hit": true,
+		"hint": "—Mire, el del perro. ¿Este es el que dicen?",
+		"rules": {"pedir": [0.0, 0, "", "—¿Plata? ¿Usted nos pide plata a nosotros?"],
+			"chiste": [0.1, 0, "—Jaja. Loco el man. Déjenlo.", "—¿Se está burlando, cucho?"],
+			"lukas": [0.5, 0, "—Uy, el perro. Vámonos, que ese muerde.", "—Ese perro no hace nada. ¿Cierto que no?"],
+			"nada": [0.7, 0, "—Este man ni nos mira. Qué aburrido. Vámonos.", "—¿No nos mira? ¿Muy creído?"],
+			"defender": [0.4, 0, "—... Uy. Ese man tiene cara de haber matado a alguien. Vámonos.", "—¿Qué? ¿Va a pelear? ¿Con quién?"]}},
+	"ENFERMERA": {"row": 3, "tint": Color(0.85, 0.95, 1.0), "pace": 0.8,
+		"hint": "(Una enfermera que sale del turno. Camina dormida.)",
+		"rules": {"pedir": [0.7, 2000, "—Tome. Yo también llevo doce horas de pie.", "—Hoy no, mijo. No tengo ni para mí."],
+			"chiste": [0.3, 1000, "—Ja. Gracias. Necesitaba reírme. Tome.", "—... Estoy muy cansada para eso."],
+			"lukas": [0.6, 1000, "—Ay, el perrito. Tome. Cuídelo.", "—Hoy no. Hoy vi muchos perros."],
+			"nada": [1.0, 0, "", ""],
+			"defender": [0.0, 0, "", "—¡Ay! ¿Qué le pasa? ¡Yo no le voy a hacer nada!"]}},
+	"CELADOR": {"row": 12, "tint": Color(0.55, 0.62, 0.75), "pace": 0.9,
+		"hint": "—¿Otra vez aquí? A esta hora no se puede, ¿oyó?",
+		"rules": {"pedir": [0.0, 0, "", "—Que a esta hora no se puede. Váyase a dormir."],
+			"chiste": [0.2, 500, "—Ja. Bueno. Tome, para el tinto. Y se va.", "—No estoy para chistes. Muévase."],
+			"lukas": [0.5, 500, "—Bonito el perro. Tome. Y váyanse los dos.", "—El perro tampoco puede estar aquí."],
+			"nada": [1.0, 0, "", ""],
+			"defender": [0.0, 0, "", "—¿Y usted por qué se para así? ¿Me va a pegar? Circule."]}},
+}
+const NIGHT_POOL := ["LADRÓN", "LOS DE LA ESQUINA", "ENFERMERA", "CELADOR", "BORRACHO", "POLICIA"]
+const HIT_LINES := ["(Un golpe en la cara. Se lleva la plata del vaso. Lukas ladra cuando ya no hay a quién.)",
+	"(Lo empujan contra la pared. Le sacan el vaso de la mano. Se van caminando, sin afán.)"]
+
 const SPECIAL_ORDER := ["GRINGO", "COLEGA", "INFLUENCER", "PREDICADOR", "BORRACHO", "EL DEL BANCO"]
 const DAY_LINES := {
 	"quincena": "(Es quincena. La gente anda con plata y con culpa. La mejor combinación.)",
 	"domingo": "(Domingo. Salen de misa con la conciencia recién lavada. Y las señoras, en manada.)",
-	"lunes": "(Lunes. Nadie tiene plata ni ganas. Yo tampoco, pero yo no tengo opción.)",
+	"lunes": "(Lunes. Nadie tiene plata ni ganas.)",
 }
-const STREAK_LINES := ["(Racha de tres. Leo a la gente como la DIAN: y les cobro.)",
-	"(Otra racha. Si esto fuera un trabajo, me ascendían. A pedir más.)"]
+const STREAK_LINES := ["(Racha de tres. Lee a la gente como la DIAN. Y les cobra.)",
+	"(Otra racha. Si esto fuera un trabajo, lo ascendían. A pedir más.)"]
 
 const MY_LINES := {
 	"pedir": ["(Levanta el vaso.)", "(Levanta el vaso. Lo mira fijo.)"],
@@ -136,14 +176,16 @@ var _lukas_uses := 0  # trucos seguidos (se cansa)
 var _people_left := PEOPLE
 var _line_i := 0
 var _day_mod := ""  # "quincena", "domingo", "lunes" o nada
+var _night := false
+var _specials: Dictionary = {}  # los especiales del día y los de la noche, juntos
 var _streak := 0
 var _streaks := 0
 
 
 ## La regla de un tipo (de la tabla o de los especiales): [fila, tinte, {acción: regla}].
 func _data(type: String) -> Array:
-	if SPECIALS.has(type):
-		var sp: Dictionary = SPECIALS[type]
+	if _specials.has(type):
+		var sp: Dictionary = _specials[type]
 		return [sp["row"], sp["tint"], sp["rules"]]
 	return TYPES[type]
 
@@ -154,6 +196,9 @@ func _ready() -> void:
 	var key := "pedir_%s" % _place.get_file()
 	_half = GameState.flags.get(key, -1) == GameState.day
 	GameState.flags[key] = GameState.day
+	_specials = SPECIALS.duplicate()
+	_specials.merge(NIGHT)
+	_night = TimeManager.hour() >= 19 or TimeManager.hour() < 5
 	_build()
 	var d := GameState.day
 	_day_mod = "quincena" if d % 15 == 0 else ("domingo" if d % 7 == 0 else ("lunes" if d % 7 == 1 and d > 1 else ""))
@@ -166,6 +211,15 @@ func _ready() -> void:
 	GameState.flags["pedir_esp_n"] = n + 1
 	queue.insert(randi_range(2, 6), SPECIAL_ORDER[n] if n < SPECIAL_ORDER.size() else SPECIAL_ORDER.pick_random())
 	queue.resize(PEOPLE)
+	if _night:
+		# De noche: siete, y por lo menos un ladrón (y otro peligroso).
+		queue.clear()
+		for i in 7:
+			queue.append(NIGHT_POOL.pick_random())
+		queue[randi_range(1, 3)] = "LADRÓN"
+		queue[randi_range(4, 6)] = ["LADRÓN", "LOS DE LA ESQUINA"].pick_random()
+		_people_left = queue.size()
+		_day_mod = ""
 	_intro()
 
 
@@ -220,6 +274,11 @@ func _build() -> void:
 	_legend.add_to_group("under_dialogue")
 	_legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_legend.text = "ARRIBA vaso  DER cartel\nABAJO %s  IZQ nada" % ("Lukas" if GameState.lukas_alive() else "-----")
+	if _night:  # de noche se suma pararse (defenderse)
+		_legend.text = Controls.keys_in("ARRIBA vaso DER cartel [E] pararse\nABAJO %s  IZQ nada" % ("Lukas" if GameState.lukas_alive() else "-----"))
+		var dark := CanvasModulate.new()
+		dark.color = Color(0.42, 0.42, 0.62)
+		add_child(dark)
 	_legend.add_theme_color_override("font_color", Color(0.75, 0.72, 0.68))
 	_type_label = _label(ui, Vector2(0, 0))
 	_type_label.add_theme_color_override("font_color", Color(1, 0.85, 0.4))
@@ -283,12 +342,12 @@ func _process(delta: float) -> void:
 	if state != "play" or current.is_empty():
 		return
 	var spr: AnimatedSprite2D = current["sprite"]
-	var special := SPECIALS.has(current["type"])
-	var pace: float = SPECIALS[current["type"]]["pace"] if special else \
+	var special := _specials.has(current["type"])
+	var pace: float = _specials[current["type"]]["pace"] if special else \
 		(1.8 if current["type"] == "APURADO" else (0.8 if current["type"] == "SEÑORA" else 1.0))
 	if special and not current["done"] and not current.get("hinted", false) and spr.position.x > 24.0:
 		current["hinted"] = true  # el especial se anuncia: hay que leerlo
-		_say(SPECIALS[current["type"]]["hint"], Color(0.9, 0.9, 0.95))
+		_say(_specials[current["type"]]["hint"], Color(0.9, 0.9, 0.95))
 	spr.position.x += WALK_SPEED * pace * delta * (0.4 if current["done"] and spr.position.x < ZONE.y else 1.0)
 	var known: Array = GameState.flags.get("pedir_conocidos", [])
 	_type_label.text = current["type"] if current["type"] in known or special else "?"
@@ -322,6 +381,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		action = "chiste"
 	elif event.is_action_pressed("move_down"):
 		action = "lukas"
+	elif event.is_action_pressed("interact") and _night:
+		action = "defender"
 	elif event.is_action_pressed("move_left"):
 		action = "nada"
 	if action != "":
@@ -332,7 +393,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _choose(action: String) -> void:
 	current["done"] = true
 	var known: Array = GameState.flags.get("pedir_conocidos", [])
-	var sp: Dictionary = SPECIALS.get(current["type"], {})
+	var sp: Dictionary = _specials.get(current["type"], {})
 	if sp.is_empty() and not current["type"] in known:
 		known.append(current["type"])  # después de verlo reaccionar, ya sabe qué tipo de persona es
 		GameState.flags["pedir_conocidos"] = known
@@ -340,9 +401,12 @@ func _choose(action: String) -> void:
 		_lukas_uses += 1
 	else:
 		_lukas_uses = 0
-	var rule: Array = _data(current["type"])[2][action]
+	var rules: Dictionary = _data(current["type"])[2]
+	var rule: Array = rules.get(action, [0.0, 0, "", "—¿Y a usted qué le pasa? ¿Por qué se para así?"])
 	var chance: float = rule[0]
-	if action != "nada":
+	if action == "defender":
+		_me_line.text = "(Se para. No dice nada. Lo mira.)"
+	elif action != "nada":
 		var mine: Array = MY_LINES[action]
 		_me_line.text = mine[_line_i % mine.size()]
 		_line_i += 1
@@ -389,6 +453,26 @@ func _choose(action: String) -> void:
 		if rule[3] != "":
 			_say(rule[3], Color(1, 0.75, 0.7))
 			GameState.change_mood((-2.0 if current["type"] != "POLICIA" else -4.0) * (0.5 if GameState.has_skill("aguante") else 1.0))
+		if sp.has("rob"):
+			_robbed(sp, action == "defender")
+
+
+## Le roban: se lleva parte de lo juntado. Si se paró a pelear y perdió, además le pegan.
+func _robbed(sp: Dictionary, fought: bool) -> void:
+	var lost := int(got * float(sp["rob"]) / 100.0) * 100
+	got -= lost
+	if fought and sp.get("hit", false):
+		GameState.change_mood(-6.0)
+		GameState.flags["violencia"] = true
+		_me_line.text = HIT_LINES[randi() % HIT_LINES.size()]
+		var shake := create_tween()
+		for k in 6:
+			shake.tween_property(self, "position", Vector2(randf_range(-3, 3), randf_range(-2, 2)), 0.04)
+		shake.tween_property(self, "position", Vector2.ZERO, 0.04)
+	elif lost > 0:
+		_me_line.text = "(Se lleva $%d del vaso. Él no se mueve. Lukas sí, pero tarde.)" % lost
+	else:
+		_me_line.text = "(No había nada que robar. El ladrón se ofende.)"
 
 
 func _say(text: String, c: Color) -> void:
@@ -399,8 +483,8 @@ func _say(text: String, c: Color) -> void:
 func _finish() -> void:
 	state = "done"
 	_type_label.text = ""
-	var line := "$%d. Leí bien a la gente. Casi siempre leo bien a la gente. Casi." % got if got > 0 else \
-		"Cero pesos. Hoy la gente venía blindada. Mañana cambio de táctica."
+	var line := "($%d. Leyó bien a la gente. Casi siempre.)" % got if got > 0 else \
+		"(Cero pesos. Hoy la gente venía blindada.)"
 	await Dialogue.talk([["", line]])
 	GameState.add_money(got)
 	TimeManager.skip(1.0)

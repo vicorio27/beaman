@@ -27,6 +27,7 @@ const DREAMS := [
 	["LUCHA 3: EL PECAS", "res://scenes/dreams/Lucha3.tscn"],
 	["LUCHA 4: MAURICIO", "res://scenes/dreams/Lucha4.tscn"],
 	["RECUERDO: LA RENEGADE", "res://scenes/world/MotoRide.tscn"],
+	["RECUERDO: LA PRIMERA VUELTA", "res://scenes/world/MotoLorena.tscn"],
 	["FINAL: LA SERPIENTE", "final"],
 	["EPILOGO", "res://scenes/world/Epilogo.tscn"],
 	["< VOLVER", ""],
@@ -107,7 +108,7 @@ func _show_dreams() -> void:
 
 
 const TOUCH_OPT := "CONTROLES"
-const TOUCH_NAMES := {"auto": "AUTO", "si": "SÍ", "no": "NO"}
+const TOUCH_NAMES := {"auto": "AUTO", "si": "SI", "no": "NO"}  # (la fuente no tiene Í mayúscula)
 
 
 func _opt_text(o: String) -> String:

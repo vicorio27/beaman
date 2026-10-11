@@ -16,6 +16,7 @@ const TRACKS := {
 	"Memory1": "memory",
 	"FlashbackMoto": "flashback",
 	"MotoRide": "moto_ride",
+	"MotoLorena": "moto_ride",
 	"Fila": "cafe",
 	"Fuente": "flashback",
 	"Pedir": "city_day",

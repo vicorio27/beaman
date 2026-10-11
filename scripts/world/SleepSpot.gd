@@ -36,6 +36,7 @@ var _visual: Node2D
 
 func _ready() -> void:
 	add_to_group(Focus.GROUP)
+	add_to_group("sleep_spots")  # (Survival busca el cambuche cuando se va a desmayar)
 	var s := CollisionShape2D.new()
 	var r := RectangleShape2D.new()
 	r.size = Vector2(28, 16)
@@ -154,6 +155,8 @@ func _cambuche() -> void:
 		var i := await Dialogue.talk([["", "(Su cambuche. %s)" % _status()]], opts)
 		match opts[i]:
 			"Dormir":
+				if not await _pocket_check():
+					continue
 				GameState.flags["sleep_spot"] = spot_id
 				GameState.complete_quest("donde_dormir")
 				SceneRouter.go(NIGHT_SCENE)
@@ -170,6 +173,24 @@ func _cambuche() -> void:
 				await Conversations.run("tablero", null)
 			_:
 				return
+
+
+## Antes de dormir: plata en el bolsillo es plata que se pierde. ¿La guarda en la alcancía?
+## Devuelve false si se arrepintió (vuelve al menú del cambuche).
+func _pocket_check() -> bool:
+	if GameState.money < 2000:
+		return true
+	var c: Dictionary = GameState.cambuche
+	var i := await Dialogue.talk([["", "(Tiene $%d en el bolsillo. Dormir con plata encima es dormir con un ojo abierto. Y él cierra los dos.)" % GameState.money]],
+		["Guardarla en la alcancía", "Dormir así", "Volver"])
+	if i == 2:
+		return false
+	if i == 0:
+		c["alcancia"] += GameState.money
+		GameState.money = 0
+		GameState.money_changed.emit(0)
+		await Dialogue.talk([["", "(La mete en la alcancía, debajo de la tabla floja. Ahora sí.)"]])
+	return true
 
 
 ## En el cambuche se puede dormir cualquier noche (no hace falta la misión de buscar dónde).

@@ -419,13 +419,13 @@ func _end() -> void:
 		["MAESTRO RAMIRO", "—%d de %d. %s" % [delivered, TRIPS * BRICKS, "Bien, cédula. Mañana a las siete." if delivered >= 14 else "Algo es algo. Mañana, mejor."]],
 		["MAESTRO RAMIRO", _pay_line(base_pay, bonus, pay)],
 		["MAESTRO RAMIRO", "—Y firme el recibo. ... Uy, qué firma tan bonita. Firma de gerente. ¿Usted qué hacía antes?"],
-		["ÉL", "Firmaba. Eso hacía. Firmaba cosas que otros cargaban. Ahora cargo cosas que otros firman. El universo tiene sentido de la simetría."],
 	])
+	await Recuerdo.show("oficina")  # lo que hacía antes (una vez)
 	while SceneRouter.busy:
 		if not is_inside_tree():
 			return
 		await get_tree().process_frame
-	SceneRouter.go(CITY, "FromCafe", "", "Seis horas de ladrillo. La espalda me odia. Yo, por primera vez en meses, no me odio tanto.")
+	SceneRouter.go(CITY, "FromCafe", "", "(Seis horas de ladrillo. La espalda le duele. Por primera vez en meses, eso se siente bien.)")
 
 
 func _pay_line(base_pay: int, bonus: int, pay: int) -> String:

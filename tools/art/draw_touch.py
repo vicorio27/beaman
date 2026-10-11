@@ -3,6 +3,7 @@
   touch_i.png  INVENTARIO            touch_x.png  SOLTAR (drop)   touch_c.png  ARMAR (en la mochila)
   touch_l.png  LUKAS (sniff: su menú; una huellita)
   touch_lib.png LIBRETA (un librito)
+  touch_pausa.png PAUSA (dos rayitas; abre el menú de pausa, como Start)
   compania.png el ícono de la barra de compañía del HUD
   touch_stick_base.png, touch_stick_knob.png  la palanca de la izquierda
 Salida: assets/ui/touch_*.png
@@ -68,6 +69,18 @@ def company_icon():
     img.save("assets/ui/compania.png")
 
 
+def pause(name, size, color):
+    """Botón de pausa: dos rayitas."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse([0, 0, size - 1, size - 1], fill=FILL, outline=RIM)
+    d.ellipse([2, 2, size - 3, size - 3], outline=color)
+    c = size // 2
+    d.rectangle([c - 4, c - 4, c - 2, c + 3], fill=(250, 246, 236, 220))
+    d.rectangle([c + 1, c - 4, c + 3, c + 3], fill=(250, 246, 236, 220))
+    img.save(OUT / f"touch_{name}.png")
+
+
 def stick():
     base = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
     d = ImageDraw.Draw(base)
@@ -91,6 +104,7 @@ if __name__ == "__main__":
     button("c", 18, "C", (190, 140, 220, 200))  # armar (en la mochila)
     paw("l", 22, (192, 118, 60, 220))
     book("lib", 18, (200, 180, 140, 220))
+    pause("pausa", 16, (200, 200, 210, 200))
     stick()
     company_icon()
     print("botones táctiles:", OUT)

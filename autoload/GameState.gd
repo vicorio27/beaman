@@ -591,17 +591,24 @@ func new_day(spot: String) -> Array:
 	if has_skill("lazo_lukas"):  # Lukas duerme con una oreja parada
 		theft *= 0.6
 	if in_cambuche:
-		theft = 1.0 if defense == "lost" else 0.0
+		# Si perdió la defensa, se llevan la mitad. Si no, igual: lo del bolsillo se puede ir mientras
+		# duerme (lo de la alcancía, no). Por eso la pregunta antes de dormir (SleepSpot._pocket_check).
+		theft = 1.0 if defense == "lost" else 0.22 * LEVEL_THEFT[cambuche_level()] * cambuche_guard() * (1.0 + 0.6 * diff("robos"))
 		if defense == "won":
 			flags["violencia"] = true
+	var pickpocket: bool = in_cambuche and defense != "lost"  # mientras dormía, sin pelea: solo el bolsillo
+	if pickpocket and money <= 0:
+		theft = 0.0
 	if randf() < theft:
-		flags["violencia"] = true  # lo violento despierta a PLOMO (ver NightSequence)
+		if not pickpocket:
+			flags["violencia"] = true  # lo violento despierta a PLOMO (ver NightSequence)
 		if money > 0:
 			var lost := maxi(1000, money / 2)
 			lost = mini(lost, money)
 			money -= lost
 			money_changed.emit(money)
-			lines.append("Se despierta con $%d menos." % lost)
+			lines.append(("Se despierta con el bolsillo rajado: $%d menos. La alcancía sigue ahí." if pickpocket and has_cambuche()
+				else "Se despierta con $%d menos.") % lost)
 			change_mood(-10.0)
 		else:
 			var stolen := lose_random_item()

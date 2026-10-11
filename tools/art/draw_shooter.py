@@ -229,7 +229,7 @@ ENEMIES = {
     "rappi": {"skin": (180, 130, 100, 255), "hair": (30, 26, 28, 255), "shirt": (240, 120, 40, 255),
               "pants": (40, 44, 60, 255), "helmet": (240, 120, 40, 255), "backpack": (240, 130, 40, 255), "weapon": "throw"},
     # Lilato: chiquita, linda, escupe (balas de saliva).
-    "lilato": {"skin": (220, 170, 140, 255), "hair": (30, 20, 24, 255), "shirt": (240, 120, 164, 255),
+    "lilato": {"skin": (220, 170, 140, 255), "hair": (108, 66, 38, 255), "shirt": (240, 120, 164, 255),
                "pants": (214, 84, 136, 255), "long_hair": True, "weapon": "spit", "pretty": True},
     # Lisandro: gordo y bajito, gafas oscuras, traje blanco, camisa roja abierta.
     "lisandro": {"skin": (190, 140, 110, 255), "hair": (20, 18, 20, 255), "shirt": (236, 232, 222, 255),

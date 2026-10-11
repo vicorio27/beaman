@@ -39,6 +39,7 @@ func _ready() -> void:
 		"res://scripts/systems/Survival.gd"]
 	if outdoor:
 		systems.append("res://scripts/systems/DayNight.gd")
+		systems.append("res://scripts/systems/NightLife.gd")
 		systems.append("res://scripts/world/PasserbySpawner.gd")
 	for script in systems:
 		var n: Node = CanvasLayer.new() if script.contains("/ui/") else Node.new()

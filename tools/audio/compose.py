@@ -16,6 +16,7 @@ Temas (ver docs/DISENO_CIUDAD_Y_SISTEMAS.md, "Música"):
   cafe            lo de Marta: un vals en la radio
   night           antes de dormir: piano solo, con mucho aire
   memory          la memoria: cajita de música desafinada
+  moto_ride       la moto: blues-rock de motero (shuffle en mi, guitarra saturada, slide)
 """
 import os
 import wave
@@ -524,6 +525,54 @@ def ride_song():
     return tr.buf
 
 
+def outlaw_song():
+    """La moto (el recuerdo de la Renegade): blues-rock de motero, de los de Harley. Shuffle en mi,
+    doce compases, guitarra saturada haciendo el boogie (quinta-sexta), bajo pesado, guitarra con
+    slide arriba y una batería que pisa fuerte. Para ir tarde y apurado."""
+    bpm = 112
+    form = ["E", "E", "E", "E", "A", "A", "E", "E", "B", "A", "E", "B"]
+    bars = len(form) * 2
+    tr = Track(bpm, bars * 4)
+    gtr = Track(bpm, bars * 4)
+    sw = 2.0 / 3.0  # el swing: la segunda corchea cae en el tercio
+    for bar in range(bars):
+        ch = form[bar % len(form)]
+        root = midi(ch + "2")
+        b = bar * 4
+        # El boogie: quinta, sexta, quinta, séptima (la de siempre), en shuffle.
+        for beat, top in enumerate([7, 9, 7, 10]):
+            for k, off in enumerate((0.0, sw)):
+                t = b + beat + off
+                gain = 0.55 if k == 0 else 0.4
+                gtr.add(t, pluck(hz(root + 12), gtr.sec(0.5), bright=0.85, decay=0.997), gain)
+                gtr.add(t, pluck(hz(root + 12 + top), gtr.sec(0.5), bright=0.85, decay=0.997), gain * 0.8)
+            tr.add(b + beat, tri(hz(root), tr.sec(0.62)), 0.6)  # el bajo, en negras
+        # Batería: bombo en 1 y 3 (y el empujón antes del 3), redoblante en 2 y 4, hi-hat en shuffle.
+        for k in (0, 2, 2 - (1 - sw)):
+            tr.add(b + k, kick(0.28), 0.95)
+        for k in (1, 3):
+            tr.add(b + k, snare(0.22), 0.7)
+        for beat in range(4):
+            tr.add(b + beat, hat(), 0.22)
+            tr.add(b + beat + sw, hat(open_=(beat == 3)), 0.16)
+        if bar % len(form) == len(form) - 1:  # el remate antes de volver
+            for k in (3, 3 + sw / 2, 3 + sw):
+                tr.add(b + k, snare(0.15), 0.45)
+    # La guitarra con slide: entra en la segunda vuelta, lamentándose. Pentatónica de mi con blue note.
+    slide = [
+        ("B4", 1.5), ("D5", .5), ("E5", 2), (None, 2), ("G5", 1), ("E5", .5), ("D5", .5), ("E5", 4),
+        (None, 2), ("A5", 1.5), ("G5", .5), ("E5", 2), ("G5", 1), ("Bb4", .5), ("B4", .5), ("E5", 2), (None, 2),
+        ("B5", 2), ("A5", 1), ("G5", 1), ("E5", 1), ("D5", 1), ("E5", 4), (None, 2),
+        ("D5", .67), ("E5", .33), ("G5", 1), ("E5", 6),
+    ]
+    tr.line(len(form) * 4, slide, square, 0.22, duty=0.3, vib=0.018)
+    tr.line(len(form) * 4, slide, pluck, 0.25, bright=0.95, decay=0.998)
+    g = gtr.buf / (np.abs(gtr.buf).max() + 1e-9)
+    g = np.tanh(g * 5.0) * 0.55  # la saturación del amplificador
+    g = fft_filter(g, lo=70, hi=3200)
+    return tr.buf + g
+
+
 def engine():
     """El motor (un cilindro, 180 cc): loop corto; el juego le cambia el tono con la velocidad."""
     n = int(SR * 1.0)
@@ -584,7 +633,7 @@ if __name__ == "__main__":
     save("plomo", metal(168, ["E", "E", "C", "D"] * 4, PLOMO_LEAD, False))
     save("plomo_boss", metal(132, ["C", "C", "Ab", "G"] * 4, BOSS_LEAD, True))
     save("flashback", flashback_song())
-    save("moto_ride", ride_song())
+    save("moto_ride", outlaw_song())
     save("engine", engine(), peak=0.6)
     save("dream_fight", fight_song(140, False))
     save("truck", fight_song(170, True))

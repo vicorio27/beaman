@@ -2118,7 +2118,7 @@ found_line = "Un pan tirado al lado de la panadería. La regla de los cinco segu
 position = Vector2(150, 92)
 script = ExtResource("48_4rx5b")
 item_id = "fruta"
-found_line = "Media manzana. Alguien le dio un mordisco y siguió con su vida. Yo sigo con la mía."
+found_line = "Media manzana. Alguien le dio un mordisco y siguió con su vida."
 
 [node name="Pickup_lata_372_640" type="Area2D" parent="World" unique_id=1145574864]
 position = Vector2(372, 640)
@@ -2166,19 +2166,19 @@ item_id = "carton"
 position = Vector2(604, 214)
 script = ExtResource("48_4rx5b")
 item_id = "estiba"
-found_line = "Una estiba. Madera de bodega. Si junto cuatro, tengo paredes. Si junto ocho, tengo vecinos celosos."
+found_line = "Una estiba. Madera de bodega. Con cuatro hay paredes."
 
 [node name="Pickup_estiba_842_230" type="Area2D" parent="World" unique_id=695092802]
 position = Vector2(842, 230)
 script = ExtResource("48_4rx5b")
 item_id = "estiba"
-found_line = "Una estiba. Madera de bodega. Si junto cuatro, tengo paredes. Si junto ocho, tengo vecinos celosos."
+found_line = "Una estiba. Madera de bodega. Con cuatro hay paredes."
 
 [node name="Pickup_estiba_668_236" type="Area2D" parent="World" unique_id=352121408]
 position = Vector2(668, 236)
 script = ExtResource("48_4rx5b")
 item_id = "estiba"
-found_line = "Una estiba. Madera de bodega. Si junto cuatro, tengo paredes. Si junto ocho, tengo vecinos celosos."
+found_line = "Una estiba. Madera de bodega. Con cuatro hay paredes."
 
 [node name="Pickup_plastico_640_214" type="Area2D" parent="World" unique_id=50618566]
 position = Vector2(640, 214)
@@ -2304,21 +2304,21 @@ item_id = "carta_ines"
 position = Vector2(336, 396)
 script = ExtResource("48_4rx5b")
 item_id = "sandwich"
-found_line = "Un sándwich detrás de la casa. Casi entero. No voy a investigar el casi: soy un hombre de fe."
+found_line = "Un sándwich detrás de la casa. Casi entero."
 concealed = true
 
 [node name="Pickup_pan_574_508" type="Area2D" parent="World" unique_id=1403883590]
 position = Vector2(574, 508)
 script = ExtResource("48_4rx5b")
 item_id = "pan"
-found_line = "Medio pan debajo del banco. Blando. Hoy la suerte me quiere. Un poquito."
+found_line = "Medio pan debajo del banco. Blando."
 concealed = true
 
 [node name="Pickup_fruta_392_482" type="Area2D" parent="World" unique_id=718505846]
 position = Vector2(392, 482)
 script = ExtResource("48_4rx5b")
 item_id = "fruta"
-found_line = "Una manzana caída. La encontró Lukas. Ya le debo como cuarenta."
+found_line = "Una manzana caída. La encontró Lukas."
 concealed = true
 
 [node name="Player" parent="World" unique_id=501096481 instance=ExtResource("53_6ok4a")]
@@ -2328,7 +2328,7 @@ concealed = true
 [node name="Puerta_warehouse_a_590" type="Area2D" parent="Doors" unique_id=406983998]
 position = Vector2(639, 170)
 script = ExtResource("54_1agll")
-locked_text = "Candado. Del otro lado, una radio con música de despecho. Ni a mí me va tan mal."
+locked_text = "Candado. Del otro lado, una radio con música de despecho."
 
 [node name="@CollisionShape2D@22" type="CollisionShape2D" parent="Doors/Puerta_warehouse_a_590" unique_id=89955543]
 shape = SubResource("RectangleShape2D_ngii1")
@@ -2336,7 +2336,7 @@ shape = SubResource("RectangleShape2D_ngii1")
 [node name="Puerta_warehouse_b_712" type="Area2D" parent="Doors" unique_id=1326286652]
 position = Vector2(752, 162)
 script = ExtResource("54_1agll")
-locked_text = "Candado. Del otro lado, una radio con música de despecho. Ni a mí me va tan mal."
+locked_text = "Candado. Del otro lado, una radio con música de despecho."
 
 [node name="@CollisionShape2D@24" type="CollisionShape2D" parent="Doors/Puerta_warehouse_b_712" unique_id=1420422920]
 shape = SubResource("RectangleShape2D_tkja0")
@@ -2344,7 +2344,7 @@ shape = SubResource("RectangleShape2D_tkja0")
 [node name="Puerta_warehouse_a_816" type="Area2D" parent="Doors" unique_id=368824485]
 position = Vector2(865, 178)
 script = ExtResource("54_1agll")
-locked_text = "Candado. Del otro lado, una radio con música de despecho. Ni a mí me va tan mal."
+locked_text = "Candado. Del otro lado, una radio con música de despecho."
 
 [node name="@CollisionShape2D@26" type="CollisionShape2D" parent="Doors/Puerta_warehouse_a_816" unique_id=150660256]
 shape = SubResource("RectangleShape2D_146bx")
@@ -2352,7 +2352,7 @@ shape = SubResource("RectangleShape2D_146bx")
 [node name="Puerta_house_a_24" type="Area2D" parent="Doors" unique_id=1365107588]
 position = Vector2(47, 338)
 script = ExtResource("54_1agll")
-locked_text = "Nadie contesta. Normal: si yo viera esta cara en mi puerta, tampoco abro."
+locked_text = "Nadie contesta. Detrás del vidrio, una sombra se queda quieta hasta que él se va."
 
 [node name="@CollisionShape2D@52" type="CollisionShape2D" parent="Doors/Puerta_house_a_24" unique_id=755564735]
 shape = SubResource("RectangleShape2D_7qys2")
@@ -2360,7 +2360,7 @@ shape = SubResource("RectangleShape2D_7qys2")
 [node name="Puerta_house_b_104" type="Area2D" parent="Doors" unique_id=1249616224]
 position = Vector2(131, 338)
 script = ExtResource("54_1agll")
-locked_text = "Adentro suena una telenovela. Por fin alguien en este barrio con un guión peor que el mío."
+locked_text = "Adentro suena una telenovela: \"¡Usted no es mi hijo, Rodrigo!\". Nadie abre."
 
 [node name="@CollisionShape2D@54" type="CollisionShape2D" parent="Doors/Puerta_house_b_104" unique_id=456823049]
 shape = SubResource("RectangleShape2D_i76s3")
@@ -2368,7 +2368,7 @@ shape = SubResource("RectangleShape2D_i76s3")
 [node name="Puerta_house_c_152" type="Area2D" parent="Doors" unique_id=42139451]
 position = Vector2(181, 402)
 script = ExtResource("54_1agll")
-locked_text = "Alguien corre la cortina, me mira y la cierra. Reseña: una estrella. No volvería."
+locked_text = "Alguien corre la cortina, lo mira de arriba abajo y la cierra."
 
 [node name="@CollisionShape2D@56" type="CollisionShape2D" parent="Doors/Puerta_house_c_152" unique_id=1567288951]
 shape = SubResource("RectangleShape2D_yaeeo")
@@ -2376,7 +2376,8 @@ shape = SubResource("RectangleShape2D_yaeeo")
 [node name="Puerta_house_d_36" type="Area2D" parent="Doors" unique_id=1036607659]
 position = Vector2(47, 450)
 script = ExtResource("54_1agll")
-locked_text = "Cartel: NO DAMOS NADA. Por lo menos son honestos. Les dejaría propina."
+shove = true
+locked_text = "Cartel: NO DAMOS NADA. Abajo, con otra letra: NI PREGUNTE."
 
 [node name="@CollisionShape2D@58" type="CollisionShape2D" parent="Doors/Puerta_house_d_36" unique_id=350643831]
 shape = SubResource("RectangleShape2D_fkl7l")
@@ -2384,7 +2385,7 @@ shape = SubResource("RectangleShape2D_fkl7l")
 [node name="Puerta_house_e_128" type="Area2D" parent="Doors" unique_id=580884122]
 position = Vector2(150, 472)
 script = ExtResource("54_1agll")
-locked_text = "Un perro ladra adentro. Lukas le contesta. No traduzco: el juego es para todo público."
+locked_text = "Un perro ladra adentro. Lukas le contesta. Se insultan un rato por la rendija."
 
 [node name="@CollisionShape2D@60" type="CollisionShape2D" parent="Doors/Puerta_house_e_128" unique_id=195430709]
 shape = SubResource("RectangleShape2D_dtchh")
@@ -2392,7 +2393,8 @@ shape = SubResource("RectangleShape2D_dtchh")
 [node name="Puerta_house_a_220" type="Area2D" parent="Doors" unique_id=1584988112]
 position = Vector2(243, 562)
 script = ExtResource("54_1agll")
-locked_text = "Tres candados. Tranquilos, vecinos: no me llevo nada, no tengo dónde ponerlo."
+shove = true
+locked_text = "Tres candados. Del otro lado, alguien pone el cuarto."
 
 [node name="@CollisionShape2D@63" type="CollisionShape2D" parent="Doors/Puerta_house_a_220" unique_id=1780196695]
 shape = SubResource("RectangleShape2D_ek4x2")
@@ -2400,7 +2402,7 @@ shape = SubResource("RectangleShape2D_ek4x2")
 [node name="Puerta_house_c_40" type="Area2D" parent="Doors" unique_id=911185210]
 position = Vector2(69, 578)
 script = ExtResource("54_1agll")
-locked_text = "No vive nadie. Una casa sin gente y un tipo sin casa. Alguien en diseño se está riendo."
+locked_text = "No vive nadie. En la ventana, un aviso de SE ARRIENDA amarillo de viejo."
 
 [node name="@CollisionShape2D@66" type="CollisionShape2D" parent="Doors/Puerta_house_c_40" unique_id=1201142101]
 shape = SubResource("RectangleShape2D_k0bgk")
@@ -2426,6 +2428,7 @@ shape = SubResource("RectangleShape2D_aibw7")
 [node name="Puerta_house_b_862" type="Area2D" parent="Doors" unique_id=967638139]
 position = Vector2(889, 354)
 script = ExtResource("54_1agll")
+shove = true
 locked_text = "Una voz detrás de la puerta: —Andate."
 
 [node name="@CollisionShape2D@98" type="CollisionShape2D" parent="Doors/Puerta_house_b_862" unique_id=520691759]
@@ -2434,7 +2437,7 @@ shape = SubResource("RectangleShape2D_jxuji")
 [node name="Puerta_house_e_936" type="Area2D" parent="Doors" unique_id=539602100]
 position = Vector2(958, 354)
 script = ExtResource("54_1agll")
-locked_text = "Nadie contesta. Normal: si yo viera esta cara en mi puerta, tampoco abro."
+locked_text = "Nadie contesta. Detrás del vidrio, una sombra se queda quieta hasta que él se va."
 
 [node name="@CollisionShape2D@100" type="CollisionShape2D" parent="Doors/Puerta_house_e_936" unique_id=416617311]
 shape = SubResource("RectangleShape2D_ifw2o")
@@ -2442,7 +2445,7 @@ shape = SubResource("RectangleShape2D_ifw2o")
 [node name="Puerta_house_d_870" type="Area2D" parent="Doors" unique_id=239661607]
 position = Vector2(881, 472)
 script = ExtResource("54_1agll")
-locked_text = "Adentro suena una telenovela. Por fin alguien en este barrio con un guión peor que el mío."
+locked_text = "Adentro suena una telenovela: \"¡Usted no es mi hijo, Rodrigo!\". Nadie abre."
 
 [node name="@CollisionShape2D@102" type="CollisionShape2D" parent="Doors/Puerta_house_d_870" unique_id=198672467]
 shape = SubResource("RectangleShape2D_wsw7f")
@@ -2450,7 +2453,7 @@ shape = SubResource("RectangleShape2D_wsw7f")
 [node name="Puerta_house_f_940" type="Area2D" parent="Doors" unique_id=1547006181]
 position = Vector2(974, 542)
 script = ExtResource("54_1agll")
-locked_text = "Alguien corre la cortina, me mira y la cierra. Reseña: una estrella. No volvería."
+locked_text = "Alguien corre la cortina, lo mira de arriba abajo y la cierra."
 
 [node name="@CollisionShape2D@104" type="CollisionShape2D" parent="Doors/Puerta_house_f_940" unique_id=504031716]
 shape = SubResource("RectangleShape2D_o1qax")

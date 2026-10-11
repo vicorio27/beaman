@@ -6,6 +6,9 @@ Salida: assets/characters/protagonist_adult.png. Celdas de 16x26.
   Filas 0-2 (quieto, paso 1, paso 2) x columnas 0-2 (costado mirando a la izquierda, frente, espalda).
   Fila 3: gestos de quieto. 0-1 corbata (se la arregla), 2 venia, 3-4 risa, 5-6 habla (de costado,
   mirando abajo: a Lukas, o a nadie), 7 parpadeo.
+  Fila 4: sentarse (bancas, columpio, el puente). 0 agachándose de frente, 1 sentado de frente,
+  2 sentado de frente parpadeando, 3 sentado de frente con la cabeza gacha (respira), 4 sentado de
+  espalda (mirando el río, el atardecer), 5 sentado de espalda con la cabeza gacha.
 Uso: python tools/art/draw_protagonist_adult.py  (desde la carpeta del proyecto)"""
 from pathlib import Path
 from PIL import Image
@@ -182,6 +185,72 @@ HEAD_SIDE_TALK_1 = [  # mira abajo (a Lukas)
 ]
 HEAD_SIDE_TALK_2 = HEAD_SIDE_TALK_1[:7] + ["...ohbbbso.."]
 
+# ---------------------------------------------------------------- Sentado
+# De frente: el torso entero, las manos en el regazo, los muslos acortados (vienen hacia uno) y las
+# canillas colgando. Los pies quedan en el piso: 4 px más bajito que parado.
+BODY_SIT_FRONT = [
+    "...owyywo...",
+    "ozzzwyywzzzo",
+    "ozzmwyywmzzo",
+    "ozZmwYYwmZzo",
+    "ozzozyyzozzo",
+    "oZzozyYzoZzo",
+    ".ozzzwyzzzo.",
+]
+LAP_FRONT = [
+    ".ojsjjjjsjo.",  # las manos encima de las rodillas
+    ".ojjjJJjjjo.",
+    "..ojJ..Jjo..",
+    "..ojJ..Jjo..",
+    "..ojJ..Jjo..",
+    ".okkko.oxxxo",
+    ".ooooo.ooooo",
+]
+# Agachándose (a medio camino): las rodillas dobladas, el torso un poco adelante.
+LAP_CROUCH = [
+    "ossozZZzosso",
+    ".oo.zjjz.oo.",
+    "..ojjJJjjo..",
+    ".ojJo..ojJo.",
+    ".ojJo..ojJo.",
+    ".ojJo..ojJo.",
+    ".okkko.oxxxo",
+    ".ooooo.ooooo",
+]
+# De espalda: el morral, la espalda un poco encorvada; las piernas no se ven (van adelante).
+BODY_SIT_BACK = [
+    "...ozzzzo...",
+    "ozzzmmmmzzzo",
+    "ozzmmMMmmzzo",
+    "ozZmMmmMmZzo",
+    "ozzommmmozzo",
+    "oZzoMmmMoZzo",
+    "oZzozzzzoZzo",
+    ".ozzzZZzzzo.",
+    ".oZZZZZZZZo.",
+    "..oooooooo..",
+]
+HEAD_DOWN_FRONT = [  # la cabeza gacha: se ve el pelo, la frente; la barba casi no
+    "............",
+    "......oo....",
+    "....oohHo...",
+    "...ohhhhhoo.",
+    "...ohHhhhho.",
+    "...ohhhhho..",
+    "...oSssSo...",
+    "....obbo....",
+]
+HEAD_DOWN_BACK = [
+    "............",
+    "......oo....",
+    "....oohHo...",
+    "...ohhhhhoo.",
+    "...ohHhhhho.",
+    "...ohhhho...",
+    "...ohhhho...",
+    "....oSSo....",
+]
+
 LEGS_SIDE_IDLE = [
     "....ojjo....",
     "....ojjJo...",
@@ -265,8 +334,15 @@ def main():
         (5, 3): frame(HEAD_SIDE_TALK_1, BODY_SIDE, LEGS_SIDE_IDLE, flip=True),
         (6, 3): frame(HEAD_SIDE_TALK_2, BODY_SIDE, LEGS_SIDE_IDLE, flip=True),
         (7, 3): frame(HEAD_BLINK, BODY_FRONT, still),
+        # sentarse
+        (0, 4): frame(HEAD_FRONT, BODY_FRONT[:8], LAP_CROUCH),
+        (1, 4): frame(HEAD_FRONT, BODY_SIT_FRONT, LAP_FRONT),
+        (2, 4): frame(HEAD_BLINK, BODY_SIT_FRONT, LAP_FRONT),
+        (3, 4): frame(HEAD_DOWN_FRONT, BODY_SIT_FRONT, LAP_FRONT),
+        (4, 4): frame(HEAD_BACK, BODY_SIT_BACK, []),
+        (5, 4): frame(HEAD_DOWN_BACK, BODY_SIT_BACK, []),
     }
-    sheet = Image.new("RGBA", (8 * CW, 4 * CH), (0, 0, 0, 0))
+    sheet = Image.new("RGBA", (8 * CW, 5 * CH), (0, 0, 0, 0))
     for (c, r), im in cells.items():
         sheet.alpha_composite(im, (c * CW, r * CH))
     OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -99,6 +99,10 @@ static func protagonist() -> SpriteFrames:
 		frames.set_animation_speed(q, QUIRKS[q][1])
 		for c in QUIRKS[q][0]:
 			frames.add_frame(q, _adult(c, 3))
+	# Sentado (fila 4): agacharse, de frente (y parpadeando, y con la cabeza gacha), de espalda.
+	for anim in [["sit_crouch", 0], ["sit_down", 1], ["sit_down_blink", 2], ["sit_down_bow", 3], ["sit_up", 4], ["sit_up_bow", 5]]:
+		frames.add_animation(anim[0])
+		frames.add_frame(anim[0], _adult(anim[1], 4))
 	return frames
 
 

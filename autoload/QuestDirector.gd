@@ -392,7 +392,7 @@ func _ruta() -> void:
 	var got: int = GameState.count("lata") + GameState.count("botella") - int(GameState.flags.get("ruta_latas_antes", 0))
 	if _gold_name != "" and not _gold_got and GameState.flags.get("taken", {}).get(_gold_name, -1) == GameState.day:
 		_gold_got = true
-		Narrator.say("(¡La lata dorada! Edición Mundial. Vale por diez. Wilson va a llorar. Yo casi.)", true)
+		Narrator.say("(¡La lata dorada! Edición Mundial. Vale por diez. Wilson va a llorar.)", true)
 	if is_instance_valid(_ruta_label):
 		_ruta_label.text = "RUTA %02d s   LATAS %d" % [maxi(0, int(left)), got]
 	if left > 0.0:
@@ -430,7 +430,7 @@ func _ruta() -> void:
 			lines.append(["WILSON", "—%d latas y %d botellas. Al triple: $%d. El camión llegó temprano y usted también. Raro. Nadie llega temprano en este barrio." % [cans, bottles, pay]])
 		_:
 			lines.append(["WILSON", "—%d latas y %d botellas. Al doble: $%d. Usted corre como si lo persiguieran, parce. ... ¿Lo persiguen? No me diga. No me diga nada, mejor." % [cans, bottles, pay]])
-			lines.append(["ÉL", "Nadie me persigue. Reviso igual. Esquina, poste, moto. Nadie. Es un hábito. Como lavarse los dientes, pero con la nuca."])
+			pass
 	await Dialogue.talk(lines)
 
 
@@ -461,8 +461,8 @@ func _photo() -> void:
 	await Dialogue.talk([
 		["", "(Un hombre de bigote negro y camisa a cuadros. Tiene la mano en el hombro de un niño. Se está riendo.)"],
 		["", "(Atrás, una frase: \"Para que nunca olvides de dónde vienes.\")"],
+		["", "(Es la misma mano que a él se le va sola a la cintura.)"],
 		["", "(La mira mucho rato. Después la guarda.)"],
-		["ÉL", "Tengo su misma mano. La que se le va a la cintura. Ahora sé de quién la saqué."],
 	])
 	await create_tween().tween_property(layer.get_child(1), "modulate:a", 0.0, 1.0).finished
 	layer.queue_free()
@@ -669,7 +669,6 @@ func _cat_scene() -> void:
 		["VOZ", "—Ya no lo necesito."],
 		["", "(La puerta se cierra. Despacio. Sin hacer ruido.)"],
 		["", "(Lukas se le esconde detrás de las piernas.)"],
-		["ÉL", "Lukas no se esconde de nada. Se esconde de esa puerta. Yo también me escondería detrás de mis piernas, si pudiera."],
 	])
 	GameState.change_mood(-6.0)
 	GameState.complete_quest("f_gato")

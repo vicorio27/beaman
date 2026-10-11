@@ -5,7 +5,8 @@ punta blanca. Sale de la prueba de estilo (draw_adultos_prueba.py).
 Hoja 80x48, celdas de 20x16 (los pies en la fila de abajo, centrado). Ver Lukas.cell().
   Columnas: costado (mira a la izquierda), frente, espalda, extra.
   Filas: quieto, paso 1, paso 2. La columna extra: sentado, olfateando, ladrando.
-  Fila 4 (abajo): tomando agua, dos cuadros (hocico en el cuenco, lame / sube salpicando).
+  Fila 4 (abajo): tomando agua, dos cuadros (hocico en el cuenco, lame / sube salpicando); después,
+  echado (la panza en el piso, la cabeza sobre las patas de adelante) y echado dormido (ojo cerrado).
 Salida: assets/characters/lukas.png
 Uso: python tools/art/draw_lukas.py  (desde la carpeta del proyecto)"""
 from pathlib import Path
@@ -138,6 +139,22 @@ def side(legs=LEGS_IDLE, pose="stand"):
             for x, y in ((w, 7), (w - 1, 9), (w, 10)):
                 big.putpixel((x, y), WATER)
         return big
+    if pose in ("lie", "sleep"):
+        # Echado: sin patas, todo el cuerpo baja al piso; la cabeza un poco más, sobre las patas
+        # de adelante estiradas. Dormido: el ojo cerrado (una rayita canela).
+        rows = [list(r) for r in SIDE_BODY]
+        rows[1][1] = rows[2][0] = rows[2][1] = rows[2][2] = "."  # la cola, caída: no parada
+        rows[3][0] = "L"
+        if pose == "sleep":
+            rows[2][13] = "D"
+        w = len(rows[0])
+        im = sprite(["".join(r) for r in rows] + ["." * w] * 3)
+        im = shift(im, (0, 0, w, 9), 3)
+        im = shift(im, (10, 0, w, 12), 1)
+        for x, ch in ((12, "o"), (13, "L"), (14, "L"), (15, "L"), (16, "o")):
+            if im.getpixel((x, 11))[3] == 0 or ch == "o":
+                im.putpixel((x, 11), PAL[ch] + (255,))
+        return im
     return im
 
 
@@ -156,7 +173,7 @@ def main():
         sheet.alpha_composite(cell(sprite(BACK + BACK_LEGS[row])), (2 * CW, row * CH))
     for row, pose in enumerate(["sit", "sniff", "bark"]):
         sheet.alpha_composite(cell(flip(side(pose=pose))), (3 * CW, row * CH))
-    for col, pose in enumerate(["drink_a", "drink_b"]):
+    for col, pose in enumerate(["drink_a", "drink_b", "lie", "sleep"]):
         sheet.alpha_composite(cell(flip(side(pose=pose))), (col * CW, 3 * CH))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(OUT)

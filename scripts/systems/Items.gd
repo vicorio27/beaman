@@ -69,18 +69,18 @@ const DB := {
 	# lo que dice depende de qué tan loco esté, ver GameState.locura_level()).
 	"flor": {"name": "Flor", "desc": "Un clavel rojo.", "type": "especial", "stack": 1},
 	"reloj_sin_agujas": {"name": "Reloj sin agujas", "desc": "Un reloj sin agujas.", "type": "rareza", "stack": 1,
-		"use": ["Lo miro. Ninguna hora. Me parece justo.", "Lo miro. Son las nunca. Llego tarde.", "Lo miro y hace tic-tac. No tiene pila. Hace tic-tac igual."]},
+		"use": ["(Lo mira. Ninguna hora. Parece justo.)", "(Lo mira. Son las nunca. Va tarde.)", "(Lo mira y hace tic-tac. No tiene pila. Hace tic-tac igual.)"]},
 	"estampita": {"name": "Estampita de San Judas", "desc": "San Judas, patrono de las causas perdidas. De segunda.",
-		"type": "rareza", "stack": 1, "use": ["Le rezo. Por si acaso. No sé rezar, así que le cuento el día.",
-			"San Judas tiene cara de cansado. Lo entiendo: le tocamos todos nosotros.", "Me contesta. Dice que coma algo. Tiene razón, pero igual me da miedo que conteste."]},
+		"type": "rareza", "stack": 1, "use": ["(Le reza. Por si acaso. No sabe rezar, así que le cuenta el día.)",
+			"(San Judas tiene cara de cansado. Con razón: le tocaron todos ellos.)", "(Se queda esperando a que la estampita le conteste. Por un segundo, parece que sí.)"]},
 	"muneca": {"name": "Muñeca sin un ojo", "desc": "Una muñeca sin un ojo. Se llama Gloria.", "type": "rareza", "stack": 1,
-		"use": ["Gloria me mira. Yo la miro. Empate.", "Gloria cree que debería llamar a mi mamá. Gloria no sabe nada de mi mamá.",
-			"Gloria y yo ya no nos hablamos. Ella sabe por qué."]},
+		"use": ["(Gloria lo mira. Él la mira. Empate.)", "(Gloria lo mira con su único ojo, como si supiera algo de su mamá.)",
+			"(Guarda a Gloria boca abajo. Hoy no se están hablando.)"]},
 	"dentadura": {"name": "Dentadura postiza", "desc": "De alguien que ya no la necesita.", "type": "rareza", "stack": 1,
-		"use": ["La hago sonar. Clac clac. Lukas la odia.", "Clac clac. Suena como alguien riéndose de mí. Bajito.", "Clac clac. Ya sé de quién era. Mejor no digo."]},
+		"use": ["(La hace sonar. Clac clac. Lukas la odia.)", "(Clac clac. Suena como alguien riéndose de él. Bajito.)", "(Clac clac. Se queda mirándola, como si supiera de quién era.)"]},
 	"casete": {"name": "Casete de boleros", "desc": "Lado A: amor. Lado B: más amor, pero borracho.", "type": "rareza", "stack": 1,
-		"use": ["No tengo con qué ponerlo. Me lo sé de memoria igual: lo canto bajito.", "Lo canto. Lukas aúlla en el coro. Somos un dúo.",
-			"Lo escucho. Sin radio. Clarito. Lado B."]},
+		"use": ["(No tiene con qué ponerlo. Mueve los labios con la letra, sin sonido.)", "(Tararea sin voz. Lukas aúlla en el coro, por los dos.)",
+			"(Le da vueltas al casete con un lápiz. Lado B.)"]},
 	# Victoria: lo que ella deja en la reja del colegio cuando él le deja algo.
 	"dibujo_victoria": {"name": "Dibujo de Victoria", "desc": "Crayón. Un señor de palitos con barba y un perro café. Abajo dice: EL DEL PERRO.",
 		"type": "especial", "stack": 5, "fixed": true},
@@ -153,7 +153,7 @@ static func recipe_text(result: String) -> String:
 ## Ampliaciones del cambuche: nivel al que lleva -> {"needs": {id: cantidad}, "flag", "line"}.
 const EXPANSIONS := {
 	3: {"needs": {"estiba": 4, "clavos": 1}, "flag": "paredes",
-		"line": "Cuatro estibas, una bolsa de clavos y una piedra. Ahora tengo paredes. Y una puerta de cortina. Toc toc. ¿Quién es? Nadie, nunca."},
+		"line": "(Cuatro estibas, una bolsa de clavos y una piedra. Ahora hay paredes. Y una puerta de cortina. Nadie va a tocar. Igual.)"},
 	4: {"needs": {"zinc": 2, "radio": 1, "clavos": 1}, "flag": "zinc",
-		"line": "Techo de zinc, radio con boleros y una matera. Ya no es un cambuche: es un ranchito. Si me vieran en el barrio de antes... mejor que no."},
+		"line": "(Techo de zinc, radio con boleros y una matera. Ya no es un cambuche: es un ranchito.)"},
 }

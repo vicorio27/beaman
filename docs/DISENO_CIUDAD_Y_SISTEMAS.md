@@ -1703,3 +1703,97 @@ El reloj de la ruta subió a y=29, entre la lista de encargos y los avisos de ar
   - **Princesa, la perrita del norte:** recompensa de $10.000 y una puerta en la cara.
 
 Probado: cada versión de cada evento con cada opción, sin errores. La ruta con Chepe y con la dorada, con capturas.
+
+## Sentarse, las puertas que empujan, él mudo del todo y la ciudad de noche (2026-10-10)
+
+**Sentarse** (`Player.sit()` y `stand_up()`; `Conversations._sit_bench`, `_sit_swing`, `_sit_ground`):
+- Camina al asiento, se agacha y se sienta. En la banca y el columpio, de frente; en el piso, de espalda (la tele de TV RADIO, el atardecer, el río con Samuel, el kiosco de noche).
+- Respira (baja la cabeza a ratos) y parpadea. Se para solo cuando el jugador lo mueve.
+- Lukas se acomoda al lado (`Lukas.settle()`): va, se sienta, da la vuelta de perro, se echa y al rato se duerme. Se levanta cuando él se para.
+- Arte: fila 4 del protagonista (`draw_protagonist_adult.py`); Lukas echado y dormido en la fila 4 de su hoja (`draw_lukas.py`).
+
+**Puertas que empujan** (`Door.shove`): tres casas del barrio (NO DAMOS NADA, la de los tres candados y la del "Andate") abren y lo sacan a empujones. Sale volando hacia atrás, cae sentado y se levanta (`Player.shoved()`). Quien abre grita, y su dibujo coincide con su voz. Le baja el ánimo (-3). Los textos de las otras puertas pasaron a tercera persona.
+
+**Él no habla, ni por dentro.** Se quitaron todas sus líneas ("ÉL" y "ÉL, A LUKAS") de la vida real y de los sueños, unas 250. Lo que llevaba información quedó como narración en tercera persona:
+- el rayón de la moto lo hizo él;
+- lo de la Clínica Irene no lo sabe nadie;
+- el clavel es para Victoria, que cumple doce el 29 de octubre;
+- la mano es la misma de su papá;
+- el paquete de Zaida no era harina.
+
+Hablarle a Lukas ahora se narra ("le habla bajito, al oído"). En el juego de miradas, sus turnos son narración con su retrato prendido. Los avisos, los objetos, la moto, Pedir, Rapidito y la Obra pasaron a tercera persona. Solo va a hablar donde se decida después. Las líneas "YO" de los sueños (donde habla en voz alta) quedaron como estaban, pendientes de decisión.
+
+**La ciudad de noche** (`scripts/systems/NightLife.gd`, de 20:00 a 5:30, en los lugares de afuera):
+- **Se van:** los pelados del fútbol, las palomas, Fabiola, Leonor, Efraín, Aurelio y los del ajedrez.
+- **Salen** (`Conversations._noche`):
+  - el celador con linterna, que hace la ronda;
+  - el de los perros calientes, en el carrito con bombillo (vende);
+  - dos con un parlante en el kiosco (se puede sentar con ellos una hora: compañía);
+  - una pareja en la banca;
+  - el que fuma en la puerta del billar;
+  - la señora del tinto en el Parque (vende).
+- **Se apagan:** la panadería (21), el café (22), la tele de TV RADIO (20), la tienda, las flores y Foto Express. La vidriera queda oscura.
+- **Se prenden:**
+  - ventanas en las casas, que se van apagando entre las 22:30 y la 1:30 (cada casa a su hora);
+  - el letrero BILLAR EL GUAYABO, rosado y titilando (de día es un letrero gris que nadie mira);
+  - el bombillo del carrito.
+- **Gente de a pie:** de noche pasa menos, y después de las 23, casi nadie.
+
+## La moto: llegar a tiempo, Lorena atrás, música de motero (2026-10-10)
+
+- **La ida a la casa de ella tiene reloj** (`MotoRide.TIME_LIMIT`, 60 s; la vuelta limpia a fondo dura unos 43 s). Arriba dice QUEDAN y titila en rojo los últimos 10 s. Si se acaba: "TARDE", la puerta cerrada, y el recuerdo se rebobina ("No. Así no fue. Llegó a tiempo.") y se vuelve a empezar desde la salida. Las carreras de los sueños y Rapidito heredan de MotoRide sin reloj (`time_limit = 0`).
+- **La casa de ella:** cuatro pisos de ladrillo, placas, balcón con reja, el tanque azul y las varillas. Está al lado de la meta y en la imagen de la llegada (`draw_moto.py`: `casa()`, `casa_ella()`, `llegada()`).
+- **Lorena tiene el pelo castaño** en todas sus hojas: la ciudad (`draw_gente.py`), el retrato, la jefa del sueño (`draw_lilato.py` + `apply_palette` solo de su hoja), los dos shooters y la llegada.
+- **Los árboles de la pista son verdes.**
+- **La primera vuelta** (`scripts/world/MotoLorena.gd`, escena `MotoLorena.tscn`; también en el menú de pruebas):
+  - Después de la llegada, ella se sube atrás y se dibuja encima de él (`lorena_atras(_risa).png`). No hay reloj.
+  - Ir a más del 72% un rato hace que lo regañe (diez frases).
+  - Ir tranquilo (del 30 al 62%) unos 5 s la hace reír, y rebota.
+  - Ir demasiado lento la hace burlarse. Si se estrella: "¡¿VIO?! ¡SE LO DIJE!".
+  - Al final, en el mirador: cuántas veces se rió y cuántas lo regañó, y dos finales según cuál ganó. Él ya no habla: señala el puesto de atrás.
+- **La música:** `moto_ride` ahora es blues-rock de motero (`compose.py: outlaw_song`): shuffle en mi, doce compases, guitarra saturada con el boogie, bajo, slide arriba y una batería que pisa fuerte.
+
+## Pedir de noche y la plata en el bolsillo (2026-10-10)
+
+- **Pedir se puede hasta las 23.** De 19 en adelante pasa otra gente: siete personas, la vereda a oscuras y por lo menos un ladrón.
+  - **El ladrón:** "—Uy, qué vasito tan lleno".
+  - **Los de la esquina.**
+  - **La enfermera** que sale del turno.
+  - **El celador.**
+  - **El borracho** y **la policía.**
+- **Se suma [E] pararse (defenderse).**
+  - Contra el ladrón: pararse lo espanta el 65% de las veces y el ladrido de Lukas el 80%. Si sale mal, se lleva el 60% de lo juntado y además hay golpe (ánimo -6, temblor de pantalla).
+  - Quedarse quieto, pedirle o hacerle un chiste es entregarle la plata.
+  - Pararse frente a gente que no viene a robar la asusta.
+- **Antes de dormir en el cambuche:** con $2.000 o más en el bolsillo, pregunta si la guarda en la alcancía (`SleepSpot._pocket_check`).
+- **Dormir con plata encima en el cambuche**, aunque gane la defensa de la noche, tiene riesgo de despertar "con el bolsillo rajado" (la mitad). Lo de la alcancía no se toca. No cuenta como algo violento. Afuera del cambuche, el robo de siempre.
+
+## Misiones con detalle, recuerdos, desmayo y pausa (2026-10-10)
+
+- **El detalle de las misiones** (`InventoryUI`, `Quests.detail`):
+  - En la mochila (Tab), ARRIBA desde la fila de arriba sube a las misiones. Arriba y abajo eligen; bajando de la última, se vuelve a la mochila.
+  - Si hay más de cuatro misiones, la lista corre y arriba dice cuál es (7/12).
+  - La elegida muestra, en el lugar de la mochila, su tipo (PRINCIPAL, SECUNDARIA, OPCIONAL) y qué hacer, dónde, a qué hora y qué se gana.
+  - Las 64 misiones tienen su `detail`. Algunas suman el estado en vivo: los requisitos de la cédula y de la Defensoría con [X]/[ ], el día de la audiencia o de recoger la cédula, la plata de la alcancía.
+- **Los recuerdos** (`scripts/systems/Recuerdo.gd`, arte en `tools/art/draw_recuerdos.py`):
+  - Una foto sepia aparece con un destello, con la cajita de música. Se narra en tercera persona, se voltea y atrás hay algo escrito a mano. Cada una sale una sola vez.
+
+| Recuerdo | Cuándo sale |
+|---|---|
+| La Renegade, el primer día (él sin barba) | Antes de arrancar el recuerdo de la moto |
+| Lorena atrás en la moto, riéndose | Al final de la primera vuelta, en el mirador |
+| Victoria recién nacida, 29 de octubre | La primera vez que la ve en la reja del colegio |
+| Lukas cachorro en una caja de zapatos (talla 42) | La primera vez en la veterinaria |
+| La oficina: EMPLEADO DEL MES ("El único mes") | Al terminar la obra, cuando el maestro le pregunta qué hacía antes |
+
+- **El desmayo** (`Survival.gd`):
+  - Con el hambre en cero ya no se cae de una: cuenta de 10 a 1 en rojo, con latido y la cámara meciéndose. Él corre al 1,9x.
+  - Si llega a su cambuche (si está en esa escena), se desmaya adentro, protegido, y no le falta nada.
+  - Si come algo, se le pasa.
+  - Si la cuenta llega a cero en la calle, despierta horas después en la plaza y le robaron: una o dos cosas de la mochila y, la mitad de las veces, la mitad de la plata del bolsillo.
+  - En un minijuego, se desmaya directo.
+- **El menú de pausa** (`autoload/PauseMenu.gd`):
+  - Se abre con P o Esc, con Start del control, o con el botón de dos rayitas en el celular. Para el juego, y solo se abre con nada abierto.
+  - CONTINUAR.
+  - CONTROLES: AUTO / SI / NO (los mismos del título).
+  - SALIR POR AHORA, con confirmación: en la vida real guarda ahí mismo y se sigue en la entrada de ese lugar; en un sueño no se guarda y se sigue desde el último cuenco.

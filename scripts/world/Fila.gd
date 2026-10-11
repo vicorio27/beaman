@@ -162,12 +162,10 @@ func _label(parent: Node, pos: Vector2) -> Label:
 func _run(vip: bool) -> void:
 	await get_tree().create_timer(0.8).timeout
 	if vip and GameState.flags.get("vip_labia", false):
-		await Dialogue.talk([["CELADOR", "—¡Sobrino! Pase, pase."], ["CELADOR", "—Mi sobrino favorito. El de Ibagué. Saludes a mi hermana."],
-			["ÉL", "Tengo un tío nuevo. Me costó veinte segundos de mirada fija. La familia más barata que he conseguido."]])
+		await Dialogue.talk([["CELADOR", "—¡Sobrino! Pase, pase."], ["CELADOR", "—Mi sobrino favorito. El de Ibagué. Saludes a mi hermana."]])
 	elif vip:
 		await Dialogue.talk([["CELADOR", "—¿De parte de Zaida? ... Pase. Adelante. Casi de primero."],
-			["SEÑORA DE LA FILA", "—¡Se coló! ¡Ese señor se coló! ... ¡Y ni pide perdón! ¡Y con perro!"],
-			["ÉL", "La señora tiene razón. Me colé. Lo hice con una recomendación de Zaida. Eso es peor que colarse. Eso es colarse con intereses."]])
+			["SEÑORA DE LA FILA", "—¡Se coló! ¡Ese señor se coló! ... ¡Y ni pide perdón! ¡Y con perro!"]])
 	elif ahead > 14:
 		await Dialogue.talk([["", "(%d personas delante.)" % ahead]])
 	else:
@@ -281,8 +279,7 @@ func _closed() -> void:
 	minutes = CLOSE
 	_prompt.text = ""
 	await Dialogue.talk([["CELADOR", "—¡Cerramos! Los que no alcanzaron, mañana. Temprano. Más temprano que hoy."],
-		["", "(Horas parado. Lukas durmió una siesta.)"],
-		["ÉL", "Cinco horas de fila. Avancé once personas. A ese ritmo me atienden un martes de 2031."]])
+		["", "(Horas parado. Lukas durmió una siesta.)"]])
 	_leave()
 
 
@@ -299,7 +296,6 @@ func _window() -> void:
 	if GameState.money < PRICE:
 		missing.append("la plata ($55.000)")
 	await Dialogue.talk([["FUNCIONARIA", "—Siguiente. ¿Qué trámite?"], ["", "(...)"],
-		["ÉL", "Uñas de acrílico con flores. Una taza que dice \"no me hables antes del café\". Somos almas gemelas. Ella no lo sabe."],
 		["FUNCIONARIA", "—¿Qué trámite, señor? ... ¿Me escucha? ... Ay, un papel. Bueno, a ver el papel. ... Duplicado de cédula."]])
 	if not missing.is_empty():
 		await Dialogue.talk([
@@ -317,7 +313,6 @@ func _window() -> void:
 		["", "(Cuenta los billetes uno por uno. Despacio.)"],
 		["FUNCIONARIA", "—Listo. Vuelva en cinco días hábiles."],
 		["FUNCIONARIA", "—... ¿Me entendió? Cinco días. Hábiles. Muéstreme cinco dedos. ... Eso. Siguiente."],
-		["ÉL", "Cinco días hábiles. En la calle no hay días hábiles. Hay días con sol y días con policía."],
 	])
 	GameState.add_money(-PRICE)
 	GameState.remove_item("foto_doc")

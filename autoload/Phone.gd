@@ -167,10 +167,7 @@ func _lorena(again: bool, hidden: bool) -> void:
 		f.erase("lorena_colgada")
 		await Dialogue.talk([[["LORENA", "—¿ME COLGÓ? ¿A mí? ¿A la madre de su hija? Eso es violencia telefónica. Le voy a poner una tutela por cada pitido."],
 			["LORENA", "—Se me cayó la llamada. Bueno, usted me la tumbó. Es igual. Eso es física: acción y reacción, como dijo Isaac Nielsen."],
-			["LORENA", "—Le marco otra vez porque soy una persona madura. Mi coach dice que soy la más madura del grupo. El grupo es de WhatsApp, pero igual."]].pick_random(),
-			["ÉL", ["Volvió. Siempre vuelve. Es como el bumerán, si el bumerán pidiera plata.",
-				"Le colgué y la llamada volvió sola. Hay cosas que ni la tecnología puede cortar.",
-				"Isaac Nielsen. Lo inventó todo menos la gravedad, que se la dejó a Newton por pena."].pick_random()]])
+			["LORENA", "—Le marco otra vez porque soy una persona madura. Mi coach dice que soy la más madura del grupo. El grupo es de WhatsApp, pero igual."]].pick_random()])
 		if f.get("lorena_hoy_hecha", -1) == GameState.day:
 			await Dialogue.talk([["LORENA", "—Bueno, ya le dije todo lo que le tenía que decir. Es que usted no escucha. Chao. No me llame."]])
 			return
@@ -191,7 +188,7 @@ func _lorena(again: bool, hidden: bool) -> void:
 func _breath(lines: Array) -> int:
 	var i := await Dialogue.talk(lines, [BREATHE, BREATHE_2, HANG])
 	if i == 2:
-		await Dialogue.talk([["", "(Cuelga.)"], ["ÉL", "Me siento poderoso. Me va a durar unos veinte segundos."]])
+		await Dialogue.talk([["", "(Cuelga.)"]])
 		GameState.flags["lorena_colgada"] = true
 		_callback = randf_range(10.0, 20.0)
 	return i
@@ -200,7 +197,6 @@ func _breath(lines: Array) -> int:
 func _l_numero() -> void:
 	var i := await _breath([
 		["LORENA", "—¿Aló? ¿Aló? ... Ah, sí es usted. Respira igualito. Como un perro con sinusitis."],
-		["ÉL", "Lorena. Tres horas con celular y ya me encontró. La DIJIN se demora más."],
 		["LORENA", "—¿Que cómo conseguí el número? Tengo mis contactos. Bueno, un contacto. Bueno, se lo pregunté a don Efraín. Bueno, se lo pagué. Con plata suya, entonces técnicamente usted me lo dio."],
 		["LORENA", "—Lo llamaba para algo importantísimo. ... Ya se me olvidó. Usted me desconcentra con ese silencio tan agresivo."]])
 	if i == 2:
@@ -208,9 +204,7 @@ func _l_numero() -> void:
 	await Dialogue.talk([
 		["LORENA", "—No me respire así, que yo me sé su repertorio. Ese es el respiro de 'no tengo plata'. Lo tengo catalogado. Tengo once."],
 		["LORENA", "—Ya me acordé: necesito cien mil. Para qué, no le digo, porque es mi vida privada. Artículo quince de la Constitución: el de la privacidad y el de las quinceañeras."],
-		["ÉL", "Leyó la Constitución. Una página. La quince. Le gustó el número."],
-		["LORENA", "—Bueno, chao. Y no me vuelva a llamar."],
-		["ÉL", "Me llamó ella. Lo voy a dejar pasar. Es su mejor chiste y ni lo sabe."]])
+		["LORENA", "—Bueno, chao. Y no me vuelva a llamar."]])
 
 
 func _l_tenis() -> void:
@@ -223,12 +217,10 @@ func _l_tenis() -> void:
 	if i == 1:
 		await Dialogue.talk([
 			["LORENA", "—¿Dos veces? ¿Eso es un sí? Hagamos así: una vez es 'sí' y dos es 'sí, Lorena, ya mismo'."],
-			["ÉL", "Respiro. Es lo único que todavía hago gratis. Y ya me lo está cobrando."],
 			["LORENA", "—Perfecto. Se lo anoto en el cuaderno. El cuaderno de lo que me debe. Ya va en el tomo dos. El tomo uno lo perdí, así que cuenta doble."]])
 	else:
 		await Dialogue.talk([
-			["LORENA", "—Una sola respiración. Tacaño hasta para el aire. Por eso no tiene amigos. Bueno, tiene un perro. Eso no cuenta, el perro está por la comida."],
-			["ÉL", "Lukas está por la comida. Y por mí. En ese orden. Es honesto. Es más de lo que tengo con la mayoría."]])
+			["LORENA", "—Una sola respiración. Tacaño hasta para el aire. Por eso no tiene amigos. Bueno, tiene un perro. Eso no cuenta, el perro está por la comida."]])
 
 
 func _l_horoscopo() -> void:
@@ -238,7 +230,6 @@ func _l_horoscopo() -> void:
 	if i == 2:
 		return
 	await Dialogue.talk([
-		["ÉL", "Nací en marzo. Soy Piscis. Por esa lógica me deben a mí el doble, pero en pescado."],
 		["LORENA", "—Y dice: 'Número de la suerte: cien mil'. ¿Ve? Hasta el horóscopo está de mi lado. El horóscopo y Dios. Y mi mamá. Usted solo tiene al perro y el perro no vota."]])
 
 
@@ -249,7 +240,6 @@ func _l_tutela() -> void:
 	if i == 2:
 		return
 	await Dialogue.talk([
-		["ÉL", "Su abogado es su primo Brayan. Estudió Derecho virtual en una página que también vendía ollas."],
 		["LORENA", "—Y no es mi primo. Es mi primo político. Que es diferente, porque vota."],
 		["LORENA", "—La tutela sale en tres días hábiles. Hábiles para mí. Para usted son días de estar asustado. Vaya preparando el pecho. Y la plata."]])
 
@@ -262,7 +252,6 @@ func _l_coaching() -> void:
 		return
 	await Dialogue.talk([
 		["LORENA", "—El curso cuesta trescientos mil y me va a sanar. Si me sano yo, se sana Victoria. Somos como el sistema solar. Yo soy el sol, obvio."],
-		["ÉL", "Ella es el sol. Todo gira a su alrededor y si uno se acerca mucho, se quema. Hasta ahí la metáfora le funciona."],
 		["LORENA", "—Así que en el fondo usted me debe el curso. Es una inversión en su hija. Y en el sol."]])
 
 
@@ -273,8 +262,7 @@ func _l_miami() -> void:
 	if i == 2:
 		return
 	await Dialogue.talk([
-		["LORENA", "—Si el universo no paga, paga usted. Usted es como el universo, pero con menos plata y más feo."],
-		["ÉL", "Me comparó con el universo. Es lo más bonito que me ha dicho en once años. Lo voy a enmarcar. No tengo marco. Ni pared."]])
+		["LORENA", "—Si el universo no paga, paga usted. Usted es como el universo, pero con menos plata y más feo."]])
 
 
 func _l_perro() -> void:
@@ -293,19 +281,15 @@ func _l_perro() -> void:
 		await Dialogue.talk([
 			["", "(Le acerca el celular a Lukas. Lukas lo huele. Ladra una vez, fuerte, directo al micrófono.)"],
 			["LORENA", "—¿ME LADRÓ? ¿Usted me puso al perro? Eso es violencia canina. Lo voy a denunciar en el ICBF, que es el de los perros."],
-			["ÉL", "El ICBF es el de los niños. Para los perros no hay nada. A Lukas no lo protege nadie, salvo yo, que no me protejo ni a mí."],
 			["", "(Lukas mueve la cola. Sabe lo que hizo. Lo volvería a hacer.)"]])
 		GameState.change_mood(4.0)
 		return
-	await Dialogue.talk([
-		["ÉL", "Lukas come una taza de concentrado al día. Ella, por teléfono, se come la mitad de mi semana."]])
 
 
 func _l_aguacate() -> void:
 	await Dialogue.talk([
 		["LORENA", "—Amor, ¿ya compraste el aguacate? Que esté maduro pero no tanto. Que esté maduro como yo: por dentro."],
-		["LORENA", "—... ¿Aló? ... Ay. Me equivoqué. Usted no es él. Él respira con más ganas."],
-		["ÉL", "Tiene novio. Le compra aguacates. Que Dios lo acompañe. Es el único hombre de la historia que recibe instrucciones de Lorena sobre una fruta."]])
+		["LORENA", "—... ¿Aló? ... Ay. Me equivoqué. Usted no es él. Él respira con más ganas."]])
 	await _breath([["LORENA", "—Bueno, ya que estoy aquí. ¿Tiene cien mil? Es para el aguacate. Están carísimos. Por culpa suya, seguramente."]])
 
 
@@ -316,8 +300,7 @@ func _l_ansiedad() -> void:
 	if i == 2:
 		return
 	await Dialogue.talk([
-		["LORENA", "—Entonces le pongo un límite: me manda plata hasta el viernes. Ese es el límite. Después del viernes le pongo otro."],
-		["ÉL", "Pone límites como se pone las uñas: largos, de colores y en todas partes."]])
+		["LORENA", "—Entonces le pongo un límite: me manda plata hasta el viernes. Ese es el límite. Después del viernes le pongo otro."]])
 
 
 func _l_cumple() -> void:
@@ -327,25 +310,18 @@ func _l_cumple() -> void:
 	if i == 2:
 		return
 	await Dialogue.talk([
-		["ÉL", "Shakira dijo que las mujeres ya no lloran, facturan. Lorena se lo tomó a pecho: me factura hasta la respiración."],
 		["LORENA", "—Y no se le ocurra venir. Bueno, sí venga, pero de lejos. Como el sol. ... No, el sol soy yo. Usted venga como una nube. Una nube con plata."]])
 
 
 ## Después de las diez: una al azar (las de siempre, para que siga dando gusto contestar).
 func _l_cualquiera() -> void:
 	var lines: Array = [
-		[["LORENA", "—Necesito plata para el gas. El gas no se paga solo. Bueno, se paga con el recibo, pero el recibo no se paga solo."],
-			["ÉL", "El recibo tampoco se paga solo. En eso tiene razón. Me da miedo cuando tiene razón."]],
-		[["LORENA", "—Le cuento que Victoria sacó cinco en matemáticas. Eso lo sacó de mí. Lo de que no le gusta la sopa, de usted."],
-			["ÉL", "Cinco en matemáticas. Voy a sonreír acá, solo, al lado de un poste. Que nadie me vea."]],
-		[["LORENA", "—Estoy en el centro comercial y me acordé de usted. Estaba viendo unos zapatos que no me puedo comprar. Igualito."],
-			["ÉL", "Me volví zapatos que no se puede comprar. Subí de categoría."]],
-		[["LORENA", "—Le aviso que voy a demandarlo por daños y perjurios. ... Perjuicios. Bueno, las dos. Por si acaso."],
-			["ÉL", "Daños y perjurios. Debería ser delito. Lo de ella, digo."]],
-		[["LORENA", "—¿Usted me bloqueó en Facebook? ... Ah, no tiene Facebook. ¿Y entonces dónde lo bloqueo yo?"],
-			["ÉL", "No tengo dónde ser bloqueado. Es la ventaja de no tener nada: nadie te lo puede quitar. Bueno, Lorena intenta."]],
-		[["LORENA", "—Me dijeron que usted anda con un perro y una mochila. Que parece un mochilero. Que eso es muy de moda en Europa. Allá por lo menos le darían limosna en euros."],
-			["ÉL", "Mochilero europeo. Me voy a cobrar en euros. Primero tengo que saber qué es un euro."]],
+		[["LORENA", "—Necesito plata para el gas. El gas no se paga solo. Bueno, se paga con el recibo, pero el recibo no se paga solo."]],
+		[["LORENA", "—Le cuento que Victoria sacó cinco en matemáticas. Eso lo sacó de mí. Lo de que no le gusta la sopa, de usted."]],
+		[["LORENA", "—Estoy en el centro comercial y me acordé de usted. Estaba viendo unos zapatos que no me puedo comprar. Igualito."]],
+		[["LORENA", "—Le aviso que voy a demandarlo por daños y perjurios. ... Perjuicios. Bueno, las dos. Por si acaso."]],
+		[["LORENA", "—¿Usted me bloqueó en Facebook? ... Ah, no tiene Facebook. ¿Y entonces dónde lo bloqueo yo?"]],
+		[["LORENA", "—Me dijeron que usted anda con un perro y una mochila. Que parece un mochilero. Que eso es muy de moda en Europa. Allá por lo menos le darían limosna en euros."]],
 	]
 	var pick: Array = lines.pick_random()
 	await _breath([pick[0]])
@@ -357,21 +333,16 @@ func _l_cualquiera() -> void:
 func _unknown() -> void:
 	var calls := [
 		[["CREDITOS YA", "—Buenas tardes, le habla Yésica de Créditos Ya. Usted está preaprobado para un crédito de tres millones."],
-			["ÉL", "Preaprobado. Yo. Que duermo en un cartón. El sistema financiero tiene más fe en mí que yo."],
 			["CREDITOS YA", "—¿Señor? ... Bueno, lo dejo preaprobado. Eso ya no se lo quita nadie. Que tenga buen día."]],
 		[["DESCONOCIDO", "—¿Pollos Mario? Me manda dos pollos asados, una gaseosa de litro y mucha salsa de ajo."],
-			["DESCONOCIDO", "—¿Aló? ¿Pollos? ... Este pollo respira raro. Voy a pedir pizza."],
-			["ÉL", "Por un segundo fui Pollos Mario. Tenía clientes. Fue el mejor trabajo que he tenido en meses."]],
+			["DESCONOCIDO", "—¿Aló? ¿Pollos? ... Este pollo respira raro. Voy a pedir pizza."]],
 		[["RAPIDITO", "—Hola. Su pedido va en camino. Su domiciliario lo está viendo en el mapa. Gracias por usar Rapidito."],
-			["ÉL", "No pedí nada. No tengo la aplicación. Tengo un celular de flecha. ¿Cómo me ve en el mapa?"],
 			["", "(Mira para todos lados. Pasa una moto. No se detiene. Esta vez.)"]],
 		[["ENCUESTA", "—Encuesta de satisfacción. Del uno al diez, ¿qué tan satisfecho está con su vida? Marque después del tono."],
 			["", "(Tono. No marca nada.)"],
-			["ENCUESTA", "—Registramos: cero. Gracias por su honestidad. Su opinión es muy importante para nosotros."],
-			["ÉL", "Mi opinión es muy importante para una grabación. Es un comienzo."]],
+			["ENCUESTA", "—Registramos: cero. Gracias por su honestidad. Su opinión es muy importante para nosotros."]],
 		[["DESCONOCIDO", "—Mami, soy yo, se me perdió el celular, me están prestando este, mándeme cincuenta mil a este número que..."],
-			["DESCONOCIDO", "—... ¿Mami? ... Usted no es mi mamá. Usted respira como un señor."],
-			["ÉL", "Me quisieron estafar. Primera vez en meses que alguien pensó que yo tenía plata. Casi lloro."]],
+			["DESCONOCIDO", "—... ¿Mami? ... Usted no es mi mamá. Usted respira como un señor."]],
 	]
 	var i := randi() % calls.size()
 	await Dialogue.talk(calls[i])

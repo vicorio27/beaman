@@ -15,6 +15,7 @@ const ACTIONS := {
 	"sniff": [KEY_F],
 	"craft": [KEY_C],
 	"libreta": [KEY_L],
+	"pause": [KEY_P, KEY_ESCAPE],  # Esc también es "cancel": la pausa solo abre si no hay nada abierto
 }
 
 const PAD_BUTTONS := {
@@ -29,6 +30,7 @@ const PAD_BUTTONS := {
 	"sniff": JOY_BUTTON_RIGHT_SHOULDER,
 	"craft": JOY_BUTTON_LEFT_SHOULDER,
 	"libreta": JOY_BUTTON_BACK,
+	"pause": JOY_BUTTON_START,
 }
 
 const PAD_AXES := {

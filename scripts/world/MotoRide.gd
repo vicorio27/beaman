@@ -8,6 +8,9 @@ extends Node2D
 ##   Arriba / E: acelerar. Abajo: frenar. Izquierda / derecha: doblar.
 ##   (En las carreras de los sueños E no acelera: es la patada / la botella; ver Carrera.gd.)
 ## Al llegar: la imagen de la llegada, ella en la puerta, y de vuelta al presente.
+## Hay que llegar a tiempo (TIME_LIMIT; la vuelta limpia, a fondo, son ~43 s): si no, ella ya no está en
+## la puerta y el recuerdo se rebobina ("No. Así no fue.") y se vuelve a empezar desde la salida.
+## (Las carreras de los sueños y Rapidito heredan de acá y no tienen este límite: time_limit = 0.)
 
 const W := 320.0
 const H := 180.0
@@ -27,7 +30,16 @@ const CENTRIFUGAL := 0.3
 const KMH := 112.0              # lo que da una 180 con viento a favor
 const PLAYER_W := 0.22          # ancho de la moto, en medias calles
 const PAR_TIME := 55.0
+const TIME_LIMIT := 60.0
+const LATE_LINES := [
+	"(Llega tarde. La puerta está cerrada. Ella ya no salió.)",
+	"(Llega tarde otra vez. En la ventana, la cortina se mueve y se queda quieta.)",
+	"(Tarde. Siempre tarde. Ella ya se cansó de esperar en la puerta.)",
+]
+const REWIND_LINES := ["(No. Así no fue. Llegó a tiempo.)", "(No. Así no fue. Ese día llegó a tiempo. Ese día sí.)",
+	"(No. Así no fue. Llegó a tiempo. Tiene que haber llegado a tiempo.)"]
 const CITY := "res://scenes/world/City.tscn"
+const MOTO_LORENA := "res://scenes/world/MotoLorena.tscn"
 
 const SKY_TOP := Color(0.95, 0.55, 0.38)
 const SKY_LOW := Color(1.0, 0.82, 0.55)
@@ -38,19 +50,19 @@ const ROAD := [Color(0.44, 0.41, 0.43), Color(0.41, 0.39, 0.41)]
 const LANE := Color(0.94, 0.92, 0.86)
 
 const LINES_CAR := [
-	"¡Ey! El taxista me pita. Yo le pito. Diálogo de iguales.",
-	"Casi me como la buseta. Pasajero de primera fila.",
-	"El camión ni se enteró. Yo sí. Mucho.",
+	"El taxista pita. Él pita. Diálogo de iguales.",
+	"Casi se come la buseta. Pasajero de primera fila.",
+	"El camión ni se enteró. Él sí. Mucho.",
 ]
 const LINES_HOLE := [
 	"Bache. La carretera tiene más cráteres que la luna.",
-	"¡Bache! Se me subió el estómago al casco.",
+	"¡Bache! El estómago, al casco.",
 	"Otro bache. A este país le falta asfalto y le sobra fe.",
 ]
-const LINES_CONE := ["Cono. Perdón, cono.", "Me llevé un cono de recuerdo. Literal."]
+const LINES_CONE := ["Cono. Perdón, cono.", "Un cono de recuerdo. Literal."]
 const LINES_OFF := [
-	"Me salí de la carretera. La moto bien, yo bien. El orgullo, en urgencias.",
-	"Un árbol. Siempre hay un árbol. Ellos no se mueven, el que se mueve soy yo.",
+	"Fuera de la carretera. La moto bien, él bien. El orgullo, en urgencias.",
+	"Un árbol. Siempre hay un árbol. Los árboles no se mueven.",
 ]
 
 
@@ -85,14 +97,15 @@ var rumble: Array = RUMBLE
 var road: Array = ROAD
 var hills := [Color(0.62, 0.4, 0.48), Color(0.5, 0.36, 0.46)]
 var sun := true
-var start_line := "—Tranquila, preciosa. Despacio, que es nuestro primer día."
-var half_line := "—Ella la va a ver y se va a reír. Se ríe lindo."
+var start_line := "(Le da dos palmadas al tanque. Despacio: es el primer día de los dos.)"
+var half_line := "(Ella la va a ver y se va a reír. Se ríe lindo.)"
+var time_limit := 0.0  # 0 = sin límite (las carreras de los sueños, Rapidito)
 var goal_label := "LA CASA DE ELLA"
 
 
 ## Para sobreescribir: la carrera cambia colores, frases y pista acá.
 func setup() -> void:
-	pass
+	time_limit = TIME_LIMIT  # el recuerdo: hay que llegar antes de que ella se canse de esperar
 
 
 var segments: Array[Seg] = []
@@ -129,7 +142,7 @@ func _ready() -> void:
 	setup()
 	cam_depth = 1.0 / tan(deg_to_rad(FOV / 2.0))
 	player_z = CAM_H * cam_depth
-	for n in ["taxi", "buseta", "camion", "cono", "bache", "arbol", "poste", "valla", "meta"]:
+	for n in ["taxi", "buseta", "camion", "cono", "bache", "arbol", "poste", "valla", "meta", "casa_ella"]:
 		_tex[n] = load("res://assets/moto/%s.png" % n)
 	for n in ["house_a", "house_b", "house_c", "house_e", "tree_sparse", "kiosk"]:
 		_tex[n] = load("res://assets/barrio/%s.png" % n)
@@ -224,6 +237,8 @@ func _build_track() -> void:
 			s.obstacles.append({"kind": kind, "tex": _tex[kind], "offset": randf_range(-0.7, 0.7),
 				"w": 0.38 if kind == "bache" else 0.12, "hit": false})
 	segments[finish_index].sprites.append({"tex": _tex["meta"], "offset": 0.0, "w": 2.3, "solid": false})
+	if goal_label == "LA CASA DE ELLA":  # la de ella: cuatro pisos, al lado de la meta
+		_side(segments[finish_index + 2], "casa_ella", 2.0, 1.9)
 	# El tráfico: van más despacio que vos, por su carril.
 	for k in 26:
 		var kind: String = ["taxi", "taxi", "buseta", "camion"].pick_random()
@@ -245,6 +260,8 @@ func _find(z: float) -> Seg:
 # ---------------------------------------------------------------- Juego
 
 func _countdown() -> void:
+	if time_limit > 0.0:  # el recuerdo de la moto (no Rapidito ni los sueños): la foto del primer día
+		await Recuerdo.show("renegade")
 	MusicDirector.force("")
 	await get_tree().create_timer(0.8).timeout
 	Narrator.say(start_line, true)
@@ -267,6 +284,11 @@ func _physics_process(dt: float) -> void:
 		"ride":
 			time += dt
 			_ride(dt)
+			if time_limit > 0.0 and time > time_limit and state == "ride":
+				_late()
+		"late":
+			speed = move_toward(speed, 0.0, MAX_SPEED * dt * 0.8)
+			position_z += speed * dt
 		"finish":
 			speed = move_toward(speed, 0.0, MAX_SPEED * dt * 0.6)
 			position_z += speed * dt
@@ -315,10 +337,10 @@ func _ride(dt: float) -> void:
 			elif ob["kind"] in ["zapato", "bolso", "cadena"]:
 				ob["offset"] += 3.0 * signf(ob["offset"] - player_x + 0.01)
 				_crash({"zapato": ["Un tacón en la cara. En el sueño no duele. Lo que duele es de quién es.", "Otro zapato. Esta mujer tiene más zapatos que escrúpulos, y no le sobran zapatos."],
-					"bolso": ["Un bolso. Pesa. Adentro debe estar lo que le quitó a Guillermo.", "Bolsazo. Hasta dormido me pegan."],
-					"cadena": ["Cadena de oro en la rueda. Lo único de oro que alguien me ha tirado.", "Otra cadena. Guillermo siempre pagó con oro lo que no podía pagar con nada más."]}[ob["kind"]], 0.55)
+					"bolso": ["Un bolso. Pesa. Adentro debe estar lo que le quitó a Guillermo.", "Bolsazo. Hasta dormido le pegan."],
+					"cadena": ["Cadena de oro en la rueda. Lo único de oro que le han tirado.", "Otra cadena. Guillermo siempre pagó con oro lo que no podía pagar con nada más."]}[ob["kind"]], 0.55)
 			elif ob["kind"] == "reten":
-				_crash(["Retén. Me como la barrera. El ejército no se mueve.", "Otro retén. Ni en sueños me dejan pasar."], 0.25)
+				_crash(["Retén. Se come la barrera. El ejército no se mueve.", "Otro retén. Ni en sueños lo dejan pasar."], 0.25)
 			else:
 				ob["offset"] += 3.0 * signf(ob["offset"] - player_x + 0.01)  # el cono sale volando
 				_crash(LINES_CONE, 0.75)
@@ -543,12 +565,39 @@ func _hud_label(parent: Node, pos: Vector2, color: Color) -> Label:
 
 func _update_hud() -> void:
 	_hud_time.text = "TIEMPO %s" % _clock(time)
+	if time_limit > 0.0:
+		var left := maxf(0.0, time_limit - time)
+		_hud_time.text = "QUEDAN %s" % _clock(ceilf(left))
+		var hurry := left < 10.0 and state == "ride"
+		var blink := hurry and int(time * 4.0) % 2 == 0
+		_hud_time.add_theme_color_override("font_color", Color(1, 0.35, 0.3) if blink else Color(1, 0.95, 0.8))
 	_hud_speed.text = "%03d km/h" % int(speed / MAX_SPEED * KMH)
 	_progress.size.x = 96.0 * clampf((position_z + player_z) / finish_z, 0.0, 1.0)
 
 
 static func _clock(t: float) -> String:
 	return "%02d:%02d" % [int(t) / 60, int(t) % 60]
+
+
+# ---------------------------------------------------------------- Tarde
+
+## Se acabó el tiempo: ella ya no está. Se rebobina y se vuelve a empezar.
+func _late() -> void:
+	state = "late"
+	var f := GameState.flags
+	var n := int(f.get("moto_tarde", 0))
+	f["moto_tarde"] = n + 1
+	_hud_center.text = "TARDE"
+	Narrator.say(LATE_LINES[n % LATE_LINES.size()], true)
+	await get_tree().create_timer(2.2).timeout
+	var t := create_tween()
+	t.tween_property(_fade, "color:a", 1.0, 0.6)
+	await t.finished
+	_engine.stop()
+	_hud_center.text = ""
+	Narrator.say(REWIND_LINES[n % REWIND_LINES.size()], true)
+	await get_tree().create_timer(2.0).timeout
+	get_tree().reload_current_scene()  # desde la salida, otra vez
 
 
 # ---------------------------------------------------------------- La llegada
@@ -576,17 +625,16 @@ func _arrival() -> void:
 	await get_tree().create_timer(1.6).timeout
 	# Lo que duele va sin chiste, y en tercera persona.
 	await Dialogue.talk([
-		["", "Frena frente a la casa. El motor hace tic, tic, tic, enfriándose."],
+		["", "Frena frente a la casa: cuatro pisos de ladrillo, el tanque azul arriba. El motor hace tic, tic, tic, enfriándose."],
 		["", "Ella sale a la puerta. Se queda mirando la moto. Después lo mira a él."],
 		["LORENA", "—¡Está hermosa!"],
-		["", "—¿Cierto? Súbase. Le doy la primera vuelta."],
-		["", "Ella se sube atrás y le agarra la cintura. Él arranca despacio. Por primera vez en su vida, sin apuro."],
-		["", "Ninguno de los dos sabía lo que venía después."],
+		["", "(Él le señala el puesto de atrás. Le ofrece el casco.)"],
+		["LORENA", "—¿Y me despeino? ... Bueno. Una vuelta. Pero despacio, ¿oyó? DESPACIO."],
 	])
 	var out := create_tween()
 	out.tween_property(pic, "modulate:a", 0.0, 1.5)
 	await out.finished
-	_back_to_present()
+	SceneRouter.go(MOTO_LORENA)  # la primera vuelta, con ella atrás
 
 
 func _back_to_present() -> void:
@@ -598,4 +646,4 @@ func _back_to_present() -> void:
 	GameState.complete_quest("moto_cafe")
 	GameState.start_quest("sobrevivir")
 	GameState.start_quest("lukas_comida")
-	SceneRouter.go(CITY, "FromCafe", "", "La café de enfrente arranca y se va. El dueño ni me miró. Bueno. Ya tampoco era mía.")
+	SceneRouter.go(CITY, "FromCafe", "", "(La café de enfrente arranca y se va. El dueño ni lo miró.)")

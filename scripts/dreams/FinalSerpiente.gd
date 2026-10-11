@@ -47,7 +47,6 @@ func _on_serpent_died() -> void:
 		["", "Abajo de todo, chiquita, la página 14."],
 		["LILATO", "—Yo solo quería que la niña fuera mía."],
 		["YO", "—Nunca fue tuya. Ni mía. Es de ella."],
-		["ÉL", "Tenía una frase mejor. La tenía guardada desde el día uno. No la necesito. Esa estuvo bien."],
 		["", "Lilato se vuelve humo. El humo se lo lleva el río. Después, nada."],
 		["", "Ya no va a volver a ningún sueño. Ni a ningún callejón. Ni a ningún domingo."],
 	])

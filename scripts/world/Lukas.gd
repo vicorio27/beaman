@@ -55,6 +55,19 @@ var _pet_index := 0
 var _fetch_index := 0
 var _bowl_spot := Vector2.ZERO
 var _bowl_right := false
+var _settle_spot := Vector2.ZERO
+var _settle_t := 0.0
+
+
+## Acomodarse en `at` mientras él está sentado: va, se sienta, da una vuelta, se echa y al rato se
+## duerme. Se levanta solo cuando él se para.
+func settle(at: Vector2) -> void:
+	if state in ["seek", "fetch_go", "fetch_back", "drink_go", "drinking"]:
+		return  # está ocupado en lo suyo
+	_bubble.visible = false
+	_settle_spot = at
+	_settle_t = 0.0
+	state = "settle_go"
 
 var sprite: AnimatedSprite2D
 var _bubble: Label
@@ -102,6 +115,8 @@ func _frames() -> SpriteFrames:
 	_add(f, "sniff", [[3, 1], [0, 0]], 4.0)
 	_add(f, "bark", [[3, 2], [3, 0]], 5.0)
 	_add(f, "drink", [[0, 3], [1, 3]], 4.0)
+	_add(f, "lie", [[2, 3]], 1.0)
+	_add(f, "sleep", [[3, 3]], 1.0)
 	return f
 
 
@@ -166,13 +181,13 @@ func _other_interactable() -> bool:
 ## El menú de Lukas (F).
 func menu() -> void:
 	var opts := ["Buscá", "Acariciar", "Comida", "Jugar", "Truco", "Hablarle", "Juego de miradas", "Nada"]
-	var head := "(Me mira. Mueve la cola. Espera instrucciones, o comida, o las dos.)"
+	var head := "(Lo mira. Mueve la cola. Espera instrucciones, o comida, o las dos.)"
 	if GameState.lukas_sick():
-		head = "(Me mira desde el piso. La cola apenas se mueve. Está enfermo.)"
+		head = "(Lo mira desde el piso. La cola apenas se mueve. Está enfermo.)"
 	if GameState.lukas_stage() == 1:
-		head = "(Me mira. Mueve la cola. Tose una vez, como pidiendo perdón.)"
+		head = "(Lo mira. Mueve la cola. Tose una vez, como pidiendo perdón.)"
 	elif GameState.lukas_stage() == 3:
-		head = "(Respira rápido. Me mira largo, como si me estuviera aprendiendo de memoria.)"
+		head = "(Respira rápido. Lo mira largo, como si se lo estuviera aprendiendo de memoria.)"
 	elif GameState.is_lonely():
 		head = "(Hace horas que no habla con nadie. Lukas se le sienta enfrente, como esperando que diga algo.)"
 	var i := await Dialogue.talk([["LUKAS", head]], opts)
@@ -273,6 +288,13 @@ func _teach(learning: Array) -> void:
 
 
 ## Hablarle a Lukas: afuera es mudo, pero a Lukas sí le habla (en voz alta, bajito). Baja la soledad.
+const TALK_NARRATION := [
+	"(Se agacha y le habla a Lukas, bajito. Lo que le dice es entre ellos dos.)",
+	"(Le cuenta algo a Lukas al oído. Lukas mueve una oreja, la que escucha.)",
+	"(Le habla a Lukas un rato largo. Nadie más lo oye. Nadie más tiene por qué.)",
+	"(Le dice algo a Lukas y se ríe. Sin sonido, pero se ríe.)",
+]
+## Lo que antes le decía en voz alta (ya no se muestra; queda por si vuelve a hablar).
 const TALKS := [
 	"—Vos sí entendés. No decís nada, pero entendés. Somos dos mudos con buena actitud.",
 	"—Hoy un señor me dio una moneda sin mirarme. Yo tampoco lo miré. Empate.",
@@ -297,15 +319,14 @@ const LUKAS_ANSWERS := [
 func talk_to() -> void:
 	var f := GameState.flags
 	var lines: Array = []
+	# Lo que le dice no se lee: es entre ellos dos (él no tiene diálogos, ni siquiera con Lukas).
 	if not f.get("le_hablo_a_lukas", false):
 		f["le_hablo_a_lukas"] = true
-		lines.append(["ÉL", "Afuera no me sale la voz. Con él sí. Es la única voz que tengo, y la guardo para él."])
-	var idx := int(f.get("lukas_charla", 0))
-	f["lukas_charla"] = idx + 1
-	var said: String = TALKS[idx % TALKS.size()]
-	if f.get("lukas_fed_day", -1) != GameState.day and randf() < 0.4:
-		said = "—Ya sé, ya sé. Primero la comida, después la filosofía."
-	lines.append(["ÉL, A LUKAS", said])
+		lines.append(["", "(Afuera no le sale la voz. Con Lukas sí: se agacha y le habla bajito, al oído.)"])
+	else:
+		var idx := int(f.get("lukas_charla", 0))
+		lines.append(["", TALK_NARRATION[idx % TALK_NARRATION.size()]])
+	f["lukas_charla"] = int(f.get("lukas_charla", 0)) + 1
 	lines.append(["", LUKAS_ANSWERS.pick_random()])
 	state = "found"
 	_found_time = 4.0
@@ -324,15 +345,15 @@ func talk_to() -> void:
 ## Juego de miradas: los dos cara a cara. Él mira, Lukas mira, él aguanta... y Lukas ladra.
 ## (Traducción del ladrido: no me jodás, ¿para qué juego de miradas? Dame algo.)
 const STARES := [
-	["(Juego de miradas. El que parpadee primero, pierde. Lo miro fijo. Soy una piedra.)",
+	["(Juego de miradas. El que parpadee primero, pierde. Lo mira fijo. Es una piedra.)",
 		"(Humano mirándome. Sin comida en la mano. Raro. Sigo mirando: así es como llega la comida.)",
-		"(Me arden los ojos. Se me aguan. He perdido casa, trabajo y familia. Esto no lo pierdo.)"],
-	["(Revancha. Me acomodo. Lo miro como miraba el jefe cuando pedía aumento.)",
+		"(Le arden los ojos. Se le aguan. Perdió casa, trabajo y familia. Esto no lo pierde.)"],
+	["(Revancha. Se acomoda. Lo mira como lo miraba el jefe cuando él pedía aumento.)",
 		"(Otra vez el humano. Ladeo la cabeza. Esto le funciona a los perros de los comerciales.)",
-		"(Un ojo me tiembla. Pienso en cosas secas. El desierto. Una galleta de soda. Mi vida.)"],
-	["(Tercera vez. Hoy entrené: estuve mirando un poste toda la mañana.)",
+		"(Le tiembla un ojo. Piensa en cosas secas: el desierto, una galleta de soda, su vida.)"],
+	["(Tercera vez. Hoy entrenó: estuvo mirando un poste toda la mañana.)",
 		"(Lo miro como miro la nevera de la panadería. Con fe. Con hambre. Él no es una nevera.)",
-		"(Ya no siento la cara. Si gano, me lo merezco. Si pierdo, también.)"],
+		"(Ya no siente la cara. Si gana, se lo merece. Si pierde, también.)"],
 ]
 const BARK_MEANING := [
 	"(Traducción: «No me jodás. ¿Juego de miradas? ¿Para qué? Dame algo.»)",
@@ -354,7 +375,7 @@ func stare() -> void:
 	_bubble.text = "o_o"
 	_bubble.visible = true
 	Dialogue.face_off = ["el", "lukas"]
-	await Dialogue.talk([[Dialogue.INNER, s[0]], ["LUKAS", s[1]], [Dialogue.INNER, s[2]]])
+	await Dialogue.talk([["", s[0], "el"], ["LUKAS", s[1]], ["", s[2], "el"]])
 	# Y ladra.
 	sprite.play("bark")
 	_bubble.text = "!!"
@@ -362,7 +383,7 @@ func stare() -> void:
 	var i := await Dialogue.talk([
 		["LUKAS", "¡GUAU!", "lukas_ladra", "sacude"],
 		["LUKAS", BARK_MEANING[n % BARK_MEANING.size()], "lukas_ladra"],
-		[Dialogue.INNER, "(Parpadeé. Perdí contra un perro. Otra vez.)" if n > 0 else "(Parpadeé del susto. Perdí contra un perro.)"],
+		["", "(Parpadea. Perdió contra un perro. Otra vez.)" if n > 0 else "(Parpadea del susto. Perdió contra un perro.)", "el"],
 	], ["Darle algo", "Sostenerle la mirada"])
 	_bubble.visible = false
 	_found_time = 1.0
@@ -379,10 +400,10 @@ func stare() -> void:
 			await feed()
 		else:
 			sprite.play("sit")
-			Narrator.say("(Me reviso los bolsillos. Nada. Le muestro las manos vacías. Lukas me mira como me miró el banco.)")
+			Narrator.say("(Se revisa los bolsillos. Nada. Le muestra las manos vacías. Lukas lo mira como lo miró el banco.)")
 	else:
 		sprite.play("sit")
-		Narrator.say("(Lo miro otra vez. Lukas se da vuelta y se echa de espaldas. Ofendido. Gana él, por abandono.)")
+		Narrator.say("(Lo vuelve a mirar. Lukas se da vuelta y se echa de espaldas. Ofendido. Gana Lukas, por abandono.)")
 
 
 func pet() -> void:
@@ -463,7 +484,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_cooldown -= delta
 	var to_player := player.global_position - global_position
-	if to_player.length() > TELEPORT_DIST and state != "seek":
+	if to_player.length() > TELEPORT_DIST and not state in ["seek", "settle_go", "settled"]:
 		_teleport_behind()
 		return
 	match state:
@@ -510,6 +531,35 @@ func _physics_process(delta: float) -> void:
 			else:
 				_walk(to_bowl.normalized() * minf(SEEK_SPEED, to_bowl.length() * 8.0))
 				_check_stuck_at(delta, _bowl_spot)
+		"settle_go":
+			var to_s := _settle_spot - global_position
+			_settle_t += delta
+			if to_s.length() < 2.0 or _settle_t > 3.0:
+				global_position = _settle_spot  # (si se trabó en la banca, igual llega)
+				state = "settled"
+				_settle_t = 0.0
+				_walk(Vector2.ZERO)
+				facing = "side"
+				sprite.flip_h = player.global_position.x > global_position.x  # mirándolo a él
+				sprite.play("sit")
+			else:
+				_walk(to_s.normalized() * minf(SEEK_SPEED, to_s.length() * 8.0))
+		"settled":
+			velocity = Vector2.ZERO
+			_settle_t += delta
+			if player.get("seated") == "" and _settle_t > 1.0:  # (él tarda un poco en llegar al asiento)
+				state = "follow"  # se paró: arriba
+				sprite.play("idle_" + facing)
+			elif _settle_t > 1.2 and _settle_t < 1.9:
+				# La vuelta antes de echarse (como todos los perros): se voltea dos veces.
+				sprite.flip_h = int(_settle_t * 6.0) % 2 == 0
+				if sprite.animation != "idle_side":
+					sprite.play("idle_side")
+			elif _settle_t >= 1.9 and sprite.animation in ["idle_side", "sit"]:
+				sprite.flip_h = player.global_position.x > global_position.x
+				sprite.play("lie")
+			elif _settle_t > 9.0 and sprite.animation == "lie":
+				sprite.play("sleep")
 		"drinking":
 			_found_time -= delta
 			if _found_time <= 0.0:
@@ -528,7 +578,7 @@ func _walk(v: Vector2) -> void:
 	velocity = v
 	move_and_slide()
 	if v == Vector2.ZERO:
-		if state != "sit" and state != "found":
+		if not state in ["sit", "found", "settle_go", "settled"]:
 			sprite.play("idle_" + facing)
 		return
 	if absf(v.x) > absf(v.y):

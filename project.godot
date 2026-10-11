@@ -28,6 +28,7 @@ Conversations="*res://autoload/Conversations.gd"
 MusicDirector="*res://autoload/MusicDirector.gd"
 TouchControls="*res://autoload/TouchControls.gd"
 Phone="*res://autoload/Phone.gd"
+PauseMenu="*res://autoload/PauseMenu.gd"
 
 [display]
 

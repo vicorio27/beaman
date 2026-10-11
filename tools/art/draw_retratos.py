@@ -624,7 +624,7 @@ CAST = {
                   "labios": (140, 60, 70)},
     "celador": {"piel": "media", "pelo": "corto", "bigote": True, "sombrero": "gorra", "sombrero_color": (40, 50, 80),
                 "ropa": (44, 52, 84), "tipo": "uniforme", "camisa": (170, 200, 228), "fondo": (60, 70, 100)},
-    "lilato": {**M, "piel": "clara", "pelo": "linda", "pelo_color": (40, 26, 28), "ropa": (246, 140, 176),
+    "lilato": {**M, "piel": "clara", "pelo": "linda", "pelo_color": (112, 70, 40), "ropa": (246, 140, 176),
                "tipo": "vestido", "labios": (214, 40, 80), "cachetes": True, "moño_pelo": (236, 72, 132),
                "fondo": (220, 110, 160), "chiquita": True},
     "brenda": {**M, "piel": "negra", "pelo": "afro", "pelo_color": (28, 24, 26), "canas_afro": True,

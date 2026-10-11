@@ -9,6 +9,18 @@ extends Area2D
 ## Dirección en la que hay que caminar para atravesarla.
 @export var push_dir := Vector2.UP
 @export_multiline var locked_text := "Está cerrado."
+## Algunas casas no se quedan calladas: abren y lo sacan a empujones (sale volando hacia atrás,
+## cae sentado y se levanta). Solo unas pocas puertas del barrio.
+@export var shove := false
+
+## [fila de la hoja de transeúntes (quién abre), lo que grita]
+const SHOVE_LINES := [
+	[9, "SEÑOR: —¡Que no damos nada! ¡Fuera!"],
+	[3, "SEÑORA: —¡Fuera de mi puerta, cochino!"],
+	[9, "SEÑOR: —¡Lárguese o llamo a la policía!"],
+	[3, "SEÑORA: —¡Otra vez usted! ¡Y con perro! ¡FUERA!"],
+]
+static var _shove_i := 0
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 
@@ -67,7 +79,42 @@ func _use(asked: bool) -> void:
 		return
 	if target_scene != "":
 		SceneRouter.go(target_scene, target_spawn)
+	elif shove and (asked or not _told):
+		_told = true
+		_shove()
 	elif asked or not _told:
 		# Empujando la puerta la línea sale una vez; con el botón, cada vez.
 		_told = true
 		Narrator.say(locked_text)
+
+
+## Abre alguien y lo empuja: él sale para atrás, cae sentado y se levanta. La puerta se cierra de un golpe.
+func _shove() -> void:
+	var p := _player
+	if p == null or not p.has_method("shoved"):
+		Narrator.say(locked_text)
+		return
+	GameState.block_input(1.6)
+	var dark := ColorRect.new()  # el hueco de la puerta abierta
+	dark.color = Color(0.06, 0.05, 0.07)
+	dark.size = Vector2(12, 22)
+	dark.position = Vector2(-6, -26)
+	add_child(dark)
+	var who := AnimatedSprite2D.new()  # el de la casa, en el marco
+	var shout: Array = SHOVE_LINES[_shove_i % SHOVE_LINES.size()]
+	CharacterFrames.dress(who, shout[0])
+	who.play("idle_down" if push_dir.y < 0 else "idle_up")
+	who.offset = Vector2(0, -13)
+	who.z_index = 1
+	add_child(who)
+	await get_tree().create_timer(0.25).timeout
+	var arm := create_tween()  # el empujón
+	arm.tween_property(who, "position", -push_dir * 5.0, 0.07)
+	arm.tween_property(who, "position", Vector2.ZERO, 0.2)
+	Narrator.say(shout[1])
+	_shove_i += 1
+	GameState.change_mood(-3.0)
+	p.shoved(-push_dir)
+	await get_tree().create_timer(0.55).timeout
+	who.queue_free()
+	dark.queue_free()  # ¡PUM!

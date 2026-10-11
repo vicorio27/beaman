@@ -71,7 +71,6 @@ func before_start() -> void:
 		["", "Esa noche sueña con una terminal. Un bus a Ibagué. Alguien se sube sin mirar atrás. Camina igual que él."],
 		["", "Él sabe quién es. Siempre supo."],
 		["", "Este sueño no da risa. Bueno, un poquito, al principio."],
-		["ÉL", "Brenda. Mi mamá. Uno ochenta descalza; con tacones agachaba la cabeza para entrar a la cocina. Crema Nivea de la lata azul, chancletas de baño en la calle, una novela a las nueve que no se perdía ni con el apartamento en llamas. Se fue un martes. La novela siguió."],
 	])
 
 
@@ -310,7 +309,6 @@ func _level_done() -> void:
 	await Dialogue.talk([
 		["", "Adentro de la casa hay una olla en el fogón. Sopa. La misma de cuando él tenía siete años."],
 		["", "Él se sirve un plato. Solo. Como aprendió."],
-		["ÉL", "Sopa de pasta con papa. Ella le echaba cilantro hasta que no se veía la sopa. Yo le echo igual. No sé por qué. Sí sé."],
 		["", "BRENDA: COMPLETO."],
 	])
 	GameState.flags["dream_won"] = true

@@ -198,14 +198,12 @@ static func _vet(id: String) -> void:
 				["DRA. PILAR", "—A ver ese paciente. Lukas, mi amor, esto no duele. (Le duele.)"],
 				["", "(Lukas lo mira con traición profunda. Le dan una galleta. Lo perdona.)"],
 				["DRA. PILAR", "—Está muy bien para la vida que lleva. Ustedes dos se cuidan, se nota. Cuídelo más."],
-			["ÉL", "Vacunas al día. Las mías no. Pero las de él sí. Prioridades."],
 			])
 			g.change_mood(8.0)
 		"vet2":
 			await Dialogue.talk([
 				["DRA. PILAR", "—Escúchelo usted mismo. (Le pone el estetoscopio.) ¿Oye ese ruido? Es el corazón haciendo fuerza."],
 				["", "(Escucha. Aprieta la mandíbula.)"],
-			["ÉL", "Suena como una lavadora vieja. Una lavadora que no quiere parar. Buen chico."],
 				["DRA. PILAR", "—Que no corra. Que coma poquito y seguido. Y que esté con usted. Eso es lo que más le sirve."],
 				["", "(Asiente.)"],
 			])
@@ -229,7 +227,6 @@ static func _rosa() -> void:
 		["DOÑA ROSA", "—¡Por fin! Cuídeme el puesto dos horas, que tengo cita en el Seguro. No regale nada. Bueno, a los niños sí. A los policías no."],
 		["", "(Dos horas vendiendo empanadas. Sin decir el precio: señalando el letrero.)"],
 		["DOÑA ROSA", "—¿Vendió? ¿Cuántas? ... Hágame la seña. ... ¿Veinte? ¿Veinte? Yo vendo quince gritando desde las seis."],
-		["ÉL", "Técnica de ventas: mirar a la gente fijo hasta que compra para que uno deje de mirarla. En la oficina lo llamaban \"cierre consultivo\"."],
 		["DOÑA ROSA", "—Tome, para usted y para el perro. Y no vuelva a vender así, que me deja mal parada."],
 	])
 	TimeManager.skip(2.0)
@@ -246,7 +243,6 @@ static func _samuel() -> bool:
 		["", "(Le da la aguapanela. Samuel la agarra con las dos manos, como si fuera un pájaro.)"],
 		["SAMUEL", "—Once años en la calle. Nunca nadie me había traído nada caliente que no fuera una patrulla."],
 		["SAMUEL", "—Si me muero, le dejo mi cobija. Si no, también. Es muy fea para mí."],
-		["ÉL", "La cobija es de un equipo de fútbol que descendió en el 2008. No se la voy a recibir. Tengo principios. Pocos, pero ese sí."],
 	])
 	GameState.change_mood(8.0)
 	return true
@@ -257,7 +253,6 @@ static func _wilson() -> void:
 		["WILSON", "—Cuarenta kilos de latas. Usted carga y yo hablo. Es una división del trabajo muy moderna. La vi en un video."],
 		["", "(Dos horas empujando un carrito con una rueda que va para otro lado.)"],
 		["WILSON", "—Mitad y mitad. Bueno, sesenta y cuarenta. Yo puse el carrito. Y el carácter. Y la rueda, que es lo más difícil de poner."],
-		["ÉL", "La rueda iba hacia la izquierda. Toda la ruta. Llevo dos horas corrigiendo un carrito de supermercado. Ahora entiendo a Wilson."],
 	])
 	TimeManager.skip(2.0)
 	GameState.add_money(8000)
@@ -272,7 +267,6 @@ static func _german() -> bool:
 		["", "(Le da el clavel. Don Germán lo mira un rato largo.)"],
 		["DON GERMAN", "—Mi señora me regalaba uno todos los años. Desde que se murió, nadie se acordaba."],
 		["DON GERMAN", "—Usted no se acordó. Le contaron. ... Igual. Gracias, mijo. Sesenta y ocho. Ella decía que yo iba a llegar a cien por terco."],
-		["ÉL", "Feliz cumpleaños, Germán. Se lo dije por dentro. Por dentro me salió muy bonito. Tuvo hasta música."],
 		["", "(Le da un pan en una bolsa, como si fuera para llevar.)"],
 	])
 	GameState.add_item("pan")
@@ -286,7 +280,6 @@ static func _mono() -> void:
 		["", "(Una hora de boleros desafinados. El Mono le cierra el ojo. Él aplaude hasta que le duelen las manos. Sin sonreír.)"],
 		["", "(La gente se para a ver. No por el Mono: por el que aplaude con esa cara. Echan monedas.)"],
 		["EL MONO", "—Mitad y mitad. Usted es el mejor público que he tenido. Bueno, el único que vino."],
-		["ÉL", "Doce mil cuatrocientos pesos en monedas. Tres botones. Un tiquete de bus usado. Una nota que dice \"ánimo\". El arte no paga, pero opina."],
 	])
 	TimeManager.skip(1.0)
 	GameState.add_money(5000)
@@ -297,13 +290,11 @@ static func _marta() -> void:
 	var i := await Dialogue.talk([
 		["", "(La tienda de Marta, con la reja a medio bajar. Adentro, un tipo con una libreta.)"],
 		["COBRADOR", "—La señora debe el veinte por ciento diario. Hoy, o le quitamos la nevera."],
-		["ÉL", "Libreta Norma de cien hojas. Lapicero de hotel. Mocasines sin medias. Gota a gota de nivel medio: el que todavía cobra él mismo."],
 		["MARTA", "(bajito) —No se meta. Por favor."],
 	], ["Hacerme el loco", "Pagarle $10.000 de lo de ella"])
 	if i == 1 and GameState.money >= 10000:
 		GameState.add_money(-10000)
-		await Dialogue.talk([["COBRADOR", "—Abono. Volvemos el lunes."], ["MARTA", "—Usted es un idiota. ... Gracias, idiota. Pero idiota."],
-			["ÉL", "Me lo dijo dos veces. La segunda con cariño. Distingo las dos. Llevo años de práctica."]])
+		await Dialogue.talk([["COBRADOR", "—Abono. Volvemos el lunes."], ["MARTA", "—Usted es un idiota. ... Gracias, idiota. Pero idiota."]])
 	else:
 		await Dialogue.talk([
 			["", "(Se le acerca mucho. Demasiado. No dice nada. Lo mira sin parpadear.)"],
@@ -312,7 +303,6 @@ static func _marta() -> void:
 			["COBRADOR", "—... Volvemos otro día. (Se va. Rápido.)"],
 			["MARTA", "—Eso fue muy raro. Y muy útil. ¿Usted está bien?"],
 			["", "(...)"], ["MARTA", "—No me contestés. Mejor no me contestés."],
-			["ÉL", "Estoy bien. La mano izquierda me tiembla. Iba a algún lado. Ya volvió."],
 		])
 		GameState.add_locura(1)
 	GameState.change_mood(6.0)
@@ -326,7 +316,6 @@ static func _efrain() -> void:
 		["", "(Es Lukas. Lo aprieta en la mano. Le tiembla la mandíbula.)" if dead
 			else "(Es Lukas. Lukas lo huele, lo mira y se aburre.)"],
 		["DON EFRAIN", "—Gloria le manda saludes. Bueno, no. Pero si hablara, le mandaría."],
-		["ÉL", "Gloria manda saludes. Las oí. No se lo digo a Efraín. Él ya tiene suficiente con el reloj."],
 	])
 	GameState.change_mood(10.0 if dead else 6.0)
 
@@ -373,7 +362,7 @@ static func _zaida(n: int) -> void:
 				GameState.add_money(30000)
 				GameState.add_locura(1)
 				await Dialogue.talk([["", "(Lo entrega. El amigo no sonríe.)"],
-					["ÉL", "Anillo de oro en el meñique. Tatuaje de una fecha. Un Nissan negro con vidrios polarizados encendido sin nadie adentro. Esto no es harina."],
+					["", "(Anillo de oro en el meñique. Un Nissan negro encendido, sin nadie adentro. Lo del paquete no era harina.)"],
 					["AMIGO DE ZAIDA", "—Zaida sí sabe escoger. Tome. Contados. Y no vuelva. Y si vuelve, no me conoce."]])
 			else:
 				await Dialogue.talk([["ZAIDA", "—Ya hablaremos. Yo siempre hablo. Es lo que mejor me sale. Lo segundo es esperar."]])

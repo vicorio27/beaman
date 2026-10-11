@@ -77,7 +77,6 @@ const BEFORE := [
 		["DON TITO", "—¡Buenas noches igual, Mona! ¡En la lucha libre siempre es de noche!"],
 		["", "En primera fila, con chaleco de motociclista y una cerveza: Mauricio. Hace un año que se fue."],
 		["MAURICIO", "—¡Ese es mi hijo! ¡Lo veo todos los domingos!"],
-		["ÉL", "Dice \"todos los domingos\" con la boca llena de cerveza. La cerveza es lo único que ve todos los domingos."],
 		["", "E: golpe. X cerca: agarre (machacá E y elegí la llave con las flechas). X lejos: correr a las cuerdas."],
 		["", "X sobre el caído: cuenta. En la esquina, con él en el piso: arriba sube, E salta. F: provocar al público."],
 		["", "El árbitro es Lukas. Camiseta a rayas. Corbatín. Pito. Cuenta con la pata. No tiene sentido. Es perfecto."],
@@ -99,7 +98,7 @@ const BEFORE := [
 ]
 const AFTER := [
 	[["RAUL", "—Uy... el pelado. Ya me bajó la borrachera. Y eso me cuesta plata. Una borrachera mía vale como cien mil."],
-		["MAURICIO", "—Raúl ya está viejo. No cuenta."], ["ÉL", "Raúl tiene su misma edad. Exactamente la misma. Fueron al colegio juntos. No cuenta, dice."]],
+		["MAURICIO", "—Raúl ya está viejo. No cuenta."]],
 	[["ALVARITO", "—Me ganó limpio. Así me gusta. Bueno, no me gusta. Pero me gusta que haya sido usted."],
 		["ALVARITO", "—Mijo... su papá los quería. A su manera. Una manera muy mala, pero los quería."],
 		["EL PELADO", "—Gracias, Alvarito. Usted sí vino a verme. Hoy."], ["ALVARITO", "—Yo vine por la cerveza gratis, mijo. Pero me quedé por usted."]],
@@ -315,7 +314,7 @@ func _show() -> void:
 		if _result == "win":
 			break
 		if rush:
-			await Dialogue.talk([["", "Lukas cuenta tres. En la revancha no hay despertarse. Otra vez."], ["ÉL", "Otra vez. Lo he hecho peor. Lo he hecho con público."]])
+			await Dialogue.talk([["", "Lukas cuenta tres. En la revancha no hay despertarse. Otra vez."]])
 			continue
 		var i := await Dialogue.talk([["", "Uno. Dos. Tres. Lukas cuenta con la pata, con cara de pena. El coliseo da vueltas."],
 			["DON TITO", "—¡Y se acabó! ¡Se acabó, Mona!"], ["LA MONA", "—Por hoy, Tito. Los domingos vuelven. Para bien y para mal."]],
@@ -325,7 +324,7 @@ func _show() -> void:
 			return
 	MusicDirector.force("")
 	if rush:
-		await Dialogue.talk([["MAURICIO", "—... Bien, mijo. Bien."], ["", "Por primera vez, lo dice sin trago."], ["ÉL", "Dos palabras. Me las quedo. Son las primeras que me da gratis."]])
+		await Dialogue.talk([["MAURICIO", "—... Bien, mijo. Bien."], ["", "Por primera vez, lo dice sin trago."]])
 		FinalRush.next()
 		return
 	if fight < AFTER.size():
@@ -1042,7 +1041,6 @@ func _final() -> void:
 		["", "Mauricio queda en la lona, mirando las luces. Lukas cuenta hasta tres. Despacio. Nadie lo apura."],
 		["MAURICIO", "—Yo... los veía. Desde lejos. Desde la moto, con el Pecas. Los domingos."],
 		["EL PELADO", "—Ya sé, pa. Desde lejos."],
-		["ÉL", "Tenía preparado algo mejor. Algo con los domingos, con la moto, con el Pecas. Era buenísimo. No..."],
 		["", "Raúl pide otra ronda. El Pecas mira para otro lado. Alvarito es el único que aplaude, despacio."],
 		["", "Él se baja del ring solo. Camina derecho. Por primera vez, sin mirar atrás."],
 	])

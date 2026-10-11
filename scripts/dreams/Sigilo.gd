@@ -43,10 +43,8 @@ const LEVELS := {
 		"guards": [[[2, 3], [8, 3], [8, 7], [2, 7]], [[6, 1], [6, 8]]],
 		"boss_path": [[13, 3], [17, 3], [17, 7], [13, 7]],
 		"intro": [["", "Lunes, 7:58. La Empresa. Piso 6. Alfombra gris, cubículos grises, una planta de plástico que alguien riega por costumbre."],
-			["ÉL", "Mi tarjeta de presentación: papel de 300 gramos, mate, letra Helvetica. \"Coordinador de Proyectos Estratégicos\". Nadie sabía qué coordinaba. Yo tampoco. Coordinaba muy bien."],
 			["", "Lo echaron hace un año. En el sueño todavía tiene puesto el carné. Con la foto vieja, cuando sonreía."],
 			["", "Primero, Walter. Contabilidad. El que le llevaba los chismes a José Mario. Siempre con algo en la boca: una empanada o el nombre de alguien."],
-			["ÉL", "Walter almuerza a las 11:40 para tener la mejor mesa del comedor. Durante cuatro años nadie le disputó la mesa. Nadie quería sentarse con Walter."],
 			["", "Flechas: moverse. E por la espalda: dormir a un guardia. X: tirar una taza para distraer. Verde oscuro: escondite."],
 			["", "Juntá los documentos (amarillo) para abrir la oficina. A Walter llegale tres veces por la espalda."]],
 		"tag_lines": ["WALTER: —¿Quién me tocó? ... Nadie. Bueno. Sigo comiendo. Es de pollo. Creo.",
@@ -57,7 +55,6 @@ const LEVELS := {
 			["WALTER", "—... La ventana da a un muro. Un muro de ladrillo. Lo he mirado cuatro años."],
 			["WALTER", "—Tiene treinta y dos ladrillos de ancho. Los conté. No le dije a nadie. ¿A quién le iba a decir? Yo era el que contaba."]],
 		"tease": [["", "En el escritorio de Walter hay una lista. Cinco nombres tachados. El de él, primero. Con resaltador verde."],
-			["ÉL", "Verde. Walter usa el verde para \"pendientes resueltos\". Fui un pendiente resuelto. En verde."],
 			["", "El siguiente nombre lo escribió Nicolás. Con mayúsculas. Como habla."]]},
 	2: {"boss": "NICOLAS", "id": "nicolas", "boss_speed": 26.0, "tags": 3, "cups": 3, "loud": true,
 		"map": [
@@ -75,7 +72,6 @@ const LEVELS := {
 		"boss_path": [[17, 2], [17, 8], [18, 5]],
 		"intro": [["", "ANTERIORMENTE... Walter quedó con un post-it en la espalda y una verdad en la cabeza."],
 			["", "Ahora Nicolás. Gerente de Cuentas Clave. Gordo, prepotente, habla duro todo el día. Habla mierda de todos. De él, más."],
-			["ÉL", "Nicolás tiene un mug que dice WORLD'S BEST BOSS. Se lo compró él mismo en el aeropuerto de Miami. Lo contó en tres reuniones."],
 			["", "Cuando Nicolás grita, los guardias lo miran a él. Aprovechá. Juntá los documentos y llegale tres veces."]],
 		"shouts": ["NICOLAS: —¡ESTE PISO HUELE A FRACASO! ¡Y A ATÚN! ¡¿QUIÉN TRAJO ATÚN?!", "NICOLAS: —¡Yo a ese man lo saqué! ¡Con un correo! ¡Con copia a todos!",
 			"NICOLAS: —¡Aquí el que no rinde, se va! ¡Como el drogadicto ese!", "NICOLAS: —¡Que alguien me traiga un tinto! ¡Juan Valdez! ¡No el de la greca!",
@@ -105,7 +101,6 @@ const LEVELS := {
 		"boss_path": [[10, 8], [17, 8], [17, 6], [3, 6], [3, 8]],
 		"intro": [["", "ANTERIORMENTE... Nicolás se quedó sin nadie que lo escuche. Por primera vez, en silencio."],
 			["", "Eddy. Analista Senior Junior. Gafas sin aumento, sonrisa de reunión, quiere el puesto de todos. Revisa los escondites: no te quedes mucho en uno."],
-			["ÉL", "Eddy toma kombucha. Lo dice antes de que uno le pregunte. Tiene una libreta Moleskine donde anota lo que dicen los demás. Nunca escribió una idea propia ahí. Lo sé: la leí."],
 			["", "Juntá los documentos. Llegale tres veces por la espalda. Eddy no tiene oficina: anda por todo el piso."]],
 		"tag_lines": ["EDDY: —Ajá. Interesante. Muy interesante. Lo anoto. ¿Cómo se escribe \"traición\"? ¿Con c o con s?",
 			"EDDY: —¿Usted quiere mi puesto? ... Yo también quiero el suyo. Ah, no tiene. Bueno, quiero el que tenía.",
@@ -115,8 +110,7 @@ const LEVELS := {
 			["EDDY", "—El tres coma ocho."],
 			["EDDY", "—... José Mario me prometió su puesto. Después se lo dio a otro. A un sobrino. Que no habla inglés."], ["YO", "—Bienvenido."]],
 		"tease": [["", "El ascensor se abre solo. Último piso. Suena una versión instrumental de \"Hotel California\". Una sola oficina, con vidrio, y alguien adentro que no se mueve."],
-			["", "José Mario. Vicepresidente. Nunca levanta la voz. Nunca la necesitó."],
-			["ÉL", "Su tarjeta de presentación es negra. Letras en relieve. Sin cargo. Solo el nombre. El que necesita poner el cargo no es nadie. Él me lo enseñó."]]},
+			["", "José Mario. Vicepresidente. Nunca levanta la voz. Nunca la necesitó."]]},
 	4: {"boss": "JOSE MARIO", "id": "josemario", "boss_speed": 0.0, "tags": 1, "cups": 4, "cameras": true,
 		"map": [
 			"####################",
@@ -134,7 +128,6 @@ const LEVELS := {
 		"boss_path": [[17, 7]],
 		"intro": [["", "ANTERIORMENTE... Walter, Nicolás, Eddy. Los tres en el piso de abajo, contando sus propios chismes."],
 			["", "Último piso. Cámaras en cada esquina. José Mario no las mira: no le hace falta. Él sabe."],
-			["ÉL", "Escritorio de vidrio. Nada encima. Ni un papel. Un hombre sin papeles en el escritorio es un hombre que tiene a otros cargándolos."],
 			["", "Apagá los tres tableros (P, con E). Juntá... no hay documentos: él es el documento. Llegale."]],
 		"tag_lines": ["JOSE MARIO: —Llegó. Tarde. Como siempre. Siéntese."],
 		"outro": [["JOSE MARIO", "—Siéntese."], ["YO", "—Prefiero quedarme de pie. Ya me senté suficiente en su piso."],
@@ -144,8 +137,7 @@ const LEVELS := {
 			["JOSE MARIO", "—Usted era bueno. Demasiado. Y tenía un pasado. Eso, en una empresa, es una oportunidad. Para mí."],
 			["YO", "—Yo estaba limpio. Hacía dos años."], ["JOSE MARIO", "—Nadie lee esa parte del correo. Está en el tercer párrafo. Nadie llega al tercer párrafo."],
 			["", "(Él le saca el carné del cuello. Lo pone en el escritorio, con la foto hacia arriba. Esa, cuando sonreía.)"],
-			["YO", "—Quédese con él. Yo ya no lo necesito para entrar. Ni para salir."],
-			["ÉL", "El primer papel que hay sobre ese escritorio en cinco años. Lo dejé yo."]],
+			["YO", "—Quédese con él. Yo ya no lo necesito para entrar. Ni para salir."]],
 		"tease": []},
 }
 
@@ -591,8 +583,7 @@ func _caught(g) -> void:
 	MusicDirector.force("")
 	var who: String = "CAMARA" if g == null else (L["boss"] if g.boss else "SEGURIDAD")
 	var line: String = "—¡Usted qué hace aquí! ¡Usted ya no trabaja aquí!" if g == null or not g.boss else "—Lo vi. Siempre lo veo."
-	await Dialogue.talk([[who, line], ["", "Lo sacan del edificio. Otra vez. En el sueño también. Con la misma caja de cartón."],
-		["ÉL", "La caja de cartón. Un portarretratos, una taza, un cactus. El cactus sobrevivió. Yo casi."]])
+	await Dialogue.talk([[who, line], ["", "Lo sacan del edificio. Otra vez. En el sueño también. Con la misma caja de cartón."]])
 	var i := 0 if FinalRush.active() else await Dialogue.talk([["", "¿Otra vez?"]], ["Reintentar", "Despertarse"])
 	if i == 1:
 		_wake(false)

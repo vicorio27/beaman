@@ -3,7 +3,9 @@
   assets/moto/bike_c|l|r.png      él en la moto, desde atrás (derecho, inclinado a la izq. y der.)
   assets/moto/taxi|buseta|camion.png   tráfico desde atrás
   assets/moto/cono.png, bache.png, arbol.png, poste.png, valla.png, meta.png
-  assets/moto/llegada.png         la llegada: la casa, la moto, alguien en la puerta (320x180)
+  assets/moto/llegada.png         la llegada: la casa de ella (4 pisos), la moto, ella en la puerta (320x180)
+  assets/moto/casa_ella.png       la casa de ella al lado de la meta: cuatro pisos de ladrillo, el tanque arriba
+  assets/moto/lorena_atras(_risa).png  Lorena de parrillera, atrás de él (la primera vuelta, MotoLorena)
 Uso: python tools/art/draw_moto.py  (desde la carpeta del proyecto)"""
 from pathlib import Path
 from PIL import Image, ImageDraw
@@ -140,12 +142,12 @@ def scenery():
     d.ellipse([22, 2, 34, 5], fill=(90, 110, 130, 255))  # charco
     img.save(MOTO / "bache.png")
 
-    img, d = canvas(40, 64)  # árbol (guayacán florecido: el pasado tenía color)
+    img, d = canvas(40, 64)  # árbol: verde, frondoso (el pasado tenía color)
     d.rectangle([17, 36, 22, 63], fill=(96, 70, 50, 255))
-    d.ellipse([2, 4, 38, 42], fill=(232, 196, 60, 255))
-    d.ellipse([8, 0, 30, 24], fill=(246, 214, 90, 255))
+    d.ellipse([2, 4, 38, 42], fill=(72, 140, 60, 255))
+    d.ellipse([8, 0, 30, 24], fill=(104, 172, 74, 255))
     for x, y in [(8, 20), (26, 14), (16, 30), (30, 28)]:
-        d.ellipse([x, y, x + 4, y + 4], fill=(200, 150, 40, 255))
+        d.ellipse([x, y, x + 4, y + 4], fill=(48, 104, 46, 255))
     outline(img).save(MOTO / "arbol.png")
 
     img, d = canvas(14, 70)  # poste con cables
@@ -173,8 +175,71 @@ def scenery():
     outline(img).save(MOTO / "meta.png")
 
 
+BRICK = (176, 98, 70, 255)
+BRICK_D = (142, 74, 54, 255)
+SLAB = (196, 190, 180, 255)
+WIN_ON = (250, 220, 150, 255)
+WIN_OFF = (70, 80, 100, 255)
+HAIR_LORENA = (112, 70, 40, 255)  # castaño
+
+
+def casa(d, x0, y0, w, floor_h, lit=(1, 3), door=True):
+    """La casa de ella: cuatro pisos de ladrillo a la vista, placas de concreto entre piso y piso,
+    un balcón con reja en el segundo, el tanque azul y las varillas esperando un quinto piso."""
+    top = y0
+    for f in range(4):
+        y = y0 + f * floor_h
+        d.rectangle([x0, y, x0 + w, y + floor_h], fill=BRICK)
+        for by in range(y + 3, y + floor_h, 4):  # hiladas de ladrillo
+            d.line([(x0, by), (x0 + w, by)], fill=BRICK_D)
+        d.rectangle([x0 - 2, y, x0 + w + 2, y + 2], fill=SLAB)  # la placa
+        floor = 4 - f  # el de arriba es el cuarto
+        if floor > 1 or not door:
+            for wx in (x0 + w // 5, x0 + w * 3 // 5):
+                d.rectangle([wx, y + floor_h // 3, wx + w // 5, y + floor_h - 4],
+                            fill=WIN_ON if floor in lit else WIN_OFF)
+        if floor == 2:  # el balcón con reja
+            d.rectangle([x0 + w // 6, y + floor_h - 4, x0 + w * 5 // 6, y + floor_h - 2], fill=SLAB)
+            for rx in range(x0 + w // 6, x0 + w * 5 // 6, 3):
+                d.line([(rx, y + floor_h - 10), (rx, y + floor_h - 4)], fill=(60, 56, 60, 255))
+    d.rectangle([x0 + w * 2 // 3, top - 10, x0 + w * 2 // 3 + w // 6, top - 1], fill=(60, 110, 170, 255))  # tanque
+    for vx in (x0 + 2, x0 + w // 2, x0 + w - 2):  # varillas
+        d.line([(vx, top - 7), (vx, top)], fill=(120, 110, 100, 255))
+
+
+def casa_ella():
+    """Al lado de la meta, en la pista: la casa de ella (se ve de lejos, alta)."""
+    img, d = canvas(44, 104)
+    casa(d, 4, 14, 36, 22, lit=(1, 2, 3, 4), door=False)
+    d.rectangle([16, 92, 28, 103], fill=(90, 60, 50, 255))  # la puerta
+    outline(img).save(MOTO / "casa_ella.png")
+
+
+def lorena_atras(laugh=False):
+    """Lorena de parrillera, atrás de él: va más cerca de la cámara, así que tapa la espalda de él
+    (se le ve el casco por encima). Pelo largo castaño con el moño rosado, vestido rosado, los brazos
+    abrazándolo por la cintura y los tacones a los lados. Riéndose: la cabeza ladeada, el pelo se mueve.
+    Mismo tamaño que bike_c.png (se dibuja encima, en el mismo lugar)."""
+    img, d = canvas(48, 48)
+    dress, dress_d = (240, 130, 170, 255), (206, 96, 140, 255)
+    skin = (226, 172, 140, 255)
+    tilt = 2 if laugh else 0
+    d.polygon([(11, 22), (37, 22), (39, 31), (9, 31)], fill=dress)                 # los hombros, el vestido
+    d.line([(10, 23), (7, 28)], fill=skin, width=2)                                # los brazos, rodeándolo
+    d.line([(38, 23), (41, 28)], fill=skin, width=2)
+    d.rectangle([12, 30, 36, 33], fill=dress_d)                                    # la falda sobre el puesto
+    d.rectangle([7, 33, 11, 36], fill=(220, 70, 130, 255))                         # los tacones, a los lados
+    d.rectangle([37, 33, 41, 36], fill=(220, 70, 130, 255))
+    d.polygon([(15 + tilt, 15), (33 + tilt, 15), (35, 31), (13, 31)], fill=HAIR_LORENA)  # el pelo largo
+    d.ellipse([16 + tilt, 10, 32 + tilt, 24], fill=HAIR_LORENA)                    # la cabeza, de espaldas
+    for x in (19, 23, 27, 31):                                                     # mechones
+        d.line([(x + tilt // 2, 18), (x - 1, 30)], fill=(84, 50, 28, 255))
+    d.rectangle([21 + tilt, 9, 27 + tilt, 11], fill=(236, 72, 132, 255))           # el moño
+    outline(img).save(MOTO / ("lorena_atras_risa.png" if laugh else "lorena_atras.png"))
+
+
 def llegada():
-    """La llegada: atardecer, la casa de ella, la moto parqueada y alguien en la puerta."""
+    """La llegada: atardecer, la casa de ella (cuatro pisos), la moto parqueada y ella en la puerta."""
     img = Image.new("RGBA", (320, 180), (0, 0, 0, 255))
     d = ImageDraw.Draw(img)
     for y in range(110):  # cielo de atardecer
@@ -184,18 +249,15 @@ def llegada():
     d.ellipse([230, 50, 270, 90], fill=(255, 220, 140, 255))
     d.rectangle([0, 110, 319, 179], fill=(120, 110, 100, 255))  # calle
     d.rectangle([0, 104, 319, 112], fill=(170, 160, 150, 255))  # andén
-    # la casa
-    d.rectangle([60, 40, 220, 106], fill=(214, 150, 150, 255))
-    d.polygon([(50, 42), (140, 14), (230, 42)], fill=(160, 70, 60, 255))
-    d.rectangle([80, 56, 108, 78], fill=(250, 220, 150, 255))  # ventana con luz
-    d.line([(94, 56), (94, 78)], fill=(120, 80, 70, 255))
-    d.rectangle([180, 56, 206, 78], fill=(250, 220, 150, 255))
-    d.rectangle([128, 54, 156, 106], fill=(90, 60, 50, 255))  # puerta abierta
-    d.rectangle([131, 57, 153, 106], fill=(250, 210, 140, 255))  # luz de adentro
-    # ella en la puerta: silueta, pelo largo, sin cara
-    d.ellipse([136, 64, 148, 77], fill=(40, 28, 30, 255))
-    d.rectangle([135, 70, 149, 86], fill=(40, 28, 30, 255))
-    d.polygon([(136, 76), (148, 76), (152, 104), (132, 104)], fill=(150, 60, 80, 255))
+    # la casa: cuatro pisos de ladrillo
+    casa(d, 70, 14, 120, 23, lit=(2, 4))
+    d.rectangle([116, 76, 144, 106], fill=(90, 60, 50, 255))  # puerta abierta
+    d.rectangle([119, 79, 141, 106], fill=(250, 210, 140, 255))  # luz de adentro
+    # ella en la puerta: silueta, pelo largo castaño, sin cara
+    d.ellipse([124, 84, 136, 96], fill=HAIR_LORENA)
+    d.polygon([(123, 90), (137, 90), (139, 100), (121, 100)], fill=HAIR_LORENA)  # el pelo largo, por la espalda
+    d.rectangle([125, 92, 135, 100], fill=(40, 28, 30, 255))
+    d.polygon([(124, 98), (136, 98), (140, 106), (120, 106)], fill=(150, 60, 80, 255))
     # la moto parqueada y él al lado
     d.ellipse([196, 132, 216, 152], fill=TIRE)
     d.ellipse([246, 132, 266, 152], fill=TIRE)
@@ -224,4 +286,7 @@ if __name__ == "__main__":
     car("camion", 60, 58, (200, 60, 50, 255), (200, 60, 50, 255), extra=camion_box)
     scenery()
     llegada()
+    casa_ella()
+    lorena_atras()
+    lorena_atras(laugh=True)
     print("listo")

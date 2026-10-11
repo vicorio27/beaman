@@ -21,6 +21,7 @@ const BUTTONS := [
 	["sniff", "touch_l", Vector2(238, 132), null, Vector2(298, 88)],
 	["libreta", "touch_lib", Vector2(274, 106), Vector2(298, 68), null],
 	["craft", "touch_c", null, Vector2(298, 48), null],  # armar: solo con una pantalla abierta (la mochila)
+	["pause", "touch_pausa", Vector2(304, 40), null, Vector2(304, 40)],  # pausa (como Start)
 ]
 
 var _stick_finger := -1

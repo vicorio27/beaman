@@ -15,8 +15,8 @@ INK = (0, 0, 8, 255)
 SKIN = (238, 206, 204, 255)
 SKIN_SH = (204, 160, 170, 255)
 # Rosado, todo rosado (nada de morado): siempre muy femenina.
-HAIR = (52, 30, 30, 255)
-HAIR_HI = (110, 64, 60, 255)
+HAIR = (100, 60, 34, 255)    # castaño
+HAIR_HI = (158, 104, 62, 255)
 DRESS = (252, 112, 156, 255)
 DRESS_SH = (200, 52, 104, 255)
 TIGHTS = (240, 206, 214, 255)

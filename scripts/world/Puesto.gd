@@ -118,8 +118,7 @@ func _intro() -> void:
 	await get_tree().create_timer(0.4).timeout
 	await Dialogue.talk([["DOÑA ROSA", "—Ya vengo, mijito. Las empanadas a mil quinientos, las arepas a tres mil, la aguapanela a mil."],
 		["DOÑA ROSA", "—Y si alguien pregunta por mí... dígale que no estoy."],
-		["DOÑA ROSA", "—Y señale el letrero. La gente entiende señas. Bueno, la gente buena. La mala entiende otras cosas."],
-		["ÉL", "Me dejó a cargo de un negocio con flujo de caja, inventario perecedero y riesgo de extorsión. Es lo más parecido a mi antiguo cargo."]])
+		["DOÑA ROSA", "—Y señale el letrero. La gente entiende señas. Bueno, la gente buena. La mala entiende otras cosas."]])
 	state = "play"
 	_next()
 
@@ -289,7 +288,6 @@ func _man_in_black() -> void:
 	await Dialogue.talk([
 		["SEÑOR", "—¿Y Doña Rosa?"],
 		["", "(Señala la silla vacía de Rosa. Señala las empanadas.)"],
-		["ÉL", "Chaqueta negra en un día de sol. Reloj de oro con la correa floja. Nadie en la fila lo mira. Todos lo están mirando."],
 		["SEÑOR", "—No quiero empanadas. Dígale a Doña Rosa que esta semana son cincuenta. Hágale una seña, si no le salen las palabras. Que no se le olvide."],
 	])
 	var opts := ["Asentir"]
@@ -300,10 +298,9 @@ func _man_in_black() -> void:
 	var i := await Dialogue.talk([["", "(Lukas gruñe bajito. No le había oído ese ruido nunca.)"]], opts)
 	if i == 1:
 		_brave = true
-		await Dialogue.talk([["SEÑOR", "—... Usted tiene ojos de haber visto cosas. Bueno. Dígale igual."],
-			["ÉL", "Le sostuve la mirada cuatro segundos. Él parpadeó en el tres. En otra vida eso habría sido el final de la conversación. En esta es el principio de un problema."]])
+		await Dialogue.talk([["SEÑOR", "—... Usted tiene ojos de haber visto cosas. Bueno. Dígale igual."]])
 	else:
-		await Dialogue.talk([["SEÑOR", "—Buen muchacho."], ["ÉL", "Me dijo buen muchacho. Como a un perro. Lukas lo miró como a una persona. Lukas fue más generoso."]])
+		await Dialogue.talk([["SEÑOR", "—Buen muchacho."]])
 	GameState.change_mood(-5.0)
 	var t2 := create_tween()
 	t2.tween_callback(m.play.bind("walk_side"))
@@ -340,4 +337,4 @@ func _end() -> void:
 	GameState.raise_bond("rosa")
 	GameState.flags["vacuna_rosa"] = true
 	TimeManager.skip(1.0)
-	SceneRouter.go(CITY, "FromCafe", "", "Cincuenta mil por semana por un carrito de empanadas. Ya sé quién manda en este barrio. Y no es la policía.")
+	SceneRouter.go(CITY, "FromCafe", "", "(Cincuenta mil por semana por un carrito de empanadas. En este barrio no manda la policía.)")

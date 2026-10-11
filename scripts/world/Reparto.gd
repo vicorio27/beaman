@@ -13,10 +13,10 @@ const LIMIT := 75.0
 ## [pedido, línea de la mitad, tipo, tiempo límite, propina rápida, costo por golpe, [rápido, a tiempo]]
 ## (una vuelta limpia: ~43 s a fondo; ~54 s con la torta, sin pasar del 80%)
 const ORDERS := [
-	["Hamburguesa doble. Con todo.", "El cliente puso en la app: \"Rápido, que tengo hambre\". Yo también, señor. Yo también.", "", 75.0, 3000, 500, [50.0, 62.0]],
-	["Sushi. FRÁGIL. Para una persona que pidió para dos.", "Lo llevo con cuidado. Cuesta lo que yo me gano en tres días. Cada hueco me duele en el arroz.", "sushi", 90.0, 4000, 1500, [58.0, 72.0]],
-	["Medicamentos. URGENTE.", "El cliente llama: \"¿Ya viene? Es para mi mamá\". En la caja va el remedio de alguien. Pedaleo distinto.", "remedio", 58.0, 6000, 500, [47.0, 53.0]],
-	["Una torta de cumpleaños. NO CORRA.", "\"Feliz cumpleaños, mi amor\", dice. Pedaleo sin pensar en ningún cumpleaños. No me sale.", "torta", 85.0, 4000, 1000, [62.0, 72.0]],
+	["Hamburguesa doble. Con todo.", "El cliente puso en la app: \"Rápido, que tengo hambre\". Él también, señor. Él también.", "", 75.0, 3000, 500, [50.0, 62.0]],
+	["Sushi. FRÁGIL. Para una persona que pidió para dos.", "Lo lleva con cuidado. Cuesta lo que él se gana en tres días. Cada hueco le duele en el arroz.", "sushi", 90.0, 4000, 1500, [58.0, 72.0]],
+	["Medicamentos. URGENTE.", "El cliente llama: \"¿Ya viene? Es para mi mamá\". En la caja va el remedio de alguien. Pedalea distinto.", "remedio", 58.0, 6000, 500, [47.0, 53.0]],
+	["Una torta de cumpleaños. NO CORRA.", "\"Feliz cumpleaños, mi amor\", dice. Pedalea sin pensar en ningún cumpleaños. No le sale.", "torta", 85.0, 4000, 1000, [62.0, 72.0]],
 ]
 const TORTA_SPEED := 0.8
 const TORTA_TIME := 1.6
@@ -117,7 +117,7 @@ func _arrival() -> void:
 		["CLIENTE", who],
 		["", "%s $%d de pedido y $%d de propina." % [squashed, PAY, tip]],
 	])
-	_back("Un pedido. La app ya me está pidiendo otro. La app no duerme. Yo tampoco.")
+	_back("(Un pedido. La app ya está pidiendo otro. La app no duerme. Él tampoco.)")
 
 
 func f_reparto_n() -> void:

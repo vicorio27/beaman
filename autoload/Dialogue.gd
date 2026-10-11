@@ -153,6 +153,10 @@ func _label(pos: Vector2, color: Color) -> Label:
 
 ## Muestra las líneas ([quién, texto] o solo texto) y, al final, las opciones.
 func talk(lines: Array, choices: Array = []) -> int:
+	if lines.is_empty() and choices.is_empty():
+		return 0  # (nada que decir: él ya no habla, y a veces era el único que hablaba)
+	if lines.is_empty():
+		lines = [["", "..."]]
 	Narrator.hide_now()  # que no se mezclen dos textos
 	# En el celular, "E: golpe" dice "A: golpe" (antes de partir en páginas: puede cambiar el largo).
 	var shown := []
@@ -293,6 +297,8 @@ func _show_face_off(line, info: Array) -> void:
 	var talking := speaker != ""
 	_portrait.modulate = lit if talking and not right else dim
 	_portrait2.modulate = lit if right else dim
+	if line is Array and str(line[0]) == "" and line.size() > 2 and str(line[2]) == face_off[0]:
+		_portrait.modulate = lit  # narración sobre él, en el cara a cara: su retrato prendido (él no habla)
 	if talking and speaker == face_off[0] and line[0] == INNER:
 		_portrait.modulate = Color(0.8, 0.88, 1.0)
 	if line is Array and line.size() > 3 and line[3] == "sacude":

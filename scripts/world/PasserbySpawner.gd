@@ -44,9 +44,12 @@ func _process(delta: float) -> void:
 		return
 	_timer = randf_range(2.5, 5.0)
 	var h := TimeManager.hour()
-	if h < 7 or h >= 20:
-		return
-	if get_tree().get_nodes_in_group("passersby").size() >= MAX.get(get_parent().name, 3):
+	if h < 6 or (h >= 23 and randf() < 0.85):
+		return  # madrugada: casi nadie
+	var night := h >= 20
+	if night:
+		_timer *= 2.5  # de noche pasa menos gente: la que vuelve del trabajo, la que no vuelve
+	if get_tree().get_nodes_in_group("passersby").size() >= (2 if night else MAX.get(get_parent().name, 3)):
 		return
 	var lane: Array = _lanes.pick_random()
 	var p := Passerby.new()
