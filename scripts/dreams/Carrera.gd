@@ -57,7 +57,7 @@ const EPISODES := {
 			["CAMILA", "—La camioneta era muy lenta. Por eso nos ganó. Ahora vamos en moto, igualitos. Las compré a crédito. A nombre de Guillermo."],
 			["GUILLERMO", "—Sí, mi amor. Así no tiene excusa."],
 			["", "Perdieron dos veces con ventaja, entonces se la quitan. Así piensa la gente que nunca perdió nada de verdad."],
-			["CAMILA", "—Y Lisandro manda saludos. Dice que se acuerda de usted. Con cariño. Con mucho cariño."]],
+			["CAMILA", "—Y el Gato manda saludos. Lisandro, pues. Dice que se acuerda de usted. Con cariño. Con mucho cariño."]],
 		"start": "CAMILA: —¡Juntos somos más! ¡Más kilos, por lo menos!",
 		"half": "GUILLERMO: —¡Ahora, mi amor! ¡Ahora! ... ¿Mi amor? ¿Ahora qué?",
 		"goal": "LA META", "win": [["CAMILA", "—Esto no se termina acá. Lisandro todavía no jugó."],

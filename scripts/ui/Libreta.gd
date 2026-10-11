@@ -37,7 +37,7 @@ const SKILL_SHORT := {
 }
 ## Las series de sueños: [nombre, ids, color].
 const SERIES := [
-	["Lisandro (el dealer)", ["plomo_d1", "plomo_d2", "plomo_d3"], Color(0.85, 0.35, 0.3)],
+	["Lisandro, \"el Gato\"", ["plomo_d1", "plomo_d2", "plomo_d3"], Color(0.85, 0.35, 0.3)],
 	["Las carreras", ["carrera1", "carrera2", "carrera3", "carrera4"], Color(0.9, 0.75, 0.3)],
 	["La Empresa", ["sigilo1", "sigilo2", "sigilo3", "sigilo4"], Color(0.4, 0.6, 0.9)],
 	["El torneo (el papá)", ["lucha1", "lucha2", "lucha3", "lucha4"], Color(0.45, 0.8, 0.45)],

@@ -26,6 +26,7 @@ extends "res://scripts/dreams/Plomo.gd"
 ## EL MUNDO DE LAS DROGAS, COMO ES (no un shooter genérico):
 ##   - el callejón es la olla: gente fumando contra las paredes (no pelean: son los clientes),
 ##     hollín, "SAPO = MUERTO"; un mural de un pelado muerto con velas al pie, al lado del teléfono;
+## En el barrio a Lisandro le dicen "el Gato" (siete vidas; cae parado). Algunos se lo dicen; otros no se atreven.
 ##   - en la calle, carteles de desaparecidos; y en la esquina del farol, Camila y Verónica, que
 ##     trabajan para Lisandro (no son enemigas: los tiros no les hacen nada). Verónica fue la novia
 ##     de él (el protagonista); Camila, por celos, se metió en la mitad. Después de eso terminaron las
@@ -1241,9 +1242,41 @@ func _story_setup() -> void:
 			_dog_pos = pos + Vector2(0.0, 1.0)
 
 
+## La esquina del farol: cada vez que Lisandro pasa cerca, saluda a Camila y a Verónica por el nombre
+## (y una le contesta). Así el que juega sabe quiénes son. Vuelve a saludar cuando se aleja y vuelve.
+const ESQUINA := Vector2(13.27, 16.55)
+const GREETS := [
+	["LISANDRO: —Buenas noches, Camila. Verónica.", "CAMILA: —Quiubo, Gato. ¿Viene a cobrar o de visita?"],
+	["LISANDRO: —Verónica. Camila. Se me cuidan.", "VERÓNICA: —De usted es del que hay que cuidarse, Lisandro."],
+	["LISANDRO: —¡Mis reinas! Camila, Verónica.", "CAMILA: —Uy, el Gato contento. Alguien se murió."],
+	["LISANDRO: —Camila. Vero. Buena noche para trabajar.", "VERÓNICA: —Para usted todas las noches son buenas."],
+	["LISANDRO: —Quiubo, Vero. Quiubo, Camila.", "CAMILA: —Miau. Siete vidas y ninguna buena, ¿cierto, Gato?"],
+]
+var _greet_i := 0
+var _greet_away := true
+
+
+func _greet() -> void:
+	var d := pos.distance_to(ESQUINA)
+	if d > 3.5:
+		_greet_away = true
+		return
+	if d > 2.2 or not _greet_away or state != "play" or FinalRush.is_step("lisandro"):
+		return  # (en la revancha del final el que juega no es Lisandro)
+	for sc in _scenes:  # en el capítulo 2, la primera vez es la escena de la cuota
+		if sc["id"] == "esquina" and not sc["done"]:
+			return
+	_greet_away = false
+	var g: Array = GREETS[_greet_i % GREETS.size()]
+	_greet_i += 1
+	_say(g[0], 2)
+	_say(g[1], 1)
+
+
 func _story(_delta: float) -> void:
 	if _twist:
 		return
+	_greet()
 	for sc in _scenes:
 		if sc["done"]:
 			continue
@@ -1272,7 +1305,7 @@ func _run_scene(id: String) -> void:
 			await _mama()
 		"pelado":
 			var i := await _talk([
-				["PELADO", "—Patrón. ¿Me da trabajo? Tengo doce. Mi mamá está enferma. Bueno, no está enferma, pero está brava."],
+				["PELADO", "—¿Usted es el Gato? ... Patrón. ¿Me da trabajo? Tengo doce. Mi mamá está enferma. Bueno, no está enferma, pero está brava."],
 				["LISANDRO", "—¿Y qué sabe hacer?"],
 				["PELADO", "—Pitar. Correr. Mentir. Lo que usted hace, pero chiquito."],
 			], ["Póngase de campanero", "Tome, váyase pa'l colegio"])
@@ -1318,7 +1351,7 @@ func _run_scene(id: String) -> void:
 			_say("(Billete lo sigue. Si gruñe, es que hay alguien escondido.)")
 		"esquina":
 			var i := await _talk([
-				["CAMILA", "—Llegó el patrón. Mírelo, Vero: camisa blanca. Blanca, en este barrio. Eso es tener plata o no tener vergüenza."],
+				["CAMILA", "—Llegó el Gato. Mírelo, Vero: camisa blanca. Blanca, en este barrio. Eso es tener plata o no tener vergüenza."],
 				["LISANDRO", "—Verónica. La ex del que no se muere. Los ojos azules, todavía. Mire dónde vino a parar."],
 				["VERÓNICA", "—Vine a parar donde usted me puso, Lisandro."],
 				["CAMILA", "—Y yo por meterme en la mitad. Me dieron celos de ella, ¿sabe? De que él la quisiera así. Ya ve: ahora tenemos la misma esquina. Se me cumplió."],
@@ -1414,6 +1447,7 @@ func _mama() -> void:
 				["MAMÁ", "—Mijo, vino un señor grande preguntando por usted. Verde. Muy educado. Se limpió los pies."],
 				["LISANDRO", "—¿Y qué le dijo, amá?"],
 				["MAMÁ", "—Que usted le debía algo. Le ofrecí tinto. No quiso. Dijo que no se quedaba mucho en ningún lado."],
+				["MAMÁ", "—Preguntó por \"el Gato\". Le dije que aquí no vive ningún gato. Que aquí vive Lisandro, que es gerente."],
 				["LISANDRO", "—Amá... si me pasa algo..."],
 				["MAMÁ", "—¿Qué le va a pasar, mijo? Usted es gerente."],
 				["LISANDRO", "—Sí, amá. Gerente."],

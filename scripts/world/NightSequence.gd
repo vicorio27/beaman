@@ -45,7 +45,7 @@ const DREAMS := [
 	["carrera3", "res://scenes/dreams/Carrera3.tscn", "",
 		"Se queda dormido. Dos motos lo esperan en la esquina. Las conoce."],
 	["plomo_d3", "res://scenes/dreams/PlomoDealer3.tscn", "",
-		"Se queda dormido. Alguien grande y verde pregunta por Lisandro en el barrio."],
+		"Se queda dormido. Alguien grande y verde pregunta en el barrio por Lisandro, al que le dicen el Gato."],
 	["carrera4", "res://scenes/dreams/Carrera4.tscn", "",
 		"Se queda dormido. Sirenas. Esta vez no son de la calle."],
 	["final", "res://scenes/dreams/Callejon3.tscn", "",
