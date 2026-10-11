@@ -26,6 +26,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if GameState.is_active("lukas_olfato") and GameState.flags.get("lukas_sniffed", false):
 		GameState.complete_quest("lukas_olfato")
+	_chepe_tick(delta)
 	_check -= delta
 	if _check > 0.0:
 		return
@@ -230,12 +231,52 @@ func _jobs() -> void:
 
 
 ## La ruta de reciclaje: latas por el barrio, contra reloj. Al final Wilson las compra al doble.
+## Cada ruta trae su giro (las cuatro primeras en orden; después, al azar entre los tres giros):
+##   "":        normal.
+##   "chepe":   Don Chepe, el de la carreta, también recoge. Va despacio y se demora en cada lata,
+##              pero va a la más cercana: hay que ganársela (o quitársela en la cara).
+##   "dorada":  una de las latas brilla dorada: vale por diez. Siempre está lejos.
+##   "apurado": el camión viene temprano. Sesenta segundos, pero Wilson paga al triple.
 const RUTA_POINTS := [Vector2(80, 250), Vector2(200, 250), Vector2(320, 250), Vector2(560, 250), Vector2(680, 250),
 	Vector2(900, 250), Vector2(470, 330), Vector2(470, 430), Vector2(470, 520), Vector2(820, 330), Vector2(820, 430),
 	Vector2(820, 520), Vector2(600, 452), Vector2(700, 500), Vector2(100, 432), Vector2(250, 432)]
 const RUTA_SECONDS := 90.0
+const RUTA_TWISTS := ["", "chepe", "dorada", "apurado"]
+const CHEPE_SPEED := 30.0
+const CHEPE_PAUSE := 4.0
+const CHEPE_START := Vector2(380, 424)
+const CHEPE_GRAB := ["CHEPE: —Esa es mía. Tengo la escritura.", "CHEPE: —Madrugue, mijo. Madrugue.",
+	"CHEPE: —Cuarenta años en esto. Usted es un practicante.", "CHEPE: —Otra pa' la carreta. Gracias, Dios."]
+const CHEPE_ROBBED := ["CHEPE: —¡Esa la tenía echada el ojo!", "CHEPE: —¡En la cara! ¡Me la quitó en la cara!",
+	"CHEPE: —Sin respeto por los mayores. Así está el reciclaje.", "CHEPE: —Le voy a decir a Wilson. ... No, Wilson le paga a usted."]
 var _ruta_end := 0.0
 var _ruta_label: Label
+var ruta_twist := ""
+var _chepe: AnimatedSprite2D
+var _chepe_target: Node2D
+var _chepe_wait := 0.0
+var _chepe_got := 0
+var _chepe_line := 0
+var _gold_name := ""
+var _gold_got := false
+
+
+func _ruta_pick_twist() -> String:
+	var n := int(GameState.flags.get("ruta_n", 0))
+	GameState.flags["ruta_n"] = n + 1
+	return RUTA_TWISTS[n] if n < RUTA_TWISTS.size() else RUTA_TWISTS[1 + randi() % (RUTA_TWISTS.size() - 1)]
+
+
+## La línea de Wilson antes de arrancar, según el giro.
+func ruta_intro_line() -> Array:
+	match ruta_twist:
+		"chepe":
+			return ["WILSON", "—Ojo: hoy sale Don Chepe con la carreta. Va despacio, pero va derecho a la lata más cerca. Y se demora. Quítesela antes. Con respeto. Sin respeto también sirve."]
+		"dorada":
+			return ["WILSON", "—Dicen que por ahí anda una lata dorada. Edición Mundial. Esa vale por diez. Siempre está lejos. Las cosas buenas siempre están lejos."]
+		"apurado":
+			return ["WILSON", "—¡Cambio de planes! El camión viene temprano. Sesenta segundos. Pero hoy le pago al triple. Al TRIPLE. No me haga repetirlo, que me arrepiento."]
+	return []
 
 
 func start_ruta() -> void:
@@ -253,12 +294,26 @@ func start_ruta() -> void:
 		p.add_to_group("ruta")
 		(world if world else scene).add_child(p)
 	GameState.flags["ruta_latas_antes"] = GameState.count("lata") + GameState.count("botella")
-	_ruta_end = Time.get_ticks_msec() / 1000.0 + RUTA_SECONDS
+	_ruta_end = Time.get_ticks_msec() / 1000.0 + (60.0 if ruta_twist == "apurado" else RUTA_SECONDS)
+	_chepe_got = 0
+	_gold_name = ""
+	_gold_got = false
+	if ruta_twist == "chepe":
+		_chepe = AnimatedSprite2D.new()
+		CharacterFrames.dress(_chepe, 9)
+		_chepe.modulate = GameState.same_tint(Color(0.85, 0.75, 0.6))
+		_chepe.position = CHEPE_START
+		_chepe.play("idle_side")
+		(world if world else scene).add_child(_chepe)
+		_chepe_wait = 8.0  # se está amarrando la carreta
+		_chepe_target = null
+	if ruta_twist == "dorada":
+		_ruta_gold.call_deferred(scene)
 	var layer := CanvasLayer.new()
 	layer.layer = 11
 	scene.add_child(layer)
 	_ruta_label = Label.new()
-	_ruta_label.position = Vector2(96, 46)
+	_ruta_label.position = Vector2(96, 29)  # entre la lista de encargos y los avisos de arriba (y=40): no se tapan
 	_ruta_label.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 	_ruta_label.add_theme_font_size_override("font_size", 8)
 	_ruta_label.add_theme_constant_override("outline_size", 3)
@@ -267,11 +322,77 @@ func start_ruta() -> void:
 	layer.add_child(_ruta_label)
 
 
+## La lata dorada: la más lejos de Wilson de las que quedaron a la vista (la dificultad esconde algunas).
+func _ruta_gold(scene: Node) -> void:
+	var best: Pickup = null
+	for n in get_tree().get_nodes_in_group("ruta"):
+		var pk := n as Pickup
+		if pk == null or pk.is_queued_for_deletion() or pk.concealed:
+			continue
+		if best == null or pk.position.distance_to(CHEPE_START) > best.position.distance_to(CHEPE_START):
+			best = pk
+	if best == null:
+		return
+	best.qty = 10
+	best.modulate = Color(1.6, 1.3, 0.3)
+	_gold_name = best.name
+
+
+## Don Chepe: camina a la lata más cercana, se demora en recogerla y sigue.
+func _chepe_tick(delta: float) -> void:
+	if not is_instance_valid(_chepe) or _ruta_end <= 0.0:
+		return
+	if GameState.input_blocked():
+		return
+	if _chepe_wait > 0.0:
+		_chepe_wait -= delta
+		if _chepe_wait <= 0.0 and is_instance_valid(_chepe_target) and _chepe.position.distance_to(_chepe_target.position) < 8.0:
+			_chepe_target.queue_free()  # se la llevó
+			_chepe_target = null
+			_chepe_got += 1
+			Narrator.say(CHEPE_GRAB[_chepe_line % CHEPE_GRAB.size()], true)
+			_chepe_line += 1
+		return
+	if _chepe_target != null and not is_instance_valid(_chepe_target):
+		_chepe_target = null  # se la quitaron en la cara
+		Narrator.say(CHEPE_ROBBED[_chepe_line % CHEPE_ROBBED.size()], true)
+		_chepe_line += 1
+		_chepe_wait = 1.0
+		_chepe.play("idle_side")
+		return
+	if _chepe_target == null:
+		var best: Node2D = null
+		for n in get_tree().get_nodes_in_group("ruta"):
+			var pk := n as Pickup
+			if pk == null or pk.is_queued_for_deletion() or pk.concealed or pk.qty > 1:
+				continue  # la dorada no la ve: Chepe no cree en leyendas
+			if best == null or _chepe.position.distance_to(pk.position) < _chepe.position.distance_to(best.position):
+				best = pk
+		_chepe_target = best
+		if best == null:
+			_chepe.play("idle_down")
+			return
+	var to := _chepe_target.position - _chepe.position
+	if to.length() < 6.0:
+		_chepe_wait = CHEPE_PAUSE
+		_chepe.play("idle_down")
+		return
+	var step := to.normalized() * CHEPE_SPEED * delta
+	_chepe.position += step
+	var anim := "walk_side" if absf(to.x) > absf(to.y) else ("walk_down" if to.y > 0 else "walk_up")
+	if _chepe.animation != anim:
+		_chepe.play(anim)
+	_chepe.flip_h = to.x < 0 and anim == "walk_side"
+
+
 func _ruta() -> void:
 	if _ruta_end <= 0.0:
 		return
 	var left := _ruta_end - Time.get_ticks_msec() / 1000.0
 	var got: int = GameState.count("lata") + GameState.count("botella") - int(GameState.flags.get("ruta_latas_antes", 0))
+	if _gold_name != "" and not _gold_got and GameState.flags.get("taken", {}).get(_gold_name, -1) == GameState.day:
+		_gold_got = true
+		Narrator.say("(¡La lata dorada! Edición Mundial. Vale por diez. Wilson va a llorar. Yo casi.)", true)
 	if is_instance_valid(_ruta_label):
 		_ruta_label.text = "RUTA %02d s   LATAS %d" % [maxi(0, int(left)), got]
 	if left > 0.0:
@@ -279,11 +400,13 @@ func _ruta() -> void:
 	_ruta_end = 0.0
 	for n in get_tree().get_nodes_in_group("ruta"):
 		n.queue_free()
+	if is_instance_valid(_chepe):
+		_chepe.queue_free()
 	if is_instance_valid(_ruta_label):
 		_ruta_label.get_parent().queue_free()
 	var cans: int = GameState.count("lata")
 	var bottles: int = GameState.count("botella")
-	var pay: int = (cans * 300 + bottles * 200) * 2
+	var pay: int = (cans * 300 + bottles * 200) * (3 if ruta_twist == "apurado" else 2)
 	GameState.remove_item("lata", cans)
 	GameState.remove_item("botella", bottles)
 	GameState.add_money(pay)
@@ -292,9 +415,23 @@ func _ruta() -> void:
 		f["trabajo_ultimo"] = GameState.day
 		f["trabajo_dias"] = int(f.get("trabajo_dias", 0)) + 1
 	TimeManager.skip(1.0)
-	await Dialogue.talk([["", "(Pasa el camión de la basura.)"],
-		["WILSON", "—%d latas y %d botellas. Al doble: $%d. Usted corre como si lo persiguieran, parce. ... ¿Lo persiguen? No me diga. No me diga nada, mejor." % [cans, bottles, pay]],
-		["ÉL", "Nadie me persigue. Reviso igual. Esquina, poste, moto. Nadie. Es un hábito. Como lavarse los dientes, pero con la nuca."]])
+	var lines := [["", "(Pasa el camión de la basura.)"]]
+	match ruta_twist:
+		"chepe":
+			lines.append(["WILSON", "—%d latas y %d botellas: $%d. Chepe se llevó %d. %s" % [cans, bottles, pay, _chepe_got,
+				"Le ganó a un señor de setenta años con carreta. Felicitaciones, parce. En serio. Más o menos." if _chepe_got < cans
+				else "Le ganó un señor de setenta años con carreta. No le voy a decir nada. Ya se lo dijo la vida."]])
+		"dorada":
+			var gold := _gold_got
+			lines.append(["WILSON", "—%d latas y %d botellas: $%d. %s" % [cans, bottles, pay,
+				"¡Y la DORADA! Esa no la vendo. Esa la enmarco. ... Bueno, sí la vendo. Pero con dolor." if gold
+				else "¿Y la dorada? ... Nadie la encuentra nunca. Por eso es leyenda. Si la encontraran, sería una lata."]])
+		"apurado":
+			lines.append(["WILSON", "—%d latas y %d botellas. Al triple: $%d. El camión llegó temprano y usted también. Raro. Nadie llega temprano en este barrio." % [cans, bottles, pay]])
+		_:
+			lines.append(["WILSON", "—%d latas y %d botellas. Al doble: $%d. Usted corre como si lo persiguieran, parce. ... ¿Lo persiguen? No me diga. No me diga nada, mejor." % [cans, bottles, pay]])
+			lines.append(["ÉL", "Nadie me persigue. Reviso igual. Esquina, poste, moto. Nadie. Es un hábito. Como lavarse los dientes, pero con la nuca."])
+	await Dialogue.talk(lines)
 
 
 ## Los siete pedazos de la foto: la arma (y se ve la cara).

@@ -1671,3 +1671,35 @@ El problema: cuando ya se conocen los siete tipos, pedir se vuelve buscar en una
   - **Lunes:** todo rinde un 25% menos.
 - **Racha:** tres aciertos seguidos dan $1.000 de más, con su línea.
 - **El globo de lo que dicen** crece hacia arriba desde el cartelito del tipo (antes se le montaba encima) y tiene fondo oscuro, para que se lea sobre los letreros.
+
+## La ruta de Wilson y los eventos del día: que no se repitan (2026-10-10)
+
+**La ruta de reciclaje** (`QuestDirector`, sección de la ruta): cada ruta trae su giro. Las cuatro primeras salen en orden; después, al azar entre los tres giros. Wilson lo anuncia antes de arrancar y lo comenta al pagar.
+
+| Giro | Qué cambia |
+|---|---|
+| Normal | Como antes. |
+| Don Chepe | Un señor de setenta años con carreta también recoge. Arranca a los 8 s, va a 30 px/s (él va a 60) a la lata más cercana y se demora 4 s en cada una. Solo se lleva 7 u 8 de las 12. Hay que ganársela o quitársela en la cara ("¡En la cara! ¡Me la quitó en la cara!"). No ve la dorada. |
+| La lata dorada | La lata a la vista más lejos de Wilson brilla dorada y vale por diez. "Esa no la vendo. Esa la enmarco." |
+| El camión temprano | 60 s en vez de 90, pero Wilson paga al triple. |
+
+El reloj de la ruta subió a y=29, entre la lista de encargos y los avisos de arriba. Antes los avisos ("Recoge: lata", Chepe) lo tapaban.
+
+**Los eventos del día** (`Conversations`, sección de eventos): cada uno tiene varias versiones. Las primeras salen en orden, cada una una vez; después, al azar (`_ev_variant`).
+- **Redada:**
+  - La de la cédula (la de antes).
+  - **El patrullero nuevo,** que lee el procedimiento en el celular. Señalar a Lukas: "Caninos: no aplica. Que tenga buen día, señor perro". Quedarse callado: "No hay paso seis".
+  - **Control de caninos:** mostrar el collar (antes del día 8, multa), esconder a Lukas detrás de la caneca ("esa caneca está moviendo la cola") o hacerse el muerto ("Canino: fallecido. No aplica"). Sin Lukas: el lazo vacío.
+  - **La redada a otro:** grabar con el celular de flecha (no graba, pero ellos no lo saben), pararse al lado en silencio o irse.
+- **Pelea:**
+  - La del cuchillo (la de antes).
+  - **Las señoras y el último pandebono:** partirlo, que se lo coma Lukas ("se lo comió el juez") o mirar.
+  - **Los borrachos del Medellín y el Nacional,** que terminan abrazándolo.
+  - **El que agarra a la muchacha del brazo:** meterse sin pegar, que Lukas ladre o silbar, o irse ("Eso sí lo oí. Eso sí cuenta.").
+- **Ayuda:**
+  - La niña perdida y el señor diabético (las de antes, ya no según el día par o impar).
+  - **Las naranjas de la señora contra la buseta:** once de doce, porque Lukas tiene una.
+  - **El gringo perdido** (él es mudo): señalar el norte lo manda al motel; el mapa en el andén da $5.000; que Lukas lo lleve da $8.000 ("five stars").
+  - **Princesa, la perrita del norte:** recompensa de $10.000 y una puerta en la cara.
+
+Probado: cada versión de cada evento con cada opción, sin errores. La ruta con Chepe y con la dorada, con capturas.

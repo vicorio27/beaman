@@ -2398,6 +2398,10 @@ func _wilson_ruta() -> void:
 		["WILSON", "—Lo que recojamos antes, es plata. Noventa segundos, parce. Latas por todo el barrio. Se las pago al doble. Al doble. Eso no lo digo nunca."],
 		["ÉL", "Noventa segundos. Esto es un minijuego. Wilson no lo sabe. Wilson cree que es su vida. Bueno, también."],
 	])
+	QuestDirector.ruta_twist = QuestDirector._ruta_pick_twist()
+	var extra := QuestDirector.ruta_intro_line()
+	if not extra.is_empty():
+		await Dialogue.talk([extra])
 	GameState.flags["ruta_dia"] = GameState.day
 	QuestDirector.start_ruta()
 
@@ -2571,6 +2575,15 @@ func _tablero() -> void:
 
 # ---------------------------------------------------------------- Eventos del día
 
+## Cada evento tiene varias versiones: las primeras salen en orden (cada una una vez), después al azar.
+## Así la quinta redada no es la misma redada.
+func _ev_variant(ev: String, names: Array) -> String:
+	var key := "ev_n_" + ev
+	var n := int(GameState.flags.get(key, 0))
+	GameState.flags[key] = n + 1
+	return names[n] if n < names.size() else names.pick_random()
+
+
 func _ev_done() -> void:
 	GameState.flags["evento_estado"] = "fin"
 	var n: Node = get_tree().current_scene.find_child("Evento", true, false)
@@ -2580,6 +2593,16 @@ func _ev_done() -> void:
 
 func _ev_redada() -> void:
 	_ev_done()
+	match _ev_variant("redada", ["cedula", "novato", "perros", "otro"]):
+		"novato":
+			await _redada_novato()
+			return
+		"perros":
+			await _redada_perros()
+			return
+		"otro":
+			await _redada_otro()
+			return
 	await Dialogue.talk([["POLICIA", "—Documentos. ... Usted. Sí, usted, el del perro. El perro no, usted."]])
 	if GameState.count("cedula") > 0:
 		GameState.change_mood(-3.0)
@@ -2595,8 +2618,114 @@ func _ev_redada() -> void:
 			["", "(Se lleva %s. Para verificar.)" % (lost.to_lower() if lost != "" else "nada: no había nada")]])
 
 
+## El patrullero nuevo: lee el procedimiento en el celular, paso por paso.
+func _redada_novato() -> void:
+	var opts := ["Mostrarle la cédula", "Señalar a Lukas", "Quedarse quieto"]
+	if GameState.count("cedula") == 0:
+		opts.remove_at(0)
+	if not GameState.lukas_alive():
+		opts.erase("Señalar a Lukas")
+	var i := await Dialogue.talk([
+		["", "(Un policía muy joven. El uniforme todavía tiene las marcas de la caja. Lee algo en el celular.)"],
+		["POLICIA NUEVO", "—Buenas tardes, ciudadano. Procedimiento de... (baja el dedo) ...identificación. Paso uno: saludar. Listo. Paso dos: pedir el documento."],
+		["ÉL", "Primera semana. Las botas le aprietan. Tiene más miedo que yo. No: tiene el mismo miedo, pero con pistola."]], opts)
+	match opts[i]:
+		"Mostrarle la cédula":
+			GameState.change_mood(-1.0)
+			await Dialogue.talk([["POLICIA NUEVO", "—Paso tres: comparar la foto. ... Usted en la foto se ve más... ¿feliz? Aquí no dice qué hacer con eso."],
+				["POLICIA NUEVO", "—Paso cuatro: devolver. Que tenga buen día. ... ¿Eso se dice? Eso no está en el paso."]])
+		"Señalar a Lukas":
+			GameState.change_mood(3.0)
+			await Dialogue.talk([["POLICIA NUEVO", "—(lee) \"Caninos: no aplica\". ... (mira a Lukas) Que tenga buen día, señor perro."],
+				["", "(Lukas mueve la cola. El policía sonríe sin querer y se va. Al otro no le habló.)"],
+				["ÉL", "Lukas tiene más papeles que yo. Lo dice el celular de la Policía Nacional."]])
+		_:
+			await Dialogue.talk([["POLICIA NUEVO", "—Paso cinco: si el ciudadano no contesta... (baja, baja, baja) ...se acabó. No hay paso seis."],
+				["POLICIA NUEVO", "—¡Sargento! ... (el sargento se está comiendo una empanada) ... Bueno. Circule. Por favor. Si quiere."],
+				["ÉL", "Le gané a la Policía con silencio. Llevo un año entrenando sin saberlo."]])
+
+
+## Control de caninos: hoy no buscan papeles de personas.
+func _redada_perros() -> void:
+	if not GameState.lukas_alive():
+		GameState.change_mood(-4.0)
+		await Dialogue.talk([["", "(Control de caninos en la plaza. Un señor de la alcaldía con una tabla.)"],
+			["FUNCIONARIO", "—¿Y el perro, señor? ... (mira el lazo vacío que él tiene todavía en la mano)"],
+			["FUNCIONARIO", "—Ah. ... Perdón. Siga."],
+			["ÉL", "Todavía cargo el lazo. Nadie me ha dicho que lo suelte. Nadie me va a decir."]])
+		return
+	var opts := ["Mostrarle el collar", "Esconder a Lukas detrás de la caneca"]
+	if GameState.lukas_knows("muerto"):
+		opts.append("Lukas: hacerse el muerto")
+	var i := await Dialogue.talk([
+		["", "(Control de caninos en la plaza. Un señor de la alcaldía con una tabla y un policía aburrido.)"],
+		["FUNCIONARIO", "—Vacunas, registro, placa. El que no tenga, multa de diez mil. Las personas no. Las personas no importan, solo los perros."],
+		["ÉL", "Por fin una redada donde el sospechoso no soy yo."]], opts)
+	match opts[i]:
+		"Mostrarle el collar":
+			if GameState.day >= 8:
+				GameState.change_mood(3.0)
+				await Dialogue.talk([["FUNCIONARIO", "—Placa, vacuna de la Dra. Pilar... todo en orden. ¡Qué perro tan juicioso! Ojalá el dueño."],
+					["ÉL", "Lukas está al día. Yo debo tres meses de mi vida. Él no."]])
+			else:
+				GameState.add_money(-mini(10000, GameState.money))
+				GameState.change_mood(-5.0)
+				await Dialogue.talk([["FUNCIONARIO", "—Esta placa está en blanco. ¿Y las vacunas? ... Diez mil. Aquí está el recibo. Es lo único que le voy a dar."],
+					["ÉL", "Me multaron por no vacunar al perro. Con razón. Odio cuando tienen razón."]])
+		"Esconder a Lukas detrás de la caneca":
+			if randf() < 0.55:
+				GameState.change_mood(2.0)
+				await Dialogue.talk([["", "(Lukas se queda quieto detrás de la caneca. La cola, no. La cola nunca.)"],
+					["FUNCIONARIO", "—... Esa caneca está moviendo la cola. ... Bueno. Las canecas no pagan multa. Siguiente."]])
+			else:
+				GameState.add_money(-mini(10000, GameState.money))
+				GameState.change_mood(-5.0)
+				await Dialogue.talk([["", "(Lukas sale de la caneca con un hueso de pollo en la boca. Orgulloso.)"],
+					["FUNCIONARIO", "—Diez mil. Y no le cobro por esconderlo porque me hizo reír."]])
+		_:
+			GameState.change_mood(6.0)
+			await Dialogue.talk([["", "(Dedo en forma de pistola. Lukas se tira de lado, con la lengua afuera.)"],
+				["FUNCIONARIO", "—... (anota) \"Canino: fallecido. No aplica.\" Mis condolencias, señor."],
+				["", "(Lukas abre un ojo. El funcionario ya se fue.)"],
+				["ÉL", "Fraude al Estado. Con un beagle. Si hay justicia, no la hay."]])
+
+
+## La redada es a otro: un pelado de la plaza, contra la pared.
+func _redada_otro() -> void:
+	var opts := ["Pararse al lado, en silencio", "Irse"]
+	if GameState.count("celular") > 0:
+		opts.push_front("Grabar con el celular")
+	var i := await Dialogue.talk([
+		["", "(Tienen a un pelado contra la pared. Lo requisan dos veces. Al segundo bolsillo ya no buscan nada: buscan humillarlo.)"],
+		["ÉL", "Así fue. Así me tenían. Contra una pared parecida. Me acuerdo del ladrillo, no de las caras."]], opts)
+	match opts[i]:
+		"Grabar con el celular":
+			GameState.change_mood(5.0)
+			await Dialogue.talk([["", "(Saca el celular de flecha y lo levanta. La cámara es de 0,3 megapíxeles. No importa: es una cámara.)"],
+				["POLICIA", "—¿Está grabando? ... ¿Con eso? ... (mira a su compañero) Circule. Circulen todos."],
+				["PELADO", "—Gracias, cucho. ... ¿Eso graba de verdad?"], ["", "(No. No graba. Pero ellos no lo sabían.)"]])
+		"Pararse al lado, en silencio":
+			GameState.change_mood(7.0)
+			await Dialogue.talk([["", "(Se para al lado del pelado. No dice nada. No mira a nadie. Solo está.)"],
+				["POLICIA", "—¿Y usted qué? ¿Es el papá? ... ¿No habla? ... (se miran entre ellos) Ya, ya. Váyanse los dos."],
+				["ÉL", "Dos personas contra una pared ya no son una requisa: son una foto. A nadie le gusta salir en la foto."]])
+		_:
+			GameState.change_mood(-5.0)
+			await Dialogue.talk([["", "(Se va.)"], ["ÉL", "Me fui. Igual que se fueron todos esa noche. Ahora entiendo por qué. No los perdono. Tampoco a mí."]])
+
+
 func _ev_pelea() -> void:
 	_ev_done()
+	match _ev_variant("pelea", ["cuchillo", "pandebono", "borrachos", "brazo"]):
+		"pandebono":
+			await _pelea_pandebono()
+			return
+		"borrachos":
+			await _pelea_borrachos()
+			return
+		"brazo":
+			await _pelea_brazo()
+			return
 	GameState.flags["violencia"] = true
 	var i := await Dialogue.talk([["", "(Dos tipos se dan en el piso, frente a la panadería. Uno ya sangra. La gente graba.)"],
 		["ÉL", "El de buzo rojo es diestro y está cansado. El otro tiene algo en el bolsillo. Lo protege con la cadera. Tres segundos y lo saca."],
@@ -2621,9 +2750,100 @@ func _ev_pelea() -> void:
 			await Dialogue.talk([["", "(Se va.)"]])
 
 
+## Dos señoras y el último pandebono de la panadería.
+func _pelea_pandebono() -> void:
+	var opts := ["Partirlo en dos", "Mirar"]
+	if GameState.lukas_alive():
+		opts.insert(1, "Mirar a Lukas")
+	opts.append("Irse")
+	var i := await Dialogue.talk([
+		["", "(Frente a la panadería: dos señoras agarradas del mismo pandebono. El último. Ninguna suelta.)"],
+		["SEÑORA 1", "—¡Yo lo vi primero!"], ["SEÑORA 2", "—¡Yo lo pedí primero! ¡Desde el martes!"],
+		["ÉL", "Tensión de agarre de las dos: excelente. Si esto fuera el ejército, ascendían."]], opts)
+	match opts[i]:
+		"Partirlo en dos":
+			GameState.change_mood(-1.0)
+			await Dialogue.talk([["", "(Lo parte por la mitad. Exacto. Las dos lo miran a él.)"],
+				["SEÑORA 1", "—¿Y quién le dijo que el de la izquierda es más grande?"], ["SEÑORA 2", "—¡Eso! ¡¿Quién le dijo?!"],
+				["", "(Ahora pelean con él. Juntas. Se van del brazo, comentando lo atrevido que es.)"],
+				["ÉL", "Salomón partió un niño y quedó de sabio. Yo parto un pandebono y quedo de grosero."]])
+		"Mirar a Lukas":
+			GameState.change_mood(5.0)
+			await Dialogue.talk([["", "(Mira a Lukas. Lukas entiende. Salto limpio: el pandebono desaparece en el aire.)"],
+				["SEÑORA 2", "—... ¡El perro!"], ["", "(Silencio. Y después las dos se ríen. Como no se reían desde el martes.)"],
+				["SEÑORA 1", "—Bueno, se lo ganó. Vamos por un tinto, Gladys."],
+				["ÉL", "Se lo comió el juez. Así terminan los conflictos en este país, pero con perro."]])
+		"Mirar":
+			await Dialogue.talk([["", "(Mira. El pandebono se rompe solo. Cada una queda con una mitad. Se van ofendidas, comiendo.)"],
+				["ÉL", "Justicia poética. O física. Las dos cosas son lo mismo cuando hay hambre."]])
+		_:
+			await Dialogue.talk([["", "(Se va.)"]])
+
+
+## Dos borrachos: pelean por un equipo, después por todo, después lo quieren a él.
+func _pelea_borrachos() -> void:
+	var i := await Dialogue.talk([
+		["", "(Dos borrachos en la avenida. Uno con la camiseta del Medellín, el otro con la del Nacional. Se pegan como se abrazan: mal.)"],
+		["BORRACHO 1", "—¡Usted no sabe de fútbol! ¡Usted no sabe de NADA!"], ["BORRACHO 2", "—¡Yo sé de todo! ¡Pregúnteme algo! ... ¡No me pregunte!"]],
+		["Separarlos", "Mirar", "Irse"])
+	match i:
+		0:
+			GameState.change_mood(4.0)
+			GameState.set_loneliness(GameState.loneliness - 10.0)
+			await Dialogue.talk([["", "(Se mete en el medio. Los dos lo miran. Se miran.)"],
+				["BORRACHO 1", "—... ¿Y este quién es? ... ¡Hermano! ¡Este man nos quiere!"],
+				["BORRACHO 2", "—¡Nos quiere! ¡Nadie nos quiere y este man nos quiere!"],
+				["", "(Lo abrazan los dos. Lloran. Huelen a aguardiente y a domingo.)"],
+				["ÉL", "Vine a separar una pelea y salí con dos amigos. En este barrio, las dos cosas pesan lo mismo."]])
+		1:
+			await Dialogue.talk([["", "(Mira. Se cansan a los dos minutos. Se sientan en el andén y comparten la botella.)"],
+				["BORRACHO 2", "—... El Medellín tampoco es tan malo."], ["BORRACHO 1", "—Sí es."],
+				["ÉL", "Paz duradera. Firmada con aguardiente. Más seria que otras."]])
+		_:
+			await Dialogue.talk([["", "(Se va. Atrás, los gritos se vuelven canción.)"]])
+
+
+## El que agarra a la muchacha del brazo. Esto no es chiste.
+func _pelea_brazo() -> void:
+	GameState.flags["violencia"] = true
+	var opts := ["Meterse en el medio", "Irse"]
+	opts.insert(1, "Que Lukas ladre" if GameState.lukas_alive() else "Silbar duro")
+	var i := await Dialogue.talk([
+		["", "(Un tipo le grita a una muchacha. La tiene del brazo. Ella mira a todo el mundo. Todo el mundo mira el celular.)"],
+		["ÉL", "Mano derecha cerrada. Pie adelantado. Va a pegarle en tres... dos..."],
+		["", "(Le tiemblan las manos. Esta vez no le importa por qué.)"]], opts)
+	match opts[i]:
+		"Meterse en el medio":
+			GameState.change_mood(6.0)
+			GameState.set_hunger(GameState.hunger - 5.0)
+			await Dialogue.talk([["", "(Se para entre los dos. El tipo lo empuja. Él no se mueve. No pega. No se va.)"],
+				["TIPO", "—¡¿Qué?! ¡¿Qué me mira?! ... ¡Hable!"], ["", "(No habla. No se mueve. Los que miraban el celular ahora miran.)"],
+				["TIPO", "—... Loco hijue... (se va)"], ["MUCHACHA", "—... (se va corriendo, para el otro lado, sin decir gracias. Está bien.)"],
+				["ÉL", "No le pegué. Lo tenía. Tres movimientos. No le pegué. Anótenlo en algún lado: no le pegué."]])
+		"Que Lukas ladre", "Silbar duro":
+			GameState.change_mood(4.0)
+			await Dialogue.talk([["", "(Lukas ladra como nunca. Toda la cuadra voltea.)" if GameState.lukas_alive() else "(Silba con los dedos. Toda la cuadra voltea.)"],
+				["", "(El tipo suelta el brazo. Con todos mirando, se le acaba la valentía. Se va, insultando a nadie.)"],
+				["ÉL", "La gente no ayuda, pero mira. Hay que obligarla a mirar al mismo tiempo."]])
+		_:
+			GameState.change_mood(-8.0)
+			await Dialogue.talk([["", "(Se va. Atrás, un golpe seco.)"], ["ÉL", "Eso sí lo oí. Eso sí cuenta."]])
+
+
 func _ev_ayuda() -> void:
 	_ev_done()
-	var kid: bool = GameState.day % 2 == 0
+	var v := _ev_variant("ayuda", ["nina", "senor", "mercado", "turista", "princesa"])
+	match v:
+		"mercado":
+			await _ayuda_mercado()
+			return
+		"turista":
+			await _ayuda_turista()
+			return
+		"princesa":
+			await _ayuda_princesa()
+			return
+	var kid: bool = v == "nina"
 	if kid:
 		var i := await Dialogue.talk([["", "(Una niña de unos seis años llora en la esquina. La gente pasa y no la ve.)"],
 			["NIÑA", "—No encuentro a mi mamá."]], ["Ayudarla a buscar (1 hora)", "Llevarla donde un policía", "Seguir"])
@@ -2669,6 +2889,75 @@ func _ev_ayuda() -> void:
 	else:
 		GameState.change_mood(-6.0)
 		await Dialogue.talk([["", "(Sigue de largo.)"]])
+
+
+## A una señora se le rompe la bolsa del mercado en la mitad de la calle.
+func _ayuda_mercado() -> void:
+	var i := await Dialogue.talk([
+		["", "(A una señora se le rompe la bolsa en la mitad de la calle. Doce naranjas ruedan hacia la avenida. Viene la buseta.)"],
+		["SEÑORA", "—¡Ay, no! ¡Ay, mis naranjas! ¡Ay, la buseta!"]], ["Correr por las naranjas", "Seguir"])
+	if i == 0:
+		GameState.change_mood(6.0)
+		GameState.add_item("fruta", 2)
+		await Dialogue.talk([["", "(Corre. Las ataja contra el andén, una por una. La buseta pita. Él no se mueve hasta tener la última.)"],
+			["SEÑORA", "—... once. Eran doce."], ["", "(Los dos miran a Lukas. Lukas tiene una naranja en la boca. Entera. No la suelta.)" if GameState.lukas_alive()
+				else "(Los dos miran la avenida. Una naranja aplastada. La buseta ganó.)"],
+			["SEÑORA", "—Tome dos. Por la carrera. Y no me mire así, que usted parece buena gente. Parece."],
+			["ÉL", "\"Parece\". Es lo más bonito que me han dicho este mes."]])
+	else:
+		GameState.change_mood(-3.0)
+		await Dialogue.talk([["", "(Sigue. Detrás, las naranjas y la buseta. No mira cuál gana.)"]])
+
+
+## Un turista perdido. En inglés. Él es mudo.
+func _ayuda_turista() -> void:
+	var opts := ["Señalar para el norte", "Dibujarle un mapa en el piso", "Seguir"]
+	if GameState.lukas_alive():
+		opts.insert(2, "Que Lukas lo lleve")
+	var i := await Dialogue.talk([
+		["", "(Un gringo con un mapa al revés y una mochila más cara que el barrio.)"],
+		["TURISTA", "—Excuse me! Sir! The... iglesia? Church? San Judas? Is near? I am very lost. Very, very lost."],
+		["ÉL", "Inglés: lo entiendo todo. Hablar: no hablo ni en español. Esto va a ser difícil para los dos."]], opts)
+	match opts[i]:
+		"Señalar para el norte":
+			GameState.change_mood(-1.0)
+			await Dialogue.talk([["", "(Señala. El gringo sigue el dedo. Se mete al motel de la esquina.)"],
+				["ÉL", "La iglesia queda para el otro lado. El motel también tiene santos. En la puerta. Con luces."]])
+		"Dibujarle un mapa en el piso":
+			GameState.add_money(5000)
+			GameState.change_mood(5.0)
+			await Dialogue.talk([["", "(Con una piedra, en el andén: la plaza, la avenida, una cruz. Una flecha. Un perro, porque sí.)"],
+				["TURISTA", "—Oh. OH. Beautiful! You are artist? Here, here. For the art."],
+				["ÉL", "Cinco mil pesos por mi primera obra. Andén sobre piedra. La lluvia se la lleva esta tarde. Como todo lo bueno."]])
+		"Que Lukas lo lleve":
+			GameState.add_money(8000)
+			GameState.change_mood(7.0)
+			await Dialogue.talk([["", "(Lukas arranca. El gringo lo sigue. Él los sigue a los dos. Llegan a la iglesia. Lukas se sienta en la puerta como si fuera suya.)"],
+				["TURISTA", "—Your dog is... tour guide?! Amazing! Five stars! Here, for the guide."],
+				["ÉL", "Ocho mil. Lukas tiene mejor reseña que yo en cualquier aplicación."]])
+		_:
+			await Dialogue.talk([["", "(Sigue.)"], ["TURISTA", "—Thank you anyway! ... (a nadie)"]])
+
+
+## Una perra perdida con collar de pedrería: "PRINCESA". Lukas se enamora.
+func _ayuda_princesa() -> void:
+	var lukas: bool = GameState.lukas_alive()
+	var i := await Dialogue.talk([
+		["", "(Una perrita blanca, peinada, con collar de pedrería. La placa dice: \"PRINCESA. SI ME ENCUENTRA, LLAME. RECOMPENSA\". Y una dirección del norte.)"],
+		["", "(Lukas la mira como nunca miró una salchicha.)" if lukas else "(Le olfatea los zapatos. Él busca, sin querer, a alguien al lado.)"]],
+		["Llevarla a la dirección (1 hora)", "Dejarla"])
+	if i == 0:
+		TimeManager.skip(1.0)
+		GameState.add_money(10000)
+		GameState.change_mood(6.0)
+		await Dialogue.talk([["", "(Una hora caminando al norte. Las casas cambian de color. La gente lo mira distinto. Peor.)"],
+			["DUEÑA", "—¡PRINCESA! ¡Mi amor! ... (lo mira a él de arriba abajo) Tome. Diez mil. ... No me lo tome a mal, pero ¿se puede ir ya?"],
+			["", "(Lukas y Princesa se miran por la reja. Ella le ladra bajito. Él se queda mirando la reja hasta que lo jalan.)" if lukas
+				else "(La perrita se queda mirándolo por la reja. Él se va sin mirar atrás. Le cuesta.)"],
+			["ÉL", "Diez mil pesos y una puerta en la cara. En el norte, las dos cosas vienen juntas."]])
+	else:
+		GameState.change_mood(-2.0)
+		await Dialogue.talk([["", "(La deja. Princesa lo sigue media cuadra. Después se aburre. Como todas.)"]])
 
 
 # ---------------------------------------------------------------- El final de la vida real
