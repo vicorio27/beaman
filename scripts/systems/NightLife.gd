@@ -4,6 +4,9 @@ extends Node
 ##   - Sale la gente de noche (npc_id "noche_*", lo que dicen está en Conversations._noche):
 ##     el celador con la linterna, el de los perros calientes, los de la cerveza en el kiosco,
 ##     la pareja de la banca, el que fuma en la puerta del billar, la señora del tinto.
+##   - Canta un gallo (de noche: aquí avisa al revés) y sale la otra gente: las muchachas del poste (Verónica, Mitchelle y Dayhana),
+##     los de la esquina, el jíbaro. Son los vicios de él: los pelea siempre y los quiere siempre
+##     (Conversations._noche). Menos la droga: esa no la recibe nunca, por más que le insistan.
 ##   - Se apagan las cosas: la panadería y el café cierran (se apaga la vidriera), la tele de TV RADIO.
 ##   - Se prenden otras: ventanas en las casas (y se van apagando hacia la una), el letrero del billar
 ##     (de día es un letrero gris que nadie mira), el bombillo del carrito de los perros.
@@ -25,6 +28,12 @@ const NIGHT_PEOPLE := {
 		["noche_kiosco2", 15, Vector2(408, 556), "left", []],
 		["noche_pareja", 15, Vector2(562, 501), "down", []],
 		["noche_billar", 6, Vector2(792, 200), "down", []],
+		["noche_chica", 3, Vector2(334, 284), "down", []],
+		["noche_chica2", 12, Vector2(352, 286), "down", []],
+		["noche_chica3", 15, Vector2(370, 284), "down", []],
+		["noche_bandido", 6, Vector2(884, 296), "left", []],
+		["noche_bandido2", 9, Vector2(900, 300), "left", []],
+		["noche_jibaro", 0, Vector2(704, 556), "down", []],
 	],
 	"Parque": [
 		["noche_tinto", 3, Vector2(530, 380), "down", []],
@@ -52,6 +61,7 @@ var _neon: Array = []        # [letrero, luz]
 var _bulb: PointLight2D
 var _check := 0.0
 var _glow: GradientTexture2D
+var _crow: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -60,6 +70,10 @@ func _ready() -> void:
 	if _world == null:
 		_world = _scene
 	_glow = _glow_texture()
+	_crow = AudioStreamPlayer.new()
+	_crow.stream = load("res://assets/audio/gallo.wav")
+	_crow.volume_db = -4.0
+	add_child(_crow)
 	_setup.call_deferred()
 
 
@@ -136,6 +150,10 @@ func _apply() -> void:
 	var h := _hour()
 	var night := h >= NIGHT_FROM or h < NIGHT_TO
 	if night != _night or _first:
+		if night and not _first:
+			# El gallo: canta cuando se hace de noche. Aquí avisa que se acabó lo decente.
+			_crow.play()
+			Narrator.say("(Canta un gallo. De noche. En este barrio el gallo avisa al revés: ya salen los otros.)")
 		_night = night
 		_first = false
 		_switch(night)

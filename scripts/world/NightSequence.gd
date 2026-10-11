@@ -482,6 +482,8 @@ func _dream_when(id: String) -> bool:
 			# y ya soñó todo lo demás (las revanchas son contra jefes que ya conoce)
 			if GameState.day >= 44:
 				return true
+			if int(f.get("nino_bond", 0)) >= 1 and not f.get("nino_fin", false):
+				return false  # primero se despide Alejandro (scripts/systems/Nino.gd)
 			# Unos días después de Lukas (y con todo lo demás soñado), también.
 			if not GameState.lukas_alive() and GameState.day - int(f["lukas_muerto"]) >= 4:
 				for d in DREAMS:

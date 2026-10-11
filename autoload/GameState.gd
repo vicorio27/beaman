@@ -622,6 +622,11 @@ func new_day(spot: String) -> Array:
 		cambuche["alcancia"] /= 2
 		lines.append("Abrieron la caja del cambuche. Se llevaron todo y la mitad de la alcancía.")
 		change_mood(-8.0)
+	if flags.get("guayabo", false):
+		flags.erase("guayabo")
+		lines.append("Amanece con guayabo. El billar se llama así por algo.")
+		change_mood(-8.0)
+		set_hygiene(hygiene - 8.0)
 	# La policía en el parque.
 	if has_cambuche() and cambuche["spot"] == "parque" and randf() < 0.2 and not flags.get("ficha_cerrada", false):
 		for s in cambuche["box"]:

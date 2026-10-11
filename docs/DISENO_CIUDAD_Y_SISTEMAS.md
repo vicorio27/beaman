@@ -1834,7 +1834,10 @@ Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuer
 - **El tono:** nada de lástima directa. El niño es canchero y rápido, como él: negocia, se burla y nunca se queja. Lo triste está en el detalle que se le escapa, y la lástima la pone el jugador.
 - **El espejo:** cada encuentro cierra con una línea de la infancia de él, en tercera persona (la correa de Mauricio, dormir en el patio, "me caí", la lonchera). La primera vez sale el recuerdo `infancia`: la foto del colegio, de manga larga todo el año.
 - **El nombre:** a la tercera vez dice que se llama Alejandro ("Completo. Alejo es para los amigos, y usted todavía está en periodo de prueba").
-- **El final:** a la sexta, él lo lleva de la mano donde el Padre Hernando (`flags.nino_hogar`). Ya no duerme en la calle; desde ahí solo aparece para ayudar, peinado y con los dos zapatos.
+- **Qué es:** la proyección de él a los ocho años, con sus traumas. Se llama igual. Nunca se dice: se entiende en la despedida.
+- **El final:** después de que muere Lukas y unos días antes de que se muera él. Desde el día siguiente a la muerte de Lukas, Alejandro lo espera en el barrio, vestido como él en la foto del colegio (`Nino._final`). "Vengo a entregar el puesto." Dice que va a tener un perro que llega en una caja de zapatos, talla 42. Le dice "Alejo". Le deja la foto, con "Sí aguantó" escrito a lápiz. Don Germán cuenta que lleva semanas viéndolo sentarse solo en ese andén.
+  - El último sueño (y su muerte) espera a que pase la despedida, salvo el día 44 (`NightSequence._dream_when`).
+  - Ya no existe el final con el Padre (`nino_hogar`): contradecía que el niño es él.
 - Misión secundaria `nino` ("El pelao de la calle"), con el conteo de veces que se ayudaron.
 
 
@@ -1849,3 +1852,14 @@ Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuer
   - el agente del operativo lo confiesa en la iglesia;
   - Alejandro vio su foto en la estación, con un letrero que dice "que circule" (`Nino.gd`, ayuda `tombos`).
 - **Cómo se acaba:** en la Defensoría, con la página 14 y el testigo, la defensora oficia a la estación (`flags.ficha_cerrada`). Desde ahí las redadas no son con él y la policía no le toca el cambuche.
+
+
+## El gallo y los vicios de la noche
+
+- **El gallo:** cuando se hace de noche (20:00) canta un gallo (`assets/audio/gallo.wav`, `tools/audio/gallo.py`) y el narrador lo dice. Es la señal de que sale la otra gente del barrio.
+- **Quiénes salen** (`NightLife.NIGHT_PEOPLE`, lo que dicen en `Conversations._noche`): las muchachas del poste (Verónica, Mitchelle y Dayhana; Verónica es la de los ojos azules, la ex de él: no ofrece, lo mira), los de la esquina (el Flaco), el jíbaro; además de los que ya estaban (los de la cerveza, el billar con su neón).
+- **La regla:** él pelea esos vicios siempre, y los quiere siempre. Cada tentación deja ceder o aguantarse:
+  - aguantarse baja un poco el ánimo (las ganas se quedan) y la narración muestra que quiere (`_vicio_no`);
+  - ceder da algo ya y cobra después (`_vicio`): la pola (compañía y ánimo; al otro día, guayabo), apostar en el billar ($2.000; 45% de ganar $5.000), un rato de compañía ($10.000: ella habla una hora), llevar la caja de los de la esquina ($15.000; despierta a PLOMO).
+- **La droga, nunca:** con el jíbaro no hay opción de recibir, por más que insista (cinco intentos que suben: gratis, "usted compraba", "¿para quién se cuida?", los saludos del Gato; al final se rinde él). Las dos opciones son seguir de largo.
+- Cuenta en `flags.vicio_si` / `flags.vicio_no` (todavía no cambia nada más: sirve para el final o el resumen).

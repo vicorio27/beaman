@@ -1528,7 +1528,13 @@ func _noche(id: String) -> void:
 		"noche_kiosco", "noche_kiosco2":
 			var i := await Dialogue.talk([["", "(Dos tipos en el kiosco cerrado, con un parlante y una canasta de cerveza. Suena un vallenato a todo volumen.)"],
 				["BORRACHO", "—¡Parcero! ¿Una pola? ... ¿No habla? ¡Mejor! Así no nos lleva la contraria."],
-				["EL OTRO", "—Siéntese. Aquí nadie pregunta nada. Aquí solo se canta."]], ["Sentarse un rato (1 hora)", "Seguir"])
+				["EL OTRO", "—Siéntese. Aquí nadie pregunta nada. Aquí solo se canta."],
+				["", "(La botella suda. Él también. Se sabe de memoria cuánto pesa una llena.)"]],
+				["Sentarse un rato, sin tomar (1 hora)", "Recibir la pola", "Seguir"])
+			if i == 1:
+				await _vicio("pola")
+			elif i == 2:
+				await _vicio_no("(Sigue. A los diez pasos todavía oye cómo destapan otra. Tiene muy buen oído para eso.)")
 			if i == 0:
 				await _sit_ground("up")
 				TimeManager.skip(1.0)
@@ -1541,13 +1547,125 @@ func _noche(id: String) -> void:
 				["MUCHACHA", "—... ¿Necesita algo, señor? ... ¿No? ... Bueno. Buenas noches."],
 				["", "(Él sigue. Atrás, se ríen bajito. No de él. De ellos.)"]])
 		"noche_billar":
-			await Dialogue.talk([["TIPO DEL BILLAR", "—Billar El Guayabo. Mesa a tres mil la hora. Usted no tiene cara de tres mil."],
-				["TIPO DEL BILLAR", "—Tiene cara de saber jugar, eso sí. Los que no tienen plata siempre saben jugar. Es lo único que les queda barato."]])
+			var opts := ["Seguir"]
+			if GameState.money >= 2000:
+				opts.push_front("Apostar una mesa ($2.000)")
+			var i := await Dialogue.talk([["TIPO DEL BILLAR", "—Billar El Guayabo. Mesa a tres mil la hora. Usted no tiene cara de tres mil."],
+				["TIPO DEL BILLAR", "—Tiene cara de saber jugar, eso sí. Los que no tienen plata siempre saben jugar. Es lo único que les queda barato."],
+				["", "(Adentro suenan las bolas. Ese ruido él lo oye con las manos.)"]], opts)
+			if opts[i] == "Seguir":
+				await _vicio_no("(Sigue. Va tacando en el aire, sin darse cuenta. Mete la negra. En el aire siempre la mete.)")
+			else:
+				await _vicio("billar")
+		"noche_chica", "noche_chica2", "noche_chica3":
+			var opts := ["Seguir de largo"]
+			if GameState.money >= 10000:
+				opts.push_front("Pagar un rato de compañía ($10.000)")
+			var i := await Dialogue.talk([["", "(Tres muchachas debajo del poste: Verónica, Mitchelle y Dayhana. Tacones, chaqueta de jean, un termo de tinto para las tres.)"],
+				["DAYHANA", "—Buenas noches, papi. ¿Solito? ... ¿No habla? Uy, qué descanso. Hoy todos hablan."],
+				["MITCHELLE", "—Diez mil el rato. Con perro, doce: el perro mira feo."],
+				["", "(Verónica no ofrece nada. Ojos azules. Lo mira como se mira a alguien que uno conoció sin barba.)"],
+				["VERONICA", "—... A este no le cobren el saludo. El resto sí."],
+				["", "(Hace cuánto nadie le dice \"papi\". Él lleva la cuenta. No la va a decir.)"]], opts)
+			if opts[i] == "Seguir de largo":
+				await _vicio_no("(Sigue de largo. Camina más despacio de lo necesario. Mucho más despacio.)")
+			else:
+				await _vicio("chica")
+		"noche_bandido", "noche_bandido2":
+			var i := await Dialogue.talk([["", "(Tres en la esquina, uno en la moto. Hablan bajito y se ríen duro.)"],
+				["EL FLACO", "—¡El del perro! Venga. Un trabajito. Llevar una caja de aquí a allá. Sin abrirla, sin preguntar. Usted es perfecto: no pregunta."],
+				["EL FLACO", "—Quince mil. Por caminar. Usted camina gratis todo el día."],
+				["", "(Quince mil son cuatro días de latas. Él hace la cuenta rapidísimo. Para eso sí es rápido.)"]],
+				["Llevar la caja ($15.000)", "Seguir de largo"])
+			if i == 0:
+				await _vicio("caja")
+			else:
+				await _vicio_no("(Sigue de largo. Atrás se ríen. Él va haciendo otra vez la cuenta: cuatro días de latas. Le da lo mismo las dos veces.)")
+		"noche_jibaro":
+			await _jibaro()
 		"noche_tinto":
 			var i := await Dialogue.talk([["SEÑORA DEL TINTO", "—¡Tinto, aromática, agua de panela! Quinientos. Para el frío, mijo, que la noche no perdona."]],
 				["Un tinto ($500)", "Nada"])
 			if i == 0:
 				await _buy("tinto", 500, "SEÑORA DEL TINTO", "—Calientico. Cójalo con las dos manos, así calienta el doble.")
+
+
+## Los vicios de la noche. Él los pelea siempre y los quiere siempre: aguantarse cuesta (las ganas se
+## quedan), ceder da algo ya y cobra después. La cuenta va en flags.vicio_si / vicio_no.
+func _vicio_no(line: String) -> void:
+	var f := GameState.flags
+	f["vicio_no"] = int(f.get("vicio_no", 0)) + 1
+	GameState.change_mood(-2.0)  # aguantarse también cuesta
+	await Dialogue.talk([["", line]])
+
+
+func _vicio(id: String) -> void:
+	var f := GameState.flags
+	f["vicio_si"] = int(f.get("vicio_si", 0)) + 1
+	match id:
+		"pola":
+			f["guayabo"] = true
+			await _sit_ground("up")
+			TimeManager.skip(2.0)
+			GameState.company(30.0)
+			GameState.change_mood(9.0)
+			await Dialogue.talk([["", "(Recibe la pola. Iba a ser una. Fueron las que fueron. Nadie contó: para eso se toma.)"],
+				["BORRACHO", "—¡Este man toma bonito! ¡Callado! ¡Sin llorar por ninguna! ¡Aprendan!"],
+				["", "(Canta con ellos. Por dentro. Es el mejor de los tres.)"]])
+		"billar":
+			GameState.add_money(-2000)
+			TimeManager.skip(1.0)
+			if randf() < 0.45:
+				GameState.add_money(5000)
+				GameState.change_mood(8.0)
+				await Dialogue.talk([["", "(Tres bandas y la negra a la esquina. Hace años no tocaba un taco. La mano sí se acordaba.)"],
+					["TIPO DEL BILLAR", "—Cinco mil. Lléveselos. Y vuelva mañana, que así es como empieza."]])
+			else:
+				GameState.change_mood(-4.0)
+				await Dialogue.talk([["", "(La negra se queda en la boca de la tronera. Mirándolo. Con cara de dos mil pesos.)"],
+					["TIPO DEL BILLAR", "—Casi. \"Casi\" es el nombre que le íbamos a poner al billar."]])
+		"chica":
+			GameState.add_money(-10000)
+			TimeManager.skip(1.0)
+			GameState.company(60.0)
+			GameState.change_mood(7.0)
+			await Dialogue.talk([["", "(Un rato de compañía. Dayhana se sienta con él en el andén y habla una hora seguida: del hijo, del arriendo, de una prima en Pereira.)"],
+				["DAYHANA", "—Usted es el mejor cliente del mes, papi. No pide nada y escucha todo. Eso vale más de diez mil, pero ya le cobré."],
+				["", "(Diez mil pesos por una hora de que alguien le hable. Él ha pagado más por menos.)"]])
+		"caja":
+			GameState.add_money(15000)
+			f["violencia"] = true  # lo torcido despierta a PLOMO (ver NightSequence)
+			TimeManager.skip(0.5)
+			GameState.change_mood(-3.0)
+			await Dialogue.talk([["", "(Lleva la caja seis cuadras. Pesa poco. Suena a nada. No la abre.)"],
+				["EL FLACO", "—¿Vio? Fácil. Mañana hay otra. Siempre hay otra."],
+				["", "(Quince mil en el bolsillo. Pesan más que la caja.)"]])
+
+
+## El jíbaro. A esto no cede nunca, por más que le insistan: no hay opción de recibir.
+const JIBARO := [
+	[["JIBARO", "—Pst. Vecino. La primera es gratis. La segunda también, si me cae bien. Y usted me cae bien: no habla."],
+		["", "(Él no para. Ni mira. Las manos sí miran: se le meten solas a los bolsillos.)"]],
+	[["JIBARO", "—Yo sé quién es usted. Usted compraba. No a mí: a uno mejor vestido. Pero compraba."],
+		["JIBARO", "—Dos años limpio, ¿no? Felicitaciones. Tome, para celebrar."],
+		["", "(Dos años, cuatro meses. Él los cuenta todas las mañanas. Sigue caminando.)"]],
+	[["JIBARO", "—Mire dónde duerme, vecino. Mire cómo huele. ¿Para qué se cuida? ¿Para quién?"],
+		["", "(Para una niña que cumple doce en octubre. No se lo dice. No le dice nada a nadie. Sigue.)"]],
+	[["JIBARO", "—El Gato le manda saludos. Dice que a usted le fía. De por vida."],
+		["", "(De por vida es poquito tiempo con esa gente. Sigue de largo.)"]],
+	[["JIBARO", "—... ¿Sabe qué? Usted me daña el promedio. Llevo un mes ofreciéndole. Camine por la otra acera, que me desmoraliza a la clientela."]],
+]
+
+
+func _jibaro() -> void:
+	var f := GameState.flags
+	var n := int(f.get("jibaro_n", 0))
+	f["jibaro_n"] = n + 1
+	f["vicio_no"] = int(f.get("vicio_no", 0)) + 1
+	var i := await Dialogue.talk(JIBARO[mini(n, JIBARO.size() - 1)], ["Seguir de largo", "Seguir de largo, más rápido"])
+	GameState.change_mood(-3.0 if n < JIBARO.size() - 1 else 2.0)
+	if i == 1:
+		await Dialogue.talk([["", "(Más rápido. Lukas tiene que trotar.)" if GameState.lukas_alive() else "(Más rápido.)"]])
 
 
 # ---------------------------------------------------------------- Sentarse (y Lukas se acomoda)

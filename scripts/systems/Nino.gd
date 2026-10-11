@@ -5,8 +5,10 @@ extends Node
 ## (sin hablar: se para en medio, agarra la correa, se sienta al lado) o seguir de largo.
 ## Otros días es al revés: el niño lo ayuda a él (medio pan, un aviso, una moneda devuelta, agua).
 ## Cada encuentro termina con un pedazo de la infancia de él, en tercera persona: el niño es su espejo.
+## Es la proyección de él a los ocho años (se llama igual). Nunca se dice: se entiende al final, cuando
+## el niño se despide (después de que muere Lukas, unos días antes de que se muera él).
 ##   flags: nino_bond (veces que se ayudaron), nino_nombre (ya dijo cómo se llama, a la tercera),
-##          nino_hogar (lo llevó donde el Padre: ya no duerme en la calle), nino_aviso (día del aviso:
+##          nino_fin (ya se despidió: no vuelve a salir), nino_aviso (día del aviso:
 ##          esa noche no le rajan el bolsillo), nino_saco (le prestó el saco).
 ## Lo agrega Location en los lugares de afuera. Lo que se habla: talk() (desde Conversations.run).
 
@@ -28,7 +30,7 @@ const HINTS := {
 	"celador": "(Cerca, un pito de celador. Alguien arrastra a alguien.)",
 	"agua": "(Cerca, una ventana que se abre. Un baldado de agua.)",
 	"solo": "(Cerca, un niño sentado en el andén. Nadie lo mira.)",
-	"hogar": "(Hay un niño sentado en el andén, mirando para el lado de la iglesia.)",
+	"final": "(En el andén, un niño peinado con agua. De manga larga. Lo está esperando.)",
 }
 
 var _kid: Node2D
@@ -57,12 +59,14 @@ func _tick() -> void:
 	if f.get("nino_dia", -1) != g.day:
 		_plan()
 	var kind: String = f.get("nino_hoy", "")
-	if kind == "" or f.get("nino_estado", "") == "fin":
+	if kind == "" or f.get("nino_estado", "") == "fin" or f.get("nino_fin", false):
 		return
 	var scene := get_parent()
 	var now := TimeManager.minutes / 60.0
 	var from: float = f["nino_hora"]
 	var here: bool = scene.name == f["nino_lugar"] and now >= from and now < from + 3.0
+	if kind == "final":  # la despedida: todo el día, en el barrio
+		here = scene.name == "City" and now >= 6.0 and now < 23.0
 	if here and not is_instance_valid(_kid) and not g.input_blocked():
 		_spawn(kind)
 	elif not here and is_instance_valid(_kid) and not _kid.talking:
@@ -78,14 +82,20 @@ func _plan() -> void:
 	f["nino_estado"] = "espera"
 	f["nino_hoy"] = ""
 	var bond := int(f.get("nino_bond", 0))
+	if f.get("nino_fin", false):
+		return
+	if not GameState.lukas_alive():
+		# Después de Lukas: solo la despedida (si se conocieron), desde el día siguiente y hasta que pase.
+		if bond >= 1 and GameState.day > int(f.get("lukas_muerto", GameState.day)):
+			f["nino_hoy"] = "final"
+			f["nino_lugar"] = "City"
+			f["nino_pos"] = 0
+			f["nino_hora"] = 6.0
+		return
 	if rng.randf() > (0.85 if bond == 0 else 0.6):
 		return
 	var kind := ""
-	if f.get("nino_hogar", false):
-		kind = _next("help", HELP, rng)
-	elif bond >= 6:
-		kind = "hogar"
-	elif bond >= 1 and rng.randf() < 0.4:
+	if bond >= 1 and rng.randf() < 0.4:
 		kind = _next("help", HELP, rng)
 	else:
 		kind = _next("hurt", HURT, rng)
@@ -108,7 +118,7 @@ func _spawn(kind: String) -> void:
 	var world: Node = scene.get_node_or_null("World")
 	if world == null:
 		world = scene
-	var at: Vector2 = SPOTS[scene.name][int(f["nino_pos"])]
+	var at: Vector2 = SPOTS[scene.name][int(f["nino_pos"]) % SPOTS[scene.name].size()]
 	var npc := CharacterBody2D.new()
 	npc.set_script(load("res://scripts/npc/NPC.gd"))
 	npc.name = "Nino"
@@ -229,13 +239,13 @@ func talk(_npc: Node) -> void:
 			helped = await _agua()
 		"solo":
 			helped = await _solo()
-		"hogar":
-			helped = await _hogar()
+		"final":
+			helped = await _final()
 		_:
 			helped = await _help(kind)
 	f["nino_estado"] = "fin"
 	var key := "nino_n_" + ("help" if kind in HELP else "hurt")
-	if kind != "hogar":
+	if kind != "final":
 		f[key] = int(f.get(key, 0)) + 1
 	if helped:
 		f["nino_bond"] = int(f.get("nino_bond", 0)) + 1
@@ -417,29 +427,37 @@ func _solo() -> bool:
 	return true
 
 
-## Después de seis veces: lo lleva donde el Padre. Ya no duerme en la calle.
-func _hogar() -> bool:
+## El final: unos días antes de que él se muera, después de Lukas. Alejandro viene a despedirse, vestido
+## como él en la foto del colegio. No se dice que el niño era él: lo dicen el perro que "va a tener" (en una
+## caja de zapatos, talla 42), la foto, y Don Germán, que lleva semanas viéndolo sentarse solo en ese andén.
+func _final() -> bool:
+	GameState.flags["nino_nombre"] = true
 	var i := await Dialogue.talk([
-		["", "(Alejandro está sentado en el andén, mirando para la iglesia. Hace tres días no duerme: se le nota en cómo parpadea.)"],
-		["ALEJANDRO", "—Allá adentro hay catres. Me dijeron. Pero uno entra y le preguntan cosas. El nombre de la mamá. Yo no me acuerdo si es Sandra o Zandra."],
-		["ALEJANDRO", "—Y si uno no sabe, lo mandan a otra parte. Yo ya conozco tres otras partes. La segunda tenía televisor."]],
-		["Darle la mano y llevarlo", "Todavía no"])
-	if i != 0:
-		await Dialogue.talk([["ALEJANDRO", "—Fresco. Yo espero. No tengo nada en la agenda."]])
-		GameState.flags["nino_quieto"] = true
-		return false
+		["", "(Alejandro está sentado en el andén. Peinado con agua. Camisa de manga larga, abotonada hasta arriba. Hace calor.)"],
+		["ALEJANDRO", "—Quiubo. Vengo a entregar el puesto. Me voy."],
+		["ALEJANDRO", "—No ponga esa cara. Bueno: usted siempre tiene esa cara. Es que aquí ya no hay nada que hacer. Usted ya agarró la correa, ya se sentó, ya pagó el pan. Me dejó sin trabajo."],
+		["", "(El niño mira para el lado donde siempre andaba Lukas. No pregunta.)"],
+		["ALEJANDRO", "—Yo también voy a tener un perro. Tiburón no: ese nombre ya lo gasté. Llega en una caja de zapatos. Talla 42. Se la come."]],
+		["Ponerle la mano en la cabeza", "Quedarse quieto"])
+	if i == 0:
+		await Dialogue.talk([
+			["", "(Él le pone la mano en la cabeza. El niño no se encoge. Primera vez.)"],
+			["ALEJANDRO", "—Bueno, Alejo. Sí: ya pasó el periodo de prueba. Le digo Alejo y usted me dice Alejo. Queda en familia."]])
+	else:
+		await Dialogue.talk([
+			["", "(Él no se mueve. El niño le agarra la mano y se la pone en la cabeza, como quien cuelga un sombrero.)"],
+			["ALEJANDRO", "—Así. No era tan difícil, Alejo. Ya pasó el periodo de prueba."]])
 	await Dialogue.talk([
-		["", "(Él le estira la mano. El niño la mira, se limpia la suya en la camiseta y la agarra. Queda igual de sucia.)"],
-		["", "(Caminan hasta la iglesia. El niño cuenta los pasos en voz baja. Son ciento cuarenta.)"],
-		["PADRE HERNANDO", "—¿Y este quién es? ... No me diga. Usted no dice. ¿Cómo se llama, mijo?"],
-		["ALEJANDRO", "—Alejandro. Completo. Y este es el del perro. No habla, pero paga pan. No le pregunte cosas, padre, que se pone raro."],
-		["PADRE HERNANDO", "—Aquí no se pregunta, mijo. Hay sopa y hay un catre. Lo de la mamá se averigua después. O no se averigua."],
-		["", "(Alejandro entra. En la puerta se voltea.)"],
-		["ALEJANDRO", "—¿Usted viene mañana? ... No me diga. Yo sé que viene."]])
-	GameState.flags["nino_hogar"] = true
-	GameState.change_mood(14.0)
+		["", "(El niño le deja algo en la mano y se va por la mitad de la calle, sin mirar a los lados. No pasa ningún carro.)"],
+		["", "(Es la foto del colegio. Segundo B. Manga larga todo el año. Abajo, con lápiz, alguien agregó: \"Sí aguantó.\")"],
+		["DON GERMAN", "—¿Todo bien, vecino? ... Es que lleva semanas sentándose en ese andén. Solo. A veces compra dos panes."],
+		["DON GERMAN", "—No me explique. Usted no explica. Yo le sigo vendiendo los dos."]])
+	GameState.flags["nino_fin"] = true
+	GameState.flags["nino_quieto"] = true
+	GameState.change_mood(12.0)
 	GameState.complete_quest("nino")
-	await _mirror("(Ciento cuarenta pasos. A los ocho él contó los suyos, solo, hasta otra iglesia. Esa vez no había sopa: era martes.)")
+	if is_instance_valid(_kid):
+		_kid.queue_free()
 	return true
 
 
@@ -452,8 +470,6 @@ func _help(kind: String) -> bool:
 		f.erase("nino_saco")
 		lines.append(["", "(El niño le devuelve el saco, doblado. Mal doblado. Pero doblado.)"])
 		lines.append([who, "—Le dije que yo devolvía."])
-	if f.get("nino_hogar", false):
-		lines.append(["", "(Alejandro. Peinado. Con zapatos. Los dos zapatos.)"])
 	var memory := ""
 	match kind:
 		"pan":
