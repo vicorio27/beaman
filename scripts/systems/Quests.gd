@@ -75,8 +75,8 @@ const DEFS := {
 	"banarse": {"title": "Bañate: baño de la plaza, $1.000", "kind": "optional",
 		"detail": "Bañarse en el baño público de la plaza: $1.000. Sucio, la gente se aparta y da menos al pedir."},
 	# Victoria: verla, que lo vea, y pedir visitas en la Defensoría de Familia
-	"v_colegio": {"title": "Victoria sale a las 12 (centro)", "kind": "main",
-		"detail": "Victoria sale del colegio del centro a las 12 del día (menos los domingos). Lorena la recoge. Ir a la reja: verla, dejarle algo, que ella lo vea. De a poco lo va a reconocer."},
+	"v_colegio": {"title": "Victoria sale a las 12: colegio (centro)", "kind": "main",
+		"detail": "DONDE: en el centro (en bus, desde la plaza del barrio). Bajando del bus, cruzar la avenida y seguir por el andén de arriba hasta el fondo, a la derecha: el edificio amarillo con el letrero COLEGIO, pasando la Defensoría. CUANDO: Victoria sale a las 12 del día (menos los domingos). Lorena la recoge. Ir a la reja: verla, dejarle algo, que ella lo vea. De a poco lo va a reconocer."},
 	"v_defensoria": {"title": "Pedí visitas: Defensoría (centro)", "kind": "main",
 		"detail": "Pedir visitas en la Defensoría de Familia, en el centro. Hay que llevar todo lo que piden (abajo)."},
 	"v_audiencia": {"title": "La audiencia en la Defensoría", "kind": "main",

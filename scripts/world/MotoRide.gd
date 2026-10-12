@@ -127,6 +127,7 @@ var crashes := 0
 var piruetas := 0
 var steer_gain := 1.0  # qué tan nerviosa está la dirección (Lorena, atrás, la daña)
 var _wheelie := 0.0
+var _nohands := 0.0  # [X] sostenido: suelta el manubrio. No puede girar; si aguanta, también gana el empujón.
 var _trick_hint := false
 const TRICK_LINES := ["Caballito. Media cuadra en una rueda. Nadie lo vio. Mejor.",
 	"En una rueda. Un señor en el andén se persigna.", "Otro caballito. La moto se cree caballo. Él no la corrige."]
@@ -316,7 +317,7 @@ func _ride(dt: float) -> void:
 	if accel_on_interact:
 		if not _trick_hint and time > 5.0:
 			_trick_hint = true
-			Narrator.say(Controls.keys_in("(Q sostenido, yendo rápido: en una rueda.)"), true)
+			Narrator.say("(Yendo rápido: [%s] sostenido, en una rueda. [%s] sostenido, sin manos.)" % [Controls.key_name("cancel"), Controls.key_name("drop")], true)
 		if Input.is_action_pressed("cancel") and pct > 0.4:
 			if _wheelie <= 0.0:
 				_trick_start()
@@ -328,6 +329,18 @@ func _ride(dt: float) -> void:
 				speed = minf(MAX_SPEED, speed + MAX_SPEED * 0.08)
 				Narrator.say(TRICK_LINES[piruetas % TRICK_LINES.size()], true)
 			_wheelie = 0.0
+		if Input.is_action_pressed("drop") and pct > 0.4 and _wheelie <= 0.0:
+			if _nohands <= 0.0:
+				_trick_start()
+			_nohands += dt
+			dx = 0.0
+		elif _nohands > 0.0:
+			if _nohands >= 1.2:
+				piruetas += 1
+				speed = minf(MAX_SPEED, speed + MAX_SPEED * 0.08)
+				Narrator.say(["Sin manos. Los brazos abiertos, como el Cristo del cerro. Menos tranquilo.",
+					"Sin manos otra vez. La moto sabe el camino. Eso dice él. La moto no dice nada."][piruetas % 2], true)
+			_nohands = 0.0
 	_lean = 0
 	if Input.is_action_pressed("move_left"):
 		player_x -= dx
@@ -391,8 +404,9 @@ func _crash(lines: Array, keep: float) -> void:
 	_shake = 1.0
 	if keep >= 0.0:
 		speed *= keep
-	if _wheelie > 0.0:  # en una rueda: se va más duro al piso
+	if _wheelie > 0.0 or _nohands > 0.0:  # en una rueda o sin manos: se va más duro al piso
 		_wheelie = 0.0
+		_nohands = 0.0
 		speed *= 0.6
 	if _hit_cooldown > 0.0:
 		return
@@ -486,6 +500,13 @@ func _draw() -> void:
 				draw_line(at + Vector2(tex.get_width() + 6 + k * 3, 10 + k * 9), at + Vector2(tex.get_width() + 6 + k * 3, 18 + k * 9), Color(1, 1, 1, 0.35))
 		else:
 			draw_texture(tex, at)
+		if _nohands > 0.0:  # los brazos abiertos
+			var mid := at + Vector2(tex.get_width() / 2.0, 12.0)
+			var flap := sin(_nohands * 16.0) * 1.5
+			draw_line(mid + Vector2(-5, 0), mid + Vector2(-17, -7 + flap), Color(0.22, 0.2, 0.28), 3.0)
+			draw_line(mid + Vector2(5, 0), mid + Vector2(17, -7 - flap), Color(0.22, 0.2, 0.28), 3.0)
+			draw_rect(Rect2(mid + Vector2(-19, -9 + flap), Vector2(3, 3)), Color(0.78, 0.58, 0.46))
+			draw_rect(Rect2(mid + Vector2(16, -9 - flap), Vector2(3, 3)), Color(0.78, 0.58, 0.46))
 		_draw_rider_extra(at, tex.get_size())
 	draw_set_transform(Vector2.ZERO)
 

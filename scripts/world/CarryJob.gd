@@ -1,6 +1,8 @@
 extends Node
 ## Trabajo de cargar bultos (Don Germán): agarrar uno de la pila, llevarlo hasta el horno, repetir.
 ## Mientras carga camina más lento. Se agrega a la escena de la panadería al aceptar el trabajo.
+## Cada bulto cuesta más que el anterior (LIFTS): el verde se angosta, la raya va más rápido y los dos
+## últimos piden dos aciertos seguidos. El cansancio se nota: camina más lento y le da más hambre.
 
 signal finished
 
@@ -8,6 +10,13 @@ const PILE := Vector2(266, 96)
 const DROP := Vector2(176, 82)
 const TOTAL := 4
 const SACK_REGION := Rect2(12 * 16, 0, 16, 16)  # bolsas de harina en interior_custom.png
+## Por bulto: [título, ancho del verde, velocidad, aciertos que pide, lo que piensa al alzarlo bien].
+const LIFTS := [
+	["Alzarlo con las piernas", 40.0, 130.0, 1, "(Pesa como plomo.)"],
+	["El segundo pesa más", 32.0, 165.0, 1, "(Este pesa lo mismo. Lo que pesa más es él.)"],
+	["El tercero. Tiemblan las piernas", 26.0, 195.0, 2, "(Le tiemblan las piernas. Las piernas no opinan: cargan.)"],
+	["El último. Con lo que quede", 20.0, 225.0, 2, "(Lo alza con algo que no son los brazos. No sabe qué es. Sirve.)"],
+]
 
 var _done := 0
 var _carrying := false
@@ -71,13 +80,20 @@ func _process(_delta: float) -> void:
 	if not _carrying and on_pile:
 		# Alzarlo: con las piernas (a tiempo) o con la espalda (mal: camina más lento con ese).
 		_lifting = true
-		var ok: int = await Ritmo.play(self, "Alzarlo con las piernas", 1,
-			{"zone": 40.0, "speed": 130.0, "hit": "Arriba. Con técnica.", "miss": "Uy. La espalda."})
+		var lift: Array = LIFTS[mini(_done, LIFTS.size() - 1)]
+		var hits: int = await Ritmo.play(self, lift[0], lift[3],
+			{"zone": lift[1], "speed": lift[2], "speedup": 12.0, "hit": "Arriba. Con técnica.", "miss": "Uy. La espalda."})
+		var ok: bool = hits >= int(lift[3])
 		_lifting = false
-		_slow = 0.75 if ok > 0 else 0.5
+		# Cada bulto lo deja más lento; alzado mal, mucho más (y abre más el hambre).
+		_slow = (0.75 if ok else 0.5) - 0.05 * _done
+		GameState.set_hunger(GameState.hunger - (1.0 + _done if ok else 3.0 + _done))
 		_carrying = true
 		_sack.visible = true
-		Narrator.say("(Pesa como plomo.)" if ok > 0 else "(Lo alzó con la espalda. La espalda se va a acordar mañana.)")
+		var shake := _player.create_tween()  # el envión
+		shake.tween_property(_sack, "position:y", -30.0, 0.08)
+		shake.tween_property(_sack, "position:y", -26.0 + _done, 0.12)
+		Narrator.say(lift[4] if ok else "(Lo alzó con la espalda. La espalda se va a acordar mañana.)")
 	elif _carrying and on_pile:
 		Narrator.say("(Ya lleva uno. Dos no: tiene cuarenta y pico, no veinte.)")
 	elif _carrying and on_drop:

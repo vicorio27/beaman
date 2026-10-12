@@ -57,6 +57,7 @@ func _victoria() -> void:
 	var f := g.flags
 	if f.get("centro_open", false) and not g.quests.has("v_colegio"):
 		g.start_quest("v_colegio")
+		Narrator.say("(El colegio de Victoria queda en el centro: el edificio amarillo del fondo, arriba a la derecha, pasando la Defensoría. Sale a las 12.)")
 	if int(f.get("victoria", 0)) >= 2 and not g.quests.has("v_defensoria"):
 		g.start_quest("v_defensoria")
 	if g.day >= 50 and not g.quests.has("v_cumple"):

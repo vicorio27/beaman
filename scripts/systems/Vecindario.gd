@@ -6,6 +6,8 @@ extends Node
 ##   - Los otros perros. Cuando Lukas pasa cerca de un perro de la calle, se encuentran: si Lukas no
 ##     ha comido hoy, casi siempre pelean; si ya comió, casi siempre juegan. A veces es al revés,
 ##     porque sí. Una vez al día por perro.
+##   - El palo de guayaba (el primer árbol con hojas de cada lugar): comida gratis. Quita poquita
+##     hambre, cada una menos que la anterior, y a la tercera se hostiga (Conversations._frutas).
 ## Flags: perro_visto_<nombre> (día), perros_jugo / perros_peleo (cuántas veces).
 
 const SHOP_AT := Vector2(440, 200)   # el pie de la fachada
@@ -62,6 +64,22 @@ func _setup() -> void:
 		d.offset = Vector2(-10, -14)
 		d.position = spec[2]
 		_world.add_child(d)
+	var tree := _world.find_child("tree_sparse*", false, false) as Node2D
+	if tree:
+		for at in [Vector2(-9, -34), Vector2(6, -40), Vector2(11, -28), Vector2(-3, -26)]:  # las guayabas
+			var g := ColorRect.new()
+			g.size = Vector2(2, 2)
+			g.color = Color(0.95, 0.82, 0.3)
+			g.position = at
+			tree.add_child(g)
+		var spot := Area2D.new()
+		spot.set_script(load("res://scripts/world/ServiceSpot.gd"))
+		spot.name = "Servicio_frutas"
+		spot.service_id = "frutas"
+		spot.hint = "GUAYABAS"
+		spot.area = Vector2(30, 16)
+		spot.position = tree.position + Vector2(0, 8)
+		_world.add_child(spot)
 	for n in _world.find_children("dog_*", "", false, false):
 		if n is Node2D:
 			_dogs.append(n)

@@ -55,6 +55,7 @@ var _ask_wilson := 0
 
 
 func run(id: String, npc: Node) -> void:
+	_talking_to = npc
 	if await DayTasks.talk(id):  # el encargo del día, si es con esta persona
 		return
 	if id == "zaida_dia":
@@ -126,6 +127,8 @@ func run(id: String, npc: Node) -> void:
 			await _veterinaria()
 		"amigo":
 			await _amigo()
+		"frutas":
+			await _frutas()
 		"billar_guardia":
 			await _billar_guardia()
 		"billar_barra":
@@ -396,7 +399,7 @@ func _buy(id: String, price: int, who: String, line: String) -> void:
 	elif not GameState.has_space_for(id):
 		await Dialogue.talk([[who, "—¿Y dónde lo va a meter? Esa mochila ya está a reventar."]])
 	else:
-		GameState.add_money(-price)
+		_pagar(price)
 		GameState.add_item(id)
 		await Dialogue.talk([[who, line]])
 
@@ -591,6 +594,148 @@ func _rosa() -> void:
 	await _shop("DOÑA ROSA", SHOP_ROSA)
 
 
+# ---------------------------------------------------------------- Lo que se ve: pagar, bañarse, mecerse
+## Con quién (o con qué) está hablando: Conversations.run lo guarda. Para saber a dónde van los billetes.
+var _talking_to: Node
+var _click: AudioStreamPlayer
+
+
+## Pagar. Se ve: los billetes salen de su mano y llegan al otro (uno, tres o el fajo, según cuánto).
+func _pagar(amount: int) -> void:
+	GameState.add_money(-amount)
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	if p == null or amount <= 0:
+		return
+	var to := p.global_position + Vector2(0, -24)
+	if is_instance_valid(_talking_to) and _talking_to is Node2D:
+		to = (_talking_to as Node2D).global_position + Vector2(0, -10)
+	if _click == null:
+		_click = AudioStreamPlayer.new()
+		_click.stream = load("res://assets/audio/click.wav")
+		_click.volume_db = -8.0
+		add_child(_click)
+	_click.play()
+	var count := 1 if amount < 5000 else (3 if amount < 20000 else 6)
+	for k in count:
+		var bill := ColorRect.new()
+		bill.size = Vector2(7, 4)
+		bill.color = Color(0.36, 0.62, 0.4)
+		bill.z_index = 50
+		var mark := ColorRect.new()  # el señor del billete
+		mark.size = Vector2(3, 2)
+		mark.position = Vector2(2, 1)
+		mark.color = Color(0.72, 0.86, 0.7)
+		bill.add_child(mark)
+		bill.position = p.global_position + Vector2(-3, -15)
+		p.get_parent().add_child(bill)
+		var t := bill.create_tween()
+		t.tween_interval(k * 0.07)
+		t.tween_property(bill, "position", to + Vector2(randf_range(-4, 4), randf_range(-3, 3)), 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.parallel().tween_property(bill, "rotation", randf_range(-0.7, 0.7), 0.38)
+		t.tween_interval(0.25)
+		t.tween_property(bill, "modulate:a", 0.0, 0.25)
+		t.tween_callback(bill.queue_free)
+
+
+## Bañarse: entra a la caseta, cae el agua, y Lukas se queda afuera, sentado, con una oreja parada,
+## ladrándole a la puerta hasta que vuelve a salir.
+func _bano_anim() -> void:
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	if p == null:
+		return
+	var from := p.global_position
+	var booth := from + Vector2(0, -12)
+	if is_instance_valid(_talking_to) and _talking_to is Node2D:
+		booth = (_talking_to as Node2D).global_position + Vector2(0, -8)
+	GameState.block_input(4.2)
+	var into := create_tween()
+	into.tween_property(p, "global_position", booth, 0.45)
+	into.parallel().tween_property(p, "modulate:a", 0.0, 0.45)
+	await into.finished
+	var parent := p.get_parent()
+	for k in 18:  # el agua: cae adentro y salpica por debajo de la puerta
+		var drop := ColorRect.new()
+		drop.size = Vector2(1, 3)
+		drop.color = Color(0.7, 0.85, 1.0)
+		drop.z_index = 50
+		drop.position = booth + Vector2(randf_range(-7, 7), -34)
+		drop.modulate.a = 0.0
+		parent.add_child(drop)
+		var t := drop.create_tween()
+		t.tween_interval(k * 0.13)
+		t.tween_property(drop, "modulate:a", 1.0, 0.02)
+		t.tween_property(drop, "position:y", booth.y - 20.0, 0.25)
+		t.tween_property(drop, "position", booth + Vector2(randf_range(-14, 14), randf_range(4, 9)), 0.2)
+		t.parallel().tween_property(drop, "modulate:a", 0.0, 0.2)
+		t.tween_callback(drop.queue_free)
+	var l := get_tree().current_scene.find_child("Lukas", true, false) as Node2D
+	var extras: Array = []
+	if l != null and l.visible and GameState.lukas_alive():
+		l.set_physics_process(false)
+		l.global_position = from + Vector2(10, 4)
+		l.sprite.flip_h = false
+		l.sprite.play("bark")
+		var ear := ColorRect.new()  # la oreja parada
+		ear.size = Vector2(2, 4)
+		ear.color = Color(0.5, 0.28, 0.16)
+		ear.position = Vector2(3, -18)
+		l.add_child(ear)
+		extras.append(ear)
+		var bark := Label.new()
+		bark.text = "¡GUAU!"
+		bark.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+		bark.add_theme_font_size_override("font_size", 8)
+		bark.add_theme_constant_override("outline_size", 3)
+		bark.add_theme_color_override("font_outline_color", Color.BLACK)
+		bark.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+		bark.position = Vector2(-22, -34)
+		bark.z_index = 50
+		l.add_child(bark)
+		extras.append(bark)
+		var hop := bark.create_tween().set_loops()
+		hop.tween_property(bark, "position:y", -38.0, 0.18)
+		hop.tween_property(bark, "position:y", -34.0, 0.18)
+		hop.tween_property(bark, "modulate:a", 0.0, 0.05)
+		hop.tween_interval(0.25)
+		hop.tween_property(bark, "modulate:a", 1.0, 0.05)
+	await get_tree().create_timer(2.6).timeout
+	for e in extras:
+		e.queue_free()
+	if l != null and is_instance_valid(l):
+		l.sprite.play("sit")
+		l.set_physics_process(true)
+	var out := create_tween()
+	out.tween_property(p, "modulate:a", 1.0, 0.3)
+	out.parallel().tween_property(p, "global_position", from, 0.4)
+	await out.finished
+
+
+## Mecerse: mientras se impulsa, se le ve ir y venir.
+func _swing_start() -> Tween:
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	if p == null or p.get_node_or_null("Sprite") == null:
+		return null
+	var sp: Node2D = p.get_node("Sprite")
+	var t := sp.create_tween().set_loops()
+	t.tween_property(sp, "position:x", 5.0, 0.55).set_trans(Tween.TRANS_SINE)
+	t.parallel().tween_property(sp, "rotation", -0.22, 0.55).set_trans(Tween.TRANS_SINE)
+	t.tween_property(sp, "position:x", -5.0, 1.1).set_trans(Tween.TRANS_SINE)
+	t.parallel().tween_property(sp, "rotation", 0.22, 1.1).set_trans(Tween.TRANS_SINE)
+	t.tween_property(sp, "position:x", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
+	t.parallel().tween_property(sp, "rotation", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
+	return t
+
+
+func _swing_stop(t: Tween) -> void:
+	if t != null:
+		t.kill()
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	if p != null and p.get_node_or_null("Sprite") != null:
+		var sp: Node2D = p.get_node("Sprite")
+		sp.position.x = 0.0
+		sp.rotation = 0.0
+
+
 # ---------------------------------------------------------------- Baño público y pensión
 
 func _bano() -> void:
@@ -602,11 +747,12 @@ func _bano() -> void:
 		await Dialogue.talk([["", "(No le alcanza.)"], ["CELADOR DEL BAÑO", "—Mil pesos, señor. El agua no se cae del cielo."],
 			["CELADOR DEL BAÑO", "—Bueno, sí se cae. Martes y jueves, por el techo del fondo. Esos días cobro la mitad y le presto el balde."]])
 		return
-	GameState.add_money(-PRICE_BATH)
+	_pagar(PRICE_BATH)
 	GameState.set_hygiene(100.0)
 	GameState.flags["bathed"] = GameState.day
 	GameState.change_mood(5.0)
 	TimeManager.skip(0.33)
+	await _bano_anim()
 	await Dialogue.talk([["", "(Agua fría. Muy fría. Sale negra, después gris, después clara.)"]])
 
 
@@ -635,7 +781,7 @@ func _pension() -> void:
 	if GameState.money < price:
 		await Dialogue.talk([["PENSION", "—No le alcanza. La calle es gratis, joven. Tiene buena vista y nunca cierra."]])
 		return
-	GameState.add_money(-price)
+	_pagar(price)
 	GameState.flags["sleep_spot"] = "pension"
 	GameState.complete_quest("donde_dormir")
 	SceneRouter.go("res://scenes/world/Night.tscn")
@@ -784,7 +930,7 @@ func _bus(to_centro: bool) -> void:
 			await Dialogue.talk([["CONDUCTOR", "—Dos mil quinientos. ¿No tiene? ¿Y me va a mirar así hasta que se los regale?"],
 				["CONDUCTOR", "—Yo tengo tres hijos, una exesposa y una cuota de este bus. Ninguno me mira así. Bájese."]])
 			return
-		GameState.add_money(-PRICE_BUS)
+		_pagar(PRICE_BUS)
 		TimeManager.skip(0.33)
 	else:
 		TimeManager.skip(1.0)
@@ -860,7 +1006,7 @@ func _fotos() -> void:
 	if not GameState.has_space_for("foto_doc"):
 		await Dialogue.talk([["FOTOGRAFO", "—¿Y dónde se las va a llevar? ¿En la mano? Se le doblan. Desocupe esa mochila."]])
 		return
-	GameState.add_money(-PRICE_PHOTO)
+	_pagar(PRICE_PHOTO)
 	GameState.add_item("foto_doc")
 	await Dialogue.talk([
 		["FOTOGRAFO", "—Mire aquí. No sonría, que es para la cédula."],
@@ -1149,7 +1295,7 @@ func _telefono() -> void:
 	if GameState.money < PRICE_CALL:
 		await Dialogue.talk([["", "(No le alcanza. Cuelga antes de marcar.)"]])
 		return
-	GameState.add_money(-PRICE_CALL)
+	_pagar(PRICE_CALL)
 	MusicDirector.force("")
 	await Dialogue.talk([
 		["", "(Tuuu... tuuu... tuuu...)"],
@@ -1288,7 +1434,7 @@ func _iglesia() -> void:
 			if GameState.money < 500:
 				await Dialogue.talk([["", "(No le alcanza para la vela.)"]])
 				return
-			GameState.add_money(-500)
+			_pagar(500)
 			GameState.change_mood(4.0)
 			await Dialogue.talk([
 				["", "(Prende una vela. Por Victoria. La mira hasta que se le secan los ojos.)"],
@@ -1472,7 +1618,7 @@ func _mono() -> void:
 			if GameState.money < 500:
 				await Dialogue.talk([["EL MONO", "—Tranquilo, colega. Entre artistas no se cobra. Entre artistas se presta y no se devuelve."]])
 				return
-			GameState.add_money(-500)
+			_pagar(500)
 			GameState.change_mood(2.0)
 			await Dialogue.talk([["EL MONO", "—Quinientos. Gracias, hermano. Con esto ya llevo para las cuerdas. La sol. La sol siempre se revienta primero."],
 				["EL MONO", "—Esta va por usted. Se llama \"El que no habla\". La acabo de inventar. Rima con \"el que no se calla\", que soy yo."]])
@@ -1507,7 +1653,7 @@ func _viejos() -> void:
 					["DON RAMIRO", "—¡Veintiocho años esperando!"],
 					["DON OCTAVIO", "—Tome sus mil. Y deje de mirarme así, que me desconcentró. Eso es trampa. Trampa muda."]])
 			else:
-				GameState.add_money(-1000)
+				_pagar(1000)
 				await Dialogue.talk([["DON OCTAVIO", "—Mate. Treinta años y nunca aprende. El caballo del rey, Ramiro. Siempre el caballo del rey."],
 					["DON RAMIRO", "—Perdimos, mijo. Mañana abro con otro."]])
 
@@ -1623,7 +1769,7 @@ func _vicio(id: String) -> void:
 				["BORRACHO", "—¡Este man toma bonito! ¡Callado! ¡Sin llorar por ninguna! ¡Aprendan!"],
 				["", "(Canta con ellos. Por dentro. Es el mejor de los tres.)"]])
 		"billar":
-			GameState.add_money(-2000)
+			_pagar(2000)
 			TimeManager.skip(1.0)
 			if randf() < 0.45:
 				GameState.add_money(5000)
@@ -1635,7 +1781,7 @@ func _vicio(id: String) -> void:
 				await Dialogue.talk([["", "(La negra se queda en la boca de la tronera. Mirándolo. Con cara de dos mil pesos.)"],
 					["TIPO DEL BILLAR", "—Casi. \"Casi\" es el nombre que le íbamos a poner al billar."]])
 		"chica":
-			GameState.add_money(-10000)
+			_pagar(10000)
 			TimeManager.skip(1.0)
 			GameState.company(60.0)
 			GameState.change_mood(7.0)
@@ -1959,8 +2105,10 @@ func _columpio() -> void:
 			"(Se mece. Un pelado pasa y lo mira raro. Él se mece más alto.)",
 			"(Se mece con los ojos cerrados. Por un rato no es nadie. Es descansado no ser nadie.)"].pick_random()]]
 	await Dialogue.talk(lines)
+	var swing := _swing_start()
 	var hits: int = await Ritmo.play(self, "Impulsarse cuando llega atrás", 5,
 		{"hit": "¡Más alto!", "miss": "Se frena un poco.", "speed": 90.0, "speedup": 22.0})
+	_swing_stop(swing)
 	var end := ["(Se mece bajito. Igual cuenta.)", "(Se mece. El estómago se le sube un poquito.)",
 		"(Va alto. Las cadenas crujen. Él no se baja.)", "(Va tan alto que por un segundo ve por encima del muro. Y se ríe. Sin sonido, pero se ríe.)"]
 	var after := [["", end[clampi(hits - 1, 0, 3)]]]
@@ -2127,7 +2275,7 @@ func _bus_from(here: String) -> void:
 		if GameState.money < PRICE_BUS:
 			await Dialogue.talk([["CONDUCTOR", "—Dos mil quinientos. ¿No tiene? ¿Y me va a mirar así hasta que se los regale? Bájese."]])
 			return
-		GameState.add_money(-PRICE_BUS)
+		_pagar(PRICE_BUS)
 		TimeManager.skip(0.33)
 	else:
 		TimeManager.skip(1.0)
@@ -2422,7 +2570,7 @@ func _defensoria() -> void:
 	var i := await Dialogue.talk([["DEFENSORA", "—Tiene todo. Raro. Casi nadie tiene todo. La última que tuvo todo era abogada y venía por el perro."]], ["Radicar la solicitud ($50.000)", "Todavía no"])
 	if i != 0:
 		return
-	GameState.add_money(-PRICE_DEFENSORIA)
+	_pagar(PRICE_DEFENSORIA)
 	f["audiencia_dia"] = day + 3
 	GameState.complete_quest("v_defensoria")
 	GameState.start_quest("v_audiencia")
@@ -2517,7 +2665,7 @@ func _yeison() -> void:
 	if GameState.money < PRICE_BICI:
 		await Dialogue.talk([["YEISON", "—Sin los dos mil no hay bici. La app no fía. Yo tampoco: soy parte de la app. Por dentro soy puro algoritmo, parce."]])
 		return
-	GameState.add_money(-PRICE_BICI)
+	_pagar(PRICE_BICI)
 	SceneRouter.go("res://scenes/world/Reparto.tscn")
 
 
@@ -2572,7 +2720,7 @@ func _veterinaria() -> void:
 	if GameState.money < price:
 		await Dialogue.talk([["DRA. PILAR", "—No le alcanza. ... Mire: tráigamelo el domingo en la mañana. Jornada gratis. Mientras tanto, agua y comida blanda."]])
 		return
-	GameState.add_money(-price)
+	_pagar(price)
 	f.erase("lukas_enfermo")
 	f["lukas_curado"] = GameState.day
 	TimeManager.skip(1.0)
@@ -2636,6 +2784,41 @@ func _vet_coca() -> void:
 	GameState.company(12.0 + minf(n, 5) * 2.0)
 
 
+# ---------------------------------------------------------------- El palo de guayaba: comida gratis
+## Guayabas (scripts/systems/Vecindario.gd las pone en un árbol). Gratis, pero no le gustan: cada una
+## quita menos hambre que la anterior, y a la tercera se hostiga y no puede con otra hasta mañana.
+## Flags: frutas_dia, frutas_n (las de hoy).
+const FRUTAS := [
+	[10.0, "(Guayaba. Dulce, con pepas, con un inquilino adentro. No le gusta la guayaba. Se la come entera, con inquilino.)"],
+	[6.0, "(La segunda. Sabe igual que la primera, pero ya sin la sorpresa. Las pepas se le quedan a vivir en las muelas.)"],
+	[3.0, "(La tercera le sabe a jabón. El estómago le manda un aviso corto: hasta aquí.)"],
+]
+
+
+func _frutas() -> void:
+	var f := GameState.flags
+	if f.get("frutas_dia", -1) != GameState.day:
+		f["frutas_dia"] = GameState.day
+		f["frutas_n"] = 0
+	var n := int(f.get("frutas_n", 0))
+	if n >= FRUTAS.size():
+		var lines := [["", "(No puede con otra. Tiene guayaba hasta en la memoria. Mañana, si acaso. Si el hambre insiste.)"]]
+		if GameState.lukas_alive():
+			lines.append(["", "(Le ofrece una a Lukas. Lukas la huele y lo mira con una decepción muy seria.)"])
+		await Dialogue.talk(lines)
+		return
+	var intro := "(Un palo de guayaba. Las de abajo ya se las llevaron. Las de arriba tienen dueño con alas. Las del medio son de él.)" if n == 0 \
+		else "(Quedan guayabas. Él las mira. Ellas no se defienden.)"
+	var i := await Dialogue.talk([["", intro]], ["Coger una", "Seguir"])
+	if i != 0:
+		return
+	f["frutas_n"] = n + 1
+	GameState.set_hunger(GameState.hunger + float(FRUTAS[n][0]))
+	GameState.change_mood(1.0 if n == 0 else (-2.0 if n == 2 else 0.0))
+	TimeManager.skip(0.1)
+	await Dialogue.talk([["", FRUTAS[n][1]]])
+
+
 # ---------------------------------------------------------------- El billar El Guayabo, por dentro
 ## El guardia de la puerta (de noche). Solo, entra. Con Lukas no: hay que pagarle ($5.000 por noche) o
 ## hacerle un favor. Al tercer favor, Lukas ya es de la casa.
@@ -2690,7 +2873,7 @@ func _billar_guardia() -> void:
 			else:
 				await Dialogue.talk([[GUARDIA, "—Hoy pasan. Mañana, otro favor. O cinco mil. Yo no llevo cuentas: las llevo todas."]])
 		_:
-			GameState.add_money(-5000)
+			_pagar(5000)
 			await Dialogue.talk([["", "(Entrega el billete doblado en cuatro. El guardia lo desdobla, lo mira a contraluz y se lo guarda en la media.)"],
 				[GUARDIA, "—Bienvenido, caballero. Y bienvenido el caballero bajito."]])
 	f["billar_pase"] = GameState.day
@@ -2709,7 +2892,7 @@ func _billar_barra() -> void:
 	var f := GameState.flags
 	f["vicio_si"] = int(f.get("vicio_si", 0)) + 1
 	f["guayabo"] = true
-	GameState.add_money(-3000)
+	_pagar(3000)
 	TimeManager.skip(1.0)
 	GameState.change_mood(7.0)
 	GameState.company(15.0)
@@ -2740,7 +2923,7 @@ func _billar_baila() -> void:
 				else "(Mira un rato. Ella da la vuelta completa y cae parada. Nadie aplaude. Él tampoco: tiene las manos en los bolsillos.)"]])
 		_:
 			f["vicio_si"] = int(f.get("vicio_si", 0)) + 1
-			GameState.add_money(-2000)
+			_pagar(2000)
 			GameState.change_mood(5.0)
 			GameState.company(10.0)
 			await Dialogue.talk([["", "(Deja el billete en la tarima. Ella lo recoge con el pie sin dejar de dar la vuelta. Eso sí es un oficio.)"],
@@ -3454,7 +3637,7 @@ func _vet_cronico() -> void:
 	if GameState.money < PRICE_REMEDIO:
 		await Dialogue.talk([["DRA. PILAR", "—... Lléveselas. Me las paga cuando pueda. O no me las paga. Lléveselas."]])
 	else:
-		GameState.add_money(-PRICE_REMEDIO)
+		_pagar(PRICE_REMEDIO)
 	f["lukas_remedio"] = true
 	GameState.change_mood(5.0)
 	await Dialogue.talk([["", "(Le da las primeras gotas en el hocico. Lukas se relame. Respira un poquito mejor.)"]])
