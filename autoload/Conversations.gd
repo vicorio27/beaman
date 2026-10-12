@@ -126,6 +126,14 @@ func run(id: String, npc: Node) -> void:
 			await _veterinaria()
 		"amigo":
 			await _amigo()
+		"billar_guardia":
+			await _billar_guardia()
+		"billar_barra":
+			await _billar_barra()
+		"billar_baila":
+			await _billar_baila()
+		"billar_borracho":
+			await _billar_borracho()
 		"tablero":
 			await _tablero()
 		"evento_redada":
@@ -2626,6 +2634,134 @@ func _vet_coca() -> void:
 	TimeManager.skip(0.4)
 	GameState.change_mood(4.0)
 	GameState.company(12.0 + minf(n, 5) * 2.0)
+
+
+# ---------------------------------------------------------------- El billar El Guayabo, por dentro
+## El guardia de la puerta (de noche). Solo, entra. Con Lukas no: hay que pagarle ($5.000 por noche) o
+## hacerle un favor. Al tercer favor, Lukas ya es de la casa.
+## Flags: billar_pase (día en que ya pagó o hizo el favor), billar_favores.
+const BILLAR := "res://scenes/world/Billar.tscn"
+const GUARDIA := "EL GUARDIA"
+const GUARDIA_FAVORES := [
+	[[GUARDIA, "—Las canastas de cerveza. Del camión a la barra. Son doce. Yo no puedo: si me agacho, se me entra la gente."],
+		["", "(Doce canastas. A la séptima el guardia le dice que va muy bien. No se ha movido de la puerta.)"]],
+	[[GUARDIA, "—Mi mamá me llama a esta hora y yo no puedo contestar: se me cae la imagen. Conteste usted. No diga nada. Ella habla sola."],
+		["", "(Cuarenta minutos. La señora le cuenta de una vecina, de una rodilla y de un hijo muy juicioso que trabaja en seguridad. Él asiente. Por teléfono.)"]],
+	[[GUARDIA, "—Téngame la puerta mientras voy al baño. Si alguien pregunta, usted es yo."],
+		["", "(Cuatro minutos es el guardia del Guayabo. Lukas gruñe en los momentos correctos. No entra nadie. Tampoco venía nadie.)"]],
+]
+
+
+func _billar_guardia() -> void:
+	var f := GameState.flags
+	if not GameState.lukas_alive():
+		await Dialogue.talk([["", "(El guardia del Guayabo mide lo que mide la puerta. Un poco más.)"],
+			[GUARDIA, "—Solo. Sin perro. Sin plata, seguro. Siga. Los que no tienen nada no rompen nada."]])
+		SceneRouter.go(BILLAR, "FromStreet", "BILLAR EL GUAYABO")
+		return
+	var favores := int(f.get("billar_favores", 0))
+	if favores >= GUARDIA_FAVORES.size():
+		await Dialogue.talk([[GUARDIA, "—El socio y su humano. Sigan. El perro primero."]])
+		SceneRouter.go(BILLAR, "FromStreet", "BILLAR EL GUAYABO")
+		return
+	if f.get("billar_pase", -1) == GameState.day:
+		await Dialogue.talk([[GUARDIA, "—Ya cuadramos. El perro también. Sigan."]])
+		SceneRouter.go(BILLAR, "FromStreet", "BILLAR EL GUAYABO")
+		return
+	var opts := ["Hacerle un favor", "Seguir"]
+	if GameState.money >= 5000:
+		opts.push_front("Darle cinco mil ($5.000)")
+	var i := await Dialogue.talk([
+		["", "(El guardia del Guayabo mide lo que mide la puerta. Un poco más. Para entrar hay que pasarle por debajo de un brazo.)"],
+		[GUARDIA, "—Perros no. Política de la casa. La casa soy yo."],
+		[GUARDIA, "—Ahora: con cinco mil, el perro es un cliente bajito. O me hace un favor. Yo soy de favores."]], opts)
+	match opts[i]:
+		"Seguir":
+			await _vicio_no("(Sigue. Adentro suenan las bolas. Ese ruido él lo oye con las manos.)")
+			return
+		"Hacerle un favor":
+			await Dialogue.talk(GUARDIA_FAVORES[favores])
+			TimeManager.skip(1.0 if favores == 0 else 0.5)
+			if favores == 0:
+				GameState.set_hunger(GameState.hunger - 8.0)
+			f["billar_favores"] = favores + 1
+			if favores + 1 >= GUARDIA_FAVORES.size():
+				await Dialogue.talk([[GUARDIA, "—Ya son tres. Desde hoy el perro es de la casa. Usted entra con él."]])
+			else:
+				await Dialogue.talk([[GUARDIA, "—Hoy pasan. Mañana, otro favor. O cinco mil. Yo no llevo cuentas: las llevo todas."]])
+		_:
+			GameState.add_money(-5000)
+			await Dialogue.talk([["", "(Entrega el billete doblado en cuatro. El guardia lo desdobla, lo mira a contraluz y se lo guarda en la media.)"],
+				[GUARDIA, "—Bienvenido, caballero. Y bienvenido el caballero bajito."]])
+	f["billar_pase"] = GameState.day
+	SceneRouter.go(BILLAR, "FromStreet", "BILLAR EL GUAYABO")
+
+
+func _billar_barra() -> void:
+	var opts := ["Nada"]
+	if GameState.money >= 3000:
+		opts.push_front("Una cerveza ($3.000)")
+	var i := await Dialogue.talk([["", "(La barra. Seis botellas, todas de lo mismo, con etiquetas distintas.)"],
+		["EL DE LA BARRA", "—Cerveza a tres mil. Aguardiente a cinco. Agua no hay: aquí nadie viene a hidratarse."]], opts)
+	if opts[i] == "Nada":
+		await _vicio_no("(No pide nada. El de la barra le limpia su pedazo de barra igual. Es lo más cerca que ha estado de una cortesía en meses.)")
+		return
+	var f := GameState.flags
+	f["vicio_si"] = int(f.get("vicio_si", 0)) + 1
+	f["guayabo"] = true
+	GameState.add_money(-3000)
+	TimeManager.skip(1.0)
+	GameState.change_mood(7.0)
+	GameState.company(15.0)
+	await Dialogue.talk([["", "(Una. Fría. La primera en dos años que no es regalada. Sabe a lo mismo. Eso es lo grave.)"],
+		["EL DE LA BARRA", "—¿Otra? ... No, usted es de los de una. Los de una vuelven más."]])
+
+
+func _billar_baila() -> void:
+	var lukas := GameState.lukas_alive()
+	var opts := ["Mirar un rato", "Seguir"]
+	if GameState.money >= 2000:
+		opts.push_front("Dejar un billete en la tarima ($2.000)")
+	var lines := [["", "(En la tarima, dos muchachas le dan vueltas a un tubo con cara de estar haciendo cuentas. Las luces cambian de color. Ellas no.)"]]
+	if lukas:
+		lines.append(["LA DEL TUBO", "—¡Ese perro está mirando, papi! ¡El perro paga aparte!"])
+	else:
+		lines.append(["LA DEL TUBO", "—¡Quiubo, papi! ¿Va a mirar o va a colaborar? Mirar también se cobra, pero más barato."])
+	var i := await Dialogue.talk(lines, opts)
+	var f := GameState.flags
+	match opts[i]:
+		"Seguir":
+			await _vicio_no("(Mira para el piso. El piso está pegajoso. Mira para el techo. El techo también.)")
+		"Mirar un rato":
+			f["vicio_si"] = int(f.get("vicio_si", 0)) + 1
+			TimeManager.skip(0.5)
+			GameState.change_mood(2.0)
+			await Dialogue.talk([["", "(Mira un rato. Lukas también: ladea la cabeza cada vez que ella queda patas arriba. Es el único del público que entiende de acrobacia.)" if lukas
+				else "(Mira un rato. Ella da la vuelta completa y cae parada. Nadie aplaude. Él tampoco: tiene las manos en los bolsillos.)"]])
+		_:
+			f["vicio_si"] = int(f.get("vicio_si", 0)) + 1
+			GameState.add_money(-2000)
+			GameState.change_mood(5.0)
+			GameState.company(10.0)
+			await Dialogue.talk([["", "(Deja el billete en la tarima. Ella lo recoge con el pie sin dejar de dar la vuelta. Eso sí es un oficio.)"],
+				["LA DEL TUBO", "—Gracias, papi. Con esto completo el bus. El de ida."]])
+
+
+const BILLAR_BORRACHO := [
+	[["BORRACHO", "—Yo a usted lo conozco. Usted es... no, ese se murió. ¿Usted se murió? ... Lo veo bien."]],
+	[["BORRACHO", "—Siéntese. Esa silla es de mi compadre. Mi compadre no viene desde el 2011. Le guardo el puesto por si acaso."]],
+	[["BORRACHO", "—¿Sabe por qué se llama El Guayabo? Por un palo de guayaba que había. Lo tumbaron. Quedó el otro guayabo."]],
+	[["BORRACHO", "—Yo no tomo por tomar. Yo tomo por olvidar. Lo que pasa es que ya se me olvidó qué."],
+		["", "(Le ofrece el vaso. Está vacío. Brindan igual.)"]],
+]
+
+
+func _billar_borracho() -> void:
+	var f := GameState.flags
+	var n := int(f.get("billar_borracho_n", 0))
+	f["billar_borracho_n"] = n + 1
+	await Dialogue.talk(BILLAR_BORRACHO[n % BILLAR_BORRACHO.size()])
+	GameState.company(6.0)
 
 
 # ---------------------------------------------------------------- La tienda de videojuegos: el amigo

@@ -1,0 +1,35 @@
+[gd_scene format=4]
+
+[ext_resource type="Script" path="res://scripts/world/Billar.gd" id="1_billar"]
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/world/Door.gd" id="3_door"]
+[ext_resource type="PackedScene" path="res://scenes/ui/MoodFilter.tscn" id="4_mood"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_salida"]
+size = Vector2(28, 14)
+
+[node name="Billar" type="Node2D"]
+script = ExtResource("1_billar")
+area_size = Vector2i(320, 192)
+default_spawn = "FromStreet"
+outdoor = false
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="FromStreet" type="Marker2D" parent="."]
+position = Vector2(160, 170)
+metadata/facing = "up"
+
+[node name="Doors" type="Node2D" parent="."]
+
+[node name="Salida" type="Area2D" parent="Doors"]
+position = Vector2(160, 186)
+script = ExtResource("3_door")
+target_scene = "res://scenes/world/City.tscn"
+target_spawn = "FromBillar"
+push_dir = Vector2(0, 1)
+
+[node name="Forma" type="CollisionShape2D" parent="Doors/Salida"]
+shape = SubResource("RectangleShape2D_salida")
+
+[node name="MoodFilter" parent="." instance=ExtResource("4_mood")]

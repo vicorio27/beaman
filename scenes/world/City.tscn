@@ -2597,3 +2597,7 @@ position = Vector2(568, 516)
 metadata/facing = "down"
 
 [node name="MoodFilter" parent="." unique_id=275679621 instance=ExtResource("57_bqgd6")]
+
+[node name="FromBillar" type="Marker2D" parent="."]
+position = Vector2(776, 206)
+metadata/facing = "down"

@@ -3,7 +3,8 @@ extends CanvasLayer
 ## y opciones al final.
 ##   var i := await Dialogue.talk([["DON GERMAN", "—¿Necesitás algo?"]], ["Trabajar", "Salir"])
 ## Devuelve el índice de la opción elegida (cancelar = la última), o -1 si no había opciones.
-## Interactuar: avanza (o completa el texto). Arriba/abajo: elegir. Cancelar: la última opción.
+## Interactuar: avanza (o completa el texto). Arriba/abajo: elegir. Cancelar: la opción "Salir" si
+## la hay; si no, la última.
 ## Lo que él piensa va con quien habla = INNER ("ÉL"): otro color, y la placa dice "por dentro".
 ## Lo que no dice nadie (quién = "") lo cuenta EL NARRADOR: alguien que está contando la historia de
 ## él. Por eso él no habla: lo cuentan. Sale con su placa, y sin los paréntesis de acotación.
@@ -398,7 +399,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.is_action_pressed("interact"):
 			_close(_cursor)
 		elif event.is_action_pressed("cancel"):
-			_close(_choices.size() - 1)
+			var out := _choices.size() - 1
+			for k in _choices.size():
+				if str(_choices[k]).to_lower().begins_with("salir"):
+					out = k
+					break
+			_close(out)
 		else:
 			handled = false
 	elif event.is_action_pressed("interact") or event.is_action_pressed("cancel"):

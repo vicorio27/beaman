@@ -1908,3 +1908,7 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **Los otros perros** (`Vecindario.gd`): cuando Lukas pasa cerca de un perro de la calle, juegan o pelean. Sin comer, casi siempre pelean (65%); comido, casi siempre juegan. Una vez al día por perro.
 - **La moto:** [Q] sostenido, yendo rápido: en una rueda. Aguantar un segundo da un empujón; estrellarse así cuesta más. Con Lorena atrás, cada queja la mueve: unos segundos con la dirección casi al doble de nerviosa.
 - **La primera memoria:** el que patea la pelota es él de niño (el mismo dibujo de Alejandro).
+
+- **El billar El Guayabo, por dentro** (`scenes/world/Billar.tscn`, `scripts/world/Billar.gd`): solo de noche, por el guardia de la puerta, que mide lo que mide la puerta. Solo, entra. Con Lukas hay que darle $5.000 esa noche o hacerle un favor (cargar las canastas, contestarle a la mamá, tenerle la puerta); al tercer favor, Lukas es de la casa. Adentro: la tarima con dos tubos, la barra, las mesas (la apuesta de siempre) y un borracho. Son vicios: cuentan en `vicio_si` / `vicio_no`.
+- **Las viñetas de la noche** (`tools/art/draw_vinetas2.py`): ningún texto de la noche va sobre negro solo. Hay una viñeta animada (cuatro cuadros) por cada lugar donde duerme, con y sin Lukas, y para el sueño, el que se mete al cambuche, la noche de Lukas, el entierro, el collar y el último amanecer. Con el texto en el centro (el resumen, la pelea), la viñeta queda detrás, apagada.
+- **[B] en un menú con "Salir":** elige esa opción (si no hay, la última, como antes).

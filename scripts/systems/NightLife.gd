@@ -3,7 +3,8 @@ extends Node
 ##   - Lo de día se va: los pelados del fútbol, las palomas, los vendedores, los del ajedrez.
 ##   - Sale la gente de noche (npc_id "noche_*", lo que dicen está en Conversations._noche):
 ##     el celador con la linterna, el de los perros calientes, los de la cerveza en el kiosco,
-##     la pareja de la banca, el que fuma en la puerta del billar, la señora del tinto.
+##     la pareja de la banca, el guardia de la puerta del billar (por él se entra: Billar.tscn),
+##     la señora del tinto.
 ##   - Canta un gallo (de noche: aquí avisa al revés) y sale la otra gente: las muchachas del poste (Verónica, Mitchelle y Dayhana),
 ##     los de la esquina, el jíbaro. Son los vicios de él: los pelea siempre y los quiere siempre
 ##     (Conversations._noche). Menos la droga: esa no la recibe nunca, por más que le insistan.
@@ -27,7 +28,7 @@ const NIGHT_PEOPLE := {
 		["noche_kiosco", 9, Vector2(380, 556), "right", []],
 		["noche_kiosco2", 15, Vector2(408, 556), "left", []],
 		["noche_pareja", 15, Vector2(562, 501), "down", []],
-		["noche_billar", 6, Vector2(792, 200), "down", []],
+		["billar_guardia", 6, Vector2(792, 200), "down", []],  # el de la puerta del Guayabo: gigante
 		["noche_chica", 3, Vector2(334, 284), "down", []],
 		["noche_chica2", 12, Vector2(352, 286), "down", []],
 		["noche_chica3", 15, Vector2(370, 284), "down", []],
@@ -238,6 +239,9 @@ func _spawn(spec: Array) -> Node2D:
 		npc.route = PackedVector2Array(spec[4])
 		npc.walk_speed = 14.0
 	_world.add_child(npc)
+	if spec[0] == "billar_guardia":
+		npc.sprite.scale = Vector2(1.5, 1.5)  # mide lo que mide la puerta
+		npc.sprite.position.y -= 7
 	if spec[0] == "noche_celador":
 		var torch := PointLight2D.new()  # la linterna
 		torch.texture = _glow
