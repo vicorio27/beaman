@@ -261,7 +261,9 @@ func _caught() -> void:
 	_sfx["grunt"].play()
 	await get_tree().create_timer(0.7).timeout
 	await _fade(1.0, 0.4)
+	_laminas.show_page(13)
 	await Dialogue.talk([["", RETCON[_tries % RETCON.size()]]])
+	_laminas.clear()
 	_tries += 1
 	_load_stage()
 	await _fade(0.0, 0.4)
@@ -273,10 +275,12 @@ func _stage_done() -> void:
 	if stage == 1:
 		_me.play("idle")
 		await _fade(1.0, 0.5)
+		_laminas.show_page(11)
 		await Dialogue.talk([
 			["", "(Catorce techos. Él no sabía que sabía saltar. Lukas sí sabía: lleva años practicando con el sofá.)"],
 			["", "(Abajo, el megáfono sigue hablándole a un apartamento vacío. Le piden que salga con las manos arriba. Sale el humo del arroz.)"],
 			["", "(Queda una sola salida del barrio. El puente.)"]])
+		_laminas.clear()
 		stage = 2
 		_check_x = 0.0
 		_load_stage()
@@ -302,6 +306,7 @@ func _ending() -> void:
 	_sfx["miss"].play()
 	await _fade(1.0, 0.25)
 	await get_tree().create_timer(1.0).timeout
+	_laminas.show_page(12)
 	await Dialogue.talk([
 		["", "(El agua está fría. El río no pide documentos.)"],
 		["", "(Arriba, alguien dice por radio que el sujeto se ahogó. Lo anotan. Les sirve más ahogado.)"],

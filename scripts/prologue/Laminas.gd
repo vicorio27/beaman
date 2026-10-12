@@ -331,3 +331,49 @@ func _page_10() -> void:
 	_txt(xs[3] - 4, 98, "4", GOLD)
 	for k in 3:
 		_l([Vector2(xs[k] + 19, 62), Vector2(xs[k + 1] - 21, 62)], DIM)
+
+## Catorce techos. Abajo, el megáfono le habla a un apartamento vacío.
+func _page_11() -> void:
+	for k in 5:
+		var x := 60.0 + k * 40.0
+		var h: float = [30.0, 44.0, 36.0, 50.0, 40.0][k]
+		_r(x, 104 - h, 34, h, DIM)
+		_l([Vector2(x - 2, 104 - h), Vector2(x + 36, 104 - h)])
+	_person(96, 60)
+	_r(84, 54, 5, 4)
+	_l([Vector2(86, 58), Vector2(86, 60)])
+	_l([Vector2(200, 96), Vector2(214, 90), Vector2(214, 102), Vector2(200, 96)], BLUE)
+	for k in 3:
+		_c(Vector2(214, 96), 6.0 + k * 6.0, BLUE, -0.8, 0.8)
+	for k in 3:
+		var x := 232.0 + k * 6.0
+		_l([Vector2(x, 54), Vector2(x + 3, 46), Vector2(x - 3, 38), Vector2(x + 3, 30), Vector2(x, 22)], DIM)
+	_txt(60, 20, "14", GOLD)
+
+
+## El río no pide documentos.
+func _page_12() -> void:
+	_l([Vector2(56, 40), Vector2(266, 40)], INK, 2.0)
+	for k in 6:
+		_l([Vector2(70 + k * 36, 40), Vector2(70 + k * 36, 30)], DIM)
+	_l([Vector2(56, 30), Vector2(266, 30)], DIM)
+	_blink(120, 22, 10, 6, RED, BLUE)
+	_blink(190, 22, 10, 6, BLUE, RED)
+	_l([Vector2(150, 42), Vector2(150, 58)], GOLD)
+	_l([Vector2(146, 54), Vector2(150, 58), Vector2(154, 54)], GOLD)
+	for k in 4:
+		var y := 72.0 + k * 9.0
+		_l([Vector2(60, y), Vector2(84, y - 3), Vector2(110, y), Vector2(136, y - 3), Vector2(162, y), Vector2(188, y - 3), Vector2(214, y), Vector2(240, y - 3), Vector2(262, y)], BLUE)
+	_c(Vector2(140, 78), 5.0)
+	_r(152, 76, 9, 5)
+	_r(160, 73, 5, 5)
+	_l([Vector2(161, 73), Vector2(159, 78)])
+
+
+## Así no fue.
+func _page_13() -> void:
+	_c(Vector2(140, 60), 16.0)
+	_c(Vector2(180, 60), 16.0)
+	_l([Vector2(156, 60), Vector2(164, 60)], INK, 2.0)
+	_l([Vector2(112, 28), Vector2(208, 92)], RED, 2.0)
+	_l([Vector2(208, 28), Vector2(112, 92)], RED, 2.0)
