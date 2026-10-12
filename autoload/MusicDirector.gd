@@ -6,6 +6,7 @@ extends Node
 ##   MusicDirector.cut()                    corta en seco (la memoria).
 
 const TRACKS := {
+	"Huida": "truck",
 	"Fight": "dream_fight",
 	"Truck": "truck",
 	"Lilato": "lilato",

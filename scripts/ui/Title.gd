@@ -1,13 +1,14 @@
 extends Control
-## Pantalla de título: CONTINUAR (si hay partida guardada en un cuenco), NUEVA PARTIDA (el sueño 1) o
+## Pantalla de título: CONTINUAR (si hay partida guardada en un cuenco), NUEVA PARTIDA (el prólogo: la huida) o
 ## SUEÑOS: cada minijuego suelto, sin la historia alrededor (al terminar vuelve acá; ver SceneRouter.go).
 ## Arriba/abajo para elegir, interactuar para entrar. CONTROLES EN PANTALLA: interactuar (o izq/der)
 ## cambia entre AUTO (solo en el celular), SÍ y NO.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
-const PROLOGUE := "res://scenes/prologue/Fight.tscn"
+const PROLOGUE := "res://scenes/prologue/Huida.tscn"
 ## Los sueños sueltos: [nombre, escena].
 const DREAMS := [
+	["PROLOGO: LA HUIDA", "res://scenes/prologue/Huida.tscn"],
 	["CALLEJON: LILATO", "res://scenes/prologue/Fight.tscn"],
 	["PLOMO 1: LA ESQUINA", "res://scenes/dreams/PlomoDealer1.tscn"],
 	["PLOMO 2: LA COCINA", "res://scenes/dreams/PlomoDealer2.tscn"],
@@ -175,4 +176,4 @@ func _unhandled_input(event: InputEvent) -> void:
 				"Lukas se sacude el agua. Seguimos donde quedamos.")
 		else:
 			GameState.new_game()  # siempre limpia (aunque antes se haya jugado un sueño suelto)
-			SceneRouter.go(PROLOGUE, "", "DIA 0 — 23:40")
+			SceneRouter.go(PROLOGUE, "", "DIA 0 — 21:40")

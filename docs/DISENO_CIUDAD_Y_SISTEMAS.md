@@ -1863,3 +1863,15 @@ Código: `scripts/systems/Nino.gd` (lo agrega `Location` en los lugares de afuer
   - ceder da algo ya y cobra después (`_vicio`): la pola (compañía y ánimo; al otro día, guayabo), apostar en el billar ($2.000; 45% de ganar $5.000), un rato de compañía ($10.000: ella habla una hora), llevar la caja de los de la esquina ($15.000; despierta a PLOMO).
 - **La droga, nunca:** con el jíbaro no hay opción de recibir, por más que insista (cinco intentos que suben: gratis, "usted compraba", "¿para quién se cuida?", los saludos del Gato; al final se rinde él). Las dos opciones son seguir de largo.
 - Cuenta en `flags.vicio_si` / `flags.vicio_no` (todavía no cambia nada más: sirve para el final o el resumen).
+
+
+## El prólogo nuevo: la huida a pie (reemplaza al beat 'em up)
+
+Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo se dibuja por código (techos, puente, luz del helicóptero); usa los muñecos de lado del prólogo, a Lukas y a dos policías.
+
+- **La trama:** Diana Carolina lo denunció por lo del aborto (que él la obligó; armado y peligroso). Lorena confirmó la dirección, mandó la foto y agregó lo del arma. Llegaron a las 21:40 y dispararon sin preguntar. Él estaba haciendo arroz.
+- **Tramo 1, los techos** (unos 45 segundos): corre solo. Saltar muros y huecos, agacharse bajo la ropa tendida, y esconderse detrás de un tanque cuando barre la luz del helicóptero (tres veces).
+- **Tramo 2, el puente** (unos 15 segundos): más rápido; las patrullas atrás le comen la ventaja sola. Conos (saltar) y ráfagas (agacharse). Al final, el retén: hay que saltar por el pedazo de baranda roto, al río.
+- **Una sola barra, la VENTAJA:** tropezar, caerse o que lo alumbren la baja. En cero lo agarran y el narrador se corrige ("Así no fue. Si lo hubieran agarrado, no habría Día 1"): se repite desde el último tanque. No hay game over.
+- **El final:** el río, negro, y despierta debajo del puente. Día 1, 06:17. Aprende *Aguante*, como antes.
+- **El beat 'em up de Lilato** ya no es el prólogo. Sigue completo en el menú SUEÑOS ("CALLEJON: LILATO"); falta decidir en qué noche entra como sueño de la historia.
