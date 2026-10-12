@@ -59,7 +59,7 @@ func _victoria() -> void:
 		g.start_quest("v_colegio")
 	if int(f.get("victoria", 0)) >= 2 and not g.quests.has("v_defensoria"):
 		g.start_quest("v_defensoria")
-	if g.day >= 45 and not g.quests.has("v_cumple"):
+	if g.day >= 50 and not g.quests.has("v_cumple"):
 		g.start_quest("v_cumple")
 		Narrator.say("29 de octubre. Victoria cumple doce años. %s" % ("Visita en el Parque, de diez a dos." if f.get("visitas", false) else "Sale del colegio a las doce."))
 	var scene := get_tree().current_scene
@@ -68,7 +68,7 @@ func _victoria() -> void:
 	var h := TimeManager.hour()
 	var sunday := g.day % 7 == 0
 	var here: Node = scene.find_child("Victoria", true, false)
-	var birthday: bool = g.day == 45
+	var birthday: bool = g.day == 50
 	var school: bool = scene.name == "Centro" and h == 12 and not sunday and not (birthday and f.get("visitas", false))
 	var visit: bool = scene.name == "Parque" and (sunday or birthday) and f.get("visitas", false) and h >= 10 and h < (14 if birthday else 12)
 	if (school or visit) and here == null:

@@ -6,9 +6,15 @@ extends Node2D
 ##     tendida) y, cerca de un tanque, esconderse de la luz del helicóptero.
 ##   Tramo 2, EL PUENTE: más rápido, las patrullas atrás. Conos (saltar), ráfagas (agacharse). Al final,
 ##     el retén: saltar la baranda, al río.
+## Las balas: avisan en el borde (atrás o al frente) y pasan volando. Las altas, agacharse; las
+##   bajas, saltar.
+## Lukas: la primera vez que lo van a agarrar, se devuelve bravo y los muerde: la ventaja vuelve a la
+##   mitad. Una sola vez en toda la huida (el perrito al lado de la barra).
 ## Una sola barra: la VENTAJA. Tropezar, caerse o que lo alumbren la baja. En cero lo agarran... y el
 ## narrador se corrige ("así no fue"): se repite desde el último tanque. No hay game over: es un recuerdo.
 ## Después del río: negro, y despierta debajo del puente. Día 1.
+## Antes de correr, lo que pasó se cuenta sobre negro: cada texto trae su lámina (Laminas.gd), que se
+## dibuja sola, y la música del miedo ("panico") se acelera con cada uno. Al correr entra "huida".
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const NEXT_SCENE := "res://scenes/world/City.tscn"
@@ -19,19 +25,38 @@ const PX := 100.0
 const GRAVITY := 560.0
 const JUMP := -205.0
 const POLICE := Color(0.5, 0.65, 1.0)
+const LAMINAS := preload("res://scripts/prologue/Laminas.gd")
+## Lo que pasó, texto por texto: el número de cada uno es el de su lámina.
+const INTRO := [
+	["", "ANTES. Un apartamento con todo pago: la nevera, el sofá, la moto. Él, sin barba. Lukas, con cama propia y dos cobijas."],
+	["", "A las cuatro de la tarde, Diana Carolina entró a una estación de policía. Salió a las cinco y media, con copia."],
+	["", "La denuncia dice: aborto. Dice que él la obligó. Dice: armado y peligroso."],
+	["", "Lorena confirmó la dirección por teléfono. Mandó una foto. Agregó lo del arma, de su cosecha."],
+	["", "De todo ese papel, lo único cierto es la dirección."],
+	["", "21:40. Él está haciendo arroz."],
+	["UNA VOZ", "—¡POLICIA! ¡ABRA! ¡SABEMOS QUE ESTA ARMADO!"],
+	["", "(Tiene un cucharón.)"],
+	["UN VECINO", "—¡Es ese! ¡El del 302! ¡Yo siempre dije que ese era raro! ¡Saluda mucho!"],
+	["", "(El primer tiro entra por la ventana de la sala. Nadie preguntó nada antes. El arroz se quema solo.)"],
+	["", "(La mochila. La foto. El perro. La ventana de atrás. En ese orden.)"],
+]
 
 ## [x, tipo]. muro/cono: saltar. hueco: saltar (ancho 46). ropa/rafaga: agacharse. luz: viene el
 ## helicóptero; hay que estar agachado detrás del tanque que sigue. tanque: donde esconderse.
+## tiro_a / tiro_ab: una bala de atrás, alta (agacharse) / baja (saltar). tiro_f / tiro_fb: de frente.
+## (La bala sale ahí y llega como un segundo después: unos 100 px más adelante.)
 const STAGES := {
 	1: {"speed": 92.0, "end": 4000.0, "drain": -2.5, "obs": [
-		[320, "muro"], [540, "ropa"], [780, "hueco"], [1000, "muro"], [1140, "luz"], [1300, "tanque"],
-		[1540, "ropa"], [1720, "muro"], [1900, "hueco"], [2120, "ropa"], [2250, "luz"], [2410, "tanque"],
-		[2640, "muro"], [2790, "muro"], [2980, "hueco"], [3170, "luz"], [3330, "tanque"], [3540, "ropa"],
-		[3720, "hueco"]]},
+		[320, "muro"], [540, "ropa"], [620, "tiro_a"], [780, "hueco"], [1000, "muro"], [1140, "luz"], [1300, "tanque"],
+		[1360, "tiro_ab"], [1540, "ropa"], [1720, "muro"], [1900, "hueco"], [1990, "tiro_a"], [2120, "ropa"],
+		[2250, "luz"], [2410, "tanque"], [2500, "tiro_ab"], [2640, "muro"], [2790, "muro"], [2980, "hueco"],
+		[3170, "luz"], [3330, "tanque"], [3380, "tiro_a"], [3540, "ropa"], [3720, "hueco"], [3800, "tiro_ab"]]},
 	2: {"speed": 114.0, "end": 1760.0, "drain": 1.6, "obs": [
-		[260, "cono"], [450, "rafaga"], [640, "cono"], [790, "cono"], [980, "rafaga"], [1160, "cono"],
-		[1320, "rafaga"], [1470, "cono"]]},
+		[60, "tiro_f"], [260, "cono"], [450, "rafaga"], [500, "tiro_fb"], [640, "cono"], [790, "cono"],
+		[840, "tiro_a"], [980, "rafaga"], [1010, "tiro_fb"], [1160, "cono"], [1200, "tiro_a"], [1320, "rafaga"],
+		[1470, "cono"]]},
 }
+const SHOT_SPEED := 300.0
 const JUMP_FROM := 1590.0  # la baranda: desde aquí se puede saltar al río
 const JUMP_TO := 1700.0
 const RETCON := [
@@ -69,6 +94,13 @@ var _bar_bg: ColorRect
 var _black: ColorRect
 var _skyline: Texture2D
 var _sfx := {}
+var _intro := true
+var _shots: Array = []      # las balas: {x (en pantalla), dir, high, warn, hit}
+var _lukas_used := false    # Lukas ya los mordió: solo una vez
+var _dog_busy := false
+var _dog_icon: TextureRect
+var _laminas: Node2D
+var _panic: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -121,6 +153,10 @@ func _ready() -> void:
 	var cap := _label("VENTAJA", Vector2(96, 8), Color(0.85, 0.85, 0.9))
 	cap.size = Vector2(80, 10)
 	ui.add_child(cap)
+	_dog_icon = TextureRect.new()  # Lukas todavía no ha mordido a nadie
+	_dog_icon.texture = Lukas.cell(3, 0)
+	_dog_icon.position = Vector2(158, 3)
+	ui.add_child(_dog_icon)
 	_hint = _label("", Vector2(0, 26), Color(1, 0.9, 0.5))
 	_hint.size = Vector2(Controls.right_edge(), 22)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -130,6 +166,17 @@ func _ready() -> void:
 	_black.color = Color(0, 0, 0, 1)
 	_black.size = Vector2(320, 180)
 	ui.add_child(_black)
+	_laminas = LAMINAS.new()
+	ui.add_child(_laminas)
+	_panic = AudioStreamPlayer.new()
+	var loop: AudioStreamWAV = load("res://assets/music/panico.wav")
+	loop.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	loop.loop_begin = 0
+	loop.loop_end = int(loop.get_length() * loop.mix_rate)
+	_panic.stream = loop
+	_panic.bus = MusicDirector.BUS  # es música: la apaga la misma opción
+	_panic.volume_db = -4.0
+	add_child(_panic)
 	_place()
 	_story.call_deferred()
 
@@ -156,20 +203,25 @@ func _story() -> void:
 	Dream.reset()
 	stage = 1
 	_load_stage()
+	MusicDirector.force("")
+	_panic.pitch_scale = 0.8
+	_panic.play()
 	await get_tree().create_timer(0.8).timeout
-	await Dialogue.talk([
-		["", "ANTES. Un apartamento con todo pago: la nevera, el sofá, la moto. Él, sin barba. Lukas, con cama propia y dos cobijas."],
-		["", "A las cuatro de la tarde, Diana Carolina entró a una estación de policía. Salió a las cinco y media, con copia."],
-		["", "La denuncia dice: aborto. Dice que él la obligó. Dice: armado y peligroso."],
-		["", "Lorena confirmó la dirección por teléfono. Mandó una foto. Agregó lo del arma, de su cosecha."],
-		["", "De todo ese papel, lo único cierto es la dirección."],
-		["", "21:40. Él está haciendo arroz."],
-		["UNA VOZ", "—¡POLICIA! ¡ABRA! ¡SABEMOS QUE ESTA ARMADO!"],
-		["", "(Tiene un cucharón.)"],
-		["UN VECINO", "—¡Es ese! ¡El del 302! ¡Yo siempre dije que ese era raro! ¡Saluda mucho!"],
-		["", "(El primer tiro entra por la ventana de la sala. Nadie preguntó nada antes. El arroz se quema solo.)"],
-		["", "(La mochila. La foto. El perro. La ventana de atrás. En ese orden.)"],
-	])
+	for i in INTRO.size():
+		# Cada texto, su lámina; y el corazón, un poco más rápido.
+		_laminas.show_page(i)
+		create_tween().tween_property(_panic, "pitch_scale", lerpf(0.8, 1.45, float(i) / (INTRO.size() - 1)), 0.6)
+		if i == 9:  # el tiro
+			_sfx["hit-1"].play()
+			var shake := create_tween()
+			for k in 5:
+				shake.tween_property(_laminas, "position", Vector2(randf_range(-4, 4), randf_range(-3, 3)), 0.04)
+			shake.tween_property(_laminas, "position", Vector2.ZERO, 0.04)
+		await Dialogue.talk([INTRO[i]])
+	_laminas.clear()
+	_panic.stop()
+	_intro = false
+	MusicDirector.force("huida")
 	await _fade(0.0, 0.8)
 	await _go("LOS TECHOS")
 	_run = true
@@ -194,9 +246,11 @@ func _load_stage() -> void:
 	_stun = 0.0
 	_crouch = false
 	_beam = ""
+	_shots.clear()
 	_lead = 100.0
 	_jumped_off = false
-	MusicDirector.force("truck")
+	if not _intro:
+		MusicDirector.force("huida")
 	_place()
 
 
@@ -318,12 +372,60 @@ func _tick(delta: float) -> void:
 		_x += speed * delta
 	_lead = clampf(_lead - float(s["drain"]) * delta, 0.0, 100.0)
 	_obstacles()
+	_shots_tick(delta)
 	_beam_tick(delta)
 	_hints()
-	if _lead <= 0.0 or (stage == 2 and _x > JUMP_TO + 30.0):
+	if _lead <= 0.0 and not _lukas_used and not (stage == 2 and _x > JUMP_TO + 30.0):
+		_lukas_saves()
+	elif _lead <= 0.0 or (stage == 2 and _x > JUMP_TO + 30.0):
 		_caught()
 	elif _x >= float(s["end"]) and stage == 1:
 		_stage_done()
+
+
+## Lo iban a agarrar: Lukas se devuelve y los muerde. Una sola vez.
+func _lukas_saves() -> void:
+	_lukas_used = true
+	_run = false
+	_dog_busy = true
+	_dog_icon.visible = false
+	_shots.clear()
+	_beam = ""
+	_hint.text = "¡LUKAS!"
+	_me.play("idle")
+	_lead = 12.0  # (los tiene encima)
+	_place()
+	var home := _dog.position
+	var at: Vector2 = _cops[0].position + Vector2(6, 15)
+	_dog.flip_h = false
+	_dog.speed_scale = 2.4
+	await create_tween().tween_property(_dog, "position", at, 0.22).finished
+	for k in 4:
+		_sfx["hit-1"].play()
+		for c in _cops:
+			c.play("hurt")
+		var bite := create_tween()
+		bite.tween_property(_dog, "position", at + Vector2(-12 if k % 2 == 0 else -2, -9), 0.07)
+		bite.tween_property(_dog, "position", at, 0.07)
+		var cam := create_tween()
+		cam.tween_property(self, "position:y", 2.0, 0.04)
+		cam.tween_property(self, "position:y", 0.0, 0.06)
+		await bite.finished
+		await get_tree().create_timer(0.06).timeout
+	for c in _cops:
+		c.play("fall")
+	_dog.flip_h = true
+	await create_tween().tween_property(_dog, "position", home, 0.25).finished
+	_hint.text = ""
+	await Dialogue.talk([
+		["", "(Lukas se devolvió. Mordió dos pantalones reglamentarios y un radio. El radio sabía mejor.)"],
+		["", "(Eso lo hace una sola vez. Después le da pena, y además se cansa.)"]])
+	_lead = 55.0
+	_stun = 0.0
+	for c in _cops:
+		c.play("walk")
+	_dog_busy = false
+	_run = true
 
 
 func _near_cover() -> float:
@@ -367,6 +469,36 @@ func _obstacles() -> void:
 				if dx > 40.0:
 					o["done"] = true
 					_check_x = o["x"] + 40.0
+			"tiro_a", "tiro_ab", "tiro_f", "tiro_fb":
+				if dx >= 0.0:
+					o["done"] = true
+					var back: bool = o["kind"] in ["tiro_a", "tiro_ab"]
+					_shots.append({"x": -8.0 if back else 328.0, "dir": 1.0 if back else -1.0,
+						"high": o["kind"] in ["tiro_a", "tiro_f"], "warn": 0.75 if back else 0.4, "hit": false})
+
+
+## Las balas: primero el aviso en el borde, después pasan. Alta: agachado. Baja: en el aire.
+func _shots_tick(delta: float) -> void:
+	var keep: Array = []
+	for s in _shots:
+		if s["warn"] > 0.0:
+			s["warn"] -= delta
+			if s["warn"] <= 0.0:
+				_sfx["miss"].play()
+			keep.append(s)
+			continue
+		var before: float = s["x"]
+		var now: float = before + float(s["dir"]) * SHOT_SPEED * delta
+		s["x"] = now
+		if not s["hit"] and (before - PX) * (now - PX) <= 0.0:
+			s["hit"] = true
+			var safe: bool = ((_crouch or _slide > 0.0) and _y <= 0.0) if s["high"] else _y > 7.0
+			if not safe:
+				_trip(22.0)
+				continue  # (le dio: la bala no sigue)
+		if now > -30.0 and now < 350.0:
+			keep.append(s)
+	_shots = keep
 
 
 func _trip(cost: float) -> void:
@@ -408,6 +540,9 @@ func _hints() -> void:
 		text = "(quieto)" if _crouch else ""
 	elif stage == 2 and _x >= JUMP_FROM - 40.0 and _x <= JUMP_TO:
 		text = Controls.keys_in("¡E! ¡AL RIO!")
+	elif not _shots.is_empty() and not _shots[0]["hit"]:
+		text = ("¡BALA ATRAS! " if _shots[0]["dir"] > 0.0 else "¡BALA AL FRENTE! ") \
+			+ ("¡Abajo!" if _shots[0]["high"] else Controls.keys_in("¡E, salta!"))
 	else:
 		for o in _obs:
 			var ahead: float = o["x"] - _x
@@ -443,8 +578,9 @@ func _place() -> void:
 		if _me.animation != anim:
 			_me.play(anim)
 		_me.speed_scale = 1.5
-	_dog.position = Vector2(PX - 24.0, GROUND - 7.0 - _y * 0.7)
-	_dog.speed_scale = 0.0 if (_crouch or not _run) else 1.6
+	if not _dog_busy:
+		_dog.position = Vector2(PX - 24.0, GROUND - 7.0 - _y * 0.7)
+		_dog.speed_scale = 0.0 if (_crouch or not _run) else 1.6
 	for i in _cops.size():
 		var c: AnimatedSprite2D = _cops[i]
 		c.position = Vector2(PX - 46.0 - _lead * 0.9 - i * 18.0, GROUND - 22.0)
@@ -561,8 +697,19 @@ func _draw_bridge() -> void:
 		draw_rect(Rect2(from, GROUND - 9, JUMP_TO - JUMP_FROM, 1), Color(1.0, 0.85, 0.3))
 
 
-## Encima de todo: la luz del helicóptero.
+## Encima de todo: las balas y la luz del helicóptero.
 func _draw_fx() -> void:
+	for s in _shots:
+		var y := GROUND - (31.0 if s["high"] else 5.0)
+		var dir: float = s["dir"]
+		if s["warn"] > 0.0:  # el aviso, en el borde por donde viene
+			if fmod(_t * 10.0, 1.0) < 0.6:
+				var ex := 5.0 if dir > 0.0 else 315.0
+				_fx.draw_colored_polygon(PackedVector2Array([Vector2(ex - 4 * dir, y - 5), Vector2(ex + 5 * dir, y), Vector2(ex - 4 * dir, y + 5)]), Color(1.0, 0.3, 0.25))
+		else:
+			var x: float = s["x"]
+			_fx.draw_line(Vector2(x - 26.0 * dir, y), Vector2(x - 8.0 * dir, y), Color(1.0, 0.9, 0.5, 0.35), 1.0)
+			_fx.draw_line(Vector2(x - 8.0 * dir, y), Vector2(x, y), Color(1.0, 0.95, 0.6), 2.0)
 	if _beam == "":
 		return
 	var cx := _sx(_cover_x)

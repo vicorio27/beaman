@@ -366,7 +366,7 @@ func lukas_alive() -> bool:
 
 
 ## La enfermedad larga (el corazón; está viejito). 0: sano. 1: tose de noche. 2: come la mitad, camina
-## lento. 3: duerme casi todo el día. 4: ya no está. Empieza el día 25 y no tiene cura.
+## lento. 3: duerme casi todo el día. 4: ya no está. Empieza el día 30 y no tiene cura.
 func lukas_stage() -> int:
 	if flags.has("lukas_muerto"):
 		return 4
@@ -376,14 +376,14 @@ func lukas_stage() -> int:
 	return 1 if d < 4 else (2 if d < 8 else 3)
 
 
-## ¿Esta noche se muere? Cuando ya está por tener lo de Victoria (el testigo), o a más tardar el día 38;
+## ¿Esta noche se muere? Cuando ya está por tener lo de Victoria (el testigo), o a más tardar el día 43;
 ## y solo si lleva por lo menos ocho días enfermo (que no sea de un momento a otro).
 func lukas_dies_tonight() -> bool:
 	if not lukas_alive() or not flags.has("lukas_cronico_dia"):
 		return false
 	if day - int(flags["lukas_cronico_dia"]) < 8:
 		return false
-	return flags.get("testigo", false) or day >= 38
+	return flags.get("testigo", false) or day >= 43
 
 
 ## Los pedazos de la foto (el coleccionable). Lo que piensa al encontrar el pedazo número n.
@@ -645,8 +645,8 @@ func new_day(spot: String) -> Array:
 			"Le pesan las piernas. El barrio está más gris.",
 			"Se mira en una vidriera. Tarda en encontrarse.",
 			"El mundo está casi sin color."][clampi(since, 0, 4)])
-	# La enfermedad larga: empieza el día 25 y avanza sola (ver lukas_stage).
-	if lukas_alive() and day >= 25 and not flags.has("lukas_cronico_dia"):
+	# La enfermedad larga: empieza el día 30 y avanza sola (ver lukas_stage).
+	if lukas_alive() and day >= 30 and not flags.has("lukas_cronico_dia"):
 		flags["lukas_cronico_dia"] = day
 		lines.append("Lukas tosió toda la noche. Una tos seca, chiquita.")
 	elif lukas_alive() and flags.has("lukas_cronico_dia"):

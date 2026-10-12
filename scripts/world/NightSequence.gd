@@ -19,6 +19,14 @@ const MEMORY := "res://scenes/world/Memory1.tscn"
 ## otro, como mínimo una noche libre (el torneo de lucha va en noches seguidas: deja expectativa).
 ## El último (\"final\"): la galería de revanchas y Lilato (ver FinalRush).
 const DREAMS := [
+	# El beat 'em up (antes era el prólogo): tres sueños. Cada uno es una escena sola: al salir de ella
+	# vuelve a la noche (SceneRouter.go la desvía, ver flags.sueno_suelto).
+	["callejon1", "res://scenes/prologue/Fight.tscn", "",
+		"Se queda dormido. Un callejón con luces de neón. Alguien lo espera con los puños cerrados. Suena una moneda al caer."],
+	["camion", "res://scenes/prologue/Truck.tscn", "",
+		"Se queda dormido. Un camión de harina arranca. Él va colgado atrás. Vienen motos."],
+	["lilato1", "res://scenes/prologue/Lilato.tscn", "",
+		"Se queda dormido. Un puente. Llueve. Ella lo espera con un vestido rosado y dos cuchillos."],
 	["plomo_d1", "res://scenes/dreams/PlomoDealer1.tscn", "",
 		"Se queda dormido. Las manos le pesan. Tienen anillos."],
 	["plomo_d2", "res://scenes/dreams/PlomoDealer2.tscn", "",
@@ -57,10 +65,13 @@ const DREAMS := [
 const DREAM_GAP := 3
 ## Los que dispara un hecho de la vida real (tienen prioridad sobre los que solo siguen su serie).
 ## El torneo también va primero, y en noches seguidas (CHAIN_DREAMS): para que no se enfríe.
-const EVENT_DREAMS := ["final", "plomo_d1", "plomo_d2", "carrera1", "sigilo1", "callejon3", "lucha1", "lucha2", "lucha3", "lucha4"]
+const EVENT_DREAMS := ["final", "callejon1", "plomo_d1", "plomo_d2", "carrera1", "sigilo1", "callejon3", "lucha1", "lucha2", "lucha3", "lucha4"]
 const CHAIN_DREAMS := ["lucha2", "lucha3", "lucha4", "carrera3", "plomo_d3", "carrera4", "final"]
 ## Al despertar de cada sueño: [si ganó, si perdió, lo que le queda].
 const WAKE := {
+	"callejon1": ["Se despierta con los nudillos calientes.", "Se despierta con los nudillos calientes.", "Ganó. En los sueños siempre gana. Para eso los tiene."],
+	"camion": ["Se despierta agarrado del cartón, con las dos manos.", "Se despierta agarrado del cartón, con las dos manos.", ""],
+	"lilato1": ["Se despierta. Llueve de verdad.", "Se despierta. Llueve de verdad.", "CONTINUE? No hay monedas. Nunca hubo."],
 	"plomo1": ["Se despierta empapado en sudor.", "Se despierta con la mano buscando un arma que no existe.", "Nunca tuvo un arma. La mano no se ha enterado."],
 	"plomo_d1": ["Se despierta mirándose las manos. Las cuenta. Diez dedos, ningún anillo.", "Se despierta con sabor a metal en la boca.", ""],
 	"plomo_d2": ["Se despierta con la nariz ardiendo.", "Se despierta con ganas de algo que no va a comprar.", ""],
@@ -239,7 +250,10 @@ func _run() -> void:
 			if dream[0] == "final":
 				FinalRush.begin()
 				return
-			SceneRouter.go(dream[1], "", "SUEÑO %d" % (seen.size() + 1))  # el 1 fue el del prólogo
+			if dream[0] in ["callejon1", "camion", "lilato1"]:
+				GameState.flags["sueno_suelto"] = [dream[0], dream[1]]
+				Dream.reset()
+			SceneRouter.go(dream[1], "", "SUEÑO %d" % seen.size())
 			return
 		await _summary(spot)
 		return
@@ -426,7 +440,7 @@ func _morning(spot: String, first: bool) -> void:
 	for line in lines:
 		await _say(line)
 	if first:
-		await _say("Victoria, su hija, cumple doce años el 29 de octubre. En mes y medio.\nMeta: $150.000 para un regalo. Tiene $%d." % GameState.money)
+		await _say("Victoria, su hija, cumple doce años el 29 de octubre. En siete semanas.\nMeta: $150.000 para un regalo. Tiene $%d." % GameState.money)
 	TimeManager.set_time(6, 30)
 	SceneRouter.go(CITY, "Wake_" + spot, "DIA %d — 06:30" % GameState.day)
 
@@ -462,6 +476,12 @@ func _dream_when(id: String) -> bool:
 	if id.begins_with("lucha") and GameState.day < int(f.get("lucha_revancha_dia", 0)):
 		return false  # revancha: todavía no
 	match id:
+		"callejon1":  # la segunda noche: el primer sueño
+			return GameState.day >= 2
+		"camion":  # tres días después
+			return "callejon1" in seen and _days_since("callejon1") >= 3
+		"lilato1":
+			return "camion" in seen and _days_since("camion") >= 3
 		"plomo_d1":  # se abre el centro (la cédula): volver a "existir" despierta al que lo quiso borrar
 			return f.get("centro_open", false)
 		"plomo_d2":  # algo violento en la vida real (el señor de negro, un robo de noche); si no, a los 4 días
@@ -478,9 +498,9 @@ func _dream_when(id: String) -> bool:
 		"sigilo2", "sigilo3", "sigilo4":  # tres días después del anterior
 			var prev_s := "sigilo%d" % (int(id.right(1)) - 1)
 			return prev_s in seen and _days_since(prev_s) >= 3
-		"final":  # el día 44 sí o sí (la noche antes del cumpleaños); antes, solo si se cayó la mentira
+		"final":  # el día 49 sí o sí (la noche antes del cumpleaños); antes, solo si se cayó la mentira
 			# y ya soñó todo lo demás (las revanchas son contra jefes que ya conoce)
-			if GameState.day >= 44:
+			if GameState.day >= 49:
 				return true
 			if int(f.get("nino_bond", 0)) >= 1 and not f.get("nino_fin", false):
 				return false  # primero se despide Alejandro (scripts/systems/Nino.gd)

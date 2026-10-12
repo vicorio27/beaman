@@ -37,6 +37,7 @@ const SKILL_SHORT := {
 }
 ## Las series de sueños: [nombre, ids, color].
 const SERIES := [
+	["El callejón (Lorena)", ["callejon1", "camion", "lilato1"], Color(0.9, 0.5, 0.65)],
 	["Lisandro, \"el Gato\"", ["plomo_d1", "plomo_d2", "plomo_d3"], Color(0.85, 0.35, 0.3)],
 	["Las carreras", ["carrera1", "carrera2", "carrera3", "carrera4"], Color(0.9, 0.75, 0.3)],
 	["La Empresa", ["sigilo1", "sigilo2", "sigilo3", "sigilo4"], Color(0.4, 0.6, 0.9)],
@@ -51,7 +52,7 @@ const WAKE_HINT := {
 	"sigilo1": "Que haya trabajo en la obra.",
 	"callejon3": "Llamar a la mamá desde el teléfono público.",
 	"lucha1": "Cruzarse con el papá en la plaza.",
-	"final": "La verdad en la Defensoría. O el día 44.",
+	"final": "La verdad en la Defensoría. O el día 49.",
 }
 ## Vínculos: [id, nombre, cómo se gana el favor, qué abre].
 const PEOPLE := [

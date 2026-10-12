@@ -43,6 +43,9 @@ var _i_scold := 0
 var _i_laugh := 0
 var _i_slow := 0
 var scolds := 0
+var _wobble := 0.0  # se quejó y se movió: unos segundos con la dirección nerviosa
+var _wobble_dir := 1.0
+const WOBBLE_GAIN := 1.9
 var laughs := 0
 
 
@@ -58,7 +61,26 @@ func setup() -> void:
 	_lorena_laugh = load("res://assets/moto/lorena_atras_risa.png")
 
 
+## Se queja y se mueve: se le va el peso a un lado, y la dirección queda nerviosa un rato.
+func _shift() -> void:
+	_wobble = 2.6
+	_wobble_dir = [-1.0, 1.0].pick_random()
+	player_x += 0.22 * _wobble_dir
+	_shake = maxf(_shake, 0.5)
+
+
+func _trick_start() -> void:
+	Narrator.say("LORENA: —¡BAJELA! ¡BAJELA QUE ME CAIGO! ¡Y SI ME CAIGO LO DEMANDO!", true)
+	scolds += 1
+	_cool = 3.0
+	_shift()
+
+
 func _ride(dt: float) -> void:
+	_wobble = maxf(0.0, _wobble - dt)
+	steer_gain = WOBBLE_GAIN if _wobble > 0.0 else 1.0
+	if _wobble > 0.0:  # sigue acomodándose
+		player_x += sin(_wobble * 9.0) * 0.25 * dt * _wobble_dir
 	super._ride(dt)
 	_cool -= dt
 	_laughing = maxf(0.0, _laughing - dt)
@@ -74,6 +96,7 @@ func _ride(dt: float) -> void:
 		scolds += 1
 		_fast_t = 0.0
 		_cool = 3.2
+		_shift()
 	elif _calm_t > 5.0:
 		Narrator.say(LAUGH[_i_laugh % LAUGH.size()], true)
 		_i_laugh += 1
@@ -98,7 +121,8 @@ func _crash(lines: Array, keep: float) -> void:
 
 func _draw_rider_extra(at: Vector2, _size: Vector2) -> void:
 	var hop := -1.0 if _laughing > 0.0 and int(_laughing * 8.0) % 2 == 0 else 0.0  # se ríe: rebota
-	draw_texture(_lorena_laugh if _laughing > 0.0 else _lorena, at + Vector2(_lean, hop))
+	var sway := sin(_wobble * 14.0) * 3.0 * minf(1.0, _wobble) * _wobble_dir  # se mueve cuando se queja
+	draw_texture(_lorena_laugh if _laughing > 0.0 else _lorena, at + Vector2(_lean + sway, hop))
 
 
 func _arrival() -> void:

@@ -121,6 +121,15 @@ var sky_offset := 0.0
 var state := "countdown"        # countdown, ride, finish, arrival
 var time := 0.0
 var crashes := 0
+## Piruetas: [Q] sostenido (yendo rápido) levanta la moto en una rueda. En una rueda gira la mitad; si
+## aguanta un segundo y la baja bien, gana un empujón. Si se estrella así, pierde más. En las carreras
+## con rivales no hay (accel_on_interact = false: ahí los botones son para pegar).
+var piruetas := 0
+var steer_gain := 1.0  # qué tan nerviosa está la dirección (Lorena, atrás, la daña)
+var _wheelie := 0.0
+var _trick_hint := false
+const TRICK_LINES := ["Caballito. Media cuadra en una rueda. Nadie lo vio. Mejor.",
+	"En una rueda. Un señor en el andén se persigna.", "Otro caballito. La moto se cree caballo. Él no la corrige."]
 var _shake := 0.0
 var _hit_cooldown := 0.0
 var _said_half := false
@@ -303,7 +312,22 @@ func _physics_process(dt: float) -> void:
 func _ride(dt: float) -> void:
 	var pseg := _find(position_z + player_z)
 	var pct := speed / MAX_SPEED
-	var dx := dt * 2.0 * pct
+	var dx := dt * 2.0 * pct * steer_gain
+	if accel_on_interact:
+		if not _trick_hint and time > 5.0:
+			_trick_hint = true
+			Narrator.say(Controls.keys_in("(Q sostenido, yendo rápido: en una rueda.)"), true)
+		if Input.is_action_pressed("cancel") and pct > 0.4:
+			if _wheelie <= 0.0:
+				_trick_start()
+			_wheelie += dt
+			dx *= 0.5
+		elif _wheelie > 0.0:
+			if _wheelie >= 1.0:
+				piruetas += 1
+				speed = minf(MAX_SPEED, speed + MAX_SPEED * 0.08)
+				Narrator.say(TRICK_LINES[piruetas % TRICK_LINES.size()], true)
+			_wheelie = 0.0
 	_lean = 0
 	if Input.is_action_pressed("move_left"):
 		player_x -= dx
@@ -367,6 +391,9 @@ func _crash(lines: Array, keep: float) -> void:
 	_shake = 1.0
 	if keep >= 0.0:
 		speed *= keep
+	if _wheelie > 0.0:  # en una rueda: se va más duro al piso
+		_wheelie = 0.0
+		speed *= 0.6
 	if _hit_cooldown > 0.0:
 		return
 	_hit_cooldown = 2.5
@@ -450,9 +477,22 @@ func _draw() -> void:
 		var tex: Texture2D = _bike[_lean]
 		var bounce := sin(Time.get_ticks_msec() / 60.0) * (1.0 if absf(player_x) > 1.0 else 0.3) * (speed / MAX_SPEED)
 		var at := Vector2(W / 2.0 - tex.get_width() / 2.0, H - tex.get_height() - 4 + bounce)
-		draw_texture(tex, at)
+		if _wheelie > 0.0:  # en una rueda: la moto se para (se ve más alta) y tiembla
+			var up := minf(1.0, _wheelie / 0.25)
+			at += Vector2(sin(_wheelie * 30.0) * 0.6, -7.0 * up)
+			draw_texture_rect(tex, Rect2(at, Vector2(tex.get_width(), tex.get_height() * (1.0 + 0.14 * up))), false)
+			for k in 3:  # el aire que corta
+				draw_line(at + Vector2(-6 - k * 3, 10 + k * 9), at + Vector2(-6 - k * 3, 18 + k * 9), Color(1, 1, 1, 0.35))
+				draw_line(at + Vector2(tex.get_width() + 6 + k * 3, 10 + k * 9), at + Vector2(tex.get_width() + 6 + k * 3, 18 + k * 9), Color(1, 1, 1, 0.35))
+		else:
+			draw_texture(tex, at)
 		_draw_rider_extra(at, tex.get_size())
 	draw_set_transform(Vector2.ZERO)
+
+
+## Para sobreescribir: empezó una pirueta (Lorena grita).
+func _trick_start() -> void:
+	pass
 
 
 ## Para sobreescribir: algo más del que maneja (la pierna de la patada en las carreras).

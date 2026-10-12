@@ -53,7 +53,14 @@ func _ready() -> void:
 	_player = load("res://scenes/player/Player.tscn").instantiate()
 	_player.position = Vector2(70, 110)
 	world.add_child(_player)
-	_player.get_node("Sprite").scale = Vector2(0.8, 0.8)  # chico
+	# Es él de niño: el mismo niño de manga larga de la foto del colegio (y de Alejandro, en la calle).
+	var kid := CharacterFrames.adult(CharacterFrames.OWN["nino"])
+	for anim in CharacterFrames.protagonist().get_animation_names():
+		if not kid.has_animation(anim):  # (los gestos del adulto: el niño se queda quieto)
+			kid.add_animation(anim)
+			kid.set_animation_loop(anim, false)
+			kid.add_frame(anim, kid.get_frame_texture("idle_down", 0))
+	_player.get_node("Sprite").sprite_frames = kid
 	var cam: Camera2D = _player.get_node("Camera2D")
 	cam.limit_left = 0
 	cam.limit_top = 0

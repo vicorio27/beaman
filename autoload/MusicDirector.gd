@@ -4,9 +4,11 @@ extends Node
 ## Con hambre la música se apaga (filtro) y se desafina un poco, como el filtro de imagen.
 ##   MusicDirector.force("lilato_serpent")  cambia el tema mientras dure la escena actual.
 ##   MusicDirector.cut()                    corta en seco (la memoria).
+##   MusicDirector.set_enabled(false)       apaga la música (no los sonidos). Se elige en el título o en
+##                                          la pausa y se guarda en user://ajustes.cfg.
 
 const TRACKS := {
-	"Huida": "truck",
+	"Huida": "",  # (la pone Huida.gd: "panico" mientras cuenta, "huida" al correr)
 	"Fight": "dream_fight",
 	"Truck": "truck",
 	"Lilato": "lilato",
@@ -65,6 +67,7 @@ var _forced := ""
 var _forced_scene: Node
 var _check := 0.0
 var _lowpass: AudioEffectLowPassFilter
+var enabled := true
 
 
 func _ready() -> void:
@@ -81,6 +84,21 @@ func _ready() -> void:
 		p.volume_db = -80.0
 		add_child(p)
 		_players.append(p)
+	var cfg := ConfigFile.new()
+	if cfg.load(Controls.SETTINGS) == OK:
+		enabled = cfg.get_value("sonido", "musica", true)
+	AudioServer.set_bus_mute(idx, not enabled)
+
+
+## Prende o apaga la música: calla el bus (los temas siguen corriendo por debajo, así al prenderla
+## suena el que toca). Los sonidos van por otro bus y no cambian.
+func set_enabled(on: bool) -> void:
+	enabled = on
+	AudioServer.set_bus_mute(AudioServer.get_bus_index(BUS), not on)
+	var cfg := ConfigFile.new()
+	cfg.load(Controls.SETTINGS)
+	cfg.set_value("sonido", "musica", on)
+	cfg.save(Controls.SETTINGS)
 
 
 func _process(delta: float) -> void:

@@ -52,6 +52,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func go(scene_path: String, spawn := "", title := "", line := "") -> void:
 	if busy:
 		return
+	# Un sueño de beat 'em up de la historia (NightSequence): es una sola escena. Lo que seguía en la
+	# cadena vieja del prólogo (el camión, Lilato, CONTINUE?) no sigue: se despierta.
+	var solo: Array = GameState.flags.get("sueno_suelto", [])
+	if solo.size() == 2 and scene_path != solo[1] and scene_path.contains("/prologue/"):
+		GameState.flags.erase("sueno_suelto")
+		GameState.flags["dream_won"] = true
+		GameState.flags["dream_return"] = solo[0]
+		scene_path = "res://scenes/world/Night.tscn"
+		spawn = ""
+		title = ""
+		line = ""
 	# Sueño suelto (menú SUEÑOS): al despertar no hay noche ni ciudad, vuelve al título.
 	if GameState.flags.get("arcade", false) and (scene_path.ends_with("Night.tscn") or scene_path.ends_with("City.tscn")):
 		GameState.flags.erase("arcade")

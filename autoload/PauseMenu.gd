@@ -2,6 +2,7 @@ extends CanvasLayer
 ## El menú de pausa: Start (P / Esc en el teclado, la rayita doble en el celular). Para todo el juego.
 ##   CONTINUAR
 ##   CONTROLES EN PANTALLA: AUTO / SÍ / NO   (los mismos del título; se guardan)
+##   MUSICA: SÍ / NO                         (solo la música; los sonidos siguen. Se guarda)
 ##   SALIR POR AHORA   (al título). En la vida real (un lugar con Location) guarda ahí mismo y se sigue
 ##                     en la entrada de ese lugar; en un sueño o un minijuego no se puede guardar a
 ##                     mitad: se sigue desde el último cuenco de agua.
@@ -36,9 +37,9 @@ func _ready() -> void:
 	panel.size = Vector2(220, 108)
 	_root.add_child(panel)
 	_label("PAUSA", Vector2(40, 48), Color(0.9, 0.74, 0.36), 220, true)
-	for i in 3:
-		_opts.append(_label("", Vector2(52, 70 + i * 14), Color.WHITE, 200, false))
-	_note = _label("", Vector2(44, 118), Color(0.6, 0.57, 0.55), 212, true)
+	for i in 4:
+		_opts.append(_label("", Vector2(52, 64 + i * 13), Color.WHITE, 200, false))
+	_note = _label("", Vector2(44, 120), Color(0.6, 0.57, 0.55), 212, true)
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 
@@ -84,6 +85,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var prefs := Controls.TOUCH_PREFS
 		var step := -1 if event.is_action_pressed("move_left") else 1
 		Controls.set_touch_pref(prefs[(prefs.find(Controls.touch_pref) + step + prefs.size()) % prefs.size()])
+	elif _cursor == 2 and (event.is_action_pressed("move_left") or event.is_action_pressed("move_right") or event.is_action_pressed("interact")):
+		MusicDirector.set_enabled(not MusicDirector.enabled)
 	elif event.is_action_pressed("interact"):
 		if _cursor == 0:
 			_set_open(false)
@@ -115,13 +118,16 @@ func _set_open(open: bool) -> void:
 
 func _refresh() -> void:
 	var texts := ["CONTINUAR", "CONTROLES: " + TOUCH_NAMES.get(Controls.touch_pref, "AUTO"),
+		"MUSICA: " + ("SI" if MusicDirector.enabled else "NO"),
 		"¿SEGURO? OTRA VEZ" if _confirm else "SALIR POR AHORA"]
 	for i in _opts.size():
 		_opts[i].text = ("> " if i == _cursor else "  ") + texts[i]
 		_opts[i].add_theme_color_override("font_color", Color(0.95, 0.82, 0.45) if i == _cursor else Color(0.92, 0.9, 0.86))
-	if _cursor == 2:
+	if _cursor == 3:
 		_note.text = "Se guarda aquí; se sigue en la entrada." if _can_save() 			else "En un sueño no se guarda: se sigue del último cuenco."
 	elif _cursor == 1:
 		_note.text = "Los botones en pantalla: AUTO, SI o NO."
+	elif _cursor == 2:
+		_note.text = "Solo la música. Los sonidos siguen."
 	else:
 		_note.text = ""

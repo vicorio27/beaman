@@ -5,6 +5,8 @@ extends CanvasLayer
 ## Devuelve el índice de la opción elegida (cancelar = la última), o -1 si no había opciones.
 ## Interactuar: avanza (o completa el texto). Arriba/abajo: elegir. Cancelar: la última opción.
 ## Lo que él piensa va con quien habla = INNER ("ÉL"): otro color, y la placa dice "por dentro".
+## Lo que no dice nadie (quién = "") lo cuenta EL NARRADOR: alguien que está contando la historia de
+## él. Por eso él no habla: lo cuentan. Sale con su placa, y sin los paréntesis de acotación.
 ## Estilo Dredge: el que habla, de pie, en el medio (retrato serio y gastado, SPEAKERS), detrás de
 ## un cuadro negro con letra blanca; el nombre centrado entre dos líneas finas, y comillas.
 ## Cara a cara (face_off = [retrato izq, retrato der]): los dos de pie, mirándose (el de la derecha,
@@ -17,6 +19,7 @@ const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const CHARS_PER_SECOND := 45.0
 ## Lo que él piensa (afuera es mudo: los demás no lo oyen). Se escribe ["ÉL", "..."], sin raya.
 const INNER := "ÉL"
+const NARRATOR := "NARRADOR"
 const INK := Color(0.93, 0.91, 0.87)
 const INNER_COLOR := Color(0.62, 0.76, 0.96)
 const NARRATION_COLOR := Color(0.7, 0.67, 0.62)
@@ -161,7 +164,12 @@ func talk(lines: Array, choices: Array = []) -> int:
 	# En el celular, "E: golpe" dice "A: golpe" (antes de partir en páginas: puede cambiar el largo).
 	var shown := []
 	for l in lines:
-		shown.append([l[0], Controls.keys_in(str(l[1]))] + l.slice(2) if l is Array else Controls.keys_in(str(l)))
+		if l is Array and str(l[0]) != "":
+			shown.append([l[0], Controls.keys_in(str(l[1]))] + l.slice(2))
+		elif l is Array:
+			shown.append([l[0], _narrated(Controls.keys_in(str(l[1])))] + l.slice(2))
+		else:
+			shown.append(_narrated(Controls.keys_in(str(l))))
 	_lines = _paginate(shown)
 	_choices = choices
 	_keep_company(lines)
@@ -175,6 +183,14 @@ func talk(lines: Array, choices: Array = []) -> int:
 	_show_line()
 	var result: int = await _finished
 	return result
+
+
+## La narración se escribía como acotación, entre paréntesis: "(Tiene un cucharón.)". El narrador la
+## cuenta sin ellos. Solo si el paréntesis envuelve todo el texto.
+func _narrated(text: String) -> String:
+	if text.begins_with("(") and text.ends_with(")") and text.count("(") == 1:
+		return text.substr(1, text.length() - 2)
+	return text
 
 
 ## Si alguien le habla (no él por dentro, no la narración), baja la soledad. Una vez cada 20 minutos.
@@ -255,9 +271,10 @@ func _show_line() -> void:
 		_show_face_off(line, info)
 	_more.position = BOX.size - Vector2(26, 9)
 	# El nombre (y lo que es, más apagado), centrado entre dos líneas.
-	_plate.visible = who != ""
+	_plate.visible = true
 	if _plate.visible:
-		_name.text = who
+		_name.text = who if who != "" else NARRATOR
+		_name.add_theme_color_override("font_color", NAME_COLOR if who != "" else SUB_COLOR)
 		_sub.text = ("  " + info[1]) if info.size() > 1 and info[1] != "" else ""
 		var w := (_name.text.length() + _sub.text.length()) * 8
 		var x0 := 160.0 - w / 2.0

@@ -2,7 +2,7 @@ extends Control
 ## Pantalla de título: CONTINUAR (si hay partida guardada en un cuenco), NUEVA PARTIDA (el prólogo: la huida) o
 ## SUEÑOS: cada minijuego suelto, sin la historia alrededor (al terminar vuelve acá; ver SceneRouter.go).
 ## Arriba/abajo para elegir, interactuar para entrar. CONTROLES EN PANTALLA: interactuar (o izq/der)
-## cambia entre AUTO (solo en el celular), SÍ y NO.
+## cambia entre AUTO (solo en el celular), SÍ y NO. MUSICA: lo mismo, entre SÍ y NO.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const PROLOGUE := "res://scenes/prologue/Huida.tscn"
@@ -64,6 +64,7 @@ func _ready() -> void:
 	_main_opts.append("NUEVA PARTIDA")
 	_main_opts.append("SUEÑOS")
 	_main_opts.append(TOUCH_OPT)
+	_main_opts.append(MUSIC_OPT)
 	for i in DREAMS.size():
 		var l := _label("", Vector2(0, 4 + i * 10), 8, Color.WHITE)
 		l.size = Vector2(320, 10)
@@ -91,7 +92,7 @@ func _show_main() -> void:
 	for h in _head:
 		h.visible = true
 	for i in _labels.size():
-		_labels[i].position.y = 110 + i * 14
+		_labels[i].position.y = 106 + i * 14
 	_refresh()
 
 
@@ -109,12 +110,15 @@ func _show_dreams() -> void:
 
 
 const TOUCH_OPT := "CONTROLES"
+const MUSIC_OPT := "MUSICA"
 const TOUCH_NAMES := {"auto": "AUTO", "si": "SI", "no": "NO"}  # (la fuente no tiene Í mayúscula)
 
 
 func _opt_text(o: String) -> String:
 	if o == TOUCH_OPT:
 		return "CONTROLES EN PANTALLA: " + TOUCH_NAMES[Controls.touch_pref]
+	if o == MUSIC_OPT:
+		return "MUSICA: " + ("SI" if MusicDirector.enabled else "NO")
 	return o
 
 
@@ -151,6 +155,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif not _in_dreams and _opts[_cursor] == TOUCH_OPT and (event.is_action_pressed("interact")
 			or event.is_action_pressed("move_left") or event.is_action_pressed("move_right")):
 		_cycle_touch(-1 if event.is_action_pressed("move_left") else 1)
+	elif not _in_dreams and _opts[_cursor] == MUSIC_OPT and (event.is_action_pressed("interact")
+			or event.is_action_pressed("move_left") or event.is_action_pressed("move_right")):
+		MusicDirector.set_enabled(not MusicDirector.enabled)
+		_refresh()
 	elif event.is_action_pressed("interact"):
 		if _in_dreams:
 			var scene: String = DREAMS[_cursor][1]

@@ -17,8 +17,14 @@ Temas (ver docs/DISENO_CIUDAD_Y_SISTEMAS.md, "Música"):
   night           antes de dormir: piano solo, con mucho aire
   memory          la memoria: cajita de música desafinada
   moto_ride       la moto: blues-rock de motero (shuffle en mi, guitarra saturada, slide)
+  panico          el prólogo, antes de correr: un corazón, un reloj, un tritono y una sirena lejos.
+                  El juego lo va acelerando con cada texto (Huida.gd le sube el pitch).
+  huida           el prólogo, corriendo: metal en mi frigio a 184, con la sirena encima
+
+Solo los del prólogo:  python tools/audio/compose.py prologo
 """
 import os
+import sys
 import wave
 import numpy as np
 
@@ -628,7 +634,58 @@ BOX_LEAD = [
 ]
 
 
+def loop_tone(f, n):
+    """Un tono seguido (triangular) que cierra el loop: la frecuencia se ajusta a ciclos enteros."""
+    cycles = max(1, round(f * n / SR))
+    ph = (np.arange(n) * cycles / n) % 1.0
+    return 2 * np.abs(2 * ph - 1) - 1
+
+
+def panic_loop():
+    """El miedo antes de correr. A 100: el juego lo lleva de 0.8 a 1.45 de velocidad."""
+    bars = 8
+    heart, ticks, stabs = Track(100, bars * 4), Track(100, bars * 4), Track(100, bars * 4)
+    for b in range(bars * 4):
+        heart.add(b, kick(0.3, soft=True), 1.0)       # lub
+        heart.add(b + 0.32, kick(0.25, soft=True), 0.7)  # dub
+        ticks.add(b, hat(0.03), 0.5)                  # el reloj de la cocina
+        ticks.add(b + 0.5, hat(0.03), 1.0)
+    for b in (0, 16):
+        for note in ("E2", "F2"):
+            stabs.add(b, piano(hz(note), 3.0), 0.5)
+    n = len(heart.buf)
+    t = np.arange(n) / n
+    drone = loop_tone(hz("E2"), n) * (0.7 + 0.3 * np.sin(2 * np.pi * 96 * t)) \
+        + 0.4 * loop_tone(hz("E3"), n)
+    tritone = loop_tone(hz("Bb2"), n) * np.sin(np.pi * 2 * t) ** 2
+    cluster = (loop_tone(hz("E5"), n) + loop_tone(hz("F5"), n)) \
+        * (0.5 + 0.5 * np.sin(2 * np.pi * 224 * t)) * np.sin(np.pi * t) ** 4
+    f = 780 + 160 * np.sin(2 * np.pi * 8 * t)
+    siren = fft_filter(echo(np.sin(2 * np.pi * np.cumsum(f) / SR)), hi=1600) * np.sin(np.pi * t) ** 2
+    return fft_filter(heart.buf, hi=900) * 1.0 + ticks.buf * 0.09 + stabs.buf * 0.5 \
+        + drone * 0.16 + tritone * 0.13 + cluster * 0.045 + siren * 0.05
+
+
+CHASE_A = [("E5", .5), ("F5", .5), ("E5", .5), ("B5", .5), ("E5", .5), ("F5", .5), ("G5", .5), ("F5", .5),
+           ("E5", .5), ("F5", .5), ("E5", .5), ("Bb5", .5), ("A5", .5), ("G5", .5), ("F5", .5), ("E5", .5)]
+CHASE_B = [("B5", 2), ("Bb5", 2), ("B5", 1), ("C6", 1), ("Bb5", 2)]
+
+
+def chase_song():
+    """La huida: mi frigio, doble bombo, y una sirena que sube y baja encima de todo."""
+    x = metal(184, ["E", "E", "F", "E", "E", "E", "G", "F"] * 2, (CHASE_A + CHASE_B) * 4, True)
+    n = len(x)
+    t = np.arange(n) / n
+    f = 820 + 190 * np.sin(2 * np.pi * 16 * t)
+    siren = echo(np.sin(2 * np.pi * np.cumsum(f) / SR)) * np.sin(np.pi * t) ** 2
+    return x + siren * 0.09
+
+
 if __name__ == "__main__":
+    if "prologo" in sys.argv:
+        save("panico", panic_loop(), peak=0.8)
+        save("huida", chase_song())
+        sys.exit()
     save("boxeo", metal(150, ["A", "A", "F", "G"] * 4, BOX_LEAD, False))
     save("plomo", metal(168, ["E", "E", "C", "D"] * 4, PLOMO_LEAD, False))
     save("plomo_boss", metal(132, ["C", "C", "Ab", "G"] * 4, BOSS_LEAD, True))
@@ -646,3 +703,5 @@ if __name__ == "__main__":
     save("cafe", vals())
     save("night", night_piano())
     save("memory", memory_box())
+    save("panico", panic_loop(), peak=0.8)
+    save("huida", chase_song())

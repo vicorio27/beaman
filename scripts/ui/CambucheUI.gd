@@ -5,6 +5,8 @@ extends CanvasLayer
 ## seguridad y ánimo (lo que sube, en verde).
 ##   var id := await CambucheUI.choose(self)   # "" = salió; si no, la mejora lista para poner
 ## Arriba/abajo: elegir. Acción: poner (si está lista). Atrás: salir.
+## Si no se puede poner, acción abre un aviso que dice por qué: qué falta y qué tiene de cada cosa, y
+## de dónde sale (se arma en la mochila, lo vende Wilson, o falta el nivel anterior).
 
 signal _closed(id: String)
 
@@ -37,6 +39,7 @@ var _detail: Control
 var _now: Control
 var _after: Control
 var _guard := 0.15
+var _why: Control  # el aviso de "no se puede" (se cierra con cualquier botón)
 
 
 static func choose(parent: Node) -> String:
@@ -83,6 +86,13 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _guard > 0.0:
 		return
+	if _why != null:  # el aviso abierto: cualquier botón lo cierra
+		if (event is InputEventAction or event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed() and not event.is_echo():
+			_why.queue_free()
+			_why = null
+			_guard = 0.1
+			get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("move_down"):
 		_cursor = (_cursor + 1) % ENTRIES.size()
 	elif event.is_action_pressed("move_up"):
@@ -95,6 +105,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_close(id)
 		else:
 			_flash_detail()
+			_explain(id)
 	else:
 		return
 	get_viewport().set_input_as_handled()
@@ -291,6 +302,49 @@ func _bar(title: String, now: float, after: float, value: String, at: Vector2) -
 	_rect(Vector2(x, at.y + 1), Vector2(w * clampf(after, 0, 1), 6), GOOD, _detail)
 	_rect(Vector2(x, at.y + 1), Vector2(w * clampf(now, 0, 1), 6), Color(0.85, 0.74, 0.5), _detail)
 	_label(value, Vector2(x + w + 4, at.y), GOOD if after > now else CREAM, _detail)
+
+
+## Por qué no se puede: qué falta y qué tiene.
+func _explain(id: String) -> void:
+	var st := _state(id)
+	var lines := []  # [texto, color]
+	if st == "puesto":
+		lines.append(["Eso ya está puesto.", GOOD])
+	elif st == "bloqueado":
+		var n := int(id.substr(6)) - 1
+		lines.append(["Primero el nivel %d:" % n, CREAM])
+		lines.append([str(GameState.CAMBUCHE_NAMES[n]) + ".", CREAM])
+		lines.append(["Va en el nivel %d." % GameState.cambuche_level(), DIM])
+	else:
+		for need in _needs(id):
+			var item_name: String = Items.info(need[0])["name"]
+			var missing: int = maxi(0, need[2] - need[1])
+			if missing > 0:
+				lines.append(["%s: tiene %d, faltan %d" % [item_name, need[1], missing], BAD])
+			else:
+				lines.append(["%s: tiene %d (listo)" % [item_name, need[1]], GOOD])
+		if id.begins_with("nivel_"):
+			lines.append(["Consiga lo que falta y vuelva.", DIM])
+		elif Items.RECIPES.has(id):
+			lines.append([Controls.keys_in("Se arma en la mochila, con C."), DIM])
+		else:
+			lines.append(["Lo vende %s." % SELLER, DIM])
+	_why = Control.new()
+	_root.add_child(_why)
+	var h := 26 + lines.size() * 11
+	var at := Vector2(20, 90 - h / 2.0)
+	_rect(at, Vector2(250, h), Color(0.06, 0.04, 0.06, 0.98), _why)
+	var b := ReferenceRect.new()
+	b.border_color = BAD
+	b.editor_only = false
+	b.position = at
+	b.size = Vector2(250, h)
+	_why.add_child(b)
+	_label("NO SE PUEDE TODAVIA" if st != "puesto" else "NO HACE FALTA", at + Vector2(8, 6), BAD if st != "puesto" else GOOD, _why)
+	for i in lines.size():
+		var l := _label(lines[i][0], at + Vector2(8, 20 + i * 11), lines[i][1], _why)
+		l.size = Vector2(236, 10)
+		l.clip_text = true
 
 
 func _flash_detail() -> void:

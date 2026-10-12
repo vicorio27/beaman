@@ -124,6 +124,8 @@ func run(id: String, npc: Node) -> void:
 			await _yeison()
 		"veterinaria":
 			await _veterinaria()
+		"amigo":
+			await _amigo()
 		"tablero":
 			await _tablero()
 		"evento_redada":
@@ -1870,21 +1872,25 @@ func _pelaos() -> void:
 	if first:
 		lines.append(["EL CHINO", "—¡Señor! ¡Señor del saco! ¿Tapa? Nos falta arquero. El último se fue a almorzar hace dos años."])
 		lines.append(["LA FLACA", "—No habla. Mejor. Los arqueros que hablan se creen Higuita."])
+		lines.append(["BRAYAN", "—Tanda de seis. Tres tapa usted, tres patea usted. El que pierde compra gaseosa. Nadie tiene para gaseosa."])
 	else:
-		lines.append(["BRAYAN", "—¡Volvió el arquero mudo! ¡El muro! ¡El muro sin boca!"])
-	var i := await Dialogue.talk(lines, ["Tapar", "Ahora no"])
+		lines.append(["BRAYAN", "—¡Volvió el arquero mudo! ¡El muro! ¡El muro sin boca! ¡Tanda de seis!"])
+	var i := await Dialogue.talk(lines, ["Jugar", "Ahora no"])
 	if i != 0:
 		return
 	f["pelaos_jugo"] = true
-	var saved: int = await Penal.play(self, PELAOS_SHOTS)
+	var res: Array = await Penal.play(self, PELAOS_SHOTS)  # [atajadas, goles de él, goles de ellos]
+	var saved: int = res[0]
 	var end := []
-	if saved >= 3:
-		end = [["EL CHINO", "—¡%d de 5! ¡Usted es una pared, señor! ¿Viene mañana?" % saved],
+	if res[1] > res[2]:
+		end = [["EL CHINO", "—¡%d a %d! ¡Ganó el señor del saco! ¡Y tapó %d! ¿Viene mañana?" % [res[1], res[2], saved]],
 			["LA FLACA", "—Tome, le guardamos un bombón. No es gaseosa, pero es dulce."]]
 		if GameState.has_space_for("bombon"):
 			GameState.add_item("bombon")
+	elif res[1] == res[2]:
+		end = [["LA FLACA", "—Empate a %d. Empate quiere decir que nadie compra gaseosa. O sea: como siempre." % res[1]]]
 	else:
-		end = [["BRAYAN", "—%d de 5. Bueno, peor era nada. Peor era el portero de antes, que era una caneca." % saved]]
+		end = [["BRAYAN", "—%d a %d. Fresco, señor. El arquero de antes era una caneca, y la caneca también perdía." % [res[2], res[1]]]]
 	if GameState.lukas_alive():
 		end.append(["", "(Lukas se roba la pelota y sale corriendo. Los tres pelados detrás. Nadie la recupera en diez minutos. Nadie quiere.)"])
 	await Dialogue.talk(end)
@@ -2222,7 +2228,7 @@ func _v_bond(n: int) -> void:
 func _colegio() -> void:
 	var f := GameState.flags
 	var day := GameState.day
-	if day >= 45 and _kid_here() and not f.get("cumple_hecho", false):
+	if day >= 50 and _kid_here() and not f.get("cumple_hecho", false):
 		await _cumpleanos(false)
 		return
 	if _kid_here():
@@ -2440,7 +2446,7 @@ func _audiencia() -> void:
 ## La visita del domingo, en el Parque.
 func _visita() -> void:
 	var f := GameState.flags
-	if GameState.day >= 45 and not f.get("cumple_hecho", false):
+	if GameState.day >= 50 and not f.get("cumple_hecho", false):
 		await _cumpleanos(true)
 		return
 	if f.get("visita_dia", -1) == GameState.day:
@@ -2545,8 +2551,7 @@ func _veterinaria() -> void:
 		await _vet_cronico()
 		return
 	if not GameState.lukas_sick():
-		await Dialogue.talk([["DRA. PILAR", "—¿Y este muchacho tan lindo? Beagle. Tricolor. Unos ocho años, por los dientes. Sano, gordito... bueno, gordito no."],
-			["DRA. PILAR", "—Los domingos en la mañana hay jornada gratis. Para los de la calle. Los perros, digo. Y los dueños, si se dejan. Usted no se va a dejar."]])
+		await _vet_coca()
 		return
 	var free: bool = sunday and h >= 9 and h < 12
 	var price: int = 0 if free else PRICE_VET
@@ -2569,6 +2574,131 @@ func _veterinaria() -> void:
 		["DRA. PILAR", "—Listo. Mañana ya va a estar molestando. Usted también coma algo, que la fiebre la tiene usted en la cara."],
 		["", "(Lukas mueve la cola. Despacio, pero la mueve.)"],
 	])
+
+
+## La coca de la veterinaria: la Dra. Pilar tiene comida para los perros de la calle. Lukas come ahí
+## (una vez al día) y, de visita en visita, ella le va cogiendo confianza a él. Él no habla: habla ella.
+## Flags: pilar_n (visitas con coca), pilar_dia (la última).
+const PILAR_VISITS := [
+	[["DRA. PILAR", "—¿Y este muchacho tan lindo? Beagle. Tricolor. Unos ocho años, por los dientes. Sano, gordito... bueno, gordito no."],
+		["DRA. PILAR", "—En la entrada hay una coca con concentrado. Es para los de la calle. Los perros, digo. Aunque usted la está mirando con cariño."],
+		["", "(Lukas desocupa la coca en lo que ella llena una fórmula. Después lame la coca. Después lame el piso donde estuvo la coca.)"],
+		["DRA. PILAR", "—Vuelva mañana. La coca se llena sola. Bueno: la lleno yo. Pero me gusta que la gente crea en milagros."]],
+	[["DRA. PILAR", "—Volvió el beagle. Y el acompañante."],
+		["", "(Lukas come. Ella lo pesa mientras come: de otra forma no se deja.)"],
+		["DRA. PILAR", "—Once kilos cuatrocientos. Usted no se sube, ¿no? No. Usted no se sube."]],
+	[["DRA. PILAR", "—Yo estudié siete años para que los pacientes me muerdan. Lukas es el único que da la pata. La da mal, pero la da."],
+		["", "(Lukas da la pata. La otra. Ella le recibe la otra. Los dos quedan conformes.)"],
+		["DRA. PILAR", "—Los domingos en la mañana hay jornada gratis. Para los perros. Y para los dueños, si se dejan. Usted no se va a dejar."]],
+	[["DRA. PILAR", "—Tome. Una bolsa de muestra. Dice \"razas pequeñas\". No se lo lea a Lukas, que se ofende."],
+		["", "(Lukas ya la olió. Ya sabe que es de él. Ya la está cuidando.)"]],
+	[["DRA. PILAR", "—Los martes no viene nadie. Yo le hablo al loro de la sala de espera. El loro no es mío. Un día llegó y pidió turno."],
+		["", "(Ella sirve dos tintos. No pregunta si quiere. Él recibe el suyo con las dos manos.)"],
+		["DRA. PILAR", "—Usted no habla y el perro no habla. Es la consulta más tranquila del día. Debería cobrarles yo por el descanso."]],
+	[["DRA. PILAR", "—Ya le tengo la silla. La de la esquina. La otra tiene una pata coja y un gato debajo. El gato es agresivo. La pata, también."],
+		["", "(Lukas come. Él se sienta. Ella llena fórmulas. Nadie dice nada veinte minutos. Es la mejor conversación de la semana.)"]],
+]
+const PILAR_AGAIN := [
+	[["DRA. PILAR", "—¿Otra vez? La coca ya la desocupó en la mañana. Ese perro tiene mejor memoria para la comida que yo para los pacientes."],
+		["", "(Lukas revisa la coca de todos modos. Dos veces. Por si acaso.)"]],
+	[["DRA. PILAR", "—Ya comió hoy, mi amor. Lo tengo anotado. Sí: le abrí historia clínica. Dice \"motivo de consulta: hambre\"."]],
+]
+
+
+func _vet_coca() -> void:
+	var f := GameState.flags
+	var n := int(f.get("pilar_n", 0))
+	if f.get("pilar_dia", -1) == GameState.day:
+		await Dialogue.talk(PILAR_AGAIN[GameState.day % PILAR_AGAIN.size()])
+		return
+	var i := await Dialogue.talk([["", "(La veterinaria huele a alcohol y a perro mojado. En la entrada, una coca de concentrado. Lukas ya la vio. Lukas ya no ve nada más.)" if n > 0
+		else "(La veterinaria huele a alcohol y a perro mojado. Lukas entra adelante, como si tuviera cita.)"]],
+		["Dejar que Lukas coma", "Ahora no"])
+	if i != 0:
+		return
+	await Dialogue.talk(PILAR_VISITS[mini(n, PILAR_VISITS.size() - 1)])
+	if n == 3 and GameState.has_space_for("concentrado"):
+		GameState.add_item("concentrado")
+	f["pilar_n"] = n + 1
+	f["pilar_dia"] = GameState.day
+	f["lukas_fed_day"] = GameState.day
+	f.erase("lukas_hungry")
+	TimeManager.skip(0.4)
+	GameState.change_mood(4.0)
+	GameState.company(12.0 + minf(n, 5) * 2.0)
+
+
+# ---------------------------------------------------------------- La tienda de videojuegos: el amigo
+## El de la tienda de videojuegos (la pone scripts/systems/Vecindario.gd). El único amigo que tiene: el
+## único que le hace charla sin pedirle nada. No tiene nombre: ninguno de los dos se lo ha preguntado
+## al otro, y así está bien. Flags: amigo_n (charlas), amigo_dia, amigo_jugo (día).
+const AMIGO := "EL DE LA TIENDA"
+const AMIGO_CHARLAS := [
+	[[AMIGO, "—¡Quiubo! Pase, pase. Aquí no se compra nada, tranquilo. Nadie compra. Esto es más museo que tienda."],
+		[AMIGO, "—¿Usted no habla? Perfecto. Yo llevo once años hablándole a un Nintendo. Usted por lo menos parpadea."]],
+	[[AMIGO, "—Le explico el negocio: vendo juegos de hace veinte años a gente que no existe. Va bien. Cero reclamos."],
+		[AMIGO, "—El perro puede entrar. Es el único cliente que huele la mercancía antes de no comprarla."]],
+	[[AMIGO, "—En los juegos uno se muere y arranca del último punto de guardado. Yo he buscado ese punto en la vida real. Lo más parecido es la siesta."]],
+	[[AMIGO, "—¿Sabe qué tiene de bueno un jefe final? Que uno sabe cuál es. En la vida a uno lo acaba un recibo de la luz."],
+		[AMIGO, "—Y no tiene barra de vida, el recibo. Uno le pega y le pega."]],
+	[[AMIGO, "—Mi mamá dice que consiga amigos. Yo le digo: tengo uno. Me pregunta cómo se llama. Ahí se me cae todo."],
+		[AMIGO, "—¿Cómo se llama usted? ... No, no me diga. Así queda parejo: usted tampoco me pregunte."],
+		["", "(Se dan la mano. Es la primera vez. Ninguno de los dos sabe cuándo soltar. Suelta Lukas, ladrando.)"]],
+	[[AMIGO, "—Hoy vino un niño y preguntó si tenía el FIFA. Le vendí un trompo. Le va a durar más."]],
+	[[AMIGO, "—Si un día no abro, es que pasé de nivel. O que me cortaron la luz. Lo segundo es más probable."],
+		[AMIGO, "—Igual venga. Usted viene y yo le hablo por la reja. Ya tengo práctica hablando sin que me contesten."]],
+	[[AMIGO, "—A mí me gustan los juegos donde el muñeco no habla. Uno le pone lo que quiera en la cabeza. Con usted hago lo mismo."],
+		[AMIGO, "—En mi cabeza usted dice cosas muy inteligentes. No me las dañe."]],
+]
+const AMIGO_JUEGOS := [
+	"(La consola de exhibición tiene un solo control bueno. El otro lo tiene el de la tienda. Juegan a los puños en un callejón con luces de neón. El muñeco de él se parece a alguien.)",
+	"(Carreras. El de la tienda maneja con todo el cuerpo: en las curvas se inclina él, la silla y medio mostrador. Pierde igual.)",
+	"(Un juego de disparos, de los de pasillos. El de la tienda grita en cada esquina. Él no grita. Lukas ladra por los dos.)",
+	"(Lucha libre. Cuatro botones. El de la tienda dice que hay un truco. Lleva once años buscándolo. Hoy tampoco.)",
+]
+
+
+func _amigo() -> void:
+	var f := GameState.flags
+	if not GameState.lukas_alive() and not f.get("amigo_duelo", false):
+		f["amigo_duelo"] = true
+		await Dialogue.talk([
+			[AMIGO, "—¿Y el socio?"],
+			["", "(Él no señala a ningún lado.)"],
+			["", "(El de la tienda apaga las maquinitas. Todas. Una por una. Es la primera vez que la tienda queda en silencio.)"],
+			[AMIGO, "—Siéntese. Hoy tampoco hablo yo."],
+			["", "(No habla. Le cuesta. Se le nota en la pierna, que no se queda quieta. Pero no habla.)"]])
+		TimeManager.skip(1.0)
+		GameState.company(40.0)
+		return
+	var n := int(f.get("amigo_n", 0))
+	var i := await Dialogue.talk([["", "(La tienda de videojuegos. Adentro suenan seis juegos al tiempo. Ninguno tiene jugador.)" if n == 0
+		else "(El de la tienda lo ve llegar y le baja el volumen a todo. No hace eso con nadie más. No viene nadie más.)"]],
+		["Charlar", "Jugar en la consola de exhibición", "Seguir"])
+	if i == 2:
+		return
+	if i == 0:
+		await Dialogue.talk(AMIGO_CHARLAS[n % AMIGO_CHARLAS.size()])
+		f["amigo_n"] = n + 1
+		TimeManager.skip(0.5)
+		if f.get("amigo_dia", -1) != GameState.day:
+			f["amigo_dia"] = GameState.day
+			GameState.change_mood(5.0)
+			GameState.company(22.0)
+		return
+	var seen: Array = f.get("dreams_seen", [])
+	var lines := [["", AMIGO_JUEGOS[int(f.get("amigo_partidas", 0)) % AMIGO_JUEGOS.size()]]]
+	if not seen.is_empty():
+		lines.append(["", "(Él ya se sabe ese nivel. No dice de dónde.)"])
+	lines.append([AMIGO, ["—¡Otra! La última. La última de verdad. Como las otras cuatro.", "—Usted juega callado. Así no vale: uno no sabe si está sufriendo.",
+		"—Empate. Yo digo que fue empate. La consola no opina."].pick_random()])
+	await Dialogue.talk(lines)
+	f["amigo_partidas"] = int(f.get("amigo_partidas", 0)) + 1
+	TimeManager.skip(1.0)
+	if f.get("amigo_jugo", -1) != GameState.day:
+		f["amigo_jugo"] = GameState.day
+		GameState.change_mood(7.0)
+		GameState.company(25.0)
 
 
 # ---------------------------------------------------------------- Misterios: las pistas y el tablero
@@ -3122,7 +3252,7 @@ func _verdad() -> void:
 	MusicDirector.release()
 
 
-## El cumpleaños (día 45). Con visitas: en el Parque, en persona. Sin visitas: de lejos, en la reja.
+## El cumpleaños (día 50). Con visitas: en el Parque, en persona. Sin visitas: de lejos, en la reja.
 func _cumpleanos(in_person: bool) -> void:
 	var f := GameState.flags
 	f["cumple_hecho"] = true

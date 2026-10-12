@@ -1875,3 +1875,36 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **Una sola barra, la VENTAJA:** tropezar, caerse o que lo alumbren la baja. En cero lo agarran y el narrador se corrige ("Así no fue. Si lo hubieran agarrado, no habría Día 1"): se repite desde el último tanque. No hay game over.
 - **El final:** el río, negro, y despierta debajo del puente. Día 1, 06:17. Aprende *Aguante*, como antes.
 - **El beat 'em up de Lilato** ya no es el prólogo. Sigue completo en el menú SUEÑOS ("CALLEJON: LILATO"); falta decidir en qué noche entra como sueño de la historia.
+
+
+## El calendario de 50 días y el beat 'em up como tres sueños (2026-10-11)
+
+**Esta sección manda sobre las fechas que aparecen más arriba en el documento** (donde diga día 25, 38, 44 o 45).
+
+| Hecho | Antes | Ahora |
+|---|---|---|
+| Lukas se enferma | día 25 | día 30 |
+| Lukas muere, a más tardar | día 38 | día 43 |
+| El último sueño, sí o sí | noche del 44 | noche del 49 |
+| El cumpleaños de Victoria | día 45 | día 50 |
+
+- La primera mañana dice "en siete semanas" (antes "en mes y medio").
+- **El beat 'em up** dejó de ser el prólogo y son tres sueños de la historia, cada uno una sola escena:
+  - `callejon1` (el callejón): la segunda noche;
+  - `camion` (el camión de harina): tres días después;
+  - `lilato1` (Lilato y la serpiente, en el puente): tres días después.
+- Al salir de cada escena, `SceneRouter.go` desvía lo que seguía en la cadena vieja (camión, Lilato, CONTINUE?) y vuelve a la noche (`flags.sueno_suelto`). Desde el menú SUEÑOS la cadena completa sigue igual.
+- En la libreta salen como la serie "El callejón (Lorena)".
+
+## El narrador, el prólogo con láminas y lo nuevo del barrio
+
+- **El narrador:** lo que no dice nadie (quién = "") lo cuenta EL NARRADOR, con su placa. Alguien está contando la historia de él: por eso él no habla. La narración se sigue escribiendo como acotación, entre paréntesis; `Dialogue` se los quita al mostrarla.
+- **La música se apaga:** MUSICA: SI / NO en el título y en la pausa (`MusicDirector.set_enabled`, se guarda en `user://ajustes.cfg`). Calla solo el bus de música.
+- **El prólogo, antes de correr:** cada texto trae su lámina (`scripts/prologue/Laminas.gd`), que se dibuja sola, raya por raya, sobre el negro. Suena "panico" (un corazón, un reloj, una sirena lejos) y se acelera con cada texto. Al correr entra "huida". Los dos temas salen de `python tools/audio/compose.py prologo`.
+- **El prólogo, corriendo:** además de saltar y agacharse hay balas, de atrás y de frente: avisan en el borde y pasan; las altas, agacharse; las bajas, saltar. La primera vez que lo van a agarrar, Lukas se devuelve y los muerde: la ventaja vuelve a la mitad. Una sola vez.
+- **El fútbol (`Penal.gd`):** una tanda de seis, por turnos: unas veces tapa él, otras patea (la mira va y viene; después, la fuerza). Marcador él contra los pelados. Pasa una hora.
+- **La veterinaria:** con Lukas sano, la Dra. Pilar tiene una coca de concentrado: Lukas come ahí una vez al día, y de visita en visita ella le va cogiendo confianza (`_vet_coca`, `flags.pilar_n`). A la cuarta le regala una bolsa.
+- **La tienda de videojuegos** (`scripts/systems/Vecindario.gd`, City, al lado del billar; abre de 10 a 8): el que atiende es el único amigo que tiene. No tiene nombre: ninguno de los dos se lo ha preguntado al otro. Charlar o jugar en la consola de exhibición (`_amigo`).
+- **Los otros perros** (`Vecindario.gd`): cuando Lukas pasa cerca de un perro de la calle, juegan o pelean. Sin comer, casi siempre pelean (65%); comido, casi siempre juegan. Una vez al día por perro.
+- **La moto:** [Q] sostenido, yendo rápido: en una rueda. Aguantar un segundo da un empujón; estrellarse así cuesta más. Con Lorena atrás, cada queja la mueve: unos segundos con la dirección casi al doble de nerviosa.
+- **La primera memoria:** el que patea la pelota es él de niño (el mismo dibujo de Alejandro).
