@@ -2601,3 +2601,12 @@ metadata/facing = "down"
 [node name="FromBillar" type="Marker2D" parent="."]
 position = Vector2(776, 206)
 metadata/facing = "down"
+
+[node name="Dormir_lote" type="Area2D" parent="World"]
+position = Vector2(962, 604)
+script = ExtResource("50_m476y")
+spot_id = "lote"
+
+[node name="Wake_lote" type="Marker2D" parent="."]
+position = Vector2(962, 620)
+metadata/facing = "down"

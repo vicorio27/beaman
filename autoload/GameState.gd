@@ -36,9 +36,12 @@ const DIRTY := 40.0
 ## Meta de la alcancía (el regalo para la hija).
 const GIFT_GOAL := 150000
 ## Chance de que lo roben según dónde durmió (la pensión es segura).
-const THEFT := {"banco": 0.45, "kiosco": 0.3, "rio": 0.15, "callejon": 0.3, "parque": 0.2, "pension": 0.0}
+const THEFT := {"banco": 0.45, "kiosco": 0.3, "rio": 0.15, "callejon": 0.6, "parque": 0.2, "lote": 0.1, "pension": 0.0}
 ## Lugares donde se puede armar un cambuche.
-const CAMBUCHE_SPOTS := ["rio", "callejon", "parque", "kiosco"]
+## Donde arma el cambuche: donde lo armaría alguien que vive en la calle. Lugares solos, o un parque.
+## El callejón de las bodegas no: queda al lado del billar, y los que salen de ahí vuelven nada a
+## cualquiera (se puede dormir, pero es donde más roban).
+const CAMBUCHE_SPOTS := ["rio", "lote", "parque", "kiosco"]
 ## Lo caliente levanta el ánimo, no solo la panza.
 ## Niveles del cambuche: 1 Cartones, 2 Cambuche (toldo + cobija), 3 Rancho (paredes de estibas),
 ## 4 Ranchito (techo de zinc y radio). Cada nivel: más lugar en la caja, menos robos, más ánimo.
@@ -792,6 +795,8 @@ func load_game() -> Dictionary:
 	flags = data["flags"]
 	stats = data["stats"]
 	cambuche = data["cambuche"]
+	if cambuche.get("spot", "") == "callejon":  # (partidas viejas: en el callejón ya no se arma)
+		cambuche["spot"] = "lote"
 	skills = data["skills"]
 	bonds = data["bonds"]
 	if not quests.has("lo_bueno"):  # partidas de antes de "Lo bueno del barrio"

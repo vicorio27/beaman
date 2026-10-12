@@ -32,7 +32,8 @@ const BOX := Rect2(34, 130, 252, 48)
 const PAGE_CHARS := 96  # 28 letras por renglón, 4 renglones
 const PAGE_CHARS_WIDE := 96
 ## Quién habla -> [retrato (assets/portraits/<id>.png), lo que dice la placa abajo del nombre].
-## Sin entrada: placa sin retrato. Los retratos salen de tools/art/draw_retratos.py.
+## Sin entrada: placa sin retrato (solo las voces sin cuerpo: una radio, un megáfono, un letrero).
+## Los retratos salen de tools/art/draw_retratos.py.
 const SPEAKERS := {
 	"ÉL": ["el", "por dentro"], "YO": ["el", ""], "EL PELADO": ["el", ""],
 	"DON GERMAN": ["german", "la panadería"], "MARTA": ["marta", "el café"], "SAMUEL": ["samuel", "bajo el puente"],
@@ -49,6 +50,27 @@ const SPEAKERS := {
 	"EL DE LA CHAQUETA": ["chaqueta", ""], "FUNCIONARIA": ["funcionaria", ""], "FOTOGRAFO": ["fotografo", ""],
 	"DON TITO": ["tito", ""], "LA MONA": ["mona", ""], "MAESTRO RAMIRO": ["maestro", ""],
 	"LORENA": ["lilato", "su ex"], "ÉL, A LUKAS": ["el", "en voz alta, a Lukas"], "LUKAS": ["lukas", "beagle"],
+	# Todo el que habla tiene retrato (tools/art/draw_retratos.py): los de paso también.
+	"EL DE LA TIENDA": ["amigo", "videojuegos"], "EL GUARDIA": ["guardia", "El Guayabo"], "AGENTE": ["agente", ""],
+	"POLICIA": ["agente", ""], "POLICIA NUEVO": ["agente_nuevo", ""], "EL SARGENTO": ["sargento", ""],
+	"SEÑOR": ["senor", ""], "UN VECINO": ["senor", "el del 301"], "CLIENTE": ["senor", ""], "TIPO": ["senor", ""],
+	"SEÑOR DE LA TIENDA": ["senor2", ""], "UNO": ["senor2", ""], "EL OTRO": ["senor", ""],
+	"DESCONOCIDO": ["desconocido", ""], "SEÑORA": ["senora", ""], "SEÑORA 1": ["senora", ""],
+	"SEÑORA 2": ["senora2", ""], "SEÑORA DE LA FILA": ["senora2", ""], "SEÑORA DEL TINTO": ["senora", ""],
+	"BEATA": ["senora", ""], "DUEÑA": ["senora2", ""], "SUPERVISORA": ["senora2", ""], "MAMÁ": ["mama", ""],
+	"PELADO": ["pelado", ""], "EL PELAO": ["pelado", ""], "BRAYAN": ["pelado", "el lote"], "NIÑO": ["pelado", ""],
+	"LA FLACA": ["flaca", "el lote"], "EL CHINO": ["chino", "el lote"], "NIÑA": ["nina", ""],
+	"ALEJANDRO": ["alejandro", ""], "FUNCIONARIO": ["funcionario", ""], "ENCUESTA": ["funcionario", ""],
+	"COBRADOR": ["cobrador", ""], "BORRACHO": ["borracho", ""], "BORRACHO 1": ["borracho", ""],
+	"BORRACHO 2": ["borracho", ""], "JIBARO": ["jibaro", ""], "VERONICA": ["veronica", "su ex"],
+	"VERÓNICA": ["veronica", "su ex"], "MITCHELLE": ["mitchelle", ""], "DAYHANA": ["dayhana", ""],
+	"MUCHACHA": ["dayhana", ""], "LA DEL TUBO": ["tubo", "El Guayabo"], "MARTÍN": ["martin", ""],
+	"CONDUCTOR": ["conductor", "el bus"], "TIPO DEL BILLAR": ["billar", "El Guayabo"],
+	"EL DE LA BARRA": ["barra", "El Guayabo"], "TURISTA": ["turista", ""], "GRINGO": ["turista", ""],
+	"EL FLACO": ["flaco", ""], "EL GRANDE": ["grande", ""], "DON JAIRO": ["jairo", ""],
+	"EL DE LOS PERROS": ["perros", "perros calientes"], "CELADOR DEL BAÑO": ["celador", "el baño"],
+	"CELADOR DEL COLEGIO": ["celador", "el colegio"], "PARAMÉDICO": ["paramedico", ""], "LADRÓN": ["ladron", ""],
+	"WILMER": ["martin", ""], "AMIGO DE ZAIDA": ["desconocido", ""], "RAPIDITO": ["conductor", ""],
 }
 ## Los de la ciudad: a esos se les va apagando la cara (todos iguales, GameState.sameness), como a
 ## su muñeco en el mapa. Los de los sueños, no. Retrato -> id de la persona.

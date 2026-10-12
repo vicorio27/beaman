@@ -101,7 +101,8 @@ const SETTLE := {
 	"banco": "Banco de plaza. Espalda contra la pared. Lukas abajo, de guardia.",
 	"kiosco": "El kiosco gotea en una esquina. Se acomoda en la otra. Lukas se le pega a la espalda.",
 	"rio": "El cambuche. Huele a humedad. Lukas se le acuesta en los pies.",
-	"callejon": "El callejón. Seco, oscuro, con ruidos. Lukas duerme con una oreja parada.",
+	"callejon": "El callejón. Seco, oscuro. Del billar salen de a tres. Lukas duerme con una oreja parada.",
+	"lote": "El lote. Nadie pasa. Se oye el río y, a ratos, el carro quemado, que cruje solo. Lukas se le pega.",
 	"parque": "El parque. Los columpios crujen solos con el viento.",
 	"pension": "Una cama. Con colchón. Con sábanas. Lukas debajo, sin respirar.",
 }
@@ -110,12 +111,13 @@ const SETTLE_SOLO := {
 	"banco": "Banco de plaza. Espalda contra la pared. Nadie abajo.",
 	"kiosco": "El kiosco gotea en una esquina. Se acomoda en la otra. La espalda, fría.",
 	"rio": "El cambuche. Huele a humedad. Los pies, sin peso encima.",
-	"callejon": "El callejón. Ruidos. Nadie con la oreja parada.",
+	"callejon": "El callejón. Del billar salen de a tres. Nadie con la oreja parada.",
+	"lote": "El lote. Nadie pasa. Se oye el río. Eso es todo lo que se oye.",
 	"parque": "El parque. Desde aquí se ve el árbol de flores amarillas.",
 	"pension": "Una cama. Debajo, nadie. Duerme en la mitad.",
 }
 const SPOT_NAMES := {"banco": "el banco de la plaza", "kiosco": "el kiosco viejo", "rio": "el cambuche del puente",
-	"callejon": "el callejón", "parque": "el parque", "pension": "la pensión"}
+	"callejon": "el callejón", "parque": "el parque", "pension": "la pensión", "lote": "el lote del fondo"}
 
 var _bg: ColorRect
 var _text: Label
@@ -197,7 +199,8 @@ func _process(delta: float) -> void:
 
 ## La viñeta de cómo quedó dormido, según dónde (y si está Lukas).
 func _sleep_pic(spot: String) -> String:
-	return "dormir_%s%s" % [spot if SETTLE.has(spot) else "banco", "" if GameState.lukas_alive() else "_solo"]
+	var pic: String = {"lote": "parque"}.get(spot, spot)  # (el lote todavía no tiene viñeta propia)
+	return "dormir_%s%s" % [pic if SETTLE.has(spot) else "banco", "" if GameState.lukas_alive() else "_solo"]
 
 
 func _vignette_off() -> void:

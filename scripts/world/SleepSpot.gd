@@ -1,8 +1,8 @@
 class_name SleepSpot
 extends Area2D
 ## Un lugar donde pasar la noche (se duerme cuando la misión es buscar dónde dormir).
-##   "banco" (plaza): solo para dormir.
-##   "rio", "callejon", "parque", "kiosco": se puede armar el cambuche (uno solo a la vez; se puede
+##   "banco" (plaza) y "callejon" (entre las bodegas, al lado del billar): solo para dormir.
+##   "rio", "lote", "parque", "kiosco": se puede armar el cambuche (uno solo a la vez; se puede
 ##     mudar). El kiosco viejo es el único con techo de verdad: ahí la lluvia no llega.
 ##     "rio" es el principal: debajo del puente, donde se despierta el primer día.
 ##     El cambuche tiene caja para guardar cosas, la alcancía, mejoras (toldo, cocinita, candado,
@@ -12,11 +12,12 @@ const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const NIGHT_SCENE := "res://scenes/world/Night.tscn"
 const CARTONS_NEEDED := 3
 const NAMES := {"banco": "el banco de la plaza", "kiosco": "el techito del kiosco viejo",
-	"rio": "el cambuche del puente", "callejon": "el cambuche del callejón", "parque": "el cambuche del parque"}
+	"rio": "el cambuche del puente", "callejon": "el callejón de las bodegas", "parque": "el cambuche del parque",
+	"lote": "el cambuche del lote"}
 ## Cómo es cada lugar (se dice al armar).
 const ABOUT := {
 	"rio": "(Debajo del puente, donde se despertó el primer día. Tranquilo y húmedo. Lo más parecido a una casa.)",
-	"callejon": "(Entre las bodegas: seco, pero de noche pasa de todo.)",
+	"lote": "(Un lote al fondo del barrio, junto al río. Un carro quemado, un palo seco. No pasa nadie. Por eso sirve.)",
 	"parque": "(En el parque: bonito. La policía pasa seguido. Y cuando pasa, lo busca a él.)",
 	"kiosco": "(El kiosco viejo: cuatro paredes de tabla y un techo. Gotea en una esquina; se duerme en la otra. Es lo más parecido a un cuarto que hay sin pagar.)",
 }
