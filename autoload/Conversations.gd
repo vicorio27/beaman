@@ -127,6 +127,8 @@ func run(id: String, npc: Node) -> void:
 			await _veterinaria()
 		"amigo":
 			await _amigo()
+		"josemario":
+			await _ultimo_trabajo()
 		"frutas":
 			await _frutas()
 		"billar_guardia":
@@ -2782,6 +2784,82 @@ func _vet_coca() -> void:
 	TimeManager.skip(0.4)
 	GameState.change_mood(4.0)
 	GameState.company(12.0 + minf(n, 5) * 2.0)
+
+
+# ---------------------------------------------------------------- El último trabajo: José Mario Camilo
+## Su jefe de antes (el que dejó el correo abierto). Sale en el centro después de que muere Lukas
+## (scripts/systems/Vecindario.gd) y le ofrece un trabajo de un día: sacar cuatro cajas del archivo, las
+## de la gente que ya no trabaja ahí. La cuarta es la de él. Es el último trabajo que hace: el último
+## sueño espera a que lo haga (NightSequence._dream_when), menos la noche del 49.
+## Flags: ultimo_trabajo (el día), josemario_visto.
+const PAGO_ULTIMO := 40000
+const CAJAS_ULTIMO := [
+	["La caja de Walter", 38.0, 140.0, 1,
+		"(Pesa poco. Adentro suena un lapicero. Y un post-it, pegado por dentro: \"SOY EL SAPO\". Alguien lo guardó de recuerdo.)"],
+	["La caja de Nicolás", 32.0, 170.0, 1,
+		"(Una grapadora, un megáfono de cumpleaños y un trofeo: \"Al empleado que más se hace oír\". El trofeo no tiene base.)"],
+	["La caja de Eddy", 26.0, 200.0, 2,
+		"(Catorce libretas. Todas llenas, con fecha y hora. En la última página de la última: \"Hoy me anotaron a mí\".)"],
+	["La última caja", 22.0, 225.0, 2,
+		"(La cuarta no tiene nombre. Tiene una fecha de hace seis años. Adentro: un pocillo, una planta de plástico y un carné.)"],
+]
+
+
+func _ultimo_trabajo() -> void:
+	var f := GameState.flags
+	var first: bool = not f.get("josemario_visto", false)
+	f["josemario_visto"] = true
+	var lines := []
+	if first:
+		lines = [
+			["", "(Un edificio de vidrio. En la puerta, un hombre de saco gris mira el reloj como si el reloj le debiera plata.)"],
+			["JOSE MARIO", "—Usted. ... No me diga. Sí: usted. Tiene la misma cara. Le creció alrededor."],
+			["JOSE MARIO", "—José Mario Camilo. Ya sé que sabe. Lo digo completo porque ahora va así en la tarjeta. Me ascendieron. Alguien tenía que quedar."],
+			["JOSE MARIO", "—Necesito a alguien por un día. Alguien que no pregunte. Usted nunca preguntó. Era su mejor cualidad. Por eso fue tan fácil."],
+			["JOSE MARIO", "—Cuatro cajas del archivo, a la calle. Cosas de gente que ya no trabaja aquí. Cuarenta mil, en efectivo: usted no existe en la nómina. Bueno: otra vez."],
+		]
+	else:
+		lines = [["JOSE MARIO", "—Volvió. Las cajas siguen ahí. Las cosas de los que se van siempre siguen ahí: es lo único que dejan."],
+			["JOSE MARIO", "—Cuarenta mil. Si se le cae una, se la descuento. No es personal. Nunca fue personal."]]
+	var i := await Dialogue.talk(lines, ["Recibir el trabajo", "Seguir"])
+	if i != 0:
+		await Dialogue.talk([["", "(Sigue de largo. José Mario anota algo. Siempre anota.)"]])
+		return
+	await Dialogue.talk([["", "(El ascensor de carga. Sótano dos. El archivo huele a papel que nadie va a leer.)"]])
+	var caidas := 0
+	for k in CAJAS_ULTIMO.size():
+		var c: Array = CAJAS_ULTIMO[k]
+		var hits: int = await Ritmo.play(self, c[0], c[3],
+			{"zone": c[1], "speed": c[2], "speedup": 12.0, "hit": "Arriba.", "miss": "Se le va de las manos."})
+		var ok: bool = hits >= int(c[3])
+		if not ok:
+			caidas += 1
+		var seen := [["", c[4]]]
+		if not ok:
+			seen.append(["", "(Se le cae. Lo de adentro queda regado. Lo recoge todo. José Mario, arriba, ya lo sabe: el edificio le cuenta.)"])
+		if k == CAJAS_ULTIMO.size() - 1:
+			seen.append(["", "(El carné tiene foto. El de la foto sonríe con toda la cara. Es la misma cara, sin lo de alrededor.)"])
+		await Dialogue.talk(seen)
+		GameState.set_hunger(GameState.hunger - 3.0)
+	TimeManager.skip(3.0)
+	var pago := maxi(PAGO_ULTIMO - caidas * 5000, 20000)
+	var cierre := [
+		["JOSE MARIO", "—Esa es la suya. Nadie vino por ella. La iba a botar, pero botar cosas deja registro."],
+		["JOSE MARIO", ("—Cuarenta mil. Cuéntelos." if caidas == 0 else "—Eran cuarenta. Menos %d: se le cayeron. Quedan %d. Cuéntelos." % [caidas * 5000, pago])],
+		["", "(No los cuenta.)"],
+		["JOSE MARIO", "—Tampoco contaba las horas extras. Así daba gusto trabajar con usted."],
+		["", "(Guarda la plata. El carné, no: lo deja encima de la caja, con la foto para arriba. La caja se queda en el andén.)"],
+		["JOSE MARIO", "—Si le piden una referencia, no dé mi nombre. ... Deme la mano, por lo menos."],
+		["", "(Él le mira la mano. Tiene un reloj que da la hora de tres países. Sigue de largo.)"],
+		["", "(Es el último trabajo que hace. No lo sabe. José Mario tampoco: es de las pocas cosas que no sabe.)"],
+	]
+	await Dialogue.talk(cierre)
+	GameState.add_money(pago)
+	GameState.change_mood(4.0)
+	f["ultimo_trabajo"] = GameState.day
+	var jm := get_tree().current_scene.find_child("JoseMario", true, false)
+	if jm:
+		jm.queue_free()
 
 
 # ---------------------------------------------------------------- El palo de guayaba: comida gratis

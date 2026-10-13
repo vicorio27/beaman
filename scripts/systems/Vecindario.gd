@@ -3,6 +3,8 @@ extends Node
 ##   - La tienda de VIDEOJUEGOS (City, al lado del billar) y el que la atiende: el único amigo que
 ##     tiene. No tiene nombre: ninguno de los dos se lo ha preguntado al otro. Abre de 10 a 8.
 ##     Lo que dice está en Conversations._amigo (npc_id "amigo").
+##   - José Mario Camilo, en el centro, en la puerta de La Empresa: su jefe de antes. Sale después de
+##     que muere Lukas (de 7 a 6) y le ofrece el último trabajo que él hace (Conversations._ultimo_trabajo).
 ##   - Los otros perros. Cuando Lukas pasa cerca de un perro de la calle, se encuentran: si Lukas no
 ##     ha comido hoy, casi siempre pelean; si ya comió, casi siempre juegan. A veces es al revés,
 ##     porque sí. Una vez al día por perro.
@@ -14,6 +16,7 @@ const SHOP_AT := Vector2(440, 200)   # el pie de la fachada
 const SHOP_OPEN := 10.0
 const SHOP_CLOSE := 20.0
 const MEET_DIST := 30.0
+const JOSE_MARIO_AT := Vector2(392, 208)  # en la puerta del edificio de vidrio
 ## Perros que no están en el mapa y salen por aquí: [nombre, textura, posición].
 const STRAYS := {
 	"Parque": [["dog_parque", "res://assets/barrio/dog_b.png", Vector2(388, 356)]],
@@ -56,6 +59,18 @@ func _ready() -> void:
 func _setup() -> void:
 	if _scene.name == "City":
 		_add_shop()
+	var f := GameState.flags
+	var h := fmod(TimeManager.minutes / 60.0, 24.0)
+	if _scene.name == "Centro" and not GameState.lukas_alive() and GameState.day > int(f.get("lukas_muerto", GameState.day)) \
+			and not f.has("ultimo_trabajo") and h >= 7.0 and h < 18.0:
+		var jm := CharacterBody2D.new()
+		jm.set_script(load("res://scripts/npc/NPC.gd"))
+		jm.name = "JoseMario"
+		jm.npc_id = "josemario"
+		jm.sheet_row = 6
+		jm.face = "down"
+		jm.position = JOSE_MARIO_AT
+		_world.add_child(jm)
 	for spec in STRAYS.get(_scene.name, []):
 		var d := Sprite2D.new()
 		d.name = spec[0]

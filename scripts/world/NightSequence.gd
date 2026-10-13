@@ -539,6 +539,8 @@ func _dream_when(id: String) -> bool:
 				return true
 			if int(f.get("nino_bond", 0)) >= 1 and not f.get("nino_fin", false):
 				return false  # primero se despide Alejandro (scripts/systems/Nino.gd)
+			if not GameState.lukas_alive() and not f.has("ultimo_trabajo"):
+				return false  # y primero el último trabajo: José Mario Camilo, en el centro
 			# Unos días después de Lukas (y con todo lo demás soñado), también.
 			if not GameState.lukas_alive() and GameState.day - int(f["lukas_muerto"]) >= 4:
 				for d in DREAMS:
