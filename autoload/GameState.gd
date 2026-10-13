@@ -563,12 +563,19 @@ func box_take(index: int) -> void:
 
 # ---------------------------------------------------------------- Un día nuevo
 
+## ¿Ahí no se moja? La pensión, el kiosco viejo, o el cambuche con toldo.
+func roofed(spot: String) -> bool:
+	return spot == "pension" or spot == "kiosco" or (has_cambuche(spot) and cambuche["toldo"])
+
+
 ## Pasa la noche en `spot` y arranca el día siguiente. Devuelve las líneas de la mañana.
 func new_day(spot: String) -> Array:
 	var lines := []
 	var in_cambuche := has_cambuche(spot)
-	var rained := randf() < 0.3
-	var roof: bool = spot == "pension" or spot == "kiosco" or (in_cambuche and cambuche["toldo"])
+	var rained: bool = randf() < 0.3
+	if flags.get("lluvia_noche_dia", -1) == day:  # (se decidió al acostarse, para verla llover: NightSequence)
+		rained = flags["lluvia_noche"]
+	var roof: bool = roofed(spot)
 	# Hambre e higiene de la noche.
 	var night_hunger := 8.0 if spot == "pension" else (10.0 if in_cambuche and cambuche["cobija"] else 15.0)
 	if rained and not roof:

@@ -7,11 +7,13 @@ extends Control
 ## Del Día 2 en adelante: acomodarse, resumen y la mañana siguiente (GameState.new_day: robos,
 ## lluvia, la policía). Después despierta en la ciudad, donde durmió ("Wake_<lugar>").
 ## Botón: avanzar.
-## Ningún texto va sobre negro solo: todos llevan su viñeta arriba. Las de despertar son de
-## tools/art/draw_vinetas.py (al amanecer debajo del puente, sin Lukas, golpeado). Las demás, de
-## tools/art/draw_vinetas2.py, tienen cuatro cuadros que se pasan despacio (respiran, gotea, titila):
-## cómo quedó dormido en cada lugar (con y sin Lukas), el sueño que le sale de la cabeza, el que se
-## mete al cambuche, la noche de Lukas, el entierro, el collar, el último amanecer.
+## Ningún texto va sobre negro solo: todos llevan su viñeta arriba, animada (cuatro cuadros que se pasan
+## despacio: respiran, llueve, gotea, titila). Salen de tools/art/draw_vinetas.py:
+##   - una hoja por lugar donde duerme, con una fila por momento: cómo quedó dormido, el sueño que le
+##     sale de la cabeza, cómo despierta (al alba, o de noche por un sueño), golpeado (lo robaron, o
+##     perdió), y el último amanecer. Cada una, con y sin lluvia, con y sin Lukas;
+##   - una hoja de momentos: el que se mete al cambuche, la noche de Lukas, el entierro, el collar.
+## Si llueve esa noche se decide al acostarse (_rain_tonight), para que se vea llover en la viñeta.
 ## Cuando el texto va en el centro (el resumen, la pelea), la viñeta queda detrás, apagada.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
@@ -171,15 +173,28 @@ func _wait() -> void:
 		await get_tree().process_frame
 
 
-## La viñeta de arriba: entra despacio y se acerca un poquito mientras se lee (como una foto que se mira).
+## Las viñetas: una hoja por lugar (assets/ui/vinetas_<lugar>.png) y una de momentos. Cada fila es una
+## viñeta de cuatro cuadros de 240x100 (tools/art/draw_vinetas.py lleva la misma cuenta de filas).
+const PIC_KINDS := ["dormir_noche", "sueno_noche", "despierta_alba", "despierta_noche", "golpeado_alba", "golpeado_noche"]
+const PIC_FINAL := 24
+const PIC_SPOTS := ["banco", "kiosco", "rio", "callejon", "parque", "pension", "lote"]
+const M_INTRUSO := 0  # (+1: sin Lukas)
+const M_LUKAS_PECHO := 2
+const M_LUKAS_QUIETO := 3
+const M_ENTIERRO := 4
+const M_COLLAR := 5
+
+
+## Muestra la fila `row` de la hoja `sheet`: entra despacio y se acerca un poquito mientras se lee.
 ## dim < 1: queda de fondo, apagada (el texto va encima, en el centro; no lo mueve).
-func _vignette(id: String, dim := 1.0) -> void:
+func _show_pic(sheet: String, row: int, dim := 1.0) -> void:
+	var tex: Texture2D = load("res://assets/ui/vinetas_%s.png" % sheet)
 	_pic_frames.clear()
-	if ResourceLoader.exists("res://assets/ui/vineta_%s_0.png" % id):
-		for k in 4:
-			_pic_frames.append(load("res://assets/ui/vineta_%s_%d.png" % [id, k]))
-	else:
-		_pic_frames.append(load("res://assets/ui/vineta_%s.png" % id))
+	for k in 4:
+		var at := AtlasTexture.new()
+		at.atlas = tex
+		at.region = Rect2(k * 240, row * 100, 240, 100)
+		_pic_frames.append(at)
 	_pic.texture = _pic_frames[0]
 	_pic_t = 0.0
 	_pic.scale = Vector2.ONE
@@ -197,10 +212,24 @@ func _process(delta: float) -> void:
 		_pic.texture = _pic_frames[int(_pic_t / 0.42) % _pic_frames.size()]
 
 
-## La viñeta de cómo quedó dormido, según dónde (y si está Lukas).
-func _sleep_pic(spot: String) -> String:
-	var pic: String = {"lote": "parque"}.get(spot, spot)  # (el lote todavía no tiene viñeta propia)
-	return "dormir_%s%s" % [pic if SETTLE.has(spot) else "banco", "" if GameState.lukas_alive() else "_solo"]
+## La viñeta del lugar donde durmió. kind: "dormir", "sueno", "despierta" o "golpeado"; time: "noche"
+## o "alba"; con o sin lluvia. Sin Lukas, la misma, sin él.
+func _spot_pic(spot: String, kind: String, time: String, rain: bool, dim := 1.0) -> void:
+	var row: int = PIC_KINDS.find("%s_%s" % [kind, time]) * 4 + (2 if rain else 0) + (0 if GameState.lukas_alive() else 1)
+	_show_pic(spot if spot in PIC_SPOTS else "banco", row, dim)
+
+
+func _moment(row: int, dim := 1.0) -> void:
+	_show_pic("momentos", row, dim)
+
+
+## ¿Llueve esta noche? Se decide al acostarse (para que se vea); GameState.new_day usa lo mismo.
+func _rain_tonight() -> bool:
+	var f := GameState.flags
+	if f.get("lluvia_noche_dia", -1) != GameState.day:
+		f["lluvia_noche_dia"] = GameState.day
+		f["lluvia_noche"] = randf() < 0.3
+	return f["lluvia_noche"]
 
 
 func _vignette_off() -> void:
@@ -236,9 +265,9 @@ func _run() -> void:
 			GameState.flags["lucha_revancha_dia"] = GameState.day + 3
 		var w: Array = WAKE.get(back, ["Se despierta.", "Se despierta.", ""]).duplicate()
 		if not GameState.flags.get("dream_won", true):
-			_vignette("golpeado")  # perdió: se despierta como si le hubieran pegado
+			_spot_pic(spot, "golpeado", "noche", _rain_tonight())  # perdió: se despierta como si le hubieran pegado
 		else:
-			_vignette("despierta" if GameState.lukas_alive() else "despierta_solo")
+			_spot_pic(spot, "despierta", "noche", _rain_tonight())
 		if not GameState.lukas_alive():
 			for k in w.size():
 				if str(w[k]).contains("Lukas"):
@@ -249,7 +278,7 @@ func _run() -> void:
 		# Lo que aprendió soñando (le sirve en los dos mundos).
 		var skill: String = Skills.DREAM_SKILL.get(back, "")
 		if skill != "" and GameState.learn(skill):
-			_vignette("sueno", 0.3)
+			_spot_pic(spot, "sueno", "noche", _rain_tonight(), 0.3)
 			GameState.flags.erase("skill_toast")
 			_text.position = Vector2(16, 50)
 			_text.size = Vector2(_text_w(), 120)
@@ -259,8 +288,11 @@ func _run() -> void:
 	# Del Día 2 en adelante: corto.
 	if GameState.day >= 2:
 		var settle: Dictionary = SETTLE if GameState.lukas_alive() else SETTLE_SOLO
-		_vignette(_sleep_pic(spot))
+		_spot_pic(spot, "dormir", "noche", _rain_tonight())
 		await _say(settle.get(spot, settle["banco"]))
+		if _rain_tonight():
+			await _say("Empieza a llover. Aquí, por una vez, no." if GameState.roofed(spot)
+				else "Empieza a llover. No hay para dónde correrse.")
 		# La noche en que Lukas se muere (no hay sueño esa noche).
 		if GameState.lukas_dies_tonight():
 			await _lukas_dies()
@@ -274,7 +306,7 @@ func _run() -> void:
 			GameState.flags["dreams_seen"] = seen
 			GameState.flags["last_dream_day"] = GameState.day
 			GameState.flags["dream_day_" + dream[0]] = GameState.day
-			_vignette("sueno")
+			_spot_pic(spot, "sueno", "noche", _rain_tonight())
 			await _say(dream[3])
 			if dream[0] == "final":
 				FinalRush.begin()
@@ -288,11 +320,11 @@ func _run() -> void:
 		return
 	# Vuelve de la memoria jugable: sigue con el resumen.
 	if GameState.flags.get("memory_1_seen", false):
-		_vignette(_sleep_pic(spot))
+		_spot_pic(spot, "dormir", "noche", _rain_tonight())
 		await _say("Cierra los ojos.")
 		await _summary(spot)
 		return
-	_vignette(_sleep_pic(spot))
+	_spot_pic(spot, "dormir", "noche", _rain_tonight())
 	await _say(SETTLE.get(spot, SETTLE["banco"]))
 	_vignette_off()
 	# La fotografía.
@@ -328,7 +360,7 @@ func _show_back() -> void:
 
 
 func _summary(spot: String) -> void:
-	_vignette(_sleep_pic(spot), 0.3)
+	_spot_pic(spot, "dormir", "noche", _rain_tonight(), 0.3)
 	var s := GameState.stats
 	_text.position = Vector2(16, 40)
 	_text.size = Vector2(_text_w(), 120)
@@ -347,9 +379,9 @@ func _summary(spot: String) -> void:
 ## La mañana siguiente: lo que pasó de noche, y a la ciudad.
 ## Después del último sueño. No se despierta. (El epílogo: los que lo querían, y los demás.)
 func _he_dies() -> void:
-	_vignette("final")
 	MusicDirector.force("")
 	var spot: String = GameState.flags.get("sleep_spot", "banco")
+	_show_pic(spot if spot in PIC_SPOTS else "banco", PIC_FINAL)
 	for line in [
 		"Esa noche, después del último sueño, no se despierta.",
 		"Samuel lo encuentra al amanecer, en %s. Con el collar de Lukas en la mano, apretado." % SPOT_NAMES.get(spot, "la calle"),
@@ -365,7 +397,7 @@ func _lukas_dies() -> void:
 	var f := GameState.flags
 	f["lukas_muerto"] = GameState.day
 	MusicDirector.force("")
-	var pics := ["lukas_pecho", "", "", "lukas_quieto", "", "entierro", "", "collar"]
+	var pics := [M_LUKAS_PECHO, -1, -1, M_LUKAS_QUIETO, -1, M_ENTIERRO, -1, M_COLLAR]
 	var n := 0
 	for line in [
 		"Esa noche Lukas no se acuesta en los pies. Se acuesta en el pecho. Nunca hacía eso.",
@@ -377,8 +409,8 @@ func _lukas_dies() -> void:
 		"Lo entierran en el Parque de San Judas, debajo del árbol de flores amarillas. Doña Leonor deja un clavel. El Padre no pregunta si los perros tienen alma: dice que sí.",
 		"Él se queda con el collar. Lo amarra a la mochila.",
 	]:
-		if pics[n] != "":
-			_vignette(pics[n])
+		if pics[n] >= 0:
+			_moment(pics[n])
 		n += 1
 		await _say(line)
 	GameState.add_item("collar_lukas")
@@ -391,7 +423,7 @@ func _lukas_dies() -> void:
 ## Alguien se mete al cambuche mientras duerme: tres reacciones rápidas (la flecha que diga).
 ## La alarma da más tiempo; con Lukas de guardia, el primero ya está ganado; la trampa lo castiga.
 func _defend(spot: String) -> void:
-	_vignette("intruso", 0.45)
+	_moment(M_INTRUSO + (0 if GameState.lukas_alive() else 1), 0.45)
 	var c := GameState.cambuche
 	_text.position = Vector2(16, 60)
 	_text.size = Vector2(_text_w(), 80)
@@ -468,9 +500,7 @@ func _morning(spot: String, first: bool) -> void:
 			robbed = true
 		if str(line).contains("Llovió"):
 			rained = true
-	if true:
-		_vignette("golpeado" if robbed else ("despierta_lluvia" if rained and GameState.lukas_alive()
-			else ("despierta" if GameState.lukas_alive() else "despierta_solo")))
+	_spot_pic(spot, "golpeado" if robbed else "despierta", "alba", rained)
 	for line in lines:
 		await _say(line)
 	if first:
