@@ -1,590 +1,668 @@
-"""Retratos para los diálogos, estilo Dredge: gente seria, gastada, con cara de cansancio. El que
-habla aparece de pie en el medio, detrás del cuadro negro (ver Dialogue.gd).
-Cada cara se modela con volumen: un mapa de alturas (cráneo, nariz, pómulos, cuencas hundidas,
-mejillas chupadas, surcos), luz dura de costado por planos (cortes, no degradé), y después facetas:
-cada celda de un Voronoi toma el color promedio (el look low-poly). Colores apagados (sombras frías,
-luces cálidas). Se pinta a 4x, se baja a 1x y se reduce la paleta (pixel art). A mano y nítido:
-ceño, párpados caídos, ojeras, comisuras para abajo, barba de días, arrugas; "destruido": ojos rojos.
-Busto de 96x112, de tres cuartos mirando a la derecha, fondo transparente.
-También iguales.png: el maniquí gris sin cara (todos iguales).
-Salida: assets/portraits/<id>.png
-Uso: python tools/art/draw_retratos.py [id ...]  (desde la carpeta del proyecto)"""
-import math
-import random
+"""Retratos para los diálogos (assets/portraits/<id>.png): el que habla aparece de pie en el medio,
+detrás del cuadro negro (ver Dialogue.gd). Bustos de 96x112, de tres cuartos, mirando a la derecha,
+con fondo transparente.
+
+Pixel art nítido, del mismo motor de las viñetas (tools/art/vinetas_motor.py): formas a 4x bajadas a
+máscaras duras, tres tonos por material (sombra fría, base, luz cálida), tramado en el borde de la
+sombra, y un contorno de tinta. La luz viene de arriba a la derecha; por la izquierda, un borde del
+color de cada uno ("fondo"): se reconocen de lejos.
+
+Cada cara se arma por partes con lo que dice el reparto (CAST): la forma (hombre, mujer, gordo, viejo,
+niño), la piel, el pelo (corto, rizado, engominado, calvo, melena, largo, linda, cola, afro, hongo,
+moño), barba, bigote, chivera, gafas, sombrero, y la ropa (saco, camiseta, delantal, chaleco, uniforme,
+vestido, bata, sotana). Y el gesto: serios casi todos (ceño, párpado caído); "sonrisa", "destruido"
+(ojeras, ojo rojo, barba de días), "ojos": "cerrados".
+También iguales.png: el maniquí gris sin cara (todos iguales; lo usa retrato_iguales.gdshader).
+Lukas también sale de aquí (lukas.png, y lukas_ladra.png: ladrando, con una oreja al aire).
+
+Uso: python tools/art/draw_retratos.py [id ...]          (desde la carpeta del proyecto)
+     python tools/art/draw_retratos.py --hoja salida.png [id ...]   una hoja para mirarlos de cerca
+"""
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
 
-OUT = Path("assets/portraits")
+sys.path.insert(0, os.path.dirname(__file__))
+import vinetas_motor as vm  # noqa: E402
+
 W, H = 96, 112
-S = 4  # se pinta a 4x y se baja
-LIGHT = np.array([0.8, -0.42, 0.42])
-LIGHT = LIGHT / np.linalg.norm(LIGHT)
-HALF = (LIGHT + np.array([0, 0, 1.0]))
-HALF = HALF / np.linalg.norm(HALF)
+vm.set_size(W, H)
+nb, mix, BAY = vm.nb, vm.mix, vm.BAY
 
-# Piel: sombra, base, luz.
+OUT = Path("assets/portraits")
+INK = (24, 17, 30)
 SKINS = {
-    "clara": ((150, 92, 88), (226, 178, 148), (248, 214, 190)),
-    "media": ((128, 76, 62), (204, 148, 112), (234, 190, 154)),
-    "morena": ((96, 54, 44), (170, 112, 80), (212, 156, 116)),
-    "negra": ((52, 28, 26), (108, 66, 46), (156, 104, 76)),
+    "clara": ((166, 104, 100), (232, 184, 154), (250, 220, 196)),
+    "media": ((138, 82, 70), (208, 152, 116), (238, 196, 160)),
+    "morena": ((102, 58, 50), (172, 114, 82), (214, 160, 120)),
+    "negra": ((58, 32, 34), (114, 70, 52), (164, 110, 82)),
 }
+EYE_WHITE = (236, 230, 220)
 
 
-# ---------------------------------------------------------------- Utilidades (a 4x)
-
-def blur(a, r):
-    """Desenfoque gaussiano aproximado (tres cajas), sin scipy."""
-    r = max(1, int(r))
-    out = a.astype(np.float32)
-    for _ in range(3):
-        for axis in (0, 1):
-            pad = [(0, 0), (0, 0)]
-            pad[axis] = (r, r)
-            p = np.pad(out, pad, mode="edge")
-            c = np.cumsum(p, axis=axis, dtype=np.float64)
-            c = np.insert(c, 0, 0, axis=axis)
-            n = out.shape[axis]
-            if axis == 0:
-                out = ((c[2 * r + 1:2 * r + 1 + n] - c[:n]) / (2 * r + 1)).astype(np.float32)
-            else:
-                out = ((c[:, 2 * r + 1:2 * r + 1 + n] - c[:, :n]) / (2 * r + 1)).astype(np.float32)
-    return out
+def tones(c, dark=0.6, light=1.2):
+    """Tres tonos de un color: la sombra (más fría), la base y la luz (más cálida)."""
+    d = mix(tuple(v * dark for v in c), (40, 30, 72), 0.2)
+    lt = mix(tuple(min(255.0, v * light + 6) for v in c), (255, 240, 208), 0.14)
+    return (tuple(int(v) for v in d), tuple(int(v) for v in c), tuple(int(v) for v in lt))
 
 
-def mask(draw_fn):
-    im = Image.new("L", (W * S, H * S), 0)
-    draw_fn(ImageDraw.Draw(im))
-    return np.asarray(im, dtype=np.float32) / 255.0
+def edge(m, dx, dy, w):
+    """Los píxeles de m que quedan a w o menos del borde, hacia (dx, dy)."""
+    inner = m.copy()
+    for i in range(1, w + 1):
+        inner &= nb(m, dx * i, dy * i)
+    return m & ~inner
 
 
-def ell(cx, cy, rx, ry):
-    return mask(lambda d: d.ellipse([(cx - rx) * S, (cy - ry) * S, (cx + rx) * S, (cy + ry) * S], fill=255))
+class Bust:
+    def __init__(self, p, seed):
+        self.cv = vm.Cv()
+        self.alpha = np.zeros((H, W), bool)
+        self.p = p
+        self.rng = np.random.default_rng(seed * 7 + 3)
+        self.k = 0.88 if p.get("chiquita") else 1.0     # los bajitos: más chicos y más abajo
+        self.ox, self.oy = W * (1 - self.k) / 2.0, H * (1 - self.k)
+        self.ys, self.xs = np.mgrid[0:H, 0:W]
+        self._fr = None
+
+    def T(self, x, y):
+        if self._fr is not None:  # dentro de un marco: a tantos píxeles del ancla, sin escala
+            fx, fy, ax, ay = self._fr
+            return (ax + int(round(x - fx)), ay + int(round(y - fy)))
+        return (int(round(self.ox + x * self.k)), int(round(self.oy + y * self.k)))
+
+    def frame(self, fx, fy):
+        """Un marco para los detalles finos: lo que se dibuje adentro va alrededor de (fx, fy), píxel a píxel."""
+        bust = self
+
+        class _Frame:
+            def __enter__(self_):
+                bust._fr = None
+                ax, ay = bust.T(fx, fy)
+                bust._fr = (fx, fy, ax, ay)
+
+            def __exit__(self_, *exc):
+                bust._fr = None
+        return _Frame()
+
+    def ty(self, y):
+        return self.oy + y * self.k
+
+    def M(self, fn):
+        return self.cv.mask(fn, self.ox, self.oy, False, self.k)
+
+    def box(self, x0, y0, x1, y1):
+        (a, b_), (c, d) = self.T(x0, y0), self.T(x1, y1)
+        return self.cv.box(a, b_, c, d)
+
+    def above(self, y):
+        return self.ys < self.ty(y)
+
+    def put(self, m, color):
+        self.cv.a[m] = color
+        self.alpha |= m
+
+    def vol(self, m, t3, sw=3, lw=2, bottom=2, dither=True):
+        """Una forma con volumen: luz de arriba a la derecha. t3 = (sombra, base, luz)."""
+        dark, mid, light = t3
+        self.put(m, mid)
+        sh = edge(m, -1, 0, sw) | (edge(m, 0, 1, bottom) if bottom else np.zeros_like(m))
+        if dither:
+            band = (edge(m, -1, 0, sw + 2) | (edge(m, 0, 1, bottom + 1) if bottom else np.zeros_like(m))) & ~sh
+            self.cv.a[band & (BAY < 0.5)] = dark
+        self.cv.a[sh] = dark
+        if lw:
+            li = edge(m, 1, 0, lw) | edge(m, 0, -1, 1)
+            self.cv.a[li & ~sh] = light
+        return m
+
+    def _draw(self, fn):
+        img = Image.fromarray(self.cv.a)
+        fn(ImageDraw.Draw(img))
+        self.cv.a = np.asarray(img).copy()
+
+    def line(self, pts, color, w=1):
+        q = [self.T(x, y) for x, y in pts]
+        self._draw(lambda d: d.line(q, fill=color, width=w))
+
+    def rect(self, x0, y0, x1, y1, fill=None, outline=None):
+        q = [self.T(x0, y0), self.T(x1, y1)]
+        self._draw(lambda d: d.rectangle(q, fill=fill, outline=outline))
+
+    def arc(self, x0, y0, x1, y1, a0, a1, color):
+        q = [self.T(x0, y0), self.T(x1, y1)]
+        self._draw(lambda d: d.arc(q, a0, a1, fill=color))
+
+    def dot(self, x, y, color):
+        self.cv.px(*self.T(x, y), color)
+
+    def dots(self, pts, color):
+        for x, y in pts:
+            self.dot(x, y, color)
+
+    def veil(self, m, color, k=0.5):
+        self.cv.a[m & (BAY < k)] = color
+
+    def result(self, fondo):
+        """El contorno de tinta, el borde de color por la izquierda, y la transparencia."""
+        a = self.alpha
+        rim = a & ~nb(a, -1, 0) & (self.ys < H - 6)
+        self.cv.a[rim] = mix(fondo, (255, 255, 255), 0.25)
+        grown = a | nb(a, 1, 0) | nb(a, -1, 0) | nb(a, 0, 1) | nb(a, 0, -1)
+        out = np.zeros((H, W, 4), np.uint8)
+        out[..., :3] = self.cv.a
+        out[..., 3] = np.where(a, 255, 0)
+        ink = grown & ~a
+        out[ink] = (*INK, 255)
+        return Image.fromarray(out)
 
 
-def poly(pts):
-    return mask(lambda d: d.polygon([(x * S, y * S) for x, y in pts], fill=255))
+# ---------------------------------------------------------------- La forma de cada uno
 
-
-_YY, _XX = np.mgrid[0:H * S, 0:W * S].astype(np.float32) / S
-
-
-def bump(cx, cy, rx, ry, k=1.0):
-    """Una loma suave (para nariz, pómulos, labios): positivo sale, negativo se hunde."""
-    d = ((_XX - cx) / rx) ** 2 + ((_YY - cy) / ry) ** 2
-    return k * np.exp(-d * 2.2)
-
-
-def noise(sx, sy, seed, scale=1.0):
-    """Ruido estirado: sx, sy = tamaño de la "célula" (para mechones, sx chico y sy grande)."""
-    rnd = np.random.default_rng(seed)
-    small = rnd.random((max(2, int(H / sy) + 2), max(2, int(W / sx) + 2))).astype(np.float32)
-    im = Image.fromarray((small * 255).astype(np.uint8)).resize((W * S, H * S), Image.BICUBIC)
-    return (np.asarray(im, dtype=np.float32) / 255.0 - 0.5) * scale
-
-
-def shade(height, k=40.0):
-    """Normales a partir del mapa de alturas; devuelve difusa, especular, oclusión."""
-    gy, gx = np.gradient(height)
-    n = np.stack([-gx * k, -gy * k, np.ones_like(height)], axis=-1)
-    n /= np.linalg.norm(n, axis=-1, keepdims=True)
-    diff = np.clip(n @ LIGHT, 0, 1)
-    spec = np.clip(n @ HALF, 0, 1) ** 24
-    ao = np.clip(1.0 - (blur(height, 6 * S) - height) * 3.0, 0.55, 1.0)
-    return diff, spec, ao
-
-
-def ramp(t, dark, mid, light):
-    """t 0..1 -> color, de la sombra a la luz pasando por la base."""
-    dark, mid, light = (np.array(c, dtype=np.float32) for c in (dark, mid, light))
-    t = np.clip(t, 0, 1)[..., None]
-    lo = dark + (mid - dark) * np.clip(t * 2, 0, 1)
-    hi = mid + (light - mid) * np.clip(t * 2 - 1, 0, 1)
-    return np.where(t < 0.5, lo, hi)
-
-
-def tones(c, dark=0.45, light=1.22, warm=(14, -4, 10)):
-    """Sombra (un poco cálida) y luz de un color de ropa o pelo."""
-    c = np.array(c[:3], dtype=np.float32)
-    d = np.clip(c * dark + np.array(warm) * 0.5, 0, 255)
-    l = np.clip(c * light + 14, 0, 255)
-    return tuple(d), tuple(c), tuple(l)
-
-
-class Canvas:
-    def __init__(self):
-        self.rgb = np.zeros((H * S, W * S, 3), np.float32)
-        self.a = np.zeros((H * S, W * S), np.float32)
-        self.mat = np.zeros((H * S, W * S), np.int32)  # qué material pintó cada píxel (para las facetas)
-        self._next = 1
-
-    def paint(self, m, color):
-        m = np.clip(m, 0, 1)
-        self.mat = np.where(m > 0.5, self._next, self.mat)
-        self._next += 1
-        m = m[..., None]
-        self.rgb = self.rgb * (1 - m) + color * m
-        self.a = np.maximum(self.a, m[..., 0])
-
-    def material(self, m, palette, height=None, k=40.0, amb=0.22, gloss=0.0, extra=None):
-        """Pinta una zona con volumen: palette = (sombra, base, luz)."""
-        h = blur(m, 5 * S) if height is None else height
-        diff, spec, ao = shade(h, k)
-        t = (amb + diff * 0.95) * ao
-        if extra is not None:
-            t = t + extra
-        t = np.floor(np.clip(t, 0, 1) * 4.0 + 0.35) / 4.0  # luz por planos: cortes duros, no degradé
-        col = ramp(t, *palette) + spec[..., None] * gloss * 255
-        self.paint(m, np.clip(col, 0, 255))
-
-
-# ---------------------------------------------------------------- Cabeza
-
-def skin_of(p):
-    s = p.get("piel", "clara")
-    return SKINS[s] if isinstance(s, str) else s
-
-
-def head_masks(p):
-    fat, kid = p.get("gordo"), p.get("chiquita")
-    sx = 1.18 if fat else (0.94 if kid else 1.0)
-    cx = 46
-
-    def X(x):
-        return cx + (x - cx) * sx
-    skull = ell(X(44), 44, 21 * sx, 26)
-    jaw_pts = [(30, 54), (34, 68), (42, 77), (51, 81), (57, 79), (62, 73), (65, 64), (66, 55), (66, 44), (62, 30)]
-    if fat:
-        jaw_pts = [(28, 54), (31, 70), (40, 82), (52, 86), (60, 82), (66, 74), (68, 62), (68, 48), (63, 30)]
-    elif p.get("mujer") or kid:
-        jaw_pts = [(30, 54), (35, 67), (43, 75), (51, 78), (57, 76), (62, 70), (65, 62), (66, 54), (66, 44), (62, 30)]
-    face = poly([(X(x), y) for x, y in jaw_pts])
-    head = np.clip(skull + face, 0, 1)
-    ear = ell(X(29), 55, 4, 7)
-    return head, ear, X
-
-
-def draw_head(c, p):
-    dark, mid, light = skin_of(p)
-    head, ear, X = head_masks(p)
-    h = blur(head, 7 * S) * 1.0
-    # Relieve de la cara (mirando a la derecha: la línea media en x≈57).
-    h += bump(X(57), 56, 2.0, 7, 0.6)     # tabique
-    h += bump(X(59), 61, 3.0, 2.4, 0.55)  # punta de la nariz
-    h += bump(X(55), 61, 2.2, 1.6, 0.25)  # ala de la nariz
-    h += bump(X(53), 45, 9, 2.4, 0.12)    # arco de las cejas
-    h += bump(X(46), 49, 4.4, 3.2, -0.24)  # cuenca del ojo cercano (hundida: cansancio)
-    h += bump(X(61), 49, 2.8, 2.8, -0.18)  # cuenca del ojo lejano
-    if not p.get("chiquita"):
-        h += bump(X(44), 64, 4, 4, -0.08)  # mejilla chupada
-        h += bump(X(48), 63, 2.5, 6, -0.06)  # surco nasogeniano
-    h += bump(X(43), 57, 6, 4, 0.10)      # pómulo
-    h += bump(X(55), 68, 5, 1.6, 0.10)    # labios
-    h += bump(X(54), 75, 5, 3, 0.10)      # mentón
-    h += bump(X(52), 71.5, 4, 1.2, -0.06)  # surco bajo el labio
-    if p.get("viejo"):
-        h += bump(X(46), 64, 3, 6, -0.05)  # surco nasogeniano
+def geom(p):
+    """Las medidas de la cabeza y el cuerpo, según quién es."""
+    g = {"cx": 48, "cy": 36, "rx": 21, "ry": 22, "eye_y": 42, "brow_y": 36, "nose": (62, 52), "mouth_y": 59, "mid": 56,
+         "jaw": [(28.5, 40), (30, 53), (37, 63), (50, 69), (60, 67), (66, 58), (69, 46), (69.5, 36)],
+         "neck": 17, "sh": 0, "eye_w": 5, "dy": 0}
+    if p.get("mujer"):
+        g.update(jaw=[(29.5, 40), (31, 52), (39, 62), (52, 68), (60, 65), (65, 57), (68, 46), (69, 36)], neck=14, sh=-5, dy=-3)
     if p.get("gordo"):
-        h += bump(X(50), 82, 9, 2, -0.08)  # la papada
-    c.material(ear, (dark, mid, light), height=blur(ear, 2 * S) + bump(X(29), 55, 2, 4, -0.2), k=30)
-    # El lado de atrás de la cara (lejos de la luz) más oscuro; y la sombra que tira la nariz.
-    form = np.clip((_XX - X(46)) / 18.0, -1, 1) * 0.38
-    nose_shadow = -(bump(X(54), 58, 1.8, 5, 0.32) + bump(X(56), 63.5, 3, 1.1, 0.3))
-    jaw_shadow = -bump(X(40), 72, 8, 6, 0.18)
-    c.material(head, (dark, mid, light), height=h, k=52, amb=0.18, gloss=0.05, extra=form + nose_shadow + jaw_shadow)
-    # Mejillas sonrojadas, un poco de rojo en la nariz (la piel no es de un solo color).
-    blush = (bump(X(45), 59, 5, 3, 0.16) + bump(X(59), 61, 2.5, 2, 0.1)) * head
+        g.update(rx=23, jaw=[(26, 40), (27, 56), (34, 67), (50, 72), (63, 70), (70, 60), (72.5, 46), (72, 36)], neck=22, sh=5)
+    if p.get("nino"):
+        g.update(jaw=[(29, 40), (31, 54), (39, 63), (51, 67), (60, 65), (66, 57), (69, 46), (69.5, 36)], neck=13, sh=-8, dy=-4,
+                 eye_y=44, brow_y=38, nose=(61, 52), mouth_y=59, eye_w=5)
+    return g
+
+
+def head_mask(b, g):
+    return b.M(lambda d: (d.ell(g["cx"], g["cy"], g["rx"], g["ry"]), d.poly(g["jaw"]),
+                          d.ell(50, 70, 14, 5) if b.p.get("gordo") else None,
+                          d.ell(36, 60, 6.5, 5.5) if b.p.get("viejo") and not b.p.get("mujer") else None))
+
+
+def body_mask(b, g):
+    s, y = g["sh"], g["dy"]
+    return b.M(lambda d: (d.poly([(2 - s, 114), (6 - s, 97 + y), (18 - s, 88 + y), (38, 82 + y), (62, 82 + y), (80 + s, 88 + y), (91 + s, 98 + y), (94 + s, 114)]),
+                          d.ell(20 - s, 97 + y, 16, 10), d.ell(78 + s, 98 + y, 15, 10), d.rect(4 - s, 100 + y, 92 + s, 114)))
+
+
+# ---------------------------------------------------------------- El pelo
+
+FACE_M = [(33, 41), (35, 30), (43, 25), (58, 24.5), (66, 28.5), (70.5, 37), (74, 74), (26, 74), (30, 50)]      # corto
+FACE_HIGH = [(33, 41), (37, 27), (46, 21.5), (60, 21.5), (67, 27.5), (70.5, 37), (74, 74), (26, 74), (30, 50)]  # entradas
+FACE_F = [(32.5, 43), (34, 31), (41, 25.5), (56, 24.5), (65.5, 28), (70.5, 38), (74, 74), (26, 74), (30, 50)]   # de mujer
+
+
+def hair(b, g, front):
+    """El pelo: lo de atrás (antes de la cabeza) o lo de adelante (encima). Devuelve lo que pintó."""
+    p = b.p
+    style = p.get("pelo", "corto")
+    if style == "ninguno":
+        return None
+    c = p.get("pelo_color", (46, 38, 42))
+    t3 = tones(c, 0.55, 1.35)
+    cx, cy, rx, ry = g["cx"], g["cy"], g["rx"], g["ry"]
+    face_poly = FACE_HIGH if style in ("engominado", "calvo") else (FACE_F if p.get("mujer") or p.get("nino") else FACE_M)
+    face = b.M(lambda d: d.poly(face_poly))
+    grow = {"rizado": 4.5, "afro": 0, "corto": 1.6, "engominado": 1.0}.get(style, 2.4)
+    cap = b.M(lambda d: d.ell(cx, cy - 1, rx + grow, ry + grow)) & ~face
+    m = np.zeros((H, W), bool)
+    if not front:  # lo que cae por detrás de la cabeza y del cuello
+        if style in ("melena", "largo", "linda"):
+            low = {"melena": 78, "largo": 104, "linda": 106}[style]
+            m = b.M(lambda d: (d.poly([(23, 34), (72, 30), (76, 60), (74, low), (60, low + 2), (36, low + 2), (22, low), (20, 60)]),
+                               d.ell(48, 34, 26, 25)))
+        elif style == "cola":
+            m = b.M(lambda d: (d.path([(26, 28), (15, 44), (14, 66), (19, 84)], 9), d.ell(18, 86, 5, 4)))
+        elif style == "afro":
+            m = b.M(lambda d: d.ell(47, 31, 33, 30))
+        elif style == "moño":
+            m = b.M(lambda d: d.ell(25, 21, 9, 9))
+        elif style == "hongo":
+            m = b.M(lambda d: d.ell(47, 34, 28, 25))
+        elif style == "rizado":
+            m = b.M(lambda d: [d.ell(cx + np.cos(a) * 22, cy - 2 + np.sin(a) * 22, 6, 6) for a in np.linspace(3.3, 6.2, 9)])
+        elif style == "calvo":
+            m = b.M(lambda d: d.poly([(25, 37), (31, 33), (33, 50), (28, 54)]))
+        if m.any():
+            b.vol(m, t3, sw=3, lw=2)
+        return m
+    if style == "calvo":  # una franja encima de la oreja, y nada arriba
+        m = b.M(lambda d: d.poly([(26.5, 36), (32, 33), (34, 40), (33, 47), (30, 40)]))
+    elif style == "afro":
+        m = b.M(lambda d: d.ell(47, 31, 33, 30)) & ~b.M(lambda d: d.poly([(32, 42), (35, 31), (43, 26), (57, 25.5), (65, 29), (70, 38), (76, 80), (22, 80), (29, 52)]))
+    elif style == "hongo":  # el honguito: un casco hasta las cejas
+        m = b.M(lambda d: d.ell(47, 31, 28, 22)) & ~b.M(lambda d: d.poly([(35, 38.5), (70, 38.5), (76, 80), (26, 80), (31, 46)]))
+    elif style == "rizado":
+        m = cap | (b.M(lambda d: [d.ell(cx + np.cos(a) * 21, cy - 2 + np.sin(a) * 21, 6, 6) for a in np.linspace(3.3, 6.2, 9)]) & ~face)
+    else:
+        m = cap
+        if style in ("melena", "largo", "linda"):  # las cortinas a los lados
+            low = {"melena": 76, "largo": 100, "linda": 104}[style]
+            m = m | b.M(lambda d: (d.poly([(22, 36), (33, 30), (34.5, 44), (33, 60), (35, low), (22, low - 2), (19, 60)]),
+                                   d.poly([(68, 34), (73, 40), (75, low - 6), (70, low - 4), (70.5, 46)])))
+        if style == "linda":  # la capul
+            m = m | b.M(lambda d: d.poly([(34, 30), (44, 24), (62, 25), (68, 31), (67, 35), (56, 32), (44, 33.5), (35, 37)]))
+        if style in ("corto", "engominado", "rizado") and not p.get("mujer") and not p.get("nino"):
+            m = m | b.M(lambda d: d.poly([(29.5, 38), (34, 38), (34, 46), (31, 49)]))        # la patilla
+    b.vol(m, t3, sw=3, lw=2, bottom=0)
+    # Los mechones: una luz que le da la vuelta a la cabeza, y sombras finas.
+    shine = b.M(lambda d: d.ell(cx + 6, cy - 14, rx - 4, 5)) & ~b.M(lambda d: d.ell(cx + 5, cy - 11.5, rx - 3, 5)) & m
+    b.cv.a[shine] = t3[2]
+    if style == "engominado":
+        for k in range(4):
+            b.line([(38 + k * 7, 16 + (k % 2)), (33 + k * 8, 26)], t3[0])
+    elif style in ("rizado", "afro"):
+        ys, xs = np.nonzero(m)
+        for i in b.rng.choice(len(ys), size=min(len(ys), 70), replace=False):
+            b.cv.px(xs[i], ys[i], t3[0] if (xs[i] + ys[i]) % 4 else mix(t3[1], t3[2], 0.35))
+    elif style in ("melena", "largo", "linda", "cola", "hongo", "moño"):
+        for x0 in (24, 28, 72):
+            xx = b.T(x0, 0)[0]
+            for y in np.nonzero(m[:, xx])[0][::2]:
+                b.cv.px(xx, y, t3[0])
+    if p.get("raiz"):
+        b.cv.a[edge(m, 0, -1, 4) & b.above(20)] = tones(p["raiz"])[1]
+    if p.get("canas") or p.get("canas_afro"):
+        k = float(p.get("canas", 0.2))
+        ys, xs = np.nonzero(m)
+        for i in range(len(ys)):
+            if b.rng.random() < k * 0.5 or (p.get("canas_afro") and xs[i] < 30 and b.rng.random() < 0.22):
+                b.cv.px(xs[i], ys[i], mix(t3[2], (204, 202, 198), 0.6))
+    return m
+
+
+def hat(b, g):
+    p = b.p
+    kind = p.get("sombrero")
+    if not kind:
+        return
+    t3 = tones(p.get("sombrero_color", (90, 70, 50)), 0.6, 1.25)
+    if kind == "gorra":
+        dome = b.M(lambda d: d.ell(47, 24, 24, 15)) & b.above(29)
+        b.vol(dome, t3, sw=4, lw=2, bottom=1)
+        b.vol(b.M(lambda d: d.poly([(56, 25), (86, 30), (86, 33.5), (56, 30.5)])), t3, sw=0, lw=1, bottom=1, dither=False)
+        b.line([(24, 28), (58, 29)], t3[0])
+    elif kind == "sombrero":
+        b.vol(b.M(lambda d: d.ell(48, 27, 37, 6.5)), t3, sw=4, lw=2, bottom=2)
+        crown = b.M(lambda d: (d.rect(30, 8, 66, 26), d.ell(48, 9, 18, 5)))
+        b.vol(crown, t3, sw=4, lw=2, bottom=0)
+        b.put(b.M(lambda d: d.rect(30, 20, 66, 24)) & crown, tones(p.get("cinta", t3[0]))[1] if p.get("cinta") else t3[0])
+    elif kind == "boina":
+        b.vol(b.M(lambda d: (d.ell(45, 20, 27, 10), d.ell(60, 17, 12, 7))), t3, sw=4, lw=2, bottom=1)
+        b.dot(47, 9, t3[0])
+        b.dot(47, 10, t3[0])
+    elif kind == "pañoleta":
+        m = b.M(lambda d: d.ell(47, 25, 25, 17)) & b.above(33)
+        b.vol(m | b.M(lambda d: d.poly([(22, 30), (14, 44), (22, 46), (28, 36)])), t3, sw=3, lw=2, bottom=1)
+        for k in range(6):
+            b.dot(30 + k * 7, 18 + (k % 2) * 6, t3[2])
+
+
+# ---------------------------------------------------------------- La cara
+
+def eye(b, g, ex, ey, w, near, sk):
+    p = b.p
+    dark, mid, light = sk
+    tired = p.get("destruido") or p.get("ojeras")
+    b.veil(b.M(lambda d: d.ell(ex, ey - 2.5, w + 2, 2.8)), dark, 0.3)              # la sombra de la ceja
+    if p.get("ojos") == "cerrados":
+        b.line([(ex - w, ey), (ex - w + 2, ey + 1), (ex + w - 3, ey + 1), (ex + w - 1, ey)], INK)
+        b.line([(ex - w + 2, ey + 3), (ex + w - 3, ey + 3)], mix(mid, dark, 0.6))
+        return
+    white = EYE_WHITE if not p.get("destruido") else (240, 208, 202)
+    rows = 3 if p.get("nino") else 2
+    for r in range(rows):
+        cut_ = 1 if r == rows - 1 else 0
+        b.line([(ex - w + 1 + cut_, ey + r), (ex + w - 2 - cut_, ey + r)], white)
+    # El iris, mirando a donde da la cara. La pupila y el brillo.
+    iris = p.get("ojo_color", (74, 46, 32))
+    iw = 3 if near else 2
+    ix = ex if near else ex - 1
+    for r in range(rows):
+        b.line([(ix, ey + r), (ix + iw - 1, ey + r)], iris)
+    px_ = ix + 1 if near else ix + 1
+    b.line([(px_, ey), (px_, ey + rows - 1)], mix(iris, (0, 0, 0), 0.75))
+    b.dot(ix, ey, (255, 255, 255))
+    # El párpado de arriba, en tinta; la esquina de afuera.
+    b.line([(ex - w, ey - 1), (ex + w - 1, ey - 1)], INK)
+    b.dot(ex - w if near else ex + w - 1, ey, INK)
+    if tired or p.get("viejo"):  # el párpado, que pesa
+        b.line([(ex - w + 1, ey - 2), (ex + w - 2, ey - 2)], mix(mid, dark, 0.8))
+    else:
+        b.line([(ex - w + 1, ey - 3), (ex + w - 2, ey - 3)], mix(mid, dark, 0.35))
+    b.line([(ex - w + 3, ey + rows), (ex + w - 3, ey + rows)], mix(mid, dark, 0.4))
+    if tired:  # la ojera
+        b.line([(ex - w + 1, ey + rows + 2), (ex, ey + rows + 3), (ex + w - 2, ey + rows + 2)], mix(dark, (96, 66, 120), 0.4))
+    if p.get("mujer") and not p.get("viejo"):  # las pestañas
+        b.dot(ex - w - 1, ey - 2, INK)
+        b.dot(ex + w, ey - 2, INK)
+
+
+def brow(b, g, ex, by, w, near, color):
+    p = b.p
+    thick = 1 if (p.get("mujer") or p.get("nino")) else 2
+    # El ceño: la punta de adentro, más abajo. Con sonrisa, parejas y arriba. Destruido: caídas hacia afuera.
+    inner = 1 if not p.get("sonrisa") else -1
+    if p.get("destruido"):
+        inner = -1
+    x_in, x_out = (ex + w + 1, ex - w - 1) if near else (ex - w, ex + w + 1)
+    for k in range(thick):
+        b.line([(x_out, by - inner + k), ((x_in + x_out) // 2, by - 1 + k), (x_in, by + inner + k)], color)
+
+
+def face(b, g, head, sk):
+    p = b.p
+    dark, mid, light = sk
+    ey, by, my, mid_x = g["eye_y"], g["brow_y"], g["mouth_y"], g["mid"]
+    nx, ny = g["nose"]
+    w = g["eye_w"]
+    hairc = p.get("pelo_color", (46, 38, 42)) if p.get("pelo") != "ninguno" else (60, 50, 50)
+    browc = mix(p.get("barba_color", hairc) if p.get("viejo") else hairc, INK, 0.35)
+    # Los planos de la cara: el pómulo de allá con luz, la sien y la mejilla de acá en sombra.
+    b.cv.a[b.M(lambda d: d.ell(66, 50, 4, 7)) & head] = light
+    b.veil(b.M(lambda d: d.ell(36, 54, 6, 8)) & head, dark, 0.4)
     if p.get("cachetes"):
-        blush = blush * 2.2
-    c.rgb = c.rgb * (1 - blush[..., None]) + np.array([200, 80, 80], np.float32) * blush[..., None]
-    return X
+        b.veil(b.M(lambda d: (d.ell(40, 52, 5, 3.2), d.ell(64, 52, 3.5, 3))) & head, (236, 130, 130), 0.5)
+    if p.get("viejo"):  # la frente, marcada
+        for yy, x0, x1 in ((28, 41, 63), (31, 40, 65)):
+            b.line([(x0, yy), ((x0 + x1) // 2, yy - 1), (x1, yy)], mix(mid, dark, 0.75))
+    # Los ojos y las cejas.
+    for ex, ww, near in ((44, w, True), (63, w - 1, False)):
+        with b.frame(ex, ey):
+            eye(b, g, ex, ey, ww, near, sk)
+            brow(b, g, ex, by, ww - 1, near, browc)
+    if p.get("viejo") or p.get("destruido"):
+        b.line([(37, ey + 2), (36, ey + 4)], mix(mid, dark, 0.5))                 # las patas de gallo
+    # La nariz: el puente con luz, el contorno del lado de allá, la sombra debajo.
+    b._fr = None
+    ax, ay = b.T(nx, ny)
+    b._fr = (nx, ny, ax, ay)
+    soft = p.get("mujer") or p.get("nino")
+    b.line([(mid_x, ey + 2), (nx - 3, ny - 3)], light, 2)
+    b.line([(mid_x - 2, ey + 3), (nx - 6, ny - 2)], mix(mid, dark, 0.55))          # el lado en sombra
+    contour = mix(dark, INK, 0.3) if soft else mix(dark, INK, 0.75)
+    b.line([(nx - 1, ny - 4), (nx, ny - 1), (nx - 1, ny + 1), (nx - 3, ny + 2)], contour)   # la punta
+    b.line([(nx - 7, ny + 2), (nx - 3, ny + 2)], mix(dark, INK, 0.25))
+    b.dot(nx - 5, ny + 1, INK)                                                     # la fosa
+    b.line([(nx - 9, ny - 1), (nx - 9, ny + 1)], dark)                             # la aleta de acá
+    if p.get("gordo") or p.get("nariz_roja"):
+        b.cv.a[b.M(lambda d: d.ell(nx - 2.5, ny - 0.5, 3.2, 2.8)) & head] = light
+    if p.get("nariz_roja"):
+        b.veil(b.M(lambda d: d.ell(nx - 3, ny - 1, 4, 3.4)) & head, (222, 120, 110), 0.5)
+    if p.get("viejo") or p.get("gordo"):  # los surcos
+        b.line([(nx - 10, ny + 2), (nx - 12, ny + 6), (nx - 12, ny + 8)], mix(mid, dark, 0.5))
+    if p.get("pecas"):
+        b.dots([(40, 49), (43, 51), (46, 49), (52, 48), (64, 49), (66, 51), (38, 51)], mix(mid, (150, 80, 50), 0.6))
+    if p.get("cicatriz"):
+        b.line([(38, 33), (41, 40)], mix(light, (255, 200, 200), 0.5))
+        b.line([(39, 33), (42, 40)], mix(dark, (150, 60, 70), 0.5))
+    # La boca.
+    b._fr = None
+    ax, ay = b.T(mid_x, my)
+    b._fr = (mid_x, my, ax, ay)
+    x0, x1 = mid_x - 8, mid_x + 6
+    lips = p.get("labios")
+    if p.get("sonrisa"):
+        b.line([(x0 - 1, my - 1), (x0 + 2, my + 1), (x1 - 2, my + 1), (x1 + 1, my - 1)], INK)
+        b.line([(x0 - 2, my - 3), (x0 - 3, my)], mix(mid, dark, 0.8))
+        if lips:
+            b.line([(x0 + 2, my + 2), (x1 - 2, my + 2)], lips)
+    else:
+        b.line([(x0, my + 1), (x0 + 1, my), (x1 - 1, my), (x1, my + 1)], INK)
+        if lips:
+            b.line([(x0 + 2, my - 1), (x1 - 2, my - 1)], mix(lips, dark, 0.3))
+            b.line([(x0 + 2, my + 1), (x1 - 2, my + 1)], lips)
+            b.line([(x0 + 3, my + 2), (x1 - 3, my + 2)], lips)
+            b.dot(mid_x + 1, my + 1, mix(lips, (255, 255, 255), 0.45))
+    if not lips:
+        b.line([(x0 + 4, my + 3), (x1 - 3, my + 3)], mix(mid, dark, 0.45))         # el labio de abajo
+    b._fr = None
+    if p.get("arete"):
+        b.dot(29, 53, (250, 214, 110))
+        b.dot(29, 54, (250, 214, 110))
 
 
-def draw_neck(c, p):
-    dark, mid, light = skin_of(p)
-    fat = p.get("gordo")
-    m = poly([(39, 70), (57, 70), (59 if not fat else 64, 94), (37 if not fat else 30, 94)])
-    c.material(m, (dark, mid, light), height=blur(m, 4 * S), k=30, amb=0.18,
-               extra=-0.35 * blur(poly([(30, 70), (64, 70), (64, 80), (30, 80)]), 3 * S))  # sombra de la quijada
+def facial_hair(b, g, head):
+    p = b.p
+    c = p.get("barba_color", p.get("pelo_color", (46, 38, 42)))
+    t3 = tones(c, 0.6, 1.25)
+    my, mid_x = g["mouth_y"], g["mid"]
+    grown = head | nb(head, 0, -1) | nb(head, 1, 0) | nb(head, -1, 0) | nb(head, 0, 1)   # un poco más que la quijada
+    grown = grown | nb(grown, 0, -1)
+    lips = b.M(lambda d: d.rect(mid_x - 7, my - 0.5, mid_x + 6, my + 2.5))
+    m = np.zeros((H, W), bool)
+    if p.get("barba"):
+        m = b.M(lambda d: d.poly([(28, 42), (33.5, 43), (35, 52), (41, 58), (47, 55), (53, 53.5), (61, 53.5), (66, 56), (68, 48),
+                                  (72, 47), (73, 62), (64, 73), (50, 76), (36, 71), (28, 60)])) & grown & ~lips
+    elif p.get("chivera"):
+        m = b.M(lambda d: (d.ell(mid_x - 1, my + 8, 8, 6.5), d.poly([(mid_x - 9, my - 1), (mid_x - 4, my - 4.5), (mid_x + 4, my - 4.5),
+                                                                       (mid_x + 8, my - 1), (mid_x + 6, my + 6), (mid_x - 8, my + 6)]))) & grown & ~lips
+    if p.get("bigote") and not p.get("barba"):
+        m = m | (b.M(lambda d: d.poly([(mid_x - 10, my + 0.5), (mid_x - 5, my - 4.5), (mid_x + 4, my - 4.5), (mid_x + 9, my),
+                                       (mid_x + 8, my + 2), (mid_x + 3, my - 1.2), (mid_x - 4, my - 1.2), (mid_x - 9, my + 2.5)])) & grown)
+    if m.any():
+        b.vol(m, t3, sw=2, lw=1, bottom=1)
+        ys, xs = np.nonzero(m)
+        for i in range(len(ys)):
+            r = b.rng.random()
+            if r < 0.07:
+                b.cv.px(xs[i], ys[i], mix(t3[1], t3[0], 0.6))
+            elif r < 0.13:
+                b.cv.px(xs[i], ys[i], mix(t3[1], t3[2], 0.6))
+        if p.get("barba"):
+            with b.frame(mid_x, my):
+                b.line([(mid_x - 7, my + 1), (mid_x - 6, my), (mid_x + 5, my), (mid_x + 6, my + 1)], INK)   # la boca, entre la barba
+    elif p.get("destruido") and not p.get("mujer"):  # barba de días
+        st = b.M(lambda d: d.poly([(30, 50), (36, 54), (44, 56), (60, 55), (68, 50), (70, 60), (62, 70), (50, 72), (36, 68), (29, 58)])) & head & ~lips
+        b.veil(st, mix(SKINS[p.get("piel", "clara")][0], (60, 56, 70), 0.5), 0.3)
 
 
-# ---------------------------------------------------------------- Ropa
+def glasses(b, g):
+    kind = b.p.get("gafas")
+    if not kind:
+        return
+    ey = g["eye_y"]
+    b._fr = None
+    ax, ay = b.T(52, ey)
+    b._fr = (52, ey, ax, ay)
+    near = (37, ey - 5, 51, ey + 5)
+    far = (57, ey - 5, 68, ey + 5)
+    for (x0, y0, x1, y1) in (near, far):
+        if kind == "oscuras":
+            b.rect(x0, y0, x1, y1, fill=(28, 24, 38), outline=INK)
+            b.line([(x0 + 2, y0 + 2), (x0 + 5, y0 + 2)], (110, 116, 150))
+            b.line([(x0 + 2, y0 + 4), (x0 + 3, y0 + 4)], (70, 74, 104))
+        else:
+            b.rect(x0, y0, x1, y1, outline=INK)
+            b.line([(x0 + 2, y0 + 3), (x0 + 4, y0 + 1)], (255, 255, 255))
+            b.dot(x1 - 2, y1 - 2, (236, 240, 250))
+    b.line([(51, ey - 2), (57, ey - 2)], INK)
+    b.line([(37, ey - 2), (30, ey - 3)], INK)
+    b._fr = None
 
-def draw_body(c, p, seed):
-    fat = p.get("gordo")
-    lx, rx = (0, 96) if fat else (6, 90)
-    top = 87
+
+# ---------------------------------------------------------------- La ropa
+
+def clothes(b, g, body):
+    p = b.p
     kind = p.get("tipo", "camiseta")
-    cloth = tones(p["ropa"])
-    # Hombros caídos (trapecio, deltoides redondos), no una caja.
-    shoulders = poly([(lx, H), (lx + 1, top + 12), (lx + 5, top + 6), (16, top + 2), (30, top - 3), (40, top - 6),
-                      (56, top - 6), (66, top - 3), (80, top + 2), (rx - 5, top + 6), (rx - 1, top + 12), (rx, H)])
-    c.material(shoulders, cloth, k=20, amb=0.2, extra=noise(3, 12, seed, 0.25) * 0.6 + np.clip((_XX - 48) / 30.0, -1, 1) * 0.3)
-    shirt = tones(p.get("camisa", (230, 226, 216)))
+    c = p.get("ropa", (120, 120, 130))
+    t3 = tones(c, 0.6, 1.2)
+    sk = SKINS[p.get("piel", "clara")]
+    shirt = p.get("camisa", (226, 220, 206))
+    ys, xs = b.ys, b.xs
+    y = g["dy"]
+    if kind == "chaleco":
+        b.vol(body, tones(p.get("mangas", shirt)), sw=4, lw=2, bottom=0)
+        vest = body & b.M(lambda d: d.poly([(24, 84 + y), (40, 80 + y), (50, 114), (60, 80 + y), (74, 84 + y), (80, 114), (18, 114)]))
+        b.vol(vest, t3, sw=3, lw=1, bottom=0)
+    else:
+        b.vol(body, t3, sw=5, lw=2, bottom=0)
     if kind in ("saco", "bata", "chaleco", "uniforme"):
-        c.material(poly([(38, top - 4), (58, top - 4), (52, H), (44, H)]), shirt, k=20, amb=0.4)
-        if p.get("corbata"):
-            c.material(poly([(46, top - 2), (51, top - 2), (53, H), (48, H + 1), (44, H)]), tones(p["corbata"]), k=25)
-        for side in (-1, 1):  # solapas
-            x0 = 38 if side < 0 else 58
-            lap = poly([(x0, top - 4), (x0 - side, top + 2), (48 + side * 3, top + 16), (x0 + side * 8, top + 4)])
-            c.material(lap, tones(p["ropa"], 0.4, 1.3), k=40, amb=0.35)
-        if kind == "chaleco" and p.get("mangas"):
-            m = tones(p["mangas"])
-            c.material(poly([(lx, H), (lx + 2, top + 8), (16, top + 2), (14, H)]), m, k=20)
-            c.material(poly([(rx, H), (rx - 2, top + 8), (rx - 10, top + 2), (rx - 8, H)]), m, k=20)
-    elif kind == "delantal":
-        a = tones(p["delantal"])
-        extra = None
-        if p.get("cuadros"):
-            extra = ((((_XX // 3) + (_YY // 3)) % 2) * -0.18).astype(np.float32)
-        c.material(poly([(32, top + 10), (64, top + 10), (64, H), (32, H)]), a, k=20, amb=0.35, extra=extra)
-        for x0, x1 in ((32, 26), (61, 67)):
-            c.material(poly([(x0, top + 10), (x0 + 3, top + 10), (x1 + 3, top - 2), (x1, top - 2)]), a, k=20)
+        vee = b.M(lambda d: d.poly([(40, 82 + y), (60, 82 + y), (56, 104), (50, 114), (45, 104)])) & body
+        b.vol(vee, tones(shirt), sw=2, lw=1, bottom=0)
+        if kind in ("saco", "bata"):  # las solapas
+            lap = b.M(lambda d: (d.poly([(36, 82 + y), (41, 82 + y), (46, 104), (42, 108), (30, 92 + y)]), d.poly([(59, 82 + y), (64, 82 + y), (70, 92 + y), (58, 108), (54, 104)]))) & body
+            b.vol(lap, tones(c, 0.5, 1.28), sw=1, lw=1, bottom=1, dither=False)
+        tie = p.get("corbata")
+        if tie:
+            tt = tones(tie)
+            b.put(b.M(lambda d: (d.poly([(47, 84 + y), (53, 84 + y), (52, 89 + y), (48, 89 + y)]), d.poly([(48, 89 + y), (52, 89 + y), (54, 108), (50, 114), (46, 108)]))), tt[1])
+            b.line([(48, 90 + y), (47, 108)], tt[0])
+            b.line([(52, 90 + y), (53, 106)], tt[2])
+        else:
+            b.line([(50, 86 + y), (50, 111)], tones(shirt)[0])
+            for yy in (92, 100, 108):
+                b.dot(51, yy, tones(shirt)[0])
+        if kind == "uniforme":
+            b.put(b.M(lambda d: (d.poly([(38, 82 + y), (47, 84 + y), (42, 92 + y)]), d.poly([(62, 82 + y), (53, 84 + y), (58, 92 + y)]))), tones(shirt)[2])
+            b.put(b.box(66, 92, 73, 99), (232, 200, 110))                               # la placa
+            b.dot(69, 95, (150, 120, 60))
+            b.put(b.M(lambda d: (d.rect(10, 86, 24, 89), d.rect(72, 86, 86, 89))) & body, t3[0])
+        if kind == "bata":
+            b.put(b.box(62, 98, 74, 99), t3[0])
+            b.put(b.box(70, 92, 71, 98), (60, 90, 170))                                 # el esfero
+    elif kind == "camiseta":
+        b.put(b.M(lambda d: d.ell(50, 82 + y, 12, 6)) & body, sk[1])
+        b.cv.a[edge(b.M(lambda d: d.ell(50, 82 + y, 13.5, 7.5)) & body, 0, 1, 2) & ~b.above(82 + y)] = t3[0]
     elif kind == "vestido":
-        neckline = ell(48, top - 2, 10, 7) * poly([(30, top - 4), (66, top - 4), (66, H), (30, H)])
-        c.material(neckline, skin_of(p), k=25, amb=0.35)
+        b.put(b.M(lambda d: d.ell(50, 82 + y, 19, 10)) & body, sk[1])
+        b.cv.a[b.M(lambda d: d.ell(44, 88 + y, 6, 2)) & body] = sk[0]
+        b.cv.a[edge(b.M(lambda d: d.ell(50, 82 + y, 20.5, 11.5)) & body, 0, 1, 2) & ~b.above(84 + y)] = t3[2]
+    elif kind == "delantal":
+        b.put(b.M(lambda d: d.ell(50, 82 + y, 11, 5)) & body, sk[1])
+        ap = tones(p.get("delantal", (236, 232, 222)))
+        bib = b.M(lambda d: (d.rect(34, 93 + y, 66, 114), d.poly([(34, 93 + y), (30, 83 + y), (34, 82 + y), (39, 93 + y)]), d.poly([(66, 93 + y), (70, 83 + y), (66, 82 + y), (61, 93 + y)]))) & body
+        b.vol(bib, ap, sw=2, lw=1, bottom=0)
+        if p.get("cuadros"):
+            b.cv.a[bib & ((xs // 4 + ys // 4) % 2 == 0)] = ap[0]
     elif kind == "sotana":
-        c.material(poly([(43, top - 4), (53, top - 4), (53, top), (43, top)]), tones((240, 240, 236)), k=20, amb=0.6)
-    else:  # camiseta
-        c.material(ell(48, top - 4, 9, 5), tones(p["ropa"], 0.3, 0.8), k=20)
-    if kind == "uniforme":
-        c.material(poly([(66, top + 12), (74, top + 12), (74, top + 20), (66, top + 20)]), tones((220, 190, 80)), k=60, gloss=0.6)
+        b.put(b.M(lambda d: d.rect(45, 82 + y, 55, 87 + y)) & body, (240, 240, 236))
+        for yy in range(92, 112, 6):
+            b.dot(50, yy, t3[2])
     if p.get("chal"):
         ch = tones(p["chal"])
-        c.material(poly([(lx, top + 18), (20, top - 2), (36, top + 4), (44, H), (lx, H)]), ch, k=25, extra=noise(4, 10, seed + 1, 0.3))
-        c.material(poly([(rx, top + 18), (76, top - 2), (60, top + 4), (54, H), (rx, H)]), ch, k=25, extra=noise(4, 10, seed + 2, 0.3))
-    if p.get("guitarra"):
-        c.material(poly([(4, H), (10, H), (60, top + 2), (56, top - 2)]), tones((130, 80, 40)), k=40, gloss=0.3)
+        b.vol(b.M(lambda d: (d.poly([(4, 100 + y), (18, 86 + y), (40, 81 + y), (48, 96 + y), (34, 114), (2, 114)]), d.poly([(60, 81 + y), (82, 88 + y), (92, 100 + y), (94, 114), (64, 114), (54, 96 + y)]))) & body,
+              ch, sw=3, lw=1, bottom=0)
     if p.get("cadena"):
-        m = mask(lambda d: d.arc([36 * S, (top - 12) * S, 62 * S, (top + 12) * S], 25, 155, fill=255, width=S))
-        c.material(m, tones((236, 196, 70)), height=blur(m, S), k=80, gloss=0.9)
+        gold = (240, 204, 96)
+        b.arc(38, 74 + g["dy"], 62, 98 + g["dy"], 20, 160, gold)
+        b.dot(50, 98, gold)
+        b.dot(50, 99, (255, 240, 170))
+    if p.get("guitarra"):
+        b.line([(22, 86), (70, 112)], (90, 60, 40), 3)
+        b.line([(22, 85), (70, 111)], (150, 104, 66))
     if p.get("flor"):
-        c.material(ell(74, top + 10, 4, 4), tones(p["flor"]), k=30)
+        fc = p["flor"]
+        b.put(b.M(lambda d: d.ell(70, 92, 4, 4)), fc)
+        b.dot(70, 92, (250, 220, 110))
+        b.dot(68, 96, (70, 120, 70))
 
 
-# ---------------------------------------------------------------- Pelo
-
-HAIR_SHAPES = {
-    "corto": lambda X, R: [ell(X(44), 34, R(22), 17), poly([(X(23), 40), (X(30), 30), (X(32), 56), (X(25), 54)])],
-    "rizado": lambda X, R: [ell(X(44), 32, R(24), 18)],
-    "engominado": lambda X, R: [ell(X(43), 34, R(22), 15), poly([(X(22), 38), (X(28), 30), (X(30), 54), (X(24), 52)])],
-    "calvo": lambda X, R: [poly([(X(24), 44), (X(30), 42), (X(31), 56), (X(25), 56)])],
-    "melena": lambda X, R: [ell(X(44), 36, R(24), 20), poly([(X(20), 40), (X(34), 34), (X(36), 76), (X(20), 76)]),
-                         poly([(X(62), 36), (X(68), 46), (X(68), 72), (X(64), 74)])],
-    "largo": lambda X, R: [ell(X(44), 36, R(24), 20), poly([(X(18), 40), (X(34), 34), (X(38), 104), (X(14), 104)]),
-                        poly([(X(62), 36), (X(70), 50), (X(72), 100), (X(64), 100)])],
-    "linda": lambda X, R: [ell(X(44), 36, R(24), 21), poly([(X(16), 40), (X(34), 34), (X(36), 106), (X(12), 106)]),
-                        poly([(X(62), 36), (X(70), 50), (X(72), 104), (X(64), 104)]),
-                        poly([(X(36), 32), (X(66), 36), (X(66), 46), (X(36), 44)])],
-    "cola": lambda X, R: [ell(X(44), 34, R(22), 17), poly([(X(22), 38), (X(30), 30), (X(30), 54), (X(24), 52)]),
-                       poly([(X(22), 34), (X(14), 46), (X(12), 78), (X(20), 76), (X(24), 48)])],
-    "afro": lambda X, R: [ell(X(44), 34, R(32), 28)],
-    "hongo": lambda X, R: [ell(X(46), 38, R(28), 22)],
-    "moño": lambda X, R: [ell(X(44), 34, R(22), 16), ell(X(24), 28, R(8), 8), poly([(X(22), 38), (X(30), 30), (X(30), 52), (X(24), 50)])],
-}
-LONG = ("largo", "linda", "melena", "cola", "afro", "hongo", "moño")
-
-
-def draw_hair(c, p, X, seed, front=True):
-    style = p.get("pelo", "corto")
-    if style not in HAIR_SHAPES:
-        return
-    sx = (X(100) - X(0)) / 100.0
-    shapes = HAIR_SHAPES[style](X, lambda r: r * sx)
-    m = np.clip(sum(shapes), 0, 1)
-    face_hole = poly([(X(34), 46), (X(40), 40), (X(66), 38), (X(70), 60), (X(60), 84), (X(36), 80)])
-    if style == "hongo":
-        face_hole = poly([(X(30), 50), (X(70), 50), (X(70), 84), (X(30), 84)])
-    elif style == "linda":
-        face_hole = poly([(X(34), 47), (X(68), 47), (X(70), 84), (X(34), 84)])
-    if front:
-        m = m * (1 - face_hole)
-        if style not in LONG:
-            head, _, _ = head_masks(p)
-            m = m * np.clip(head + ell(X(44), 34, 26, 22), 0, 1)
-    if style == "calvo":
-        m = shapes[0]
-    pal = tones(p.get("pelo_color", (40, 32, 34)), 0.35, 1.45, warm=(0, 0, 0))
-    strands = noise(1.2, 9, seed, 0.9) + noise(0.6, 5, seed + 7, 0.5)
-    if style in ("rizado", "afro"):
-        strands = noise(1.5, 1.5, seed, 1.1)
-    if style == "engominado":
-        strands = noise(10, 1.0, seed, 0.6)  # peinado para atrás: mechones horizontales
-    h = blur(m, 6 * S) + strands * 0.04
-    form = np.clip((_XX - X(44)) / 30.0, -1, 1) * 0.18
-    c.material(m, pal, height=h, k=45, amb=0.25, gloss=0.16 if style == "engominado" else 0.12, extra=strands * 0.35 + form)
-    if style == "hongo" and p.get("raiz"):
-        c.material(ell(X(46), 22, 16, 6) * m, tones(p["raiz"], 0.4, 1.3), k=30)
-    if p.get("canas_afro"):
-        speck = (noise(0.7, 0.7, seed + 3, 1.0) > 0.38) * m
-        c.paint(speck * 0.8, np.array([170, 166, 160], np.float32))
-    if p.get("canas"):  # canas sueltas, más en las sienes
-        temple = np.clip(1.0 - np.abs(_XX - X(26)) / 10.0, 0, 1) * 0.35
-        speck = (noise(0.6, 1.8, seed + 4, 1.0) > 0.5 - p["canas"] - temple) * m
-        c.paint(speck * 0.75, np.array([150, 146, 142], np.float32))
-
-
-def draw_beard(c, p, X, seed):
-    col = p.get("barba_color", p.get("pelo_color", (40, 32, 34)))
-    pal = tones(col, 0.4, 1.4, warm=(0, 0, 0))
-    head, _, _ = head_masks(p)
-    tex = noise(0.8, 2.5, seed + 5, 1.0)
-    if p.get("barba"):
-        m = poly([(X(31), 56), (X(36), 70), (X(46), 80), (X(54), 82), (X(60), 78), (X(64), 70), (X(64), 64),
-                  (X(56), 70), (X(48), 70), (X(40), 64)]) * head
-        m = m * (1 - poly([(X(50), 66), (X(60), 66), (X(60), 70), (X(50), 70)]) * 0.9)
-        c.material(m * np.clip(0.75 + tex, 0, 1), pal, k=40, extra=tex * 0.4)
-        if p.get("canas"):  # la barba con canas (más en el mentón)
-            speck = (noise(0.6, 1.2, seed + 9, 1.0) > 0.5 - p["canas"] - bump(X(52), 80, 6, 4, 0.3)) * m
-            c.paint(speck * 0.8, np.array([156, 150, 144], np.float32))
-    if p.get("bigote"):
-        c.material(poly([(X(49), 64), (X(58), 63), (X(62), 66), (X(55), 66.5), (X(48), 67)]), pal, k=40, extra=tex * 0.3)
-    if p.get("chivera"):
-        c.material(poly([(X(51), 74), (X(58), 74), (X(55), 86)]), pal, k=40, extra=tex * 0.3)
-
-
-def draw_hat(c, p, X, seed):
-    hat = p.get("sombrero")
-    if not hat:
-        return
-    pal = tones(p.get("sombrero_color", (60, 60, 60)))
-    if hat == "gorra":
-        c.material(ell(X(44), 30, 23, 14) * poly([(0, 0), (96, 0), (96, 36), (0, 36)]), pal, k=30)
-        c.material(poly([(X(58), 32), (X(78), 34), (X(76), 38), (X(58), 37)]), tones(pal[1], 0.3, 0.9), k=30)
-    elif hat == "boina":
-        c.material(ell(X(42), 26, 24, 9), pal, k=30, extra=noise(2, 2, seed, 0.2))
-    elif hat == "sombrero":
-        c.material(ell(X(46), 30, 36, 5), pal, k=25)
-        c.material(ell(X(45), 22, 18, 12) * poly([(0, 0), (96, 0), (96, 30), (0, 30)]), pal, k=30)
-        if p.get("cinta"):
-            c.material(poly([(X(27), 26), (X(63), 26), (X(63), 29), (X(27), 29)]), tones(p["cinta"]), k=20)
-    elif hat == "pañoleta":
-        m = ell(X(44), 34, 24, 19) * poly([(0, 0), (96, 0), (96, 42), (0, 42)])
-        c.material(np.clip(m + poly([(X(22), 36), (X(12), 50), (X(26), 46)]), 0, 1), pal, k=30, extra=noise(3, 3, seed, 0.3))
-
-
-# ---------------------------------------------------------------- A mano (1x, nítido)
-
-def px(d, pts, col):
-    d.point(pts, fill=tuple(int(v) for v in col[:3]) + (255,))
-
-
-def details(img, p, X):
-    """Ojos, cejas, boca, arrugas, barba de días, gafas: a 1x, píxel por píxel. Caras serias y
-    gastadas (como Dredge): ceño, párpados caídos, ojeras, comisuras para abajo."""
-    d = ImageDraw.Draw(img)
-    dark, mid, light = skin_of(p)
-    x = lambda v: int(round(X(v)))
-    female, kid, old = p.get("mujer"), p.get("chiquita"), p.get("viejo")
-    worn = p.get("destruido") or old
-    ey = 50
-    ink = (28, 20, 22)
-    sh = lambda k: tuple(int(v * k) for v in mid)
-    brow = tones(p.get("cejas", p.get("pelo_color", (40, 32, 34))), 0.5, 1.1)
-    # Cejas: gruesas, bajas, con el ceño (la punta de adentro más abajo que la de afuera).
-    thick = 1 if kid else 2
-    for i, bx in enumerate(range(x(41), x(52))):
-        yy = ey - 6 + (1 if i >= 8 else 0) + (0 if kid else (1 if i <= 1 else 0))
-        for t in range(thick):
-            px(d, [(bx, yy + t)], brow[0] if t == 0 else brow[1])
-    for bx in range(x(57), x(64)):
-        px(d, [(bx, ey - 5 if bx < x(59) else ey - 6)], brow[0])
-    if not kid:
-        px(d, [(x(53), ey - 4), (x(53), ey - 3)], sh(0.72))  # la arruga del ceño
-    # Ojos: almendra chica, párpado de arriba caído (tapa la mitad del iris), ojera abajo.
-    iris = p.get("ojo_color", (64, 44, 34))
-    for (ex0, ex1, near) in ((x(43), x(50), True), (x(58), x(62), False)):
-        if p.get("ojos") == "cerrados":
-            d.line([(ex0, ey + 1), (ex1, ey + 1)], fill=ink)
-            continue
-        white = (210, 200, 186) if not worn else (206, 186, 170)
-        d.line([(ex0 + 1, ey), (ex1 - 1, ey)], fill=white)
-        d.line([(ex0 + 1, ey + 1), (ex1 - 2, ey + 1)], fill=sh(0.8))
-        ix = ex1 - (3 if near else 1)
-        d.rectangle([ix - 1, ey, ix + (0 if not near else 1), ey + 1], fill=iris)
-        px(d, [(ix, ey)], (16, 10, 10))
-        px(d, [(ix + (1 if near else 0), ey)], (236, 232, 222))  # un brillo chiquito
-        d.line([(ex0, ey - 1), (ex1, ey - 1)], fill=ink)  # el párpado, pesado
-        d.line([(ex0 + 1, ey - 2), (ex1 - 1, ey - 2)], fill=sh(0.7))  # el pliegue, en sombra
-        px(d, [(ex1 + 1, ey)], ink)
-        if not kid:
-            d.line([(ex0, ey + 2), (ex1 - 1, ey + 2)], fill=sh(0.66))  # ojera
-            if worn or p.get("ojeras"):
-                d.line([(ex0 + 1, ey + 3), (ex1 - 2, ey + 3)], fill=sh(0.74))
-        if p.get("destruido"):
-            px(d, [(ex0, ey), (ex0 + 1, ey + 1)], (150, 70, 66))  # ojo rojo, de no dormir
-        if female or kid:
-            px(d, [(ex1 + 1, ey - 2), (ex1 + 2, ey - 2)], ink)
-    # Nariz: el borde en sombra y la fosa.
-    px(d, [(x(56), 55), (x(56), 57), (x(56), 59)], sh(0.8))
-    px(d, [(x(57), 62), (x(58), 62)], sh(0.55))
-    # Boca: recta, comisuras hacia abajo.
-    lips = p.get("labios")
-    my = 67
-    m0, m1 = x(49), x(59)
-    if lips:
-        lc = tones(lips, 0.6, 1.1)
-        d.line([(m0 + 1, my + 1), (m1 - 2, my + 1)], fill=tuple(int(v) for v in lc[1]))
-    d.line([(m0, my), (m1, my)], fill=sh(0.5))
-    if kid and p.get("sonrisa"):
-        px(d, [(m0 - 1, my - 1), (m1 + 1, my - 1)], sh(0.6))
-    else:
-        px(d, [(m0 - 1, my + 1), (m1 + 1, my + 1)], sh(0.58))
-    if not kid:
-        px(d, [(x(52), my + 3), (x(55), my + 3)], sh(0.78))  # sombra bajo el labio
-        # Surcos de la nariz a la boca.
-        px(d, [(x(51), 60), (x(50), 62), (x(49), 64), (x(48), 66)], sh(0.74))
-    if old:
-        d.line([(x(44), 39), (x(56), 39)], fill=sh(0.8))
-        d.line([(x(46), 41), (x(54), 41)], fill=sh(0.84))
-        px(d, [(x(63), 50), (x(64), 52), (x(64), 47)], sh(0.75))  # patas de gallo
-        px(d, [(x(40), 70), (x(42), 73), (x(45), 75)], sh(0.8))  # la papada que cuelga
-    # Barba de días (los hombres sin barba): puntitos en la quijada y el bigote.
-    if not (female or kid or p.get("barba")):
-        rnd = random.Random(7)
-        stub = (36, 28, 28) if p.get("pelo_color", (40, 32, 34))[0] < 120 else (120, 110, 100)
-        for _ in range(110 if p.get("destruido") else 60):
-            sx, sy = rnd.randint(x(32), x(64)), rnd.randint(56, 80)
-            pxl = img.getpixel((sx, sy))
-            if pxl[3] and abs(pxl[0] - mid[0]) < 60 and not (x(48) <= sx <= x(60) and my - 1 <= sy <= my + 1):
-                if sy > 64 or (x(48) <= sx <= x(61) and 63 <= sy <= 65):
-                    blend = tuple(int(a * 0.55 + b * 0.45) for a, b in zip(pxl[:3], stub))
-                    d.point((sx, sy), fill=blend + (255,))
-    if p.get("cicatriz"):
-        d.line([(x(60), 44), (x(57), 54)], fill=sh(1.15))
-    if p.get("nariz_roja"):
-        d.ellipse([x(57), 58, x(61), 62], fill=(170, 84, 84))
-    if p.get("pecas"):
-        rnd = random.Random(3)
-        for _ in range(12):
-            px(d, [(rnd.randint(x(41), x(62)), rnd.randint(54, 60))], sh(0.8))
-    if p.get("arete"):
-        px(d, [(x(29), 62), (x(29), 63)], (200, 170, 80))
-    g = p.get("gafas")
-    if g:
-        frame = (24, 18, 20)
-        if g == "oscuras":
-            d.rectangle([x(41), ey - 3, x(51), ey + 3], fill=(22, 20, 26))
-            d.rectangle([x(56), ey - 3, x(63), ey + 3], fill=(22, 20, 26))
-            d.line([(x(43), ey - 2), (x(46), ey - 2)], fill=(96, 100, 116))
-        else:
-            d.rectangle([x(41), ey - 3, x(51), ey + 3], outline=frame)
-            d.rectangle([x(56), ey - 3, x(63), ey + 3], outline=frame)
-            px(d, [(x(49), ey - 2), (x(61), ey - 2)], (210, 214, 214))
-        d.line([(x(51), ey - 1), (x(56), ey - 1)], fill=frame)
-        d.line([(x(31), ey - 1), (x(41), ey - 1)], fill=frame)
-    if p.get("audifonos"):
-        d.arc([x(22), 14, x(66), 70], 190, 330, fill=(34, 34, 40), width=2)
-        d.rectangle([x(24), 50, x(30), 60], fill=(50, 130, 130))
-    if p.get("moño_pelo"):
-        col = tuple(int(v * 0.8) for v in p["moño_pelo"])
-        d.polygon([(x(26), 18), (x(33), 23), (x(26), 28)], fill=col)
-        d.polygon([(x(40), 18), (x(33), 23), (x(40), 28)], fill=col)
-        px(d, [(x(33), 23)], tuple(int(v * 0.6) for v in col))
-
-
-# ---------------------------------------------------------------- Armado
-
-def facets(c, cell=5.0, seed=0):
-    """Planos facetados (como Dredge): cada celda de un Voronoi con puntos corridos toma el color
-    promedio de lo que tiene adentro (por material, para no mezclar pelo con piel)."""
-    rnd = np.random.default_rng(seed)
-    cs = cell * S
-    gw, gh = int(W * S / cs) + 3, int(H * S / cs) + 3
-    jx, jy = rnd.random((gh, gw)), rnd.random((gh, gw))
-    yy, xx = np.mgrid[0:H * S, 0:W * S].astype(np.float32)
-    ix, iy = (xx // cs).astype(np.int32), (yy // cs).astype(np.int32)
-    best = np.full(xx.shape, 1e9, np.float32)
-    cid = np.zeros(xx.shape, np.int64)
-    for dj in (-1, 0, 1):
-        for di in (-1, 0, 1):
-            cx, cy = np.clip(ix + di, 0, gw - 1), np.clip(iy + dj, 0, gh - 1)
-            pxp, pyp = (cx + jx[cy, cx]) * cs, (cy + jy[cy, cx]) * cs
-            dd = (xx - pxp) ** 2 + (yy - pyp) ** 2
-            closer = dd < best
-            best = np.where(closer, dd, best)
-            cid = np.where(closer, cy * gw + cx, cid)
-    label = (cid * 512 + c.mat).ravel()
-    _, inv = np.unique(label, return_inverse=True)
-    cnt = np.bincount(inv).astype(np.float32)
-    out = np.empty_like(c.rgb).reshape(-1, 3)
-    flat = c.rgb.reshape(-1, 3)
-    for ch in range(3):
-        out[:, ch] = (np.bincount(inv, weights=flat[:, ch]) / cnt)[inv]
-    c.rgb = out.reshape(c.rgb.shape)
-
-
-def grade(c):
-    """Colores apagados, como de pueblo húmedo: menos saturación, sombras frías, luces cálidas."""
-    rgb = c.rgb / 255.0
-    lum = (rgb @ np.array([0.3, 0.59, 0.11], np.float32))[..., None]
-    rgb = lum + (rgb - lum) * 0.62
-    shadow = np.clip(1.0 - lum * 2.0, 0, 1)
-    rgb = rgb + shadow * np.array([-0.03, 0.01, 0.04]) + (1 - shadow) * np.array([0.02, 0.0, -0.03])
-    rgb = rgb * 0.9
-    c.rgb = np.clip(rgb * 255.0, 0, 255).astype(np.float32)
-
-
-def to_pixels(c):
-    """De 4x a 1x, paleta reducida (pixel art), y contorno selectivo (más oscuro, no negro)."""
-    rgb = Image.fromarray(np.clip(c.rgb, 0, 255).astype(np.uint8)).resize((W, H), Image.BOX)
-    a = Image.fromarray((c.a * 255).astype(np.uint8)).resize((W, H), Image.BOX)
-    a = a.point(lambda v: 255 if v > 110 else 0)
-    q = rgb.quantize(colors=32, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
-    img = q.convert("RGBA")
-    img.putalpha(a)
-    pxl = img.load()
-    src = img.copy().load()
-    for y in range(H):
-        for x in range(W):
-            if src[x, y][3] == 0:
-                continue
-            edge = any(not (0 <= x + dx < W and 0 <= y + dy < H) or src[x + dx, y + dy][3] == 0
-                       for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-            if edge and y < H - 1:
-                r, g, b, _ = src[x, y]
-                k = 0.35 if x < 60 else 0.5  # del lado de la luz, el borde es más claro
-                pxl[x, y] = (int(r * k), int(g * k), int(b * k * 1.05), 255)
-    return img
-
+# ---------------------------------------------------------------- El busto completo
 
 def portrait(p, seed=0):
-    c = Canvas()
-    _, _, X = head_masks(p)
-    if p.get("pelo", "corto") in LONG:
-        draw_hair(c, p, X, seed, front=False)  # lo de atrás del pelo
-    draw_body(c, p, seed)
-    draw_neck(c, p)
-    X = draw_head(c, p)
-    draw_beard(c, p, X, seed)
-    draw_hair(c, p, X, seed + 11, front=True)
-    draw_hat(c, p, X, seed)
-    facets(c, seed=seed)
-    grade(c)
-    fig = to_pixels(c)
-    details(fig, p, X)
-    if p.get("chiquita"):  # más chica: todo un poco más abajo y más chico
-        small = fig.resize((int(W * 0.88), int(H * 0.88)), Image.NEAREST)
-        fig = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        fig.alpha_composite(small, ((W - small.width) // 2, H - small.height))
-    return fig
+    b = Bust(p, seed)
+    g = geom(p)
+    sk = SKINS[p.get("piel", "clara")] if isinstance(p.get("piel", "clara"), str) else p["piel"]
+    hair(b, g, front=False)
+    body = body_mask(b, g)
+    clothes(b, g, body)
+    # El cuello, con la sombra de la quijada.
+    neck = b.M(lambda d: d.cap(47.5, 62, 49.5, 85, g["neck"]))
+    b.vol(neck, sk, sw=3, lw=1, bottom=0)
+    b.cv.a[neck & b.above(74)] = sk[0]
+    b.veil(neck & ~b.above(74) & b.above(78), sk[0], 0.5)
+    if p.get("tipo") in ("saco", "bata", "chaleco", "uniforme", "sotana"):
+        y = g["dy"]
+        collar = b.M(lambda d: (d.poly([(38, 80 + y), (46, 76 + y), (50, 86 + y), (42, 90 + y)]), d.poly([(62, 80 + y), (54, 76 + y), (50, 86 + y), (58, 90 + y)])))
+        if p.get("tipo") != "sotana":
+            b.vol(collar, tones(p.get("camisa", (226, 220, 206))), sw=1, lw=1, bottom=1, dither=False)
+    # La oreja de acá y la cabeza.
+    ear = b.M(lambda d: d.ell(29.5, 45.5, 4.2, 6.6))
+    b.vol(ear, sk, sw=1, lw=0, bottom=1, dither=False)
+    b.cv.a[b.M(lambda d: d.ell(29.8, 45.5, 1.8, 3.8))] = sk[0]
+    head = head_mask(b, g)
+    b.vol(head, sk, sw=4, lw=2, bottom=2)
+    face(b, g, head, sk)
+    facial_hair(b, g, head)
+    hair(b, g, front=True)
+    if p.get("audifonos"):
+        b.vol(b.M(lambda d: d.ell(48, 34, 26, 26)) & ~b.M(lambda d: d.ell(48, 36, 23.5, 25)) & b.above(40), tones((60, 60, 70)), sw=1, lw=1, bottom=0, dither=False)
+        b.vol(b.M(lambda d: d.ell(28.5, 45, 5.5, 8)), tones((70, 180, 190)), sw=2, lw=1)
+    hat(b, g)
+    glasses(b, g)
+    if p.get("moño_pelo"):
+        bow = tones(p["moño_pelo"])
+        b.vol(b.M(lambda d: (d.poly([(26, 14), (35, 19), (26, 25)]), d.poly([(44, 14), (35, 19), (44, 25)]))), bow, sw=1, lw=1, bottom=1, dither=False)
+        b.dot(35, 19, bow[0])
+    return b.result(p.get("fondo", (120, 120, 140)))
 
 
 def mannequin():
     """Todos iguales: gris, sin cara."""
-    p = {"piel": ((96, 96, 104), (166, 166, 174), (210, 210, 216)), "pelo": "ninguno", "ropa": (140, 140, 148),
-         "tipo": "camiseta", "fondo": (90, 90, 98)}
-    c = Canvas()
-    draw_body(c, p, 1)
-    draw_neck(c, p)
-    head, ear, X = head_masks(p)
-    c.material(np.clip(head + ear, 0, 1), skin_of(p), height=blur(head, 7 * S), k=38, amb=0.3)
-    facets(c, seed=99)
-    return to_pixels(c)
+    p = {"piel": ((96, 96, 106), (166, 166, 176), (212, 212, 220)), "pelo": "ninguno", "ropa": (132, 132, 142), "tipo": "camiseta"}
+    b = Bust(p, 99)
+    g = geom(p)
+    sk = p["piel"]
+    body = body_mask(b, g)
+    b.vol(body, tones(p["ropa"]), sw=5, lw=2, bottom=0)
+    neck = b.M(lambda d: d.cap(47.5, 62, 49.5, 85, g["neck"]))
+    b.vol(neck, sk, sw=3, lw=1, bottom=0)
+    b.cv.a[neck & b.above(74)] = sk[0]
+    b.vol(b.M(lambda d: d.ell(29.5, 45.5, 4.2, 6.6)), sk, sw=1, lw=0, bottom=1, dither=False)
+    b.vol(head_mask(b, g), sk, sw=5, lw=2, bottom=2)
+    return b.result((150, 150, 164))
+
+
+def lukas(bark=False):
+    """Lukas: beagle tricolor, de tres cuartos, con su collar. bark: ladrando, una oreja al aire."""
+    b = Bust({}, 5)
+    tan, ear, black, white = tones((214, 138, 74)), tones((150, 86, 48)), tones((52, 46, 50), 0.6, 1.5), tones((246, 240, 228), 0.72, 1.0)
+    # El cuerpo: el lomo negro, el pecho blanco.
+    body = b.M(lambda d: d.poly([(10, 114), (16, 88), (32, 74), (60, 76), (76, 92), (82, 114)]))
+    b.vol(body, tan, sw=4, lw=2, bottom=0)
+    b.vol(b.M(lambda d: d.poly([(10, 114), (16, 88), (30, 76), (36, 96), (34, 114)])) & body, black, sw=3, lw=1, bottom=0)
+    b.vol(b.M(lambda d: d.poly([(44, 78), (62, 78), (74, 94), (78, 114), (46, 114)])) & body, white, sw=2, lw=1, bottom=0)
+    # El collar, con la plaquita.
+    leather = tones((176, 100, 58))
+    b.vol(b.M(lambda d: d.poly([(28, 72), (64, 75), (65, 83), (29, 81)])), leather, sw=2, lw=1, bottom=1, dither=False)
+    b.vol(b.M(lambda d: d.ell(52, 87, 3.8, 3.8)), tones((204, 206, 218)), sw=1, lw=1, bottom=1, dither=False)
+    b.dot(52, 87, (120, 122, 136))
+    # La oreja de allá (apenas se ve), la cabeza, el hocico.
+    lift = -3 if bark else 0
+    b.vol(b.M(lambda d: d.ell(58, 26 + lift, 7, 9)), ear, sw=2, lw=1, bottom=0)
+    head = b.M(lambda d: (d.ell(44, 42 + lift, 22, 21), d.poly([(40, 56 + lift), (70, 44 + lift), (72, 62 + lift), (48, 68 + lift)])))
+    b.vol(head, tan, sw=4, lw=2, bottom=2)
+    muzzle = b.M(lambda d: (d.ell(66, 53 + lift, 16, 10.5), d.poly([(52, 24 + lift), (59, 25 + lift), (64, 46 + lift), (54, 48 + lift)])))
+    b.vol(muzzle, white, sw=2, lw=1, bottom=2)
+    b.vol(b.M(lambda d: d.ell(80, 48.5 + lift, 4.6, 4)), black, sw=1, lw=1, bottom=1, dither=False)   # la nariz
+    b.dot(81, 47 + lift, (236, 236, 244))
+    if bark:
+        b.vol(b.M(lambda d: d.poly([(58, 60), (78, 56), (77, 70), (62, 72)])), white, sw=2, lw=1, bottom=2)   # la quijada, abierta
+        b.put(b.M(lambda d: d.poly([(60, 58), (79, 53), (76, 63), (63, 65)])), (110, 36, 46))
+        b.put(b.M(lambda d: d.ell(70, 62.5, 5.5, 2.6)), (236, 120, 132))                                # la lengua
+        for xx in (64, 68, 72, 76):
+            b.dot(xx, 57 - (xx - 64) // 4, (255, 255, 250))
+        b.line([(48, 37), (52, 39), (56, 37)], INK)                                                   # el ojo, apretado
+        b.vol(b.M(lambda d: d.poly([(24, 36), (6, 14), (30, 26)])), ear, sw=2, lw=1, bottom=1)          # la oreja, al aire
+        for (x0, y0, x1, y1) in ((86, 40, 92, 36), (87, 50, 94, 50), (86, 60, 92, 64)):
+            b.put(b.M(lambda d: d.cap(x0, y0, x1, y1, 1.6)), (250, 226, 120))
+    else:
+        b.line([(62, 61), (70, 62), (79, 58)], mix(white[0], INK, 0.5))                                # la boca
+        b.vol(b.M(lambda d: d.ell(26, 55, 10.5, 21)), ear, sw=3, lw=2, bottom=2)                        # la oreja, caída
+        b.put(b.M(lambda d: d.ell(51.5, 41, 3.4, 3.6)), (30, 20, 22))                                  # el ojo
+        b.dot(50, 40, (255, 255, 255))
+        b.dot(51, 39, (255, 255, 255))
+        b.line([(48, 45), (55, 45)], tan[0])
+        b.put(b.M(lambda d: d.ell(67, 41, 1.8, 2.6)), (30, 20, 22))
+    b.put(b.M(lambda d: d.ell(53, 34 + lift, 2.2, 1.4)), tan[2])                                       # la ceja
+    return b.result((240, 200, 120))
 
 
 # ---------------------------------------------------------------- El reparto
@@ -610,7 +688,7 @@ CAST = {
     "samuel": {"destruido": True, "piel": "media", "pelo": "corto", "pelo_color": (150, 146, 140), "barba": True,
                "barba_color": (200, 196, 190), "viejo": True, "sombrero": "gorra", "sombrero_color": (150, 50, 40),
                "ropa": (110, 84, 60), "tipo": "saco", "camisa": (70, 66, 64), "fondo": (100, 80, 60)},
-    "victoria": {**M, "piel": "clara", "pelo": "largo", "pelo_color": (70, 44, 34), "ropa": (240, 140, 170),
+    "victoria": {"nino": True, **M, "piel": "clara", "pelo": "largo", "pelo_color": (70, 44, 34), "ropa": (240, 140, 170),
                  "tipo": "camiseta", "fondo": (230, 170, 80), "chiquita": True, "cachetes": True,
                  "moño_pelo": (230, 80, 120), "sonrisa": True},
     "zaida": {**M, "piel": "morena", "pelo": "largo", "pelo_color": (24, 20, 28), "ropa": (120, 70, 140),
@@ -729,15 +807,15 @@ CAST = {
                 "fondo": (100, 130, 120)},
     "mama": {**M, "piel": "media", "pelo": "cola", "pelo_color": (50, 36, 32), "ropa": (230, 190, 90), "tipo": "camiseta",
              "labios": (180, 80, 90), "fondo": (170, 140, 70), "ojeras": True},
-    "pelado": {"piel": "morena", "pelo": "corto", "pelo_color": (30, 26, 28), "ropa": (220, 120, 60), "tipo": "camiseta",
+    "pelado": {"nino": True, "piel": "morena", "pelo": "corto", "pelo_color": (30, 26, 28), "ropa": (220, 120, 60), "tipo": "camiseta",
                "fondo": (90, 140, 90), "chiquita": True, "cachetes": True, "sonrisa": True},
-    "flaca": {**M, "piel": "media", "pelo": "cola", "pelo_color": (40, 30, 30), "ropa": (90, 170, 200), "tipo": "camiseta",
+    "flaca": {"nino": True, **M, "piel": "media", "pelo": "cola", "pelo_color": (40, 30, 30), "ropa": (90, 170, 200), "tipo": "camiseta",
               "fondo": (90, 140, 90), "chiquita": True, "pecas": True, "sonrisa": True},
-    "chino": {"piel": "clara", "pelo": "engominado", "pelo_color": (24, 22, 26), "ropa": (210, 60, 60), "tipo": "camiseta",
+    "chino": {"nino": True, "piel": "clara", "pelo": "engominado", "pelo_color": (24, 22, 26), "ropa": (210, 60, 60), "tipo": "camiseta",
               "fondo": (90, 140, 90), "chiquita": True, "ojos": "cerrados", "sonrisa": True},
-    "alejandro": {"piel": "media", "pelo": "corto", "pelo_color": (34, 28, 28), "ropa": (206, 200, 184), "tipo": "saco",
+    "alejandro": {"nino": True, "piel": "media", "pelo": "corto", "pelo_color": (34, 28, 28), "ropa": (206, 200, 184), "tipo": "saco",
                   "camisa": (206, 200, 184), "fondo": (60, 90, 140), "chiquita": True, "ojeras": True, "cicatriz": True},
-    "nina": {**M, "piel": "morena", "pelo": "afro", "pelo_color": (30, 24, 26), "ropa": (240, 200, 90), "tipo": "vestido",
+    "nina": {"nino": True, **M, "piel": "morena", "pelo": "afro", "pelo_color": (30, 24, 26), "ropa": (240, 200, 90), "tipo": "vestido",
              "fondo": (150, 110, 150), "chiquita": True, "cachetes": True, "moño_pelo": (230, 80, 120)},
     "funcionario": {"piel": "clara", "pelo": "engominado", "pelo_color": (70, 60, 56), "gafas": "claras", "bigote": True,
                     "ropa": (96, 100, 116), "tipo": "saco", "camisa": (236, 232, 222), "corbata": (120, 50, 60),
@@ -795,16 +873,33 @@ CAST = {
 }
 
 
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    only = sys.argv[1:]
+    args = sys.argv[1:]
+    if args and args[0] == "--hoja":
+        ids = args[2:] or list(CAST)
+        cols = 6
+        rows = (len(ids) + cols - 1) // cols
+        sheet = Image.new("RGB", (W * cols, H * rows), (44, 40, 62))
+        for k, pid in enumerate(ids):
+            if pid in ("iguales", "lukas", "lukas_ladra"):
+                im = {"iguales": mannequin, "lukas": lukas, "lukas_ladra": lambda: lukas(True)}[pid]()
+            else:
+                im = portrait(CAST[pid], seed=list(CAST).index(pid))
+            sheet.paste(im, ((k % cols) * W, (k // cols) * H), im)
+        sheet.resize((sheet.width * 3, sheet.height * 3), Image.NEAREST).save(args[1])
+        return
     for i, (pid, p) in enumerate(CAST.items()):
-        if only and pid not in only:
+        if args and pid not in args:
             continue
         portrait(p, seed=i).save(OUT / f"{pid}.png")
-    if not only:
+    if not args or "iguales" in args:
         mannequin().save(OUT / "iguales.png")
-    print("retratos:", len(only) or len(CAST), OUT)
+    if not args or "lukas" in args:
+        lukas().save(OUT / "lukas.png")
+        lukas(bark=True).save(OUT / "lukas_ladra.png")
+    print("retratos:", len(args) or len(CAST), OUT)
 
 
 if __name__ == "__main__":

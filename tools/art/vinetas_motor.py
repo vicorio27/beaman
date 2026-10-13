@@ -17,6 +17,13 @@ W, H, SS = 240, 100, 4
 BAYER = (np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) + 0.5) / 16.0
 BAY = np.tile(BAYER, (H // 4 + 1, W // 4 + 1))[:H, :W]
 
+def set_size(w, h):
+    """Otro tamaño de lienzo (los retratos: 96x112)."""
+    global W, H, BAY
+    W, H = w, h
+    BAY = np.tile(BAYER, (H // 4 + 1, W // 4 + 1))[:H, :W]
+
+
 # Los colores de cada cosa, a la luz del día.
 COAT, PANTS, HAIR, BEARD = (104, 110, 136), (74, 80, 106), (46, 38, 42), (74, 62, 60)
 SKIN, SHIRT, TIE = (220, 164, 128), (220, 212, 194), (230, 54, 58)
