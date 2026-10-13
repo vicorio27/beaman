@@ -225,9 +225,15 @@ func _german(npc: Node) -> void:
 		var i := await Dialogue.talk([["DON GERMAN", "—¿Qué necesita?"]], opts)
 		match opts[i]:
 			"Señalar los bultos":
+				if await _sin_trabajo([["DON GERMAN", "—Ay, mijo. Metí a un sobrino. Diecinueve años, alza dos bultos de una y no se queja: todavía no sabe que se puede."],
+						["DON GERMAN", "—No es por usted. Es por la espalda de usted. Llévese un pan. Ese sí no se lo descuento a nadie."]]):
+					return
 				await _german_job(npc)
 				return
 			"La obra (turno)":
+				if await _sin_trabajo([["DON GERMAN", "—Mi cuñado ya no recibe a nadie de más de cuarenta. Dice que se le parten y después toca explicarle al ingeniero."],
+						["", "(Él se mira las manos. Germán también. Ninguno de los dos dice cuántos tiene.)"]]):
+					return
 				await Dialogue.talk([["DON GERMAN", "—Váyase ya, mijo, que mi cuñado no espera. Y coma algo antes: el ladrillo no perdona. Mi cuñado tampoco, pero él por lo menos es familia."]])
 				SceneRouter.go("res://scenes/world/Obra.tscn")
 				return
@@ -1235,7 +1241,7 @@ func _rosa_favor() -> bool:
 	var f := GameState.flags
 	var h := TimeManager.hour()
 	if GameState.day >= 3 and not f.get("f_puesto_hecho", false) and h >= 8 and h < 16 and f.get("met_rosa", false) \
-			and not GameState.is_dirty():
+			and not GameState.is_dirty() and not f.has("ultimo_trabajo"):
 		var i := await Dialogue.talk([
 			["DOÑA ROSA", "—Mijito, ¿me cuida el puesto una horita? Tengo cita en el médico. Del azúcar. Vendo empanadas y tengo el azúcar alto. La vida tiene sentido del humor."],
 		], ["Cuidar el puesto", "Ahora no"])
@@ -1385,6 +1391,8 @@ const PARQUE := "res://scenes/world/Parque.tscn"
 
 ## ¿Ya hizo este trabajo hoy?
 func _job_today(id: String) -> bool:
+	if GameState.flags.has("ultimo_trabajo") and id != "plato":  # (el plato de la olla no es trabajo: ese sigue)
+		return true  # después de José Mario, ya nadie tiene nada para él
 	return GameState.flags.get("job_" + id, -1) == GameState.day
 
 
@@ -2657,6 +2665,9 @@ func _yeison() -> void:
 			["YEISON", "—Le alquilo la bici: dos mil por pedido. Pagan cinco mil, más propina si llega rápido. Si se demora, cancelan. Si cancelan, usted le debe a la app."],
 			["YEISON", "—Y si lo roban, le descuentan la bici. Y el pedido. ¿Preguntas? ¿No? Perfecto. La app ama a los que no preguntan. A mí me tiene en lista negra."],
 		])
+	if await _sin_trabajo([["YEISON", "—Parce, la app lo bloqueó. Dice \"usuario inactivo\". Yo le dije que usted estaba vivo. La app pidió pruebas."],
+			["YEISON", "—No se lo tome personal. A la app le pasa con todos, tarde o temprano. A mí me tiene en la lista de espera para bloquearme."]]):
+		return
 	var today: int = int(f.get("reparto_hoy", 0)) if f.get("reparto_dia", -1) == GameState.day else 0
 	if today >= 3:
 		await Dialogue.talk([["YEISON", "—Ya hizo tres hoy, parce. La app dice que descanse. La app nunca dice eso. Algo le pasa a la app. Es la primera vez que la veo humana. Me asusta."]])
@@ -2678,6 +2689,9 @@ func _ruta_open() -> bool:
 
 
 func _wilson_ruta() -> void:
+	if await _sin_trabajo([["WILSON", "—Parce, la ruta ya tiene dueño. Un pelado con moto. Recoge en veinte minutos lo que nosotros en noventa segundos. No, espere. Al revés. Igual."],
+			["WILSON", "—Tráigame latas y se las compro, eso sí. Pero la ruta... la ruta es de los que corren."]]):
+		return
 	await Dialogue.talk([
 		["WILSON", "—Hoy pasa el camión de la basura. Martes y viernes, a las once y media. Llega, recoge, se va. Como un ex."],
 		["WILSON", "—Lo que recojamos antes, es plata. Noventa segundos, parce. Latas por todo el barrio. Se las pago al doble. Al doble. Eso no lo digo nunca."],
@@ -2789,10 +2803,14 @@ func _vet_coca() -> void:
 # ---------------------------------------------------------------- El último trabajo: José Mario Camilo
 ## Su jefe de antes (el que dejó el correo abierto). Sale en el centro después de que muere Lukas
 ## (scripts/systems/Vecindario.gd) y le ofrece un trabajo de un día: sacar cuatro cajas del archivo, las
-## de la gente que ya no trabaja ahí. La cuarta es la de él. Es el último trabajo que hace: el último
-## sueño espera a que lo haga (NightSequence._dream_when), menos la noche del 49.
+## de la gente que ya no trabaja ahí. La cuarta es la de él.
+## Es la estocada: el mundo cobra cuando uno está más débil. Le promete cuarenta mil y, con los
+## descuentos, le da para el bus; y lo sacan por la puerta de servicio. Después de este, nadie más le da
+## trabajo (_sin_trabajo, _job_today): es el último. El último sueño espera a que lo tome
+## (NightSequence._dream_when), menos la noche del 49.
 ## Flags: ultimo_trabajo (el día), josemario_visto.
-const PAGO_ULTIMO := 40000
+const PAGO_ULTIMO := 40000   # lo que promete
+const PAGO_REAL := 2800      # lo que queda
 const CAJAS_ULTIMO := [
 	["La caja de Walter", 38.0, 140.0, 1,
 		"(Pesa poco. Adentro suena un lapicero. Y un post-it, pegado por dentro: \"SOY EL SAPO\". Alguien lo guardó de recuerdo.)"],
@@ -2813,14 +2831,17 @@ func _ultimo_trabajo() -> void:
 	if first:
 		lines = [
 			["", "(Un edificio de vidrio. En la puerta, un hombre de saco gris mira el reloj como si el reloj le debiera plata.)"],
+			["", "(Medio calvo. Arriba le están saliendo pelos nuevos, de a parches, en fila, como sembrados. Chivera. Sonríe con unos dientes que no se ponen de acuerdo.)"],
 			["JOSE MARIO", "—Usted. ... No me diga. Sí: usted. Tiene la misma cara. Le creció alrededor."],
 			["JOSE MARIO", "—José Mario Camilo. Ya sé que sabe. Lo digo completo porque ahora va así en la tarjeta. Me ascendieron. Alguien tenía que quedar."],
 			["JOSE MARIO", "—Necesito a alguien por un día. Alguien que no pregunte. Usted nunca preguntó. Era su mejor cualidad. Por eso fue tan fácil."],
 			["JOSE MARIO", "—Cuatro cajas del archivo, a la calle. Cosas de gente que ya no trabaja aquí. Cuarenta mil, en efectivo: usted no existe en la nómina. Bueno: otra vez."],
+			["", "(Cuarenta mil. Con eso completa lo de Victoria. José Mario dice la cifra despacio, como quien ya hizo esa cuenta.)"],
 		]
 	else:
 		lines = [["JOSE MARIO", "—Volvió. Las cajas siguen ahí. Las cosas de los que se van siempre siguen ahí: es lo único que dejan."],
-			["JOSE MARIO", "—Cuarenta mil. Si se le cae una, se la descuento. No es personal. Nunca fue personal."]]
+			["JOSE MARIO", "—Cuarenta mil. Si se le cae una, se la descuento. No es personal. Nunca fue personal."],
+			["", "(Si lo toma, es el último que toma.)"]]
 	var i := await Dialogue.talk(lines, ["Recibir el trabajo", "Seguir"])
 	if i != 0:
 		await Dialogue.talk([["", "(Sigue de largo. José Mario anota algo. Siempre anota.)"]])
@@ -2842,24 +2863,44 @@ func _ultimo_trabajo() -> void:
 		await Dialogue.talk(seen)
 		GameState.set_hunger(GameState.hunger - 3.0)
 	TimeManager.skip(3.0)
-	var pago := maxi(PAGO_ULTIMO - caidas * 5000, 20000)
+	var pago := maxi(PAGO_REAL - caidas * 500, 800)
 	var cierre := [
 		["JOSE MARIO", "—Esa es la suya. Nadie vino por ella. La iba a botar, pero botar cosas deja registro."],
-		["JOSE MARIO", ("—Cuarenta mil. Cuéntelos." if caidas == 0 else "—Eran cuarenta. Menos %d: se le cayeron. Quedan %d. Cuéntelos." % [caidas * 5000, pago])],
-		["", "(No los cuenta.)"],
-		["JOSE MARIO", "—Tampoco contaba las horas extras. Así daba gusto trabajar con usted."],
-		["", "(Guarda la plata. El carné, no: lo deja encima de la caja, con la foto para arriba. La caja se queda en el andén.)"],
-		["JOSE MARIO", "—Si le piden una referencia, no dé mi nombre. ... Deme la mano, por lo menos."],
-		["", "(Él le mira la mano. Tiene un reloj que da la hora de tres países. Sigue de largo.)"],
-		["", "(Es el último trabajo que hace. No lo sabe. José Mario tampoco: es de las pocas cosas que no sabe.)"],
+		["JOSE MARIO", "—Cuarenta mil, dijimos. Yo se los daría completos. Pero esto no lo decido yo: lo decide nómina."],
+		["JOSE MARIO", "—Nómina dice: menos la retención. Menos el parqueadero de la caja: seis años, a tarifa plena. Eso es de servicios generales, yo ahí no me meto."],
+		["JOSE MARIO", "—Menos el carné, que usted no devolvió: eso es de seguridad. Menos el uniforme. ... Ese saco. ¿Es ese? Yo no dije nada. Lo dijo el inventario."],
+	]
+	if caidas > 0:
+		cierre.append(["JOSE MARIO", "—Y menos lo que se le cayó. %s. El edificio me cuenta." % ("Una caja" if caidas == 1 else "%d cajas" % caidas)])
+	cierre += [
+		["JOSE MARIO", "—En rigor, queda debiendo usted. A mí no: a la empresa. Yo abogué por usted. Tome: $%d. Para el bus." % pago],
+		["", "(Se toca los pelos nuevos mientras lo dice. Se los cuenta. No le salen las cuentas tampoco.)"],
+		["", "(Recibe las monedas. Son de las que suenan. Las cuenta el eco del sótano.)"],
+		["JOSE MARIO", "—Fírmeme aquí. Dice que recibió a satisfacción y que no vuelve. Es una sola firma: sirve para las dos cosas."],
+		["", "(Firma. Es la misma firma de hace seis años. Esa vez también decía que no volvía.)"],
+		["", "(El carné lo deja encima de la caja, con la foto para arriba. La caja se queda en el andén.)"],
+		["JOSE MARIO", "—Vigilancia lo acompaña. No es idea mía: es protocolo. Por la puerta de servicio, que por la principal entra un cliente a las tres."],
+		["JOSE MARIO", "—Y si alguien pregunta, yo a usted hoy no lo vi. Es por su bien."],
+		["", "(Lo sacan del brazo, despacio, con respeto: el mismo vigilante de antes. Tampoco lo saluda esta vez.)"],
+		["", "(Un día entero. Cuatro cajas. Le duelen las manos de una forma que conoce.)"],
+		["", "(Es el último trabajo que hace. Después de este, nadie le vuelve a dar ninguno. Todavía no lo sabe. El mundo sí: el mundo escoge bien el día.)"],
 	]
 	await Dialogue.talk(cierre)
 	GameState.add_money(pago)
-	GameState.change_mood(4.0)
+	GameState.set_hunger(GameState.hunger - 10.0)
+	GameState.change_mood(-18.0)
 	f["ultimo_trabajo"] = GameState.day
 	var jm := get_tree().current_scene.find_child("JoseMario", true, false)
 	if jm:
 		jm.queue_free()
+
+
+## Después del último trabajo nadie más le da trabajo. Devuelve true si ya no hay (y dice por qué).
+func _sin_trabajo(lines: Array) -> bool:
+	if not GameState.flags.has("ultimo_trabajo"):
+		return false
+	await Dialogue.talk(lines)
+	return true
 
 
 # ---------------------------------------------------------------- El palo de guayaba: comida gratis

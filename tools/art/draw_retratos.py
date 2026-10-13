@@ -265,6 +265,16 @@ def hair(b, g, front):
             xx = b.T(x0, 0)[0]
             for y in np.nonzero(m[:, xx])[0][::2]:
                 b.cv.px(xx, y, t3[0])
+    if p.get("implantes"):  # los implantes: salen a parches, en fila, con la piel irritada alrededor
+        sk = SKINS[p.get("piel", "clara")]
+        for k, (tx, ty) in enumerate(((38, 22), (44, 18), (51, 17), (58, 18), (64, 22), (41, 26), (48, 23), (55, 22), (61, 26),
+                                      (46, 28), (53, 27), (36, 28))):
+            if k in (3, 7, 10):      # los que no pegaron
+                b.dot(tx, ty, mix(sk[1], (226, 120, 120), 0.5))
+                continue
+            b.dot(tx - 1, ty + 1, mix(sk[1], (226, 120, 120), 0.4))
+            b.line([(tx, ty), (tx + (k % 2), ty - 2 - k % 2)], t3[1])
+            b.dot(tx + 1, ty, t3[0])
     if p.get("raiz"):
         b.cv.a[edge(m, 0, -1, 4) & b.above(20)] = tones(p["raiz"])[1]
     if p.get("canas") or p.get("canas_afro"):
@@ -419,7 +429,14 @@ def face(b, g, head, sk):
             b.line([(x0 + 2, my + 1), (x1 - 2, my + 1)], lips)
             b.line([(x0 + 3, my + 2), (x1 - 3, my + 2)], lips)
             b.dot(mid_x + 1, my + 1, mix(lips, (255, 255, 255), 0.45))
-    if not lips:
+    if p.get("dientes"):  # los dientes, torcidos: uno montado, uno amarillo, un hueco
+        b.rect(x0 + 2, my, x1 - 2, my + 3, fill=(244, 238, 222), outline=INK)
+        for tx, tall in ((x0 + 4, 2), (x0 + 7, 3), (x0 + 9, 1), (x1 - 4, 2)):
+            b.line([(tx, my + 1), (tx, my + tall)], mix(INK, (120, 100, 90), 0.4))
+        b.dot(x0 + 5, my + 2, (226, 204, 130))
+        b.dot(x0 + 8, my + 3, (244, 238, 222))
+        b.dot(x1 - 5, my + 1, INK)
+    elif not lips:
         b.line([(x0 + 4, my + 3), (x1 - 3, my + 3)], mix(mid, dark, 0.45))         # el labio de abajo
     b._fr = None
     if p.get("arete"):
@@ -719,7 +736,10 @@ CAST = {
     "lisandro": {"piel": "media", "pelo": "engominado", "pelo_color": (24, 22, 26), "gafas": "oscuras",
                  "gordo": True, "nariz_roja": True, "ropa": (236, 234, 226), "tipo": "saco", "camisa": (190, 40, 44),
                  "cadena": True, "fondo": (150, 30, 40)},
-    "josemario": {"piel": "clara", "pelo": "engominado", "pelo_color": (90, 90, 96), "viejo": True,
+    # José Mario Camilo: medio calvo; se hizo implantes y le están saliendo a parches. Chivera. Dientes
+    # torcidos. Sonríe: es de los que tiran la piedra y esconden la mano.
+    "josemario": {"piel": "clara", "pelo": "calvo", "pelo_color": (74, 62, 58), "implantes": True, "chivera": True,
+                  "barba_color": (74, 62, 58), "dientes": True, "sonrisa": True,
                   "ropa": (70, 72, 80), "tipo": "saco", "corbata": (50, 80, 150), "fondo": (60, 64, 80)},
     "walter": {"piel": "clara", "pelo": "calvo", "pelo_color": (60, 50, 46), "bigote": True,
                "ropa": (236, 216, 150), "tipo": "saco", "camisa": (236, 216, 150), "corbata": (120, 80, 50),

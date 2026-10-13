@@ -41,7 +41,7 @@ const SPEAKERS := {
 	"ZAIDA": ["zaida", ""], "DRA. PILAR": ["pilar", "veterinaria"], "DEFENSORA": ["defensora", "Defensoría"],
 	"CELADOR": ["celador", ""], "LILATO": ["lilato", "su ex"], "BRENDA": ["brenda", "su mamá"],
 	"MAURICIO": ["mauricio", "su papá"], "GUILLERMO": ["guillermo", ""], "CAMILA": ["camila", ""],
-	"LISANDRO": ["lisandro", ""], "JOSE MARIO": ["josemario", "su jefe"], "WALTER": ["walter", ""],
+	"LISANDRO": ["lisandro", ""], "JOSE MARIO": ["josemario", "su jefe, antes"], "WALTER": ["walter", ""],
 	"NICOLAS": ["nicolas", ""], "EDDY": ["eddy", ""], "DIANA CAROLINA": ["diana", ""], "RAUL": ["raul", ""],
 	"ALVARITO": ["alvarito", ""], "EL PECAS": ["pecas", ""], "PADRE HERNANDO": ["padre", "San Judas"],
 	"DOÑA FABIOLA": ["fabiola", "la olla"], "DON AURELIO": ["aurelio", "La Esperanza"],
