@@ -382,6 +382,23 @@ func _rewind() -> void:
 	var t := create_tween()
 	t.tween_property(black, "color:a", 1.0, 0.3)
 	await t.finished
+	# La cinta, rebobinando: rayas que suben y el aviso.
+	var rew := Label.new()
+	rew.text = "<<  REBOBINANDO"
+	rew.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+	rew.add_theme_font_size_override("font_size", 8)
+	rew.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
+	rew.position = Vector2(20.0, 150.0)
+	black.add_child(rew)
+	create_tween().bind_node(rew).set_loops().tween_property(rew, "modulate:a", 0.2, 0.25).from(1.0)
+	for k in 6:
+		var bar := ColorRect.new()
+		bar.color = Color(0.8, 0.85, 1.0, 0.1 + 0.04 * (k % 3))
+		bar.size = Vector2(VIEW_W + 40.0, 2.0 + (k % 3) * 3.0)
+		bar.position.y = 200.0
+		black.add_child(bar)
+		var up := create_tween().bind_node(bar).set_loops()
+		up.tween_property(bar, "position:y", -10.0, 0.35 + k * 0.07).from(200.0 - k * 22.0)
 	Narrator.say(line, true)
 	for e in _alive.duplicate():
 		if is_instance_valid(e):

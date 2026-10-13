@@ -22,6 +22,11 @@ func _ready() -> void:
 	bg.color = Color.BLACK
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	var art := Vineta.new()  # mientras la máquina cuenta, él sigue dormido debajo del puente
+	art.show_row("rio", Vineta.spot_row("sueno", "noche", false, false))
+	art.position = Vector2(40, 40)
+	art.modulate = Color(0.3, 0.3, 0.36)
+	add_child(art)
 	_score = _label("SCORE %06d" % Dream.score, 30, Color(0.8, 0.8, 0.8))
 	_title = _label("CONTINUE?", 64, Color(1, 0.85, 0.3))
 	_number = _label("9", 88, Color.WHITE, 16)
@@ -35,6 +40,8 @@ func _label(text: String, y: float, color: Color, size := 8) -> Label:
 	l.add_theme_font_override("font", FONT)
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
+	l.add_theme_constant_override("outline_size", 4)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.position = Vector2(0, y)
 	l.size = Vector2(320, 20)

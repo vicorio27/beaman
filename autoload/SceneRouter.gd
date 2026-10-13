@@ -15,6 +15,7 @@ var busy := false
 
 var _fade: ColorRect
 var _title: Label
+var _pic: Vineta
 
 
 func _ready() -> void:
@@ -27,6 +28,10 @@ func _ready() -> void:
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_fade)
 
+	_pic = Vineta.new()  # el cartel no va sobre negro solo: arriba, su viñeta (_pic_for)
+	_pic.position = Vector2(40, 10)
+	_pic.modulate.a = 0.0
+	add_child(_pic)
 	_title = Label.new()
 	_title.add_theme_font_override("font", FONT)
 	_title.add_theme_font_size_override("font_size", 8)
@@ -34,6 +39,7 @@ func _ready() -> void:
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_title.offset_top = 84.0  # debajo de la viñeta
 	_title.modulate.a = 0.0
 	add_child(_title)
 
@@ -98,11 +104,42 @@ func intro(title: String) -> void:
 
 func _show_title(title: String) -> void:
 	_title.text = title
+	var pic := _pic_for(title)
+	_pic.show_row(pic[0], pic[1])
 	var t := create_tween()
 	t.tween_property(_title, "modulate:a", 1.0, 0.4)
+	t.parallel().tween_property(_pic, "modulate:a", 1.0, 0.4)
 	t.tween_interval(TITLE_TIME)
 	t.tween_property(_title, "modulate:a", 0.0, 0.4)
+	t.parallel().tween_property(_pic, "modulate:a", 0.0, 0.4)
 	await t.finished
+
+
+## La viñeta de un cartel: [hoja, fila] (ver scripts/ui/Vineta.gd).
+##   "DIA 0..."   la noche del operativo      "ANTES"   la moto        "BILLAR..."   la puerta del billar
+##   "..."        el desmayo                  "FIN"     la reja del colegio
+##   "DIA N..."   cómo amaneció donde durmió (con la lluvia de anoche, si llovió)
+##   cualquier otro (un sueño): dormido donde durmió, con lo que sueña saliéndole de la cabeza
+func _pic_for(title: String) -> Array:
+	var f := GameState.flags
+	var solo := not GameState.lukas_alive()
+	if title.begins_with("DIA 0"):
+		return ["momentos", Vineta.M.ANTES]
+	if title == "ANTES":
+		return ["momentos", Vineta.M.MOTO]
+	if title.begins_with("BILLAR"):
+		return ["momentos", Vineta.M.BILLAR]
+	if title == "...":
+		return ["momentos", Vineta.M.DESMAYO_SOLO if solo else Vineta.M.DESMAYO]
+	if title == "FIN":
+		return ["momentos", Vineta.M.FIN]
+	var spot: String = f.get("sleep_spot", "rio")
+	if not spot in Vineta.SPOTS:
+		spot = "rio"
+	if title.begins_with("DIA "):
+		var rain: bool = f.get("lluvia_noche", false) and int(f.get("lluvia_noche_dia", -9)) == GameState.day - 1
+		return [spot, Vineta.spot_row("despierta", "alba", rain, solo)]
+	return [spot, Vineta.spot_row("sueno", "noche", false, solo)]
 
 
 # ---------------------------------------------------------------- Menú de prueba (solo en debug, F4)

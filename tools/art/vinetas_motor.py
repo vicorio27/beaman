@@ -64,14 +64,15 @@ def nb(m, dx, dy):
 class D:
     """Dibuja en una máscara (a 4x) con medidas de 1x, alrededor de un origen; volteado, si hace falta."""
 
-    def __init__(self, d, ox=0.0, oy=0.0, flip=False):
-        self.d, self.ox, self.oy, self.s = d, ox, oy, (-1.0 if flip else 1.0)
+    def __init__(self, d, ox=0.0, oy=0.0, flip=False, k=1.0):
+        self.d, self.ox, self.oy, self.s, self.k = d, ox, oy, (-1.0 if flip else 1.0), k
 
     def p(self, x, y):
-        return ((self.ox + self.s * x) * SS, (self.oy + y) * SS)
+        return ((self.ox + self.s * x * self.k) * SS, (self.oy + y * self.k) * SS)
 
     def ell(self, cx, cy, rx, ry):
         x, y = self.p(cx, cy)
+        rx, ry = rx * self.k, ry * self.k
         self.d.ellipse([x - rx * SS, y - ry * SS, x + rx * SS, y + ry * SS], fill=255)
 
     def poly(self, pts):
@@ -82,6 +83,7 @@ class D:
 
     def cap(self, x0, y0, x1, y1, w):
         a, b = self.p(x0, y0), self.p(x1, y1)
+        w = w * self.k
         r = w * SS / 2.0
         self.d.line([a, b], fill=255, width=max(1, int(round(w * SS))))
         for q in (a, b):
@@ -101,9 +103,9 @@ class Cv:
         self.post = []  # los detalles de un píxel, al final: funciones que reciben un ImageDraw
 
     # ---- máscaras
-    def mask(self, fn, ox=0.0, oy=0.0, flip=False):
+    def mask(self, fn, ox=0.0, oy=0.0, flip=False, k=1.0):
         im = Image.new("L", (W * SS, H * SS), 0)
-        fn(D(ImageDraw.Draw(im), ox, oy, flip))
+        fn(D(ImageDraw.Draw(im), ox, oy, flip, k))
         return np.asarray(im, np.float32).reshape(H, SS, W, SS).mean((1, 3)) >= 127.5
 
     def box(self, x0, y0, x1, y1):
@@ -204,19 +206,19 @@ class Cv:
 class Actor:
     """Alguien en la escena: partes alrededor de un origen (los pies, el piso), con la luz de la escena."""
 
-    def __init__(self, cv, env, x, y, flip=False, emph=1.0):
-        self.cv, self.env, self.x, self.y, self.flip, self.emph = cv, env, x, y, flip, emph
+    def __init__(self, cv, env, x, y, flip=False, emph=1.0, scale=1.0):
+        self.cv, self.env, self.x, self.y, self.flip, self.emph, self.k = cv, env, x, y, flip, emph, scale
         self.all = np.zeros((H, W), bool)
 
     def part(self, alb, fn, **kw):
-        m = self.cv.mask(fn, self.x, self.y, self.flip)
+        m = self.cv.mask(fn, self.x, self.y, self.flip, self.k)
         kw.setdefault("emph", self.emph)
         self.cv.shape(m, alb, self.env, **kw)
         self.all |= m
         return m
 
     def at(self, x, y):
-        return (int(round(self.x + (-x if self.flip else x))), int(round(self.y + y)))
+        return (int(round(self.x + (-x if self.flip else x) * self.k)), int(round(self.y + y * self.k)))
 
     def dot(self, x, y, color):
         p = self.at(x - (1 if self.flip else 0), y)

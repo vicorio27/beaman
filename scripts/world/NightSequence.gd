@@ -124,9 +124,7 @@ const SPOT_NAMES := {"banco": "el banco de la plaza", "kiosco": "el kiosco viejo
 var _bg: ColorRect
 var _text: Label
 var _photo: TextureRect
-var _pic: TextureRect  # la viñeta de arriba
-var _pic_frames: Array = []  # sus cuadros (uno, o cuatro)
-var _pic_t := 0.0
+var _pic: Vineta  # la viñeta de arriba
 var _go := false
 
 
@@ -140,7 +138,7 @@ func _ready() -> void:
 	_photo.pivot_offset = Vector2(60, 44)  # se da vuelta desde el centro
 	_photo.modulate.a = 0.0
 	add_child(_photo)
-	_pic = TextureRect.new()
+	_pic = Vineta.new()
 	_pic.position = Vector2(40, 10)
 	_pic.pivot_offset = Vector2(120, 50)
 	_pic.modulate.a = 0.0
@@ -173,30 +171,10 @@ func _wait() -> void:
 		await get_tree().process_frame
 
 
-## Las viñetas: una hoja por lugar (assets/ui/vinetas_<lugar>.png) y una de momentos. Cada fila es una
-## viñeta de cuatro cuadros de 240x100 (tools/art/draw_vinetas.py lleva la misma cuenta de filas).
-const PIC_KINDS := ["dormir_noche", "sueno_noche", "despierta_alba", "despierta_noche", "golpeado_alba", "golpeado_noche"]
-const PIC_FINAL := 24
-const PIC_SPOTS := ["banco", "kiosco", "rio", "callejon", "parque", "pension", "lote"]
-const M_INTRUSO := 0  # (+1: sin Lukas)
-const M_LUKAS_PECHO := 2
-const M_LUKAS_QUIETO := 3
-const M_ENTIERRO := 4
-const M_COLLAR := 5
-
-
-## Muestra la fila `row` de la hoja `sheet`: entra despacio y se acerca un poquito mientras se lee.
-## dim < 1: queda de fondo, apagada (el texto va encima, en el centro; no lo mueve).
+## Muestra la fila `row` de la hoja `sheet` (ver scripts/ui/Vineta.gd): entra despacio y se acerca un
+## poquito mientras se lee. dim < 1: queda de fondo, apagada (el texto va encima, en el centro; no lo mueve).
 func _show_pic(sheet: String, row: int, dim := 1.0) -> void:
-	var tex: Texture2D = load("res://assets/ui/vinetas_%s.png" % sheet)
-	_pic_frames.clear()
-	for k in 4:
-		var at := AtlasTexture.new()
-		at.atlas = tex
-		at.region = Rect2(k * 240, row * 100, 240, 100)
-		_pic_frames.append(at)
-	_pic.texture = _pic_frames[0]
-	_pic_t = 0.0
+	_pic.show_row(sheet, row)
 	_pic.scale = Vector2.ONE
 	var t := create_tween()
 	t.tween_property(_pic, "modulate", Color(dim, dim, dim, 1.0), 1.2 if _pic.modulate.a < 0.5 else 0.5)
@@ -206,17 +184,10 @@ func _show_pic(sheet: String, row: int, dim := 1.0) -> void:
 		_text.size = Vector2(_text_w(), 56)
 
 
-func _process(delta: float) -> void:
-	if _pic_frames.size() > 1:
-		_pic_t += delta
-		_pic.texture = _pic_frames[int(_pic_t / 0.42) % _pic_frames.size()]
-
-
 ## La viñeta del lugar donde durmió. kind: "dormir", "sueno", "despierta" o "golpeado"; time: "noche"
 ## o "alba"; con o sin lluvia. Sin Lukas, la misma, sin él.
 func _spot_pic(spot: String, kind: String, time: String, rain: bool, dim := 1.0) -> void:
-	var row: int = PIC_KINDS.find("%s_%s" % [kind, time]) * 4 + (2 if rain else 0) + (0 if GameState.lukas_alive() else 1)
-	_show_pic(spot if spot in PIC_SPOTS else "banco", row, dim)
+	_show_pic(spot if spot in Vineta.SPOTS else "banco", Vineta.spot_row(kind, time, rain, not GameState.lukas_alive()), dim)
 
 
 func _moment(row: int, dim := 1.0) -> void:
@@ -381,7 +352,7 @@ func _summary(spot: String) -> void:
 func _he_dies() -> void:
 	MusicDirector.force("")
 	var spot: String = GameState.flags.get("sleep_spot", "banco")
-	_show_pic(spot if spot in PIC_SPOTS else "banco", PIC_FINAL)
+	_show_pic(spot if spot in Vineta.SPOTS else "banco", Vineta.FINAL)
 	for line in [
 		"Esa noche, después del último sueño, no se despierta.",
 		"Samuel lo encuentra al amanecer, en %s. Con el collar de Lukas en la mano, apretado." % SPOT_NAMES.get(spot, "la calle"),
@@ -397,7 +368,7 @@ func _lukas_dies() -> void:
 	var f := GameState.flags
 	f["lukas_muerto"] = GameState.day
 	MusicDirector.force("")
-	var pics := [M_LUKAS_PECHO, -1, -1, M_LUKAS_QUIETO, -1, M_ENTIERRO, -1, M_COLLAR]
+	var pics := [Vineta.M.LUKAS_PECHO, -1, -1, Vineta.M.LUKAS_QUIETO, -1, Vineta.M.ENTIERRO, -1, Vineta.M.COLLAR]
 	var n := 0
 	for line in [
 		"Esa noche Lukas no se acuesta en los pies. Se acuesta en el pecho. Nunca hacía eso.",
@@ -423,7 +394,7 @@ func _lukas_dies() -> void:
 ## Alguien se mete al cambuche mientras duerme: tres reacciones rápidas (la flecha que diga).
 ## La alarma da más tiempo; con Lukas de guardia, el primero ya está ganado; la trampa lo castiga.
 func _defend(spot: String) -> void:
-	_moment(M_INTRUSO + (0 if GameState.lukas_alive() else 1), 0.45)
+	_moment(Vineta.M.INTRUSO if GameState.lukas_alive() else Vineta.M.INTRUSO_SOLO, 0.45)
 	var c := GameState.cambuche
 	_text.position = Vector2(16, 60)
 	_text.size = Vector2(_text_w(), 80)
