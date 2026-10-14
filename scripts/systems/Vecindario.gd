@@ -5,6 +5,9 @@ extends Node
 ##     Lo que dice está en Conversations._amigo (npc_id "amigo").
 ##   - José Mario Camilo, en el centro, en la puerta de La Empresa: su jefe de antes. Sale después de
 ##     que muere Lukas (de 7 a 6) y le ofrece el último trabajo que él hace (Conversations._ultimo_trabajo).
+##   - El buhonero ("me dicen el Lobo"): alguien que solo ve él. Sale algunos días (más seguido entre más
+##     lo busca), parado donde no hay nada. Soluciona problemas y no cobra plata: cobra en locura, y con
+##     la locura se le van borrando las caras a los demás (Conversations._buhonero).
 ##   - Los otros perros. Cuando Lukas pasa cerca de un perro de la calle, se encuentran: si Lukas no
 ##     ha comido hoy, casi siempre pelean; si ya comió, casi siempre juegan. A veces es al revés,
 ##     porque sí. Una vez al día por perro.
@@ -17,6 +20,8 @@ const SHOP_OPEN := 10.0
 const SHOP_CLOSE := 20.0
 const MEET_DIST := 30.0
 const JOSE_MARIO_AT := Vector2(392, 208)  # en la puerta del edificio de vidrio
+## Donde se para el buhonero: sitios donde no hay nadie.
+const BUHONERO_AT := {"City": [Vector2(70, 70), Vector2(520, 130), Vector2(840, 566)]}
 ## Perros que no están en el mapa y salen por aquí: [nombre, textura, posición].
 const STRAYS := {
 	"Parque": [["dog_parque", "res://assets/barrio/dog_b.png", Vector2(388, 356)]],
@@ -79,6 +84,7 @@ func _setup() -> void:
 		d.offset = Vector2(-10, -14)
 		d.position = spec[2]
 		_world.add_child(d)
+	_add_buhonero()
 	var tree := _world.find_child("tree_sparse*", false, false) as Node2D
 	if tree:
 		for at in [Vector2(-9, -34), Vector2(6, -40), Vector2(11, -28), Vector2(-3, -26)]:  # las guayabas
@@ -98,6 +104,39 @@ func _setup() -> void:
 	for n in _world.find_children("dog_*", "", false, false):
 		if n is Node2D:
 			_dogs.append(n)
+
+
+## El buhonero: algunos días, en un sitio solo. Un día sí lo sacó la suerte, otro no (la misma todo el día).
+func _add_buhonero() -> void:
+	var spots: Array = BUHONERO_AT.get(_scene.name, [])
+	var f := GameState.flags
+	if spots.is_empty() or GameState.day < 3 or f.get("buhonero_dia", -1) == GameState.day:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("buhonero%d" % GameState.day)
+	if rng.randf() > minf(0.3 + 0.05 * int(f.get("buhonero_n", 0)), 0.75):
+		return
+	var b := CharacterBody2D.new()
+	b.set_script(load("res://scripts/npc/NPC.gd"))
+	b.name = "Buhonero"
+	b.npc_id = "buhonero"
+	b.sheet_row = 9
+	b.face = "down"
+	b.position = spots[rng.randi() % spots.size()]
+	_world.add_child(b)
+	_haunt.call_deferred(b)
+
+
+## No es de aquí: oscuro, morado, y titila un poco.
+func _haunt(b: Node2D) -> void:
+	await get_tree().process_frame
+	if not is_instance_valid(b):
+		return
+	var sp: CanvasItem = b.get("sprite")
+	sp.modulate = Color(0.5, 0.4, 0.75)
+	var t := sp.create_tween().set_loops()
+	t.tween_property(sp, "modulate:a", 0.55, 0.9)
+	t.tween_property(sp, "modulate:a", 1.0, 0.9)
 
 
 func _add_shop() -> void:

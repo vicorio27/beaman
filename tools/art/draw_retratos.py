@@ -890,6 +890,11 @@ CAST = {
     "cobrador": {"piel": "clara", "pelo": "engominado", "pelo_color": (24, 22, 26), "gafas": "oscuras",
                  "ropa": (40, 40, 48), "tipo": "saco", "camisa": (236, 232, 222), "corbata": (30, 30, 36),
                  "fondo": (90, 30, 40)},
+    # El buhonero ("me dicen el Lobo"): solo lo ve él. Gabardina, sombrero, gafas oscuras, sonrisa.
+    "buhonero": {"piel": "clara", "pelo": "corto", "pelo_color": (30, 26, 36), "sombrero": "sombrero",
+                 "sombrero_color": (44, 38, 60), "cinta": (150, 60, 190), "gafas": "oscuras", "bigote": True,
+                 "sonrisa": True, "ropa": (46, 40, 64), "tipo": "saco", "camisa": (232, 228, 216),
+                 "corbata": (150, 60, 190), "fondo": (190, 100, 240)},
 }
 
 

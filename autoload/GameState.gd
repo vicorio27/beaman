@@ -429,7 +429,7 @@ func lukas_on_guard() -> bool:
 
 ## ¿Esta noche alguien se mete al cambuche donde duerme? (Night lo resuelve con el minijuego.)
 func intruder_tonight(spot: String) -> bool:
-	if not has_cambuche(spot):
+	if not has_cambuche(spot) or int(flags.get("buhonero_noche", -9)) == day:
 		return false
 	if flags.get("force_intruder", false) or int(flags.get("intruso_dia", -1)) == day:  # para probar; o Zaida lo vendió
 		return true
@@ -609,7 +609,8 @@ func new_day(spot: String) -> Array:
 	var pickpocket: bool = in_cambuche and defense != "lost"  # mientras dormía, sin pelea: solo el bolsillo
 	if pickpocket and money <= 0:
 		theft = 0.0
-	if int(flags.get("nino_aviso", -1)) == day - 1 or int(flags.get("nino_aviso", -1)) == day:
+	if int(flags.get("nino_aviso", -1)) == day - 1 or int(flags.get("nino_aviso", -1)) == day \
+			or int(flags.get("buhonero_noche", -9)) in [day - 1, day]:  # (o el buhonero arregló la noche)
 		theft = 0.0  # Alejandro les dijo que tenía sarna (scripts/systems/Nino.gd)
 	if randf() < theft:
 		if not pickpocket:

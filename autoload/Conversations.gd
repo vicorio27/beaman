@@ -127,6 +127,8 @@ func run(id: String, npc: Node) -> void:
 			await _veterinaria()
 		"amigo":
 			await _amigo()
+		"buhonero":
+			await _buhonero(npc)
 		"josemario":
 			await _ultimo_trabajo()
 		"frutas":
@@ -2901,6 +2903,106 @@ func _sin_trabajo(lines: Array) -> bool:
 		return false
 	await Dialogue.talk(lines)
 	return true
+
+
+# ---------------------------------------------------------------- El buhonero: el que solo ve él
+## "Me dicen el Lobo. Yo no vendo: yo soluciono." Sale algunos días, parado donde no hay nadie
+## (scripts/systems/Vecindario.gd). Nadie más lo ve. Arregla lo que haga falta (hambre, plata, la noche,
+## la fiebre de Lukas) y no recibe plata: cobra en locura. Verlo ya cuesta (+1); un trato cuesta más (+3).
+## Con la locura se le borran las caras a los demás (GameState.sameness): entre más lo busca, más solo.
+## Lo de Lukas viejo no lo arregla: "eso no es un problema, eso es el tiempo".
+## Los favores van entre comillas: como nadie más lo ve, después de cada uno queda una pista de quién lo
+## hizo de verdad (BUHONERO_QUEDA): el almuerzo era de alguien, la caja de Germán no cuadra, amanece
+## con los nudillos pelados. Nunca se dice: se deja ver.
+## Flags: buhonero_n (veces que lo vio), buhonero_tratos, buhonero_dia, buhonero_noche (la noche arreglada).
+const BUHONERO := "EL BUHONERO"
+const BUHONERO_HOLA := [
+	[[BUHONERO, "—Otra vez usted. Me alegra. Bueno: a usted no debería alegrarle."]],
+	[[BUHONERO, "—¿Qué va a llevar, forastero? ... Perdón. Eso es de otro trabajo que tuve."]],
+	[[BUHONERO, "—Tengo media hora. Diez minutos para llegar, nueve para arreglar, y el resto para que usted se pregunte si pasó."]],
+	[[BUHONERO, "—Cada vez que me ve, los demás se le borran un poquito. No es nada personal: es el arriendo del local."]],
+	[[BUHONERO, "—¿Ha notado que la señora de las empanadas ya no tiene cejas? Yo no fui. Bueno. Fuimos."]],
+]
+## Lo que queda después de cada "favor".
+const BUHONERO_QUEDA := {
+	"El hambre": [["SEÑOR", "—¡Oiga! ¿Alguien vio mi almuerzo? Lo dejé aquí, en la moto. Con jugo y todo."],
+		["", "(Él tiene las manos tibias y la boca con sabor a jugo. No se acuerda de haber caminado hasta ninguna moto.)"]],
+	"La plata": [["", "(En la panadería, Don Germán cuenta la caja dos veces. Después una tercera, con los dedos. Faltan quince.)"],
+		["", "(Él tiene harina en la manga. No ha entrado hoy a la panadería. Eso cree.)"]],
+	"Que esta noche no lo toquen": [["", "(El buhonero ya no está. En el piso quedó un palo, con cinta en el mango, del tamaño de la mano de él.)"],
+		["", "(Lo recoge. Le queda perfecto. Se lo lleva.)"]],
+	"Lukas": [["", "(Lukas huele a alcohol de botiquín. En el bolsillo del saco hay una jeringa vacía, con la etiqueta de la Dra. Pilar.)"],
+		["", "(Él no sabe poner inyecciones. Las manos, por lo visto, sí.)"]],
+}
+const BUHONERO_MIRAN := [
+	[["SEÑORA", "—Mijo, ¿ese señor le está hablando al poste?"], ["MAMÁ", "—No lo mire. Camine."]],
+	[["", "(Cuando voltea, no hay nadie. En el piso quedan dos huellas mojadas. No ha llovido.)"]],
+	[["SEÑOR", "—Oiga, ¿todo bien? Lleva diez minutos asintiéndole a una pared. La pared no ha dicho nada. Yo la conozco."]],
+	[["", "(Un perro le ladra al sitio donde estaba el buhonero. Después le ladra a él. Los perros no escogen bando.)"]],
+]
+
+
+func _buhonero(npc: Node) -> void:
+	var f := GameState.flags
+	var n := int(f.get("buhonero_n", 0))
+	f["buhonero_n"] = n + 1
+	f["buhonero_dia"] = GameState.day
+	if n == 0:
+		await Dialogue.talk([
+			["", "(Un hombre de gabardina, parado donde no hay nada. La tiene abierta: por dentro, colgadas, cosas. Nadie más lo voltea a mirar.)"],
+			[BUHONERO, "—Buenas. Me dicen el Lobo. Yo no vendo: yo soluciono. ¿Qué problema trae?"],
+			[BUHONERO, "—No conteste. Ya sé que no habla. Mejor: los que hablan, regatean."],
+			[BUHONERO, "—Plata no recibo. La plata es para la gente que se ve. Usted paga con otra cosa. No duele. Se nota después."]])
+	else:
+		await Dialogue.talk(BUHONERO_HOLA[(n - 1) % BUHONERO_HOLA.size()])
+	var opts := []
+	if GameState.hunger < 75.0:
+		opts.append("El hambre")
+	opts.append("La plata")
+	opts.append("Que esta noche no lo toquen")
+	if GameState.lukas_alive() and (GameState.lukas_sick() or GameState.lukas_stage() >= 1):
+		opts.append("Lukas")
+	opts.append("Nada")
+	var i := await Dialogue.talk([[BUHONERO, "—A ver. ¿Qué le arreglo?"]], opts)
+	var trato := true
+	match opts[i]:
+		"El hambre":
+			GameState.set_hunger(100.0)
+			await Dialogue.talk([["", "(De la gabardina sale un almuerzo completo, con jugo. Caliente. Tiene recibo. El recibo dice: \"pagado\". No dice por quién.)"],
+				[BUHONERO, "—Coma despacio. Es de un restaurante que cerró en el 98. Les quedaba muy bueno."]])
+		"La plata":
+			GameState.add_money(15000)
+			await Dialogue.talk([["", "(Le cuenta quince billetes de mil, uno por uno. Están tibios. Tienen todos el mismo número de serie.)"],
+				[BUHONERO, "—Gástelos rápido. No porque sean falsos: porque a usted le dura poco todo."]])
+		"Que esta noche no lo toquen":
+			f["buhonero_noche"] = GameState.day
+			await Dialogue.talk([[BUHONERO, "—Hecho. Esta noche nadie se le acerca. Ni los que roban ni los otros."],
+				["", "(No dice cuáles otros. Él tampoco pregunta. Nunca ha sido de preguntar.)"]])
+		"Lukas":
+			if GameState.lukas_stage() >= 1:
+				trato = false
+				await Dialogue.talk([[BUHONERO, "—Eso no."],
+					[BUHONERO, "—Eso no es un problema. Eso es el tiempo. Yo arreglo problemas. Con el tiempo no tengo cuenta: me debe a mí también."],
+					["", "(Lukas le gruñe al aire, más o menos a la altura de una rodilla. Es el único que casi le atina.)"]])
+			else:
+				f.erase("lukas_enfermo")
+				f["lukas_curado"] = GameState.day
+				await Dialogue.talk([["", "(El buhonero se agacha. Le pone a Lukas dos dedos en la frente. Lukas estornuda, se sacude y le muerde la gabardina. No agarra nada.)"],
+					[BUHONERO, "—La fiebre, lista. Lo otro que tiene es que es perro: eso no se quita."]])
+		_:
+			trato = false
+			await Dialogue.talk([[BUHONERO, "—Nada. Perfecto. Mirar también se cobra, pero menos."]])
+	GameState.add_locura(3 if trato else 1)
+	if trato:
+		f["buhonero_tratos"] = int(f.get("buhonero_tratos", 0)) + 1
+	if is_instance_valid(npc) and npc is Node2D:
+		var sp: CanvasItem = npc.get("sprite")
+		if sp:
+			await sp.create_tween().tween_property(sp, "modulate:a", 0.0, 0.5).finished
+		npc.queue_free()
+	await Dialogue.talk(BUHONERO_QUEDA[opts[i]] if trato and BUHONERO_QUEDA.has(opts[i]) else BUHONERO_MIRAN[n % BUHONERO_MIRAN.size()])
+	if trato and int(f.get("buhonero_tratos", 0)) in [2, 4]:
+		Narrator.say("(A la gente se le está yendo la cara. A él le parece que antes tenían más.)")
 
 
 # ---------------------------------------------------------------- El palo de guayaba: comida gratis
