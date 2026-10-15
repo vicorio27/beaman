@@ -1681,18 +1681,32 @@ func _viejos() -> void:
 		["DON RAMIRO", "—Tenía noventa y dos años."],
 		["DON OCTAVIO", "—Noventa y dos años opinando. Eso mata a cualquiera."],
 	])
-	var opts := ["Mirar (media hora)"]
+	var opts := ["Mirar la partida", "Jugar por Don Ramiro"]
 	if GameState.money >= 1000:
 		opts.append("Apostar $1000 a Don Ramiro")
 	opts.append("Nada")
 	var i := await Dialogue.talk([["DON RAMIRO", "—Este sí es buen público, Octavio. Mire cómo mira el tablero. Ese ve tres jugadas."],
 		["DON OCTAVIO", "—Ese ve el pan que usted tiene en el bolsillo, Ramiro."]], opts)
 	match opts[i]:
-		"Mirar (media hora)":
-			TimeManager.skip(0.5)
-			GameState.change_mood(3.0)
+		"Mirar la partida":  # una partida de verdad (scripts/ui/Ajedrez.gd), donde vaya
 			await Dialogue.talk([["DON OCTAVIO", "—Treinta años jugando. Ramiro abre siempre con el caballo del rey. Siempre. Treinta años."],
 				["DON RAMIRO", "—Y treinta años usted sin saber qué hacer con eso."]])
+			var r := await Ajedrez.open(self, false)
+			GameState.change_mood(3.0 if r == "" else 5.0)
+			GameState.company(4.0)
+		"Jugar por Don Ramiro":
+			var r := await Ajedrez.open(self, true)
+			if r == "blancas":
+				GameState.change_mood(10.0)
+				GameState.add_money(2000)
+				await Dialogue.talk([["DON RAMIRO", "—¿Le ganó? ¿A Octavio? ¿Usted? ... Tome, dos mil. Es lo que me debe él desde 1998."],
+					["DON OCTAVIO", "—Fue suerte. Y el mudo me miraba. Eso desconcentra."]])
+			elif r == "negras":
+				GameState.change_mood(-1.0)
+				await Dialogue.talk([["DON RAMIRO", "—¿Me la perdió? Diez minutos me demoré. Diez. ... Bueno, yo también la habría perdido. Pero en veinte."]])
+			else:
+				GameState.change_mood(3.0)
+				await Dialogue.talk([["DON RAMIRO", "—¿Me devuelve el puesto? Bueno. La dejó mejor de lo que yo la dejé. Eso no es difícil."]])
 		"Apostar $1000 a Don Ramiro":
 			TimeManager.skip(0.5)
 			if randf() < (0.6 if GameState.has_skill("labia") else 0.45):  # labia = la mirada: Octavio se pone nervioso

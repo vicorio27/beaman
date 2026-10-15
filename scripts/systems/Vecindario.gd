@@ -15,7 +15,11 @@ extends Node
 ##     porque sí. Una vez al día por perro.
 ##   - El palo de guayaba (el primer árbol con hojas de cada lugar): comida gratis. Quita poquita
 ##     hambre, cada una menos que la anterior, y a la tercera se hostiga (Conversations._frutas).
-## Flags: perro_visto_<nombre> (día), perros_jugo / perros_peleo (cuántas veces).
+##     Cuando pelean, es por turnos (scripts/ui/PeleaPerros.gd). Si terminan de AMIGOS, cada vez que
+##     se ven juegan y a Lukas se le alegra el día. Si terminan de ENEMIGOS, ese perro les gruñe y no
+##     los deja pasar cerca: toca dar la vuelta.
+## Flags: perro_visto_<nombre> (día), perros_jugo / perros_peleo (cuántas veces),
+##   perro_<nombre> ("amigo" / "enemigo"), gruñido_<nombre> (día del aviso).
 
 const SHOP_AT := Vector2(440, 200)   # el pie de la fachada
 const SHOP_OPEN := 10.0
@@ -211,8 +215,14 @@ func _process(delta: float) -> void:
 	var lukas := _scene.find_child("Lukas", true, false) as Node2D
 	if lukas == null or not GameState.lukas_alive() or not str(lukas.get("state")) in ["follow", "sit"]:
 		return
+	var player := _scene.get("player") as Node2D
 	for d in _dogs:
 		if not is_instance_valid(d) or not d.visible:
+			continue
+		if GameState.flags.get("perro_" + str(d.name), "") == "enemigo":
+			if player and d.global_position.distance_to(player.global_position) < 26.0:
+				_growl(d, player)
+				return
 			continue
 		var key := "perro_visto_" + str(d.name)
 		if GameState.flags.get(key, -1) == GameState.day:
@@ -223,19 +233,49 @@ func _process(delta: float) -> void:
 			return
 
 
-## Lukas y otro perro: juegan o pelean. Con hambre, casi siempre pelean.
+## Un perro enemigo: gruñe y los saca de ahí (un empujoncito para atrás). Que den la vuelta.
+func _growl(dog: Node2D, player: Node2D) -> void:
+	var away := (player.global_position - dog.global_position).normalized()
+	if away == Vector2.ZERO:
+		away = Vector2.DOWN
+	player.global_position += away * 10.0
+	GameState.block_input(0.4)
+	_hit.play()
+	var l := Label.new()
+	l.text = "GRRR"
+	l.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_color_override("font_color", Color(1, 0.5, 0.4))
+	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.position = Vector2(-16, -26)
+	l.z_index = 50
+	dog.add_child(l)
+	var t := l.create_tween()
+	t.tween_property(l, "position:y", -36.0, 0.8)
+	t.parallel().tween_property(l, "modulate:a", 0.0, 0.8)
+	t.tween_callback(l.queue_free)
+	var key := "gruñido_" + str(dog.name)
+	if GameState.flags.get(key, -1) != GameState.day:
+		GameState.flags[key] = GameState.day
+		Narrator.say("(%s les gruñe. Se acuerda. No los deja pasar por ahí: toca dar la vuelta.)" % PeleaPerros.dog_name(str(dog.name)), false, "lukas_triste")
+
+
+## Lukas y otro perro: juegan o pelean. Con hambre, casi siempre pelean. Si ya son amigos, juegan.
+## La pelea empieza con el agarrón de siempre y sigue por turnos (PeleaPerros).
 func _meet(lukas: Node2D, dog: Node2D) -> void:
 	_busy = true
 	var f := GameState.flags
 	var hungry: bool = f.get("lukas_fed_day", -1) != GameState.day
-	var fight: bool = randf() < (0.65 if hungry else 0.15)
+	var friends: bool = f.get("perro_" + str(dog.name), "") == "amigo"
+	var fight: bool = not friends and randf() < (0.65 if hungry else 0.15)
 	GameState.block_input(2.2)
 	lukas.set_physics_process(false)
 	var l0 := lukas.position
 	var d0 := dog.position
 	var mid := (l0 + d0) / 2.0
 	if fight:
-		for k in 5:  # se van encima, se sueltan, otra vez
+		for k in 2:  # se van encima, se sueltan, otra vez
 			var t := create_tween().set_parallel()
 			t.tween_property(lukas, "position", mid + Vector2(-3, 0), 0.08)
 			t.tween_property(dog, "position", mid + Vector2(3, 0), 0.08)
@@ -262,20 +302,23 @@ func _meet(lukas: Node2D, dog: Node2D) -> void:
 	lukas.set_physics_process(true)
 	if fight:
 		f["perros_peleo"] = int(f.get("perros_peleo", 0)) + 1
-		var lines := [["", (FIGHT_HUNGRY if hungry else FIGHT_RANDOM).pick_random()]]
-		if hungry and randf() < 0.4:
-			lines.append(["", "(Lukas sale con un hueso que no era de él. Lo defiende con todo el cuerpo. Desayunó.)"])
-			f["lukas_fed_day"] = GameState.day
-			f.erase("lukas_hungry")
-		else:
-			lines.append(["", "(Él los separa con el saco. El saco pierde un botón. Lukas camina adelante, ofendido, como si hubiera ganado.)"])
-			if hungry:
-				lines.append(["", "(Con la barriga llena, Lukas es otro. Con la barriga vacía, también: es este.)"])
-		await Dialogue.talk(lines)
-		GameState.change_mood(-3.0)
+		await Dialogue.talk([["", (FIGHT_HUNGRY if hungry else FIGHT_RANDOM).pick_random()]])
+		var tex: Texture2D = dog.texture if dog is Sprite2D else load("res://assets/barrio/dog_a.png")
+		var r := await PeleaPerros.fight(self, str(dog.name), tex)
+		if r in ["amigo", "enemigo"]:
+			f["perro_" + str(dog.name)] = r
+		if r == "amigo":
+			GameState.change_mood(5.0)
+			GameState.company(6.0)
+		elif r == "enemigo":
+			GameState.change_mood(-3.0)
 	else:
 		f["perros_jugo"] = int(f.get("perros_jugo", 0)) + 1
-		await Dialogue.talk([["", PLAY.pick_random()]])
-		GameState.change_mood(4.0)
+		if friends:  # su amigo: Lukas lo ve de lejos y se le alegra todo
+			Narrator.say("(Lukas ve a %s de lejos y sale corriendo. Su amigo. Juegan hasta que se les acaba el aire.)" % PeleaPerros.dog_name(str(dog.name)), false, "lukas_feliz")
+			GameState.change_mood(6.0)
+		else:
+			await Dialogue.talk([["", PLAY.pick_random()]])
+			GameState.change_mood(4.0)
 		GameState.company(6.0)
 	_busy = false

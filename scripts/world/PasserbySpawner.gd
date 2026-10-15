@@ -47,6 +47,8 @@ func _process(delta: float) -> void:
 	if h < 6 or (h >= 23 and randf() < 0.85):
 		return  # madrugada: casi nadie
 	var night := h >= 20
+	if Weather.raining():
+		_timer *= 2.0  # con aguacero sale menos gente (y la que sale, corre)
 	if night:
 		_timer *= 2.5  # de noche pasa menos gente: la que vuelve del trabajo, la que no vuelve
 	if get_tree().get_nodes_in_group("passersby").size() >= (2 if night else MAX.get(get_parent().name, 3)):

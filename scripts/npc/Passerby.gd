@@ -67,6 +67,8 @@ var _sprite: AnimatedSprite2D
 var _bubble: Label
 var _reacted := false
 var _detour := Vector2.ZERO
+var _shelter := Vector2.INF  # aguacero: corre a escamparse ahí (Weather.shelter_for) y espera
+const RAIN_LINES := ["—¡Uy, el aguacero!", "—¡Se largó!", "—¡Y yo sin sombrilla!", "—¡Corra, mija!", "(se tapa la cabeza con el periódico)"]
 
 
 func _ready() -> void:
@@ -101,6 +103,22 @@ func _process(delta: float) -> void:
 		_sprite.pause()
 		return
 	_sprite.play()
+	if Weather.raining():
+		if _shelter == Vector2.INF:
+			_shelter = Weather.shelter_for(position)
+			if randf() < 0.35:
+				_say(RAIN_LINES.pick_random(), Color(0.8, 0.88, 1.0))
+		if _shelter != Vector2.INF:
+			if position.distance_to(_shelter) > 1.0:
+				_face_to(_shelter - position)
+				position = position.move_toward(_shelter, speed * 1.8 * delta)  # corriendo
+			else:
+				_sprite.pause()  # escampando
+				_sprite.frame = 0
+			return
+	elif _shelter != Vector2.INF:
+		_shelter = Vector2.INF  # escampó: sigue su camino
+		_face_to(path_to - position)
 	var target := path_to + _detour
 	position = position.move_toward(target, speed * delta)
 	if position.distance_to(target) < 1.0:
@@ -111,6 +129,14 @@ func _process(delta: float) -> void:
 		if player and player.global_position.distance_to(global_position) < NEAR:
 			_reacted = true
 			_react()
+
+
+func _face_to(dir: Vector2) -> void:
+	if absf(dir.x) > absf(dir.y):
+		_sprite.play("walk_side")
+		_sprite.flip_h = dir.x > 0
+	else:
+		_sprite.play("walk_down" if dir.y > 0 else "walk_up")
 
 
 func _react() -> void:

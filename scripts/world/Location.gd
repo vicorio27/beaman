@@ -43,6 +43,7 @@ func _ready() -> void:
 		systems.append("res://scripts/systems/Nino.gd")
 		systems.append("res://scripts/systems/Vecindario.gd")
 		systems.append("res://scripts/world/PasserbySpawner.gd")
+		systems.append("res://scripts/systems/Weather.gd")
 	for script in systems:
 		var n: Node = CanvasLayer.new() if script.contains("/ui/") else Node.new()
 		n.set_script(load(script))

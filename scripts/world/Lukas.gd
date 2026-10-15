@@ -493,6 +493,8 @@ func _physics_process(delta: float) -> void:
 				state = "follow"
 				_idle = 0.0
 				var spd: float = player.speed * player.speed_scale * 1.15
+				if GameState.flags.get("lukas_herido", -1) == GameState.day:
+					spd *= 0.8  # le dieron duro un perro: cojea (hoy)
 				_walk(to_player.normalized() * spd)
 			else:
 				_walk(Vector2.ZERO)
