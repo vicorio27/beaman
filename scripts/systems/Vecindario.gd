@@ -5,7 +5,8 @@ extends Node
 ##     Lo que dice está en Conversations._amigo (npc_id "amigo").
 ##   - José Mario Camilo, en el centro, en la puerta de La Empresa: su jefe de antes. Sale después de
 ##     que muere Lukas (de 7 a 6) y le ofrece el último trabajo que él hace (Conversations._ultimo_trabajo).
-##   - El buhonero ("me dicen el Lobo"): alguien que solo ve él. Sale algunos días (más seguido entre más
+##   - Tom Queen, el padrino (el buhonero; "algunos me dicen el Lobo"): alguien que solo ve él. Alto,
+##     bigote blanco, sombrero negro, todo de negro. Sale algunos días (más seguido entre más
 ##     lo busca), parado donde no hay nada. Soluciona problemas y no cobra plata: cobra en locura, y con
 ##     la locura se le van borrando las caras a los demás (Conversations._buhonero).
 ##   - Los otros perros. Cuando Lukas pasa cerca de un perro de la calle, se encuentran: si Lukas no
@@ -127,13 +128,15 @@ func _add_buhonero() -> void:
 	_haunt.call_deferred(b)
 
 
-## No es de aquí: oscuro, morado, y titila un poco.
+## No es de aquí: alto, de negro, y titila un poco.
 func _haunt(b: Node2D) -> void:
 	await get_tree().process_frame
 	if not is_instance_valid(b):
 		return
-	var sp: CanvasItem = b.get("sprite")
-	sp.modulate = Color(0.5, 0.4, 0.75)
+	var sp: Node2D = b.get("sprite")
+	sp.modulate = Color(0.3, 0.28, 0.36)
+	sp.scale = Vector2(1.0, 1.18)
+	sp.position.y -= 2.0
 	var t := sp.create_tween().set_loops()
 	t.tween_property(sp, "modulate:a", 0.55, 0.9)
 	t.tween_property(sp, "modulate:a", 1.0, 0.9)

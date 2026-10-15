@@ -49,7 +49,7 @@ const SPEAKERS := {
 	"DON OCTAVIO": ["octavio", "el ajedrez"], "DON RAMIRO": ["ramiro", "el ajedrez"], "YEISON": ["yeison", ""],
 	"EL DE LA CHAQUETA": ["chaqueta", ""], "FUNCIONARIA": ["funcionaria", ""], "FOTOGRAFO": ["fotografo", ""],
 	"DON TITO": ["tito", ""], "LA MONA": ["mona", ""], "MAESTRO RAMIRO": ["maestro", ""],
-	"EL BUHONERO": ["buhonero", ""], "LORENA": ["lilato", "su ex"], "ÉL, A LUKAS": ["el", "en voz alta, a Lukas"], "LUKAS": ["lukas", "beagle"],
+	"TOM QUEEN": ["tomqueen", "el padrino"], "LORENA": ["lilato", "su ex"], "ÉL, A LUKAS": ["el", "en voz alta, a Lukas"], "LUKAS": ["lukas", "beagle"],
 	# Todo el que habla tiene retrato (tools/art/draw_retratos.py): los de paso también.
 	"EL DE LA TIENDA": ["amigo", "videojuegos"], "EL GUARDIA": ["guardia", "El Guayabo"], "AGENTE": ["agente", ""],
 	"POLICIA": ["agente", ""], "POLICIA NUEVO": ["agente_nuevo", ""], "EL SARGENTO": ["sargento", ""],

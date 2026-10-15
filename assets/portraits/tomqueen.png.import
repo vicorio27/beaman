@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvt6xgftaglb0"
-path="res://.godot/imported/buhonero.png-7be33e4b513ebce66c45e1c82a8546ad.ctex"
+uid="uid://bhvdu322ciwjx"
+path="res://.godot/imported/tomqueen.png-df1cc569a9838915521cf1120d9186c9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/portraits/buhonero.png"
-dest_files=["res://.godot/imported/buhonero.png-7be33e4b513ebce66c45e1c82a8546ad.ctex"]
+source_file="res://assets/portraits/tomqueen.png"
+dest_files=["res://.godot/imported/tomqueen.png-df1cc569a9838915521cf1120d9186c9.ctex"]
 
 [params]
 

@@ -890,11 +890,11 @@ CAST = {
     "cobrador": {"piel": "clara", "pelo": "engominado", "pelo_color": (24, 22, 26), "gafas": "oscuras",
                  "ropa": (40, 40, 48), "tipo": "saco", "camisa": (236, 232, 222), "corbata": (30, 30, 36),
                  "fondo": (90, 30, 40)},
-    # El buhonero ("me dicen el Lobo"): solo lo ve él. Gabardina, sombrero, gafas oscuras, sonrisa.
-    "buhonero": {"piel": "clara", "pelo": "corto", "pelo_color": (30, 26, 36), "sombrero": "sombrero",
-                 "sombrero_color": (44, 38, 60), "cinta": (150, 60, 190), "gafas": "oscuras", "bigote": True,
-                 "sonrisa": True, "ropa": (46, 40, 64), "tipo": "saco", "camisa": (232, 228, 216),
-                 "corbata": (150, 60, 190), "fondo": (190, 100, 240)},
+    # Tom Queen, el padrino: el que solo ve él. Alto, bigote blanco, sombrero negro, todo de negro.
+    "tomqueen": {"piel": "clara", "pelo": "corto", "pelo_color": (214, 212, 208), "viejo": True, "sombrero": "sombrero",
+                 "sombrero_color": (30, 28, 34), "cinta": (16, 14, 20), "bigote": True, "barba_color": (240, 238, 232),
+                 "sonrisa": True, "ropa": (30, 28, 34), "tipo": "saco", "camisa": (36, 34, 42),
+                 "corbata": (16, 14, 20), "fondo": (170, 110, 230)},
 }
 
 

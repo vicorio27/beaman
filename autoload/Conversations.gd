@@ -2905,8 +2905,9 @@ func _sin_trabajo(lines: Array) -> bool:
 	return true
 
 
-# ---------------------------------------------------------------- El buhonero: el que solo ve él
-## "Me dicen el Lobo. Yo no vendo: yo soluciono." Sale algunos días, parado donde no hay nadie
+# ---------------------------------------------------------------- Tom Queen, el padrino: el que solo ve él
+## Su padrino. Alto, bigote blanco, sombrero negro, todo de negro. "Algunos me dicen el Lobo. Yo no
+## vendo: yo soluciono." Es el buhonero de esta historia. Sale algunos días, parado donde no hay nadie
 ## (scripts/systems/Vecindario.gd). Nadie más lo ve. Arregla lo que haga falta (hambre, plata, la noche,
 ## la fiebre de Lukas) y no recibe plata: cobra en locura. Verlo ya cuesta (+1); un trato cuesta más (+3).
 ## Con la locura se le borran las caras a los demás (GameState.sameness): entre más lo busca, más solo.
@@ -2915,9 +2916,9 @@ func _sin_trabajo(lines: Array) -> bool:
 ## hizo de verdad (BUHONERO_QUEDA): el almuerzo era de alguien, la caja de Germán no cuadra, amanece
 ## con los nudillos pelados. Nunca se dice: se deja ver.
 ## Flags: buhonero_n (veces que lo vio), buhonero_tratos, buhonero_dia, buhonero_noche (la noche arreglada).
-const BUHONERO := "EL BUHONERO"
+const BUHONERO := "TOM QUEEN"
 const BUHONERO_HOLA := [
-	[[BUHONERO, "—Otra vez usted. Me alegra. Bueno: a usted no debería alegrarle."]],
+	[[BUHONERO, "—Ahijado. Otra vez. Me alegra. Bueno: a usted no debería alegrarle."]],
 	[[BUHONERO, "—¿Qué va a llevar, forastero? ... Perdón. Eso es de otro trabajo que tuve."]],
 	[[BUHONERO, "—Tengo media hora. Diez minutos para llegar, nueve para arreglar, y el resto para que usted se pregunte si pasó."]],
 	[[BUHONERO, "—Cada vez que me ve, los demás se le borran un poquito. No es nada personal: es el arriendo del local."]],
@@ -2929,7 +2930,7 @@ const BUHONERO_QUEDA := {
 		["", "(Él tiene las manos tibias y la boca con sabor a jugo. No se acuerda de haber caminado hasta ninguna moto.)"]],
 	"La plata": [["", "(En la panadería, Don Germán cuenta la caja dos veces. Después una tercera, con los dedos. Faltan quince.)"],
 		["", "(Él tiene harina en la manga. No ha entrado hoy a la panadería. Eso cree.)"]],
-	"Que esta noche no lo toquen": [["", "(El buhonero ya no está. En el piso quedó un palo, con cinta en el mango, del tamaño de la mano de él.)"],
+	"Que esta noche no lo toquen": [["", "(El padrino ya no está. En el piso quedó un palo, con cinta en el mango, del tamaño de la mano de él.)"],
 		["", "(Lo recoge. Le queda perfecto. Se lo lleva.)"]],
 	"Lukas": [["", "(Lukas huele a alcohol de botiquín. En el bolsillo del saco hay una jeringa vacía, con la etiqueta de la Dra. Pilar.)"],
 		["", "(Él no sabe poner inyecciones. Las manos, por lo visto, sí.)"]],
@@ -2938,7 +2939,7 @@ const BUHONERO_MIRAN := [
 	[["SEÑORA", "—Mijo, ¿ese señor le está hablando al poste?"], ["MAMÁ", "—No lo mire. Camine."]],
 	[["", "(Cuando voltea, no hay nadie. En el piso quedan dos huellas mojadas. No ha llovido.)"]],
 	[["SEÑOR", "—Oiga, ¿todo bien? Lleva diez minutos asintiéndole a una pared. La pared no ha dicho nada. Yo la conozco."]],
-	[["", "(Un perro le ladra al sitio donde estaba el buhonero. Después le ladra a él. Los perros no escogen bando.)"]],
+	[["", "(Un perro le ladra al sitio donde estaba el padrino. Después le ladra a él. Los perros no escogen bando.)"]],
 ]
 
 
@@ -2949,9 +2950,10 @@ func _buhonero(npc: Node) -> void:
 	f["buhonero_dia"] = GameState.day
 	if n == 0:
 		await Dialogue.talk([
-			["", "(Un hombre de gabardina, parado donde no hay nada. La tiene abierta: por dentro, colgadas, cosas. Nadie más lo voltea a mirar.)"],
-			[BUHONERO, "—Buenas. Me dicen el Lobo. Yo no vendo: yo soluciono. ¿Qué problema trae?"],
-			[BUHONERO, "—No conteste. Ya sé que no habla. Mejor: los que hablan, regatean."],
+			["", "(Un hombre alto, todo de negro, parado donde no hay nada. Sombrero negro, bigote blanco. Tiene el saco abierto: por dentro, colgadas, cosas. Nadie más lo voltea a mirar.)"],
+			[BUHONERO, "—Ahijado. Tom Queen. Su padrino. No ponga esa cara: los padrinos aparecen cuando hay problemas. Para eso es uno padrino."],
+			[BUHONERO, "—Algunos me dicen el Lobo. Yo no vendo: yo soluciono. ¿Qué problema trae?"],
+			[BUHONERO, "—No conteste. Ya sé que no habla. Desde el bautizo: ni lloró. El cura pensó que estaba dañado."],
 			[BUHONERO, "—Plata no recibo. La plata es para la gente que se ve. Usted paga con otra cosa. No duele. Se nota después."]])
 	else:
 		await Dialogue.talk(BUHONERO_HOLA[(n - 1) % BUHONERO_HOLA.size()])
@@ -2987,7 +2989,7 @@ func _buhonero(npc: Node) -> void:
 			else:
 				f.erase("lukas_enfermo")
 				f["lukas_curado"] = GameState.day
-				await Dialogue.talk([["", "(El buhonero se agacha. Le pone a Lukas dos dedos en la frente. Lukas estornuda, se sacude y le muerde la gabardina. No agarra nada.)"],
+				await Dialogue.talk([["", "(El padrino se agacha. Le pone a Lukas dos dedos en la frente. Lukas estornuda, se sacude y le muerde la gabardina. No agarra nada.)"],
 					[BUHONERO, "—La fiebre, lista. Lo otro que tiene es que es perro: eso no se quita."]])
 		_:
 			trato = false
