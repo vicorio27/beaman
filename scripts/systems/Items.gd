@@ -107,6 +107,8 @@ const DB := {
 	"trampa": {"name": "Tabla con clavos", "desc": "Una estiba con los clavos para arriba, escondida en la entrada. El que entra sin avisar, sale cojeando.",
 		"type": "material", "stack": 1},
 	"cobija": {"name": "Cobija", "desc": "De lana. Va en el cambuche: se duerme mejor.", "type": "material", "stack": 1},
+	"peluche": {"name": "Peluche de feria", "desc": "Un oso morado con un corazón negro. De la garra de la feria. Para alguien que le gusta el morado con negro.",
+		"type": "rareza", "stack": 1},
 	# Lo que se arma en el cambuche con cartón y estibas (BUILDS): no va en la mochila, va puesto.
 	"piso": {"name": "Piso de cartón", "desc": "Cartón de doble capa. El frío no sube.", "type": "material", "stack": 1},
 	"cama_estiba": {"name": "Cama de estibas", "desc": "Dos estibas: lejos del piso mojado.", "type": "material", "stack": 1},

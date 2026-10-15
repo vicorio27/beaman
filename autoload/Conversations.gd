@@ -135,6 +135,10 @@ func run(id: String, npc: Node) -> void:
 			await _frutas()
 		"caneca":
 			await _caneca(npc)
+		"feria":
+			await _feria_entrada(npc)
+		"feria_carrusel", "feria_chocones", "feria_montana", "feria_dardos", "feria_garra", "feria_rueda":
+			await _feria(id.substr(6))
 		"caverna_cerrada":
 			await Dialogue.talk([["", "(La Caverna de Gamer, cerrada. Abre a las diez. Por la vidriera, las maquinitas apagadas parecen dormidas. El gato de Al no: el gato vigila.)"]])
 		"casa_cama", "casa_caja", "casa_alcancia", "casa_tablero", "casa_armar", "casa_cocina":
@@ -2432,6 +2436,7 @@ func _friend(id: String) -> void:
 # Sin chistes en lo de ella: el narrador en tercera persona, cuando hace falta. Él intenta, no le sale.
 
 const GIFTS := {
+	"peluche": "(Deja el peluche de la feria en la reja. Un oso morado con un corazón negro. Le gustan esos colores. Él no sabe cómo lo sabe. Lo sabe.)",
 	"flor": "(Deja el clavel en la reja, metido entre dos barrotes.)",
 	"pelota_trapo": "(Deja la pelota de trapo en la reja. Lukas la mira irse.)",
 	"estampita": "(Deja la estampita de San Judas en la reja.)",
@@ -3068,6 +3073,63 @@ func _buhonero(npc: Node) -> void:
 	await Dialogue.talk(BUHONERO_QUEDA[opts[i]] if trato and BUHONERO_QUEDA.has(opts[i]) else BUHONERO_MIRAN[n % BUHONERO_MIRAN.size()])
 	if trato and int(f.get("buhonero_tratos", 0)) in [2, 4]:
 		Narrator.say("(A la gente se le está yendo la cara. A él le parece que antes tenían más.)")
+
+
+# ---------------------------------------------------------------- La feria (detrás del billar)
+## Lo que cuesta cada cosa (scripts/world/Feria.gd, scripts/ui/FeriaJuegos.gd).
+const FERIA_PRECIO := {"carrusel": 1000, "chocones": 2000, "montana": 3000, "dardos": 1000, "garra": 500, "rueda": 2000}
+
+
+func _feria_entrada(spot: Node) -> void:
+	if not preload("res://scripts/world/Feria.gd").is_open():
+		await Dialogue.talk([["", "(La feria abre a las cuatro. De día es un lote con fierros y un señor durmiendo en la taquilla. De noche es otra cosa.)"]])
+		return
+	var scene := get_tree().current_scene
+	GameState.flags["feria_volver"] = [scene.scene_file_path, str(scene.get_path_to(spot))]
+	SceneRouter.go("res://scenes/world/Feria.tscn")
+
+
+func _feria(what: String) -> void:
+	var price: int = FERIA_PRECIO[what]
+	if GameState.money < price:
+		await Dialogue.talk([["EL DE LA TAQUILLA", "—$%d, mi rey. ¿No tiene? Mírelo desde ahí, que mirar es gratis. Y marea menos." % price]])
+		return
+	_pagar(price)
+	var r: int = await FeriaJuegos.play(self, what)
+	match what:
+		"chocones":
+			GameState.change_mood(4.0 + mini(r, 8))
+			await Dialogue.talk([["", ["(Ni un choque. Lo chocaron a él todos. Se baja mareado y con la dignidad abollada.)",
+				"(Choca a uno. El señor del carrito rojo le hace pistola. Él le devuelve una sonrisa. Primera en el día.)",
+				"(Choca a todos. Varias veces. Los niños le tienen miedo; los papás, envidia. El de la pista le pide que se baje.)"][clampi(r / 4 + (1 if r > 0 else 0), 0, 2)]]])
+		"carrusel":
+			GameState.change_mood(6.0)
+			await Dialogue.talk([["", "(Un hombre de cuarenta y pico en un caballito de plástico. Las rodillas en las orejas. Nadie se ríe: en la feria todo el mundo es un poco ridículo.)"],
+				["", "(Lukas le ladra en cada vuelta, como si fuera la primera vez que lo ve. Cada vuelta, lo saluda.)" if GameState.lukas_alive() else "(En cada vuelta busca a alguien abajo. En cada vuelta, nadie.)"]])
+		"montana":
+			GameState.change_mood(5.0 + r * 2.0)
+			GameState.set_hunger(GameState.hunger - 5.0)
+			await Dialogue.talk([["", "(Se baja blanco. Las piernas no le funcionan. El estómago tampoco. Lo único que funciona es la risa, que no para.)" if r > 0
+				else "(Se agarró de la barra todo el tiempo, con los ojos cerrados. Se baja igual de blanco que si los hubiera abierto.)"]])
+		"dardos":
+			if r >= 2 and GameState.has_space_for("peluche"):
+				GameState.add_item("peluche")
+				GameState.change_mood(8.0)
+				await Dialogue.talk([["EL DE LOS DARDOS", "—¡%d globos! Escoja peluche. ... ¿El morado? Ese no lo escoge nadie. Usted sí. Llévelo." % r]])
+			else:
+				GameState.change_mood(1.0)
+				await Dialogue.talk([["EL DE LOS DARDOS", ["—Cero globos. Los dardos están derechitos, eh. Es el pulso. El pulso es suyo.", "—Uno. Con uno le doy un dulce. Con dos, peluche. Así es la vida: siempre falta uno."][mini(r, 1)]]])
+		"garra":
+			if r == 1 and GameState.has_space_for("peluche"):
+				GameState.add_item("peluche")
+				GameState.change_mood(10.0)
+				await Dialogue.talk([["", "(La garra sube con un oso morado de corazón negro. Él no respira hasta que cae por el hueco. Primera vez en la historia de esa máquina.)"]])
+			else:
+				GameState.change_mood(-1.0)
+				await Dialogue.talk([["", "(La garra lo agarra, lo sube, y lo suelta justo antes del hueco. Como todo en la vida, pero con peluches.)"]])
+		"rueda":
+			GameState.change_mood(8.0)
+			GameState.company(4.0)
 
 
 # ---------------------------------------------------------------- Adentro del cambuche

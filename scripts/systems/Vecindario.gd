@@ -70,6 +70,7 @@ func _ready() -> void:
 func _setup() -> void:
 	if _scene.name == "City":
 		_add_shop()
+		_add_feria()
 		for pole in ["pole_426_300", "pole_864_300"]:  # (estaban metidos en la avenida)
 			var pn := _world.find_child(pole, false, false)
 			if pn:
@@ -195,6 +196,66 @@ func _add_shop() -> void:
 	door.interior = "caverna"
 	_world.add_child(door)
 	_shop_hours()
+
+
+## La feria del lote de atrás del billar: el arco con bombillos y, al fondo, la rueda de Chicago
+## (de día, quieta y apagada). La feria por dentro: scenes/world/Feria.tscn.
+const FERIA_AT := Vector2(790, 100)
+const RUEDA_AT := Vector2(890, 78)
+
+
+func _add_feria() -> void:
+	var wheel := Node2D.new()
+	wheel.name = "rueda_feria"
+	wheel.position = RUEDA_AT
+	wheel.draw.connect(func() -> void:
+		var on := Feria_open()
+		var t := Time.get_ticks_msec() / 1000.0
+		var hub := Vector2(0, -44)
+		wheel.draw_line(hub, Vector2(-14, 0), Color(0.5, 0.5, 0.56), 2.0)
+		wheel.draw_line(hub, Vector2(14, 0), Color(0.5, 0.5, 0.56), 2.0)
+		wheel.draw_arc(hub, 36, 0, TAU, 32, Color(0.62, 0.62, 0.7), 2.0)
+		for i in 8:
+			var a := (t * 0.25 if on else 0.3) + i * TAU / 8.0
+			var p := hub + Vector2(cos(a), sin(a)) * 36.0
+			wheel.draw_line(hub, p, Color(0.55, 0.55, 0.62), 1.0)
+			wheel.draw_rect(Rect2(p + Vector2(-3, 0), Vector2(6, 4)), Color.from_hsv(i / 8.0, 0.6, 0.85 if on else 0.45))
+			if on:
+				wheel.draw_circle(p, 1.3, Color(1, 0.95, 0.6) if int(t * 3.0 + i) % 2 == 0 else Color(1, 0.4, 0.5)))
+	_world.add_child(wheel)
+	var arch := Node2D.new()
+	arch.name = "arco_feria"
+	arch.position = FERIA_AT
+	arch.draw.connect(func() -> void:
+		var on := Feria_open()
+		var t := Time.get_ticks_msec() / 1000.0
+		arch.draw_rect(Rect2(-24, -30, 3, 30), Color(0.8, 0.7, 0.3))
+		arch.draw_rect(Rect2(21, -30, 3, 30), Color(0.8, 0.7, 0.3))
+		arch.draw_rect(Rect2(-28, -38, 56, 10), Color(0.8, 0.2, 0.25) if on else Color(0.45, 0.2, 0.22))
+		arch.draw_string(load("res://assets/fonts/PressStart2P.ttf"), Vector2(-20, -30), "FERIA", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 0.95, 0.7) if on else Color(0.6, 0.55, 0.5))
+		for i in 12:
+			var lit := on and int(t * 4.0 + i) % 3 != 0
+			arch.draw_circle(Vector2(-26 + i * 4.7, -40), 1.1, Color.from_hsv(fmod(i * 0.21, 1.0), 0.7, 1.0) if lit else Color(0.35, 0.33, 0.3)))
+	_world.add_child(arch)
+	var spot := Area2D.new()
+	spot.set_script(load("res://scripts/world/ServiceSpot.gd"))
+	spot.name = "Servicio_feria"
+	spot.service_id = "feria"
+	spot.hint = "FERIA"
+	spot.area = Vector2(40, 18)
+	spot.position = FERIA_AT + Vector2(0, 4)
+	_world.add_child(spot)
+	var redraw := Timer.new()  # los bombillos titilan
+	redraw.wait_time = 0.15
+	redraw.autostart = true
+	redraw.timeout.connect(func() -> void:
+		wheel.queue_redraw()
+		arch.queue_redraw())
+	add_child(redraw)
+
+
+static func Feria_open() -> bool:
+	return TimeManager.hour() >= 16
 
 
 func _shop_hours() -> void:

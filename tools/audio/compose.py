@@ -682,6 +682,9 @@ def chase_song():
 
 
 if __name__ == "__main__":
+    if "feria" in sys.argv:  # la feria del lote: la cumbia del barrio, pero de fiesta (más rápida)
+        save("feria", cumbia(118, False))
+        sys.exit()
     if "prologo" in sys.argv:
         save("panico", panic_loop(), peak=0.8)
         save("huida", chase_song())
@@ -699,6 +702,7 @@ if __name__ == "__main__":
     save("lilato_serpent", serpent_song(base))
     save("city_day", cumbia(92, False))
     save("city_night", cumbia(70, True))
+    save("feria", cumbia(118, False))
     save("bakery", bolero())
     save("cafe", vals())
     save("night", night_piano())

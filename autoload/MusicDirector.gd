@@ -15,6 +15,7 @@ const TRACKS := {
 	"Continue": "",
 	"Bakery": "bakery",
 	"Cafe": "cafe",
+	"Feria": "feria",
 	"Billar": "bakery",
 	"Night": "night",
 	"Memory1": "memory",

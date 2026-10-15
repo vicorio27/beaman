@@ -1972,3 +1972,9 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **Interiores** (`scenes/world/Interior.tscn`, `scripts/world/Interior.gd`): la iglesia, la veterinaria, la pensión, el baño público, la Defensoría, la Registraduría, el estudio de fotos y **La Caverna de Gamer** se entran (de día, en su horario; cerrados, la puerta dice lo de antes). Adentro: los muebles, quien atiende (con la misma conversación de siempre) y gente haciendo su vida (`scripts/npc/Vecino.gd`: rezan, barren, hacen fila, ven novela; si uno les da [E], dicen algo en una burbuja). En La Caverna, Al atiende detrás del mostrador; el gato duerme en la repisa.
 - **El colegio no se entra**: él es el de la reja. Ahí pasa lo de Victoria.
 - **La gente de afuera** que no camina, de vez en cuando mira para otro lado y dice algo suyo (en burbuja): Germán, Rosa, Marta, Wilson, Samuel, los viejos, el celador, el padre.
+
+## La feria (detrás del billar)
+- En el lote de atrás del billar: el arco con bombillos y, al fondo, la rueda de Chicago (de día quieta y apagada). Abre de cuatro de la tarde a medianoche (`scenes/world/Feria.tscn`, `scripts/world/Feria.gd`), con su cumbia (`assets/music/feria.wav`, `tools/audio/compose.py feria`).
+- Los juegos (`scripts/ui/FeriaJuegos.gd`): **carros chocones** ($2.000: 30 segundos manejando y chocando), **carrusel** ($1.000: Lukas le ladra en cada vuelta), **montaña rusa** ($3.000: [E] manos arriba en las bajadas), **dardos** ($1.000: con dos globos, peluche), **la garra** ($500: la garra floja de siempre) y **la rueda de Chicago** ($2.000).
+- **Arriba de la rueda, el recuerdo:** una fiesta de diciembre de antes, él sin barba. Fondo blanco al ritmo (aguardiente) y tres caladas (mantener y soltar en lo verde; si se pasa, tose). Baja con ganas de un trago y no se lo toma.
+- **El peluche** (un oso morado con corazón negro) se le puede dejar a Victoria en la reja: le gustan esos colores.
