@@ -135,6 +135,8 @@ func run(id: String, npc: Node) -> void:
 			await _frutas()
 		"caneca":
 			await _caneca(npc)
+		"caverna_cerrada":
+			await Dialogue.talk([["", "(La Caverna de Gamer, cerrada. Abre a las diez. Por la vidriera, las maquinitas apagadas parecen dormidas. El gato de Al no: el gato vigila.)"]])
 		"casa_cama", "casa_caja", "casa_alcancia", "casa_tablero", "casa_armar", "casa_cocina":
 			await _casa(id)
 		"billar_guardia":

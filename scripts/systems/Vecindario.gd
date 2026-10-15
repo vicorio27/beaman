@@ -74,6 +74,12 @@ func _setup() -> void:
 			var pn := _world.find_child(pole, false, false)
 			if pn:
 				pn.queue_free()
+	# Los lugares con adentro (Interior.gd): la puerta entra (abierto) y adentro está quien atendía.
+	for id in ["iglesia", "veterinaria", "pension", "bano", "defensoria", "registraduria", "fotos"]:
+		var sp := _world.get_node_or_null("Servicio_" + id)
+		if sp:
+			sp.interior = id
+			sp.hint = "ENTRAR"
 	for n in _world.find_children("*", "", false, false):  # las canecas: esculcar
 		var nm := str(n.name)
 		if (nm.begins_with("trash_") or nm.begins_with("dumpster_")) and n is Node2D:
@@ -178,27 +184,24 @@ func _add_shop() -> void:
 	shape.position = Vector2(0, -14)
 	body.add_child(shape)
 	shop.add_child(body)
-	# El que atiende: en la puerta, mirando para la calle. (Cerrado, no está: ver _process.)
-	_friend = CharacterBody2D.new()
-	_friend.set_script(load("res://scripts/npc/NPC.gd"))
-	_friend.name = "Amigo"
-	_friend.npc_id = "amigo"
-	_friend.sheet_row = 9
-	_friend.face = "down"
-	_friend.position = SHOP_AT + Vector2(60, 4)  # al lado, para que el aviso no tape el letrero
-	_world.add_child(_friend)
+	# La puerta: Al está adentro (Interior.gd, "caverna"). Cerrado, la puerta dice que está cerrado.
+	var door := Area2D.new()
+	door.set_script(load("res://scripts/world/ServiceSpot.gd"))
+	door.name = "Servicio_caverna"
+	door.service_id = "caverna_cerrada"
+	door.hint = "ENTRAR"
+	door.area = Vector2(24, 16)
+	door.position = SHOP_AT + Vector2(32, 8)
+	door.interior = "caverna"
+	_world.add_child(door)
 	_shop_hours()
 
 
 func _shop_hours() -> void:
-	if not is_instance_valid(_friend):
+	if _world == null:
 		return
 	var h := fmod(TimeManager.minutes / 60.0, 24.0)
 	var open := h >= SHOP_OPEN and h < SHOP_CLOSE
-	if _friend.visible != open:
-		_friend.visible = open
-		_friend.process_mode = Node.PROCESS_MODE_INHERIT if open else Node.PROCESS_MODE_DISABLED
-		_friend.collision_layer = 1 if open else 0
 	var shop := _world.get_node_or_null("videojuegos") as CanvasItem
 	if shop:
 		shop.self_modulate = Color.WHITE if open else Color(0.55, 0.55, 0.65)

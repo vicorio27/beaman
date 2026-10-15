@@ -8,6 +8,8 @@ const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 @export var service_id := "bano"
 @export var hint := "USAR"
 @export var area := Vector2(20, 14)
+## Si tiene adentro (Interior.gd): el botón entra en vez de hablar (abierto; cerrado, habla como antes).
+var interior := ""
 
 var _player: Node2D
 var _hint: Label
@@ -54,4 +56,9 @@ func _process(_delta: float) -> void:
 	if _player == null or GameState.input_blocked() or SceneRouter.busy:
 		return
 	if Input.is_action_just_pressed("interact") and Focus.mine(self):
+		if interior != "" and preload("res://scripts/world/Interior.gd").is_open(interior):
+			var scene := get_tree().current_scene
+			GameState.flags["interior"] = [interior, scene.scene_file_path, str(scene.get_path_to(self))]
+			SceneRouter.go("res://scenes/world/Interior.tscn")
+			return
 		Conversations.run(service_id, self)

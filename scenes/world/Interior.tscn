@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/Interior.gd" id="1_int"]
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="2_int"]
+[ext_resource type="PackedScene" path="res://scenes/ui/MoodFilter.tscn" id="3_int"]
+
+[node name="Interior" type="Node2D"]
+script = ExtResource("1_int")
+area_size = Vector2i(192, 128)
+outdoor = false
+
+[node name="Player" parent="." instance=ExtResource("2_int")]
+
+[node name="Start" type="Marker2D" parent="."]
+position = Vector2(96, 112)
+metadata/facing = "up"
+
+[node name="MoodFilter" parent="." instance=ExtResource("3_int")]
