@@ -350,7 +350,7 @@ func _hint(key: String, text: String) -> void:
 func on_guard(e: Brawler) -> void:
 	stats["guardias"] = stats.get("guardias", 0) + 1
 	_pop("GUARDIA", e.position + Vector2(0, -50), Color(0.75, 0.85, 1.0))
-	_hint("guard", "(Se cubre. De frente ya no le entra: mantené [E] y soltá, patada giratoria. O por la espalda.)")
+	_hint("guard", "(Se cubre. De frente ya no le entra: [X] empujón, o mantené [E] y soltá. O por la espalda.)")
 
 
 ## Lo tumbaron. A la tercera en la misma oleada, el sueño rebobina (salvo en las de jefe).

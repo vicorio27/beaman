@@ -20,6 +20,15 @@ const FOV_PLANE := 0.66
 const MOVE_SPEED := 3.4
 const TURN_SPEED := 2.6
 const MOUSE_SENS := 0.0035
+## Controles de dos palancas (como los de ahora): la izquierda camina (adelante/atrás y de lado) y la
+## derecha gira. Teclado: WASD camina, flechas o mouse giran. Celular: la palanca camina y arrastrar
+## el dedo en la mitad derecha gira.
+const STICK_TURN := 3.2
+const TOUCH_SENS := 0.012
+const STRAFE := 0.85
+## Los sonidos (tools/audio/plomo_sfx.py).
+const SFX := ["pistola", "escopeta", "puno", "bala_enemiga", "muere_1", "muere_2", "muere_3", "muere_4",
+	"muere_jefe", "dolor_1", "dolor_2", "dolor_3", "ay_1", "ay_2"]
 const RADIUS := 0.22
 const WALL_TEX := {"#": "kid_ladrillo", "C": "kid_dibujos", "Z": "kid_azul", "W": "kid_cafe", "G": "kid_estrellas",
 	"D": "kid_puerta", "L": "kid_puerta_llave", "E": "kid_salida"}
@@ -194,6 +203,9 @@ var _hurt := 0.0
 var _bonus := 0.0
 var _bob := 0.0
 var _face_hurt := 0.0
+var _sfx := {}
+var _ouch_cd := 0.0
+var _blood: Control  # la sangre encima de la cara: más entre menos vida
 var _face_grin := 0.0
 var _msg_cd := 0.0
 var _continue := 0.0
@@ -518,6 +530,10 @@ func _start() -> void:
 	state = "play"
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	Narrator.say(lines["start"], true)
+	if not GameState.flags.get("plomo_controles", false):
+		GameState.flags["plomo_controles"] = true
+		_say("Palanca: caminar y de lado. Arrastrar a la derecha: girar. [E]: disparar." if Controls.touch()
+			else "WASD: caminar y de lado. Mouse o flechas: girar. Clic o [E]: disparar.")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -534,6 +550,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		ang += event.relative.x * MOUSE_SENS
+	elif event is InputEventScreenDrag and event.position.x > 160.0:  # celular: la mitad derecha gira
+		ang += event.relative.x * TOUCH_SENS
 	elif event.is_action_pressed("drop"):
 		_next_weapon()
 	elif event is InputEventKey and event.pressed and event.physical_keycode in [KEY_1, KEY_2, KEY_3]:
@@ -577,18 +595,20 @@ func _process(delta: float) -> void:
 
 
 func _player(delta: float) -> void:
-	if Input.is_action_pressed("move_left"):
-		ang -= TURN_SPEED * delta
-	if Input.is_action_pressed("move_right"):
-		ang += TURN_SPEED * delta
+	_ouch_cd -= delta
+	# Girar: flechas, palanca derecha (y el mouse / el dedo, en _unhandled_input).
+	var arrows := float(Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_LEFT))
+	var rx := Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)
+	ang += (arrows * TURN_SPEED + (rx * STICK_TURN if absf(rx) > 0.2 else 0.0)) * delta
 	var dir := Vector2(cos(ang), sin(ang))
-	var move := 0.0
-	if Input.is_action_pressed("move_up"):
-		move += 1.0
-	if Input.is_action_pressed("move_down"):
-		move -= 0.7
-	if move != 0.0:
-		var step := dir * move * MOVE_SPEED * move_mult * delta
+	# Caminar: adelante/atrás y de lado (las flechas de los lados giran, no caminan de lado).
+	var move := Input.get_action_strength("move_up") - Input.get_action_strength("move_down") * 0.7
+	var side := Input.get_action_strength("move_right") - Input.get_action_strength("move_left") - arrows
+	var want := dir * move - dir.orthogonal() * side * STRAFE  # (orthogonal() es a la izquierda)
+	if want.length() > 1.0:
+		want = want.normalized()
+	if want.length() > 0.05:
+		var step := want * MOVE_SPEED * move_mult * delta
 		if walkable(pos + Vector2(step.x, 0)):
 			pos.x += step.x
 		if walkable(pos + Vector2(0, step.y)):
@@ -662,6 +682,7 @@ func _fire() -> void:
 		return
 	_fire_cd = w["cd"]
 	_flash = 0.12
+	_play("puno" if w["ammo"] == "" else ("escopeta" if w["ammo"] == "cartuchos" else "pistola"))
 	if w["ammo"] != "":
 		ammo[w["ammo"]] -= 1
 		for e in enemies:  # el ruido despierta a los que están cerca
@@ -712,6 +733,8 @@ func _damage(e: Ent, dmg: float) -> void:
 	if e.hp <= 0.0:
 		_die(e)
 		return
+	if randf() < 0.5:
+		_play(["ay_1", "ay_2"].pick_random(), -6.0)
 	if e.state != "attack" and randf() < (0.25 if e.kind in [mini_kind, boss_kind] else 0.6):
 		e.state = "pain"
 		e.timer = 0.25
@@ -735,6 +758,7 @@ func _damage(e: Ent, dmg: float) -> void:
 func _die(e: Ent) -> void:
 	e.state = "dead"
 	kills += 1
+	_play("muere_jefe" if e.kind in [boss_kind, mini_kind] else ["muere_1", "muere_2", "muere_3", "muere_4"].pick_random())
 	if e.kind == mini_kind:
 		pickups.append({"kind": "llave", "pos": e.pos})
 		_say(lines["mini_die"])
@@ -847,9 +871,11 @@ func _enemy_attack(e: Ent, d: float, sees: bool) -> void:
 			if d <= k["range"] + 0.2:
 				_hit(k["dmg"])
 		"hitscan":
+			_play("bala_enemiga", -3.0)
 			if sees and randf() < 0.65 * clampf(1.2 - d / k["range"], 0.3, 1.0):
 				_hit(k["dmg"])
 		"burst":
+			_play("bala_enemiga", -3.0)
 			for i in 3:
 				if sees and randf() < 0.45:
 					_hit(k["dmg"])
@@ -887,6 +913,9 @@ func _hit(dmg: float) -> void:
 	hp -= dmg
 	_hurt = 0.6
 	_face_hurt = 0.5
+	if _ouch_cd <= 0.0:
+		_ouch_cd = 0.3
+		_play(["dolor_1", "dolor_2", "dolor_3"].pick_random())
 	if hp <= 0.0:
 		hp = 0.0
 		_die_player()
@@ -1167,6 +1196,16 @@ func _build_hud() -> void:
 	_face = TextureRect.new()
 	_face.position = Vector2(100 if Controls.touch() else 148, 151)
 	_ui.add_child(_face)
+	_blood = Control.new()
+	_blood.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blood.draw.connect(_draw_blood)
+	_face.add_child(_blood)
+	for n in SFX:
+		var a := AudioStreamPlayer.new()
+		a.stream = load("res://assets/audio/plomo/%s.wav" % n)
+		a.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
+		add_child(a)
+		_sfx[n] = a
 	_big = _label(Vector2(0, 40), 16, Color(0.95, 0.2, 0.15))
 	_big.size = Vector2(W, 20)
 	_big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1187,6 +1226,39 @@ func _label(at: Vector2, size: int, color: Color) -> Label:
 	return l
 
 
+func _play(n: String, db := 0.0) -> void:
+	var a: AudioStreamPlayer = _sfx.get(n)
+	if a:
+		a.volume_db = db
+		a.pitch_scale = randf_range(0.92, 1.08)
+		a.play()
+
+
+## La sangre de la cara: entre menos vida, más chorros, más largos, y bajan despacio (cuadro a cuadro).
+func _draw_blood() -> void:
+	var k := 1.0 - clampf(hp / max_hp, 0.0, 1.0)
+	if k < 0.15 or not _face.visible:
+		return
+	var red := Color(0.62, 0.04, 0.06)
+	var dark := Color(0.38, 0.02, 0.04)
+	var streams := int(ceil(k * 7.0))
+	var spots := [Vector2(6, 3), Vector2(17, 4), Vector2(11, 2), Vector2(4, 9), Vector2(20, 10), Vector2(13, 6), Vector2(8, 14)]
+	for i in mini(streams, spots.size()):
+		var p: Vector2 = spots[i]
+		var grow := fmod(time * 0.6 + i * 0.37, 1.0)  # baja, se seca, vuelve a bajar
+		var length := (3.0 + k * 14.0) * (0.55 + 0.45 * grow)
+		_blood.draw_rect(Rect2(p.x, p.y, 1, minf(length, 25.0 - p.y)), red)
+		_blood.draw_rect(Rect2(p.x + 1, p.y, 1, minf(length * 0.6, 25.0 - p.y)), dark)
+		_blood.draw_rect(Rect2(p.x - 1, p.y - 1, 3, 2), red)
+		var tip := p.y + minf(length, 25.0 - p.y)
+		_blood.draw_rect(Rect2(p.x, tip, 1, 1), dark)
+	if k > 0.6:  # ya casi: la boca también
+		_blood.draw_rect(Rect2(10, 19, 4, 1), red)
+		_blood.draw_rect(Rect2(11, 20, 1, 4.0 + k * 2.0), red)
+	if k > 0.8:  # y un ojo hinchado
+		_blood.draw_rect(Rect2(14, 8, 5, 3), Color(0.42, 0.2, 0.36, 0.8))
+
+
 func _update_hud() -> void:
 	var w: Dictionary = weapons[weapon]
 	_hud_labels["ammo"].text = "--" if w["ammo"] == "" else str(ammo[w["ammo"]])
@@ -1199,6 +1271,7 @@ func _update_hud() -> void:
 	elif _face_grin > 0.0:
 		face = "face_grin"
 	_face.texture = _tex[face]
+	_blood.queue_redraw()
 	# En un diálogo, la caja tapa la barra: que no asomen pedazos de números por los lados.
 	var show := state != "title" and not Dialogue.active
 	for l in _hud_labels.values() + _hud_heads:

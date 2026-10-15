@@ -41,6 +41,8 @@ extends "res://scripts/dreams/Plomo.gd"
 ##      la casa cuelgan lámparas de araña, cada una amarrada a un gancho en la pared: cuando él está
 ##      debajo, uno le dispara a la cuerda (no a él). Aplastado, sí le entra. Cada lámpara que cae deja
 ##      la casa más oscura.
+##      En orden: primero las lámparas (a oscuras), después el chaleco (a oscuras él no ve: hay que
+##      llegarle de cerca y quitárselo a puño, LUCHO_VEST golpes) y ahí sí, darle duro ("bare").
 ##   2. EL CORONEL: el uniforme lo protege. Pero es codicioso: si uno le revienta una caja fuerte, el
 ##      fajo que cae lo hace correr a contarlo, y contando no se defiende. (Con Lisandro uno le quita
 ##      la carnada; con el Coronel uno se la pone.)
@@ -127,7 +129,9 @@ var _resupply_said := false
 ## cada una con el gancho de la pared donde está amarrada su cuerda (en la pared más cercana).
 const LAMP_SPOTS := [Vector2(25.4, 15.5), Vector2(29.4, 18.2), Vector2(26.4, 21.2)]
 const HOOK_SPOTS := [Vector2(27.6, 12.18), Vector2(30.82, 15.8), Vector2(28.3, 22.82)]
-const LUCHO_TAKE := {"armor": 0.1, "stun": 0.7, "dark": 0.6}
+const LUCHO_TAKE := {"armor": 0.1, "stun": 0.3, "dark": 0.1, "bare": 1.6}
+const LUCHO_VEST := 3  # puños, a oscuras, para quitarle el chaleco
+var _lucho_vest := 0
 ## Cuánto se queda debajo de cada lámpara antes de cambiarse a otra.
 const LUCHO_POSE_TIME := 5.0
 var _lamps: Array = []
@@ -541,6 +545,18 @@ func _damage(e: Ent, dmg: float) -> void:
 	if e.kind == boss_kind and not _twist and chapter in [1, 2] and _boss_mode != "":
 		var take: Dictionary = LUCHO_TAKE if chapter == 1 else CORONEL_TAKE
 		dmg *= take.get(_boss_mode, 1.0)
+		if chapter == 1 and _boss_mode == "dark":
+			if weapons[weapon]["ammo"] == "":  # a puño, de cerca: el chaleco se va soltando
+				_lucho_vest += 1
+				if _lucho_vest >= LUCHO_VEST:
+					_boss_mode = "bare"
+					_say("(Le arranca el chaleco. Debajo, una camiseta del Junior del 93. Ahora sí: duro.)", 2)
+				else:
+					_say(["(Le zafa una correa del chaleco. Él tira a donde no es.)", "(La otra correa. El chaleco le cuelga de un hombro.)"][mini(_lucho_vest - 1, 1)], 2)
+			elif _guard_say <= 0.0:
+				_guard_say = 6.0
+				_say("(A oscuras él no ve, pero el chaleco sigue. Hay que quitárselo: de cerca, a puño.)", 0)
+				_guard_say += 1.0  # (no repetir el TAC de abajo)
 		_guard_say -= 1.0
 		if _boss_mode in ["armor", "fight"] and _guard_say <= 0.0:
 			_guard_say = 7.0
@@ -805,7 +821,7 @@ func _lucho(b: Ent) -> void:
 				_boss_mode = "dark"
 				_lucho_lamp = -1
 				b.state = "chase"
-				_say("DON LUCHO: —¡Apagaron mi casa! ... A oscuras el viejo no ve. Ni el chaleco le sirve de nada.", 2)
+				_say("DON LUCHO: —¡Apagaron mi casa! ... A oscuras el viejo no ve. ¡Pero el chaleco no necesita ver!", 2)
 				return
 			_lucho_pose(b, get_process_delta_time())
 

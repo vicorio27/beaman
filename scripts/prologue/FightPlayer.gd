@@ -10,6 +10,10 @@ extends Brawler
 ##   - Si lo tiran al piso, suelta el arma.
 ##   - El botón hace lo que tiene sentido: si el único a tiro está atrás, se da vuelta y le pega;
 ##     con un matón encima, pega en vez de agarrar el arma del piso.
+##   - B mantenido: se tapa (agachado, los brazos arriba). Lo que entra de frente pega una quinta parte
+##     y no lo tira. Si aprieta B justo antes del golpe (PARRY), no le entra nada y contragolpea.
+##   - X: empujón. No hace daño, pero abre la guardia del que se cubre y lo deja atontado.
+##   - Le pegan menos que antes (TAKEN): "me pegan mucho".
 ## Sin vida: queda tirado hasta que se machaca el botón (¡LEVANTATE!); pierde puntos y se levanta con
 ## media vida.
 
@@ -55,6 +59,19 @@ const KO_PRESSES := 6
 const KO_MAX := 4.0  # si no machaca, igual se levanta (más tarde)
 const KO_PENALTY := 1000
 const REACH_CHECK := 34.0
+## Lo que le entra de cada golpe (antes, todo).
+const TAKEN := 0.75
+## Taparse: lo que entra de frente. Contragolpe: si apretó B hace menos de PARRY.
+const GUARD_TAKEN := 0.2
+const PARRY := 0.25
+const COUNTER := {"reach": 34.0, "damage": 12}
+## El empujón: alcance y cada cuánto.
+const SHOVE_REACH := 28.0
+const SHOVE_COOLDOWN := 0.6
+var guarding := false
+var _guard_pressed := 99.0  # hace cuánto apretó B
+var _shove_cd := 0.0
+var _taught := false
 
 
 func build_frames() -> SpriteFrames:
@@ -76,8 +93,24 @@ func unequip() -> void:
 
 func tick(delta: float) -> void:
 	_since_attack += delta
+	_guard_pressed += delta
+	_shove_cd -= delta
 	if SceneRouter.busy:
 		walk(Vector2.ZERO, delta)
+		return
+	if not _taught and arena.has_method("_hint"):  # una vez por escena: los tres botones
+		_taught = true
+		arena._hint("controles", "([E] pegar. Mantener [E]: patada cargada. [Q]: taparse; justo a tiempo, contragolpe. [X]: empujón, abre la guardia.)")
+	if Input.is_action_just_pressed("cancel"):
+		_guard_pressed = 0.0
+	guarding = Input.is_action_pressed("cancel") and state in [State.IDLE, State.WALK]
+	if guarding:
+		play("crouch")
+		sprite.modulate = Color(0.75, 0.9, 1.25)
+		walk(Vector2.ZERO, delta)
+		return
+	if Input.is_action_just_pressed("drop") and state in [State.IDLE, State.WALK] and _shove_cd <= 0.0:
+		_shove()
 		return
 	var attack := Input.is_action_just_pressed("interact")
 	_charge(delta)  # cuenta desde que aprieta (el primer golpe sale igual)
@@ -242,11 +275,53 @@ func _on_animation_finished() -> void:
 
 
 func take_hit(damage: int, from_x: float, heavy := false) -> void:
+	var from_front := signf(from_x - position.x) == facing
+	if from_front and _guard_pressed <= PARRY and state in [State.IDLE, State.WALK, State.ATTACK]:
+		_parry(from_x)
+		return
+	if guarding and from_front:
+		damage = maxi(1, roundi(damage * GUARD_TAKEN))
+		heavy = false
+		if arena.has_method("_pop"):
+			arena._pop("TAPADO", position + Vector2(0, -50), Color(0.75, 0.85, 1.0))
+	damage = maxi(1, roundi(damage * TAKEN))
 	super.take_hit(damage, from_x, heavy)
 	if state == State.DOWN and weapon != "":
 		if arena.has_method("drop_item"):
 			arena.drop_item(weapon, position + Vector2(-facing * 10, 0))
 		unequip()
+
+
+## B justo a tiempo: no le entra nada, se le corre al golpe y le devuelve uno que lo tira.
+func _parry(from_x: float) -> void:
+	_guard_pressed = 99.0
+	set_facing(1 if from_x > position.x else -1)
+	if arena.has_method("_pop"):
+		arena._pop("¡CONTRA!", position + Vector2(0, -50), Color(1.0, 0.85, 0.3))
+	if arena.get("stats") is Dictionary:
+		arena.stats["contras_el"] = arena.stats.get("contras_el", 0) + 1
+	_step = -1
+	_hit_done = true  # (la patada de la contra pega aquí, no en el cuadro)
+	state = State.ATTACK
+	sprite.stop()
+	play("kick")
+	arena.resolve_attack(self, COUNTER["reach"], COUNTER["damage"], true, true)
+
+
+## X: el empujón. Abre la guardia y lo deja atontado; no hace daño (bueno: uno).
+func _shove() -> void:
+	_shove_cd = SHOVE_COOLDOWN
+	_face_threat()
+	_step = -1
+	_hit_done = true
+	state = State.ATTACK
+	_push = facing * 60.0
+	sprite.stop()
+	play("punch")
+	var f := _foe_at(SHOVE_REACH, facing)
+	if f != null and arena.has_method("_pop"):
+		arena._pop("¡EMPUJÓN!", f.position + Vector2(0, -56), Color(0.9, 0.95, 1.0))
+	arena.resolve_attack(self, SHOVE_REACH, 1, false, true)
 
 
 func getup_anim() -> String:

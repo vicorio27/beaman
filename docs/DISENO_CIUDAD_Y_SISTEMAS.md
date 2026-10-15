@@ -1955,3 +1955,10 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **Cartón y estibas:** piso de cartón (4 cartones: menos hambre de noche, +2 ánimo), cama de estibas (2 estibas: la lluvia no lo empapa, +2 ánimo), repisa (estiba + clavos: la caja guarda 2 más). La lista de Mejorar se corre cuando no cabe.
 - **La casita:** con toldo, el cambuche tiene un adentro que se camina (`scenes/world/CambucheInside.tscn`): la cama (dormir, o una siesta al día), la caja (y en la repisa lo guardado), la alcancía, el tablero, la cocinita y la tabla con la piedra para armar. Lo que tiene se ve puesto; la foto y el dibujo de Victoria van colgados. Se sale por la cortina al mismo sitio.
 - **La mochila con Wilson:** con camiseta, plástico y cuerda, Wilson le cose dos bolsillos: 10 casilleros en vez de 8 (los dos de más se ven oscuros hasta entonces).
+
+## Peleas y PLOMO
+- **Beat 'em up:** además de pegar (A) y la patada cargada (mantener A y soltar), **B tapa** (de frente entra una quinta parte y no tumba; apretado justo antes del golpe, **contragolpe**) y **X empuja** (abre la guardia del que se cubre). A él le pegan un 25% menos. Los tres botones se explican una vez por pelea.
+- **PLOMO, sonido:** disparo de pistola, escopeta y puño; la bala de los malos; un quejido distinto por cada muerto (y uno largo para los jefes); el "ay" de los heridos; el dolor de él cuando le pegan. Se generan con `tools/audio/plomo_sfx.py` (`assets/audio/plomo/`).
+- **PLOMO, controles de ahora:** la palanca izquierda / WASD camina adelante, atrás y de lado; la derecha / flechas / mouse gira; en el celular, arrastrar el dedo en la mitad derecha gira.
+- **PLOMO, la cara:** entre menos vida, más sangre le baja por la cara (chorros que bajan despacio; con poca vida, la boca y un ojo hinchado).
+- **Don Lucho, en orden:** primero las lámparas (la casa a oscuras), después el chaleco (a oscuras, de cerca y a puño: tres golpes) y ahí sí, duro.
