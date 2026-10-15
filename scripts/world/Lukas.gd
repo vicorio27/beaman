@@ -248,7 +248,7 @@ func _do_trick(t: String) -> void:
 	Narrator.say({"sentarse": "(Palma hacia abajo. Lukas se sienta.)",
 		"pata": "(Mano abierta. Lukas le da la pata. La izquierda.)",
 		"muerto": "(Dedo en forma de pistola. Lukas se tira de lado. Abre un ojo para ver si lo están mirando.)",
-		"saludar": "(Levanta la mano. Lukas se para en dos patas y mueve las de adelante. Una señora que pasa se ríe.)"}[t])
+		"saludar": "(Levanta la mano. Lukas se para en dos patas y mueve las de adelante. Una señora que pasa se ríe.)"}[t], false, "lukas_truco")
 
 
 func _teach(learning: Array) -> void:
@@ -280,11 +280,11 @@ func _teach(learning: Array) -> void:
 		var n := int(f["truco_" + t])
 		if n >= 3:
 			_do_trick(t)
-			Narrator.say("¡Aprendió: %s! %s" % [GameState.LUKAS_TRICKS[t][0], GameState.LUKAS_TRICKS[t][1]])
+			Narrator.say("¡Aprendió: %s! %s" % [GameState.LUKAS_TRICKS[t][0], GameState.LUKAS_TRICKS[t][1]], false, "lukas_truco")
 		else:
-			Narrator.say("(Sesión %d de 3. Lukas casi entiende la seña.)" % n)
+			Narrator.say("(Sesión %d de 3. Lukas casi entiende la seña.)" % n, false, "lukas_escucha")
 	else:
-		Narrator.say("(Lukas se acuesta y lo mira. Hoy no.)")
+		Narrator.say("(Lukas se acuesta y lo mira. Hoy no.)", false, "lukas_triste")
 
 
 ## Hablarle a Lukas: afuera es mudo, pero a Lukas sí le habla (en voz alta, bajito). Baja la soledad.
@@ -400,10 +400,10 @@ func stare() -> void:
 			await feed()
 		else:
 			sprite.play("sit")
-			Narrator.say("(Se revisa los bolsillos. Nada. Le muestra las manos vacías. Lukas lo mira como lo miró el banco.)")
+			Narrator.say("(Se revisa los bolsillos. Nada. Le muestra las manos vacías. Lukas lo mira como lo miró el banco.)", false, "lukas_triste")
 	else:
 		sprite.play("sit")
-		Narrator.say("(Lo vuelve a mirar. Lukas se da vuelta y se echa de espaldas. Ofendido. Gana Lukas, por abandono.)")
+		Narrator.say("(Lo vuelve a mirar. Lukas se da vuelta y se echa de espaldas. Ofendido. Gana Lukas, por abandono.)", false, "lukas_triste")
 
 
 func pet() -> void:
@@ -418,18 +418,18 @@ func pet() -> void:
 	if TimeManager.minutes - GameState.flags.get("lukas_pet_at", -999.0) > 60.0:  # no es una máquina
 		GameState.flags["lukas_pet_at"] = TimeManager.minutes
 		GameState.change_mood(6.0)
-	Narrator.say(PET_LINES[_pet_index % PET_LINES.size()])
+	Narrator.say(PET_LINES[_pet_index % PET_LINES.size()], false, "lukas_feliz")
 	_pet_index += 1
 
 
 func feed() -> void:
 	var f := GameState.flags
 	if f.get("lukas_fed_day", -1) == GameState.day:
-		Narrator.say("(Ya comió hoy. Lukas lo mira como si no.)")
+		Narrator.say("(Ya comió hoy. Lukas lo mira como si no.)", false, "lukas_triste")
 		return
 	if GameState.count("concentrado") > 0:
 		GameState.remove_item("concentrado")
-		Narrator.say("(Se come el concentrado en cuatro segundos.)")
+		Narrator.say("(Se come el concentrado en cuatro segundos.)", false, "lukas_come")
 	else:
 		var food := ""
 		for s in GameState.inventory:
@@ -437,14 +437,14 @@ func feed() -> void:
 				food = s["id"]
 				break
 		if food == "":
-			Narrator.say("(No tiene nada para darle.)")
+			Narrator.say("(No tiene nada para darle.)", false, "lukas_triste")
 			return
 		var name: String = Items.info(food)["name"].to_lower()
 		var i := await Dialogue.talk([["", "(No tiene concentrado. ¿Compartirle: %s?)" % name]], ["Compartir", "No"])
 		if i != 0:
 			return
 		GameState.remove_item(food)
-		Narrator.say("(Le da la mitad. Después, el resto.)")
+		Narrator.say("(Le da la mitad. Después, el resto.)", false, "lukas_come")
 	f["lukas_fed_day"] = GameState.day
 	f.erase("lukas_hungry")
 	state = "found"
@@ -454,7 +454,7 @@ func feed() -> void:
 
 func fetch() -> void:
 	if GameState.count("pelota_trapo") == 0:
-		Narrator.say("(No tiene con qué jugar. Una pelota de trapo: camiseta + cuerda [C].)")
+		Narrator.say("(No tiene con qué jugar. Una pelota de trapo: camiseta + cuerda [C].)", false, "lukas_triste")
 		return
 	var dir := Vector2.DOWN
 	match player.facing:
@@ -474,7 +474,7 @@ func fetch() -> void:
 	t.tween_property(_ball, "global_position:x", land.x, 0.6)
 	t.tween_method(func(k: float): _ball.global_position.y = lerpf(player.global_position.y - 10, land.y - 4, k) - sin(k * PI) * 26.0,
 		0.0, 1.0, 0.6)
-	Narrator.say("(Le muestra la pelota. La tira.)")
+	Narrator.say("(Le muestra la pelota. La tira.)", false, "lukas_escucha")
 	state = "fetch_go"
 	_stuck = 0.0
 
@@ -622,31 +622,31 @@ func sniff() -> bool:
 		state = "found"
 		_found_time = 1.5
 		sprite.play("sit")
-		Narrator.say("(Lukas no quiere buscar. Tiene la nariz caliente: veterinaria.)")
+		Narrator.say("(Lukas no quiere buscar. Tiene la nariz caliente: veterinaria.)", false, "lukas_enfermo")
 		return false
 	if thirsty() and randf() < 0.4:
 		state = "found"
 		_found_time = 1.5
 		sprite.play("sit")
-		Narrator.say("(Lukas tiene la lengua afuera. Con sed no huele nada: un cuenco con agua.)")
+		Narrator.say("(Lukas tiene la lengua afuera. Con sed no huele nada: un cuenco con agua.)", false, "lukas_triste")
 		return false
 	if GameState.flags.get("lukas_hungry", false) and randf() < 0.5:
 		state = "found"
 		_found_time = 1.5
 		sprite.play("sit")
-		Narrator.say("(Lukas olfatea... y se sienta. Con hambre no busca.)")
+		Narrator.say("(Lukas olfatea... y se sienta. Con hambre no busca.)", false, "lukas_triste")
 		return false
 	_target = _nearest_pickup()
 	if _target == null:
 		state = "found"
 		_found_time = 1.5
 		sprite.play("sniff")
-		Narrator.say("(Lukas olfatea... nada.)")
+		Narrator.say("(Lukas olfatea... nada.)", false, "lukas_huele")
 		return false
 	state = "seek"
 	_stuck = 0.0
 	sprite.play("sniff")
-	Narrator.say("(Chasquea los dedos y señala el piso. Lukas pega la nariz al suelo.)")
+	Narrator.say("(Chasquea los dedos y señala el piso. Lukas pega la nariz al suelo.)", false, "lukas_huele")
 	return true
 
 
@@ -680,9 +680,9 @@ func _arrive() -> void:
 	_bubble.visible = true
 	if _target.concealed:
 		_target.reveal()
-		Narrator.say("(¡Guau! Lukas encontró algo.)")
+		Narrator.say("(¡Guau! Lukas encontró algo.)", false, "lukas_ladra")
 	else:
-		Narrator.say("¡Guau!")
+		Narrator.say("¡Guau!", false, "lukas_ladra")
 	GameState.flags["lukas_sniffed"] = true
 	found_something.emit(_target.item_id)
 
@@ -695,10 +695,10 @@ func _fetch_done() -> void:
 	GameState.change_mood(4.0)
 	if randf() < 0.25:
 		sprite.play("sit")
-		Narrator.say("(No se la da. Se acuesta encima.)")
+		Narrator.say("(No se la da. Se acuesta encima.)", false, "lukas_pelota")
 	else:
 		sprite.play("bark")
-		Narrator.say(FETCH_LINES[_fetch_index % FETCH_LINES.size()])
+		Narrator.say(FETCH_LINES[_fetch_index % FETCH_LINES.size()], false, "lukas_pelota")
 		_fetch_index += 1
 
 

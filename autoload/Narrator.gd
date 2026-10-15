@@ -17,6 +17,7 @@ var _style_thin: StyleBoxFlat  # arriba (en la acción): fina y transparente, pa
 var _pending: Array = []  # lo que llegó mientras había un diálogo o una llamada en pantalla
 var _current: Array = []  # lo que se está mostrando (si se abre una pantalla, se guarda y vuelve)
 var _scene: Node  # dónde se dijo: si cambia la escena, el aviso viejo se va (no tapa el título del sueño)
+var _face: TextureRect  # la cara de quien reacciona (Lukas), al lado del aviso
 
 
 func _ready() -> void:
@@ -50,14 +51,19 @@ func _ready() -> void:
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_panel.add_child(_label)
+	_face = TextureRect.new()
+	_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_face.visible = false
+	add_child(_face)
 
 
 ## top = mostrarla arriba de la pantalla (cuando la acción está abajo).
-func say(text: String, top := false) -> void:
+## face = un retrato (assets/portraits/<face>.png) que reacciona al lado del aviso: la cabeza, nada más.
+func say(text: String, top := false, face := "") -> void:
 	if _busy():
-		_pending = [text, top]
+		_pending = [text, top, face]
 		return
-	_current = [text, top]
+	_current = [text, top, face]
 	_scene = get_tree().current_scene
 	_label.text = Controls.keys_in(text)
 	# Crece según el texto; abajo crece hacia arriba para no salirse de la pantalla.
@@ -75,6 +81,13 @@ func say(text: String, top := false) -> void:
 		var h := maxf(26.0, _text_height(w - 10.0) + 10.0)
 		_panel.size = Vector2(w, h)
 		_panel.position = Vector2(x, 172 - h)
+	_face.visible = face != "" and ResourceLoader.exists("res://assets/portraits/%s.png" % face)
+	if _face.visible:
+		var at := AtlasTexture.new()
+		at.atlas = load("res://assets/portraits/%s.png" % face)
+		at.region = Rect2(4, 6, 90, 74)
+		_face.texture = at
+		_face.position = Vector2(_panel.position.x - 4, _panel.position.y - 72) if not top else Vector2(_panel.position.x, _panel.position.y + _panel.size.y)
 	if _tween:
 		_tween.kill()
 	_tween = create_tween()
@@ -96,6 +109,7 @@ func _busy() -> bool:
 
 
 func _process(_delta: float) -> void:
+	_face.modulate.a = _panel.modulate.a
 	if _panel.modulate.a > 0.0 and _scene != get_tree().current_scene:
 		hide_now()
 		_current = []
@@ -108,7 +122,7 @@ func _process(_delta: float) -> void:
 	if not _pending.is_empty() and not _busy():
 		var p := _pending
 		_pending = []
-		say(p[0], p[1])
+		say(p[0], p[1], p[2] if p.size() > 2 else "")
 
 
 ## Se calla de golpe (cuando empieza un diálogo).

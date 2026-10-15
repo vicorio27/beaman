@@ -139,8 +139,9 @@ func _ready() -> void:
 	_photo.modulate.a = 0.0
 	add_child(_photo)
 	_pic = Vineta.new()
-	_pic.position = Vector2(40, 10)
+	_pic.position = Vector2(40, 10)  # (agrandada 1.2 alrededor de su centro: ocupa de 16 a 304, de 0 a 120)
 	_pic.pivot_offset = Vector2(120, 50)
+	_pic.scale = Vector2(PIC_SCALE, PIC_SCALE)
 	_pic.modulate.a = 0.0
 	add_child(_pic)
 	_text = Label.new()
@@ -151,7 +152,7 @@ func _ready() -> void:
 	_text.add_theme_color_override("font_outline_color", Color(0.02, 0.02, 0.04))
 	_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_text.position = Vector2(16, 118)
+	_text.position = Vector2(16, 123)
 	_text.size = Vector2(_text_w(), 56)
 	add_child(_text)
 	_text.add_to_group("under_dialogue")
@@ -173,14 +174,17 @@ func _wait() -> void:
 
 ## Muestra la fila `row` de la hoja `sheet` (ver scripts/ui/Vineta.gd): entra despacio y se acerca un
 ## poquito mientras se lee. dim < 1: queda de fondo, apagada (el texto va encima, en el centro; no lo mueve).
+const PIC_SCALE := 1.2  # las viñetas, grandes: casi toda la pantalla
+
+
 func _show_pic(sheet: String, row: int, dim := 1.0) -> void:
 	_pic.show_row(sheet, row)
-	_pic.scale = Vector2.ONE
+	_pic.scale = Vector2(PIC_SCALE, PIC_SCALE)
 	var t := create_tween()
 	t.tween_property(_pic, "modulate", Color(dim, dim, dim, 1.0), 1.2 if _pic.modulate.a < 0.5 else 0.5)
-	t.parallel().tween_property(_pic, "scale", Vector2(1.03, 1.03), 9.0)
+	t.parallel().tween_property(_pic, "scale", Vector2(PIC_SCALE * 1.03, PIC_SCALE * 1.03), 9.0)
 	if dim >= 1.0:
-		_text.position = Vector2(16, 118)
+		_text.position = Vector2(16, 123)
 		_text.size = Vector2(_text_w(), 56)
 
 
@@ -460,7 +464,7 @@ func _defend(spot: String) -> void:
 
 
 func _morning(spot: String, first: bool) -> void:
-	_text.position = Vector2(16, 118)
+	_text.position = Vector2(16, 123)
 	_text.size = Vector2(_text_w(), 56)
 	var lost_fight: bool = str(GameState.flags.get("defense_result", "")) == "lost"
 	var lines: Array = GameState.new_day(spot)

@@ -1985,7 +1985,9 @@ func _pescar() -> void:
 func _atardecer() -> void:
 	var h := TimeManager.hour()
 	if h < 17 or h >= 19:
+		var day_pic := Vineta.show_over("momentos", Vineta.M.PUENTE_DIA)
 		await Dialogue.talk([["", "(Desde el puente se ve el río entero, y al fondo los cerros. A esta hora no tiene nada de especial.)"]])
+		Vineta.hide_over(day_pic)
 		return
 	await _sit_ground("up")  # en el borde del puente, de cara al río
 	var sky := CanvasLayer.new()
@@ -2014,11 +2016,9 @@ func _atardecer() -> void:
 		["", "(Los carros siguen pasando por detrás. Nadie más se detiene. Él sí.)"]]
 	if GameState.lukas_alive():
 		lines.append(["", "(Lukas se sienta a su lado, de cara al sol, con los ojos entrecerrados. Los dos igual de quietos.)"])
-	if GameState.day >= 3:
-		pass
-	if photo > 0:
-		pass
+	var pic := Vineta.show_over("momentos", Vineta.M.ATARDECER if GameState.lukas_alive() else Vineta.M.ATARDECER_SOLO)
 	await Dialogue.talk(lines)
+	Vineta.hide_over(pic)
 	TimeManager.skip(maxf(0.0, 19.0 - TimeManager.minutes / 60.0))
 	GameState.change_mood(8.0 + photo * 3.0)
 	GameState.company(5.0)

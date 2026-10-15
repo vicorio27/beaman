@@ -251,6 +251,8 @@ def _head(a, cx, cy, look, hair_only=False):
     lx, ly = look
     a.part(SKIN, lambda d: d.ell(cx + lx * 2.4, cy + ly * 2.4, 3.5, 3.5), shade=1)
     # La barba: hacia el pecho (abajo de la cara).
+    if getattr(a, "clean", False):  # (sin barba: el de antes)
+        return
     bx, by = cx + lx * 2.6 - ly * 2.6, cy + ly * 2.6 + lx * 2.8
     a.part(BEARD, lambda d: d.ell(bx, by, 3.2, 2.7), shade=1, rim=False)
 

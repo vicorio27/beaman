@@ -91,6 +91,9 @@ var title_text := "PLOMO"
 var subtitle := "EPISODIO 1: EL QUE ME MANDO A MATAR\n(cuando tenia diez años)"
 ## "Anteriormente en PLOMO...": se muestra antes de empezar (vacío en el episodio 1).
 var recap: Array = []
+## Antes de empezar, la cara en el espejo (una fila de Vineta.M; -1: sin espejo). Los de Lisandro.
+var mirror := -1
+var mirror_lines: Array = []
 var wall_tex: Dictionary = WALL_TEX
 var kinds: Dictionary = KINDS
 ## Las armas del episodio (Lisandro tiene la mini-Uzi del sicariato en vez de la escopeta).
@@ -506,6 +509,10 @@ func _start() -> void:
 	_big.text = ""
 	_small.text = ""
 	MusicDirector.force(music)
+	if mirror >= 0:
+		var pic := Vineta.show_over("momentos", mirror)
+		await Dialogue.talk(mirror_lines)
+		Vineta.hide_over(pic)
 	if not recap.is_empty():
 		await Dialogue.talk(recap)
 	state = "play"

@@ -637,10 +637,20 @@ def mannequin():
     return b.result((150, 150, 164))
 
 
-def lukas(bark=False):
-    """Lukas: beagle tricolor, de tres cuartos, con su collar. bark: ladrando, una oreja al aire."""
+## Las caras de Lukas: el retrato de cada reacción (lukas_<modo>.png; "normal" es lukas.png).
+LUKAS_MODOS = ["normal", "ladra", "feliz", "come", "pelota", "escucha", "triste", "huele", "enfermo", "truco"]
+
+
+def lukas(mode="normal"):
+    """Lukas: beagle tricolor, de tres cuartos, con su collar. mode: cómo reacciona (LUKAS_MODOS)."""
+    if mode is True:
+        mode = "ladra"
+    elif mode is False:
+        mode = "normal"
     b = Bust({}, 5)
     tan, ear, black, white = tones((214, 138, 74)), tones((150, 86, 48)), tones((52, 46, 50), 0.6, 1.5), tones((246, 240, 228), 0.72, 1.0)
+    if mode == "enfermo":  # pálido: el color se le va
+        tan, ear = tones((188, 140, 104)), tones((136, 96, 70))
     # El cuerpo: el lomo negro, el pecho blanco.
     body = b.M(lambda d: d.poly([(10, 114), (16, 88), (32, 74), (60, 76), (76, 92), (82, 114)]))
     b.vol(body, tan, sw=4, lw=2, bottom=0)
@@ -651,35 +661,82 @@ def lukas(bark=False):
     b.vol(b.M(lambda d: d.poly([(28, 72), (64, 75), (65, 83), (29, 81)])), leather, sw=2, lw=1, bottom=1, dither=False)
     b.vol(b.M(lambda d: d.ell(52, 87, 3.8, 3.8)), tones((204, 206, 218)), sw=1, lw=1, bottom=1, dither=False)
     b.dot(52, 87, (120, 122, 136))
+    if mode == "come":  # la coca, abajo
+        bowl = tones((176, 180, 192))
+        b.vol(b.M(lambda d: (d.ell(66, 104, 20, 7), d.rect(46, 96, 86, 104))), bowl, sw=2, lw=1, bottom=1, dither=False)
+        for k in range(7):
+            b.dot(54 + k * 4, 97 + (k % 2), (150, 96, 54))
+    lift = {"ladra": -3, "huele": -6, "come": 9, "triste": 4, "enfermo": 3, "truco": -2}.get(mode, 0)
+    shift = 2 if mode == "escucha" else 0      # la cabeza, ladeada
     # La oreja de allá (apenas se ve), la cabeza, el hocico.
-    lift = -3 if bark else 0
-    b.vol(b.M(lambda d: d.ell(58, 26 + lift, 7, 9)), ear, sw=2, lw=1, bottom=0)
-    head = b.M(lambda d: (d.ell(44, 42 + lift, 22, 21), d.poly([(40, 56 + lift), (70, 44 + lift), (72, 62 + lift), (48, 68 + lift)])))
+    b.vol(b.M(lambda d: d.ell(58 + shift, 26 + lift - shift, 7, 9)), ear, sw=2, lw=1, bottom=0)
+    head = b.M(lambda d: (d.ell(44, 42 + lift, 22, 21), d.poly([(40, 56 + lift), (70, 44 + lift - shift), (72, 62 + lift - shift), (48, 68 + lift)])))
     b.vol(head, tan, sw=4, lw=2, bottom=2)
-    muzzle = b.M(lambda d: (d.ell(66, 53 + lift, 16, 10.5), d.poly([(52, 24 + lift), (59, 25 + lift), (64, 46 + lift), (54, 48 + lift)])))
+    muzzle = b.M(lambda d: (d.ell(66, 53 + lift - shift, 16, 10.5), d.poly([(52, 24 + lift), (59, 25 + lift), (64, 46 + lift), (54, 48 + lift)])))
     b.vol(muzzle, white, sw=2, lw=1, bottom=2)
-    b.vol(b.M(lambda d: d.ell(80, 48.5 + lift, 4.6, 4)), black, sw=1, lw=1, bottom=1, dither=False)   # la nariz
-    b.dot(81, 47 + lift, (236, 236, 244))
-    if bark:
+    b.vol(b.M(lambda d: d.ell(80, 48.5 + lift - shift, 4.6, 4)), black, sw=1, lw=1, bottom=1, dither=False)   # la nariz
+    b.dot(81, 47 + lift - shift, (236, 236, 244))
+    y = lift
+    # La boca.
+    if mode == "ladra":
         b.vol(b.M(lambda d: d.poly([(58, 60), (78, 56), (77, 70), (62, 72)])), white, sw=2, lw=1, bottom=2)   # la quijada, abierta
         b.put(b.M(lambda d: d.poly([(60, 58), (79, 53), (76, 63), (63, 65)])), (110, 36, 46))
-        b.put(b.M(lambda d: d.ell(70, 62.5, 5.5, 2.6)), (236, 120, 132))                                # la lengua
+        b.put(b.M(lambda d: d.ell(70, 62.5, 5.5, 2.6)), (236, 120, 132))
         for xx in (64, 68, 72, 76):
             b.dot(xx, 57 - (xx - 64) // 4, (255, 255, 250))
-        b.line([(48, 37), (52, 39), (56, 37)], INK)                                                   # el ojo, apretado
-        b.vol(b.M(lambda d: d.poly([(24, 36), (6, 14), (30, 26)])), ear, sw=2, lw=1, bottom=1)          # la oreja, al aire
-        for (x0, y0, x1, y1) in ((86, 40, 92, 36), (87, 50, 94, 50), (86, 60, 92, 64)):
-            b.put(b.M(lambda d: d.cap(x0, y0, x1, y1, 1.6)), (250, 226, 120))
+    elif mode in ("feliz", "truco"):  # la boca abierta, la lengua afuera
+        b.put(b.M(lambda d: d.poly([(62, 60 + y), (78, 57 + y), (76, 64 + y), (64, 65 + y)])), (110, 36, 46))
+        b.vol(b.M(lambda d: d.ell(70, 67 + y, 5, 5.5)), tones((236, 120, 132)), sw=1, lw=1, bottom=1, dither=False)
+        b.line([(70, 63 + y), (70, 70 + y)], (200, 90, 100))
+    elif mode == "pelota":  # la pelota de trapo, en la boca
+        b.line([(62, 61 + y), (70, 62 + y), (79, 58 + y)], mix(white[0], INK, 0.5))
+        ball = tones((206, 70, 70))
+        b.vol(b.M(lambda d: d.ell(74, 63 + y, 8, 7)), ball, sw=2, lw=1, bottom=1, dither=False)
+        b.line([(68, 60 + y), (80, 66 + y)], (240, 230, 220))
+        b.line([(70, 57 + y), (78, 68 + y)], (240, 230, 220))
+    elif mode == "come":
+        b.line([(62, 61 + y), (70, 63 + y), (79, 59 + y)], mix(white[0], INK, 0.5))
+        b.put(b.M(lambda d: d.ell(78, 63 + y, 2.5, 1.5)), (236, 120, 132))   # la lengua, lamiendo
     else:
-        b.line([(62, 61), (70, 62), (79, 58)], mix(white[0], INK, 0.5))                                # la boca
-        b.vol(b.M(lambda d: d.ell(26, 55, 10.5, 21)), ear, sw=3, lw=2, bottom=2)                        # la oreja, caída
-        b.put(b.M(lambda d: d.ell(51.5, 41, 3.4, 3.6)), (30, 20, 22))                                  # el ojo
-        b.dot(50, 40, (255, 255, 255))
-        b.dot(51, 39, (255, 255, 255))
-        b.line([(48, 45), (55, 45)], tan[0])
-        b.put(b.M(lambda d: d.ell(67, 41, 1.8, 2.6)), (30, 20, 22))
+        b.line([(62, 61 + y - shift), (70, 62 + y - shift), (79, 58 + y - shift)], mix(white[0], INK, 0.5))
+    # Las orejas: caída, o al aire.
+    if mode in ("ladra", "escucha", "truco"):
+        b.vol(b.M(lambda d: d.poly([(24, 36 + y), (6, 14 + y), (30, 26 + y)])), ear, sw=2, lw=1, bottom=1)
+    else:
+        droop = {"triste": 6, "enfermo": 5}.get(mode, 0)
+        b.vol(b.M(lambda d: d.ell(26, 55 + y + droop, 10.5, 21)), ear, sw=3, lw=2, bottom=2)
+    # Los ojos.
+    if mode in ("ladra", "feliz", "huele", "come"):  # cerrados: apretados, o de gusto
+        b.line([(48, 37 + y), (52, 35 + y), (56, 37 + y)] if mode == "feliz" else [(48, 37 + y), (52, 39 + y), (56, 37 + y)], INK)
+    elif mode == "enfermo":  # medio cerrados
+        b.put(b.M(lambda d: d.ell(51.5, 42 + y, 3.4, 2.0)), (30, 20, 22))
+        b.line([(47, 40 + y), (56, 40 + y)], tan[0])
+        b.dot(66, 43 + y, (30, 20, 22))
+        b.put(b.M(lambda d: d.ell(34, 32 + y, 1.6, 2.6)), (150, 200, 240))   # una gota de sudor
+    else:
+        up = -1 if mode == "triste" else 0
+        b.put(b.M(lambda d: d.ell(51.5, 41 + y + up - shift, 3.4, 3.6)), (30, 20, 22))
+        b.dot(50, 40 + y + up - shift, (255, 255, 255))
+        b.dot(51, 39 + y + up - shift, (255, 255, 255))
+        b.line([(48, 45 + y - shift), (55, 45 + y - shift)], tan[0])
+        b.put(b.M(lambda d: d.ell(67, 41 + y - shift, 1.8, 2.6)), (30, 20, 22))
+        if mode == "triste":  # la ceja, de pena
+            b.line([(48, 36 + y), (55, 34 + y)], tan[0])
     b.put(b.M(lambda d: d.ell(53, 34 + lift, 2.2, 1.4)), tan[2])                                       # la ceja
-    return b.result((240, 200, 120))
+    # Lo de alrededor: el ladrido, el olfato, la pregunta, el truco.
+    gold = (250, 226, 120)
+    if mode == "ladra":
+        for (x0, y0, x1, y1) in ((86, 40, 92, 36), (87, 50, 94, 50), (86, 60, 92, 64)):
+            b.put(b.M(lambda d: d.cap(x0, y0, x1, y1, 1.6)), gold)
+    elif mode == "huele":
+        for k in range(3):
+            b.put(b.M(lambda d: d.path([(88, 46 + y - k * 6), (91, 43 + y - k * 6), (88, 40 + y - k * 6)], 1.4)), (200, 220, 240))
+    elif mode == "escucha":
+        b.put(b.M(lambda d: (d.path([(84, 18), (88, 15), (91, 18), (88, 22), (88, 25)], 1.8), d.ell(88, 29, 1.2, 1.2))), gold)
+    elif mode == "truco":
+        for (x0, y0) in ((86, 22), (12, 70), (84, 70)):
+            b.put(b.M(lambda d: (d.cap(x0 - 3, y0, x0 + 3, y0, 1.4), d.cap(x0, y0 - 3, x0, y0 + 3, 1.4))), gold)
+    return b.result((240, 200, 120) if mode != "enfermo" else (170, 190, 220))
 
 
 # ---------------------------------------------------------------- El reparto
@@ -908,8 +965,8 @@ def main():
         rows = (len(ids) + cols - 1) // cols
         sheet = Image.new("RGB", (W * cols, H * rows), (44, 40, 62))
         for k, pid in enumerate(ids):
-            if pid in ("iguales", "lukas", "lukas_ladra"):
-                im = {"iguales": mannequin, "lukas": lukas, "lukas_ladra": lambda: lukas(True)}[pid]()
+            if pid == "iguales" or pid.startswith("lukas"):
+                im = mannequin() if pid == "iguales" else lukas(pid[6:] if pid != "lukas" else "normal")
             else:
                 im = portrait(CAST[pid], seed=list(CAST).index(pid))
             sheet.paste(im, ((k % cols) * W, (k // cols) * H), im)
@@ -922,8 +979,8 @@ def main():
     if not args or "iguales" in args:
         mannequin().save(OUT / "iguales.png")
     if not args or "lukas" in args:
-        lukas().save(OUT / "lukas.png")
-        lukas(bark=True).save(OUT / "lukas_ladra.png")
+        for mode in LUKAS_MODOS:
+            lukas(mode).save(OUT / ("lukas.png" if mode == "normal" else f"lukas_{mode}.png"))
     print("retratos:", len(args) or len(CAST), OUT)
 
 

@@ -30,6 +30,8 @@ func _ready() -> void:
 
 	_pic = Vineta.new()  # el cartel no va sobre negro solo: arriba, su viñeta (_pic_for)
 	_pic.position = Vector2(40, 10)
+	_pic.pivot_offset = Vector2(120, 50)
+	_pic.scale = Vector2(1.2, 1.2)  # grande: de 16 a 304, de 0 a 120
 	_pic.modulate.a = 0.0
 	add_child(_pic)
 	_title = Label.new()
@@ -39,7 +41,7 @@ func _ready() -> void:
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_title.offset_top = 84.0  # debajo de la viñeta
+	_title.offset_top = 112.0  # debajo de la viñeta
 	_title.modulate.a = 0.0
 	add_child(_title)
 

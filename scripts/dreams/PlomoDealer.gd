@@ -152,6 +152,11 @@ const AMMO_SPOTS := [Vector2(22.5, 13.5), Vector2(22.5, 21.5), Vector2(30.5, 18.
 func setup() -> void:
 	dream_id = "plomo_d%d" % chapter
 	title_text = "PLOMO"
+	# Antes de cada capítulo, Lisandro se mira en el espejo: la cara de esta noche.
+	mirror = Vineta.M.ESPEJO_3 if chapter == 3 else Vineta.M.ESPEJO
+	mirror_lines = [["", "Un baño con baldosas verdes. Un bombillo que titila. En el espejo, esa cara."],
+		["", "Lisandro se acomoda las gafas. Se sonríe. Se gusta. Es el único que se gusta." if chapter < 3
+			else "Lisandro se mira. El espejo tiene una grieta nueva. La bolsita, en el lavamanos, no tiene ninguna."]]
 	subtitle = "EPISODIO: EL DEALER\n(esta vez usted es Lisandro)"
 	recap = [
 		["", "Esta noche el sueño se equivoca de cuerpo."],
@@ -269,6 +274,7 @@ func _chapter_setup() -> void:
 				# Revancha: él ya es él (armadura); Lisandro, en subida para siempre. Camila y Guillermo vuelven.
 				subtitle = "REVANCHA: LISANDRO\n(en subida, para siempre)"
 				recap = [["", "Lisandro otra vez. Esta vez con la bolsita pegada a la nariz. No se le acaba nunca."]]
+				mirror = -1  # (esta vez él es él: el espejo no es suyo)
 				weapon_prefix = "sw_"
 				face_prefix = "sface_"
 				weapons = WEAPONS

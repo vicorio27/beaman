@@ -1942,3 +1942,10 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **Las canecas:** se esculcan una vez al día: comida, monedas, nada... o una rata (15%).
 - **La esquina:** sin postes en la avenida; semáforo (verde, amarillo, rojo) y cebras. Los carros frenan en la raya. Si uno se les atraviesa, pitan con groserías.
 - **El tiempo jugado** se cuenta (`GameState.play_time_text`) y sale al final, con el FIN.
+
+## Viñetas más grandes y nuevas
+- Las viñetas de la noche y de los carteles de escena salen 1.2 veces más grandes (de 16 a 304 de ancho); el texto va debajo.
+- **El prólogo** ya no es tiza: cada texto de la huida tiene su viñeta del mismo motor (`vinetas_prologo.png`, `scripts/prologue/Laminas.gd`).
+- **Mirar desde el puente:** de día y al atardecer sale lo que él mira (el río, los cerros; él y Lukas de espaldas). `Vineta.show_over()` pone una viñeta grande encima del juego mientras dura el diálogo.
+- **Lisandro en el espejo:** antes de cada capítulo del Dealer, Lisandro se mira en el espejo (en el capítulo 3, con la bolsita). En la revancha no: ahí él es él.
+- **Las caras de Lukas:** cada acción de Lukas sale con su retrato al lado del aviso (`Narrator.say(texto, arriba, cara)`): feliz, come, pelota, escucha, triste, huele, enfermo, truco, ladra.

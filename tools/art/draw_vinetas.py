@@ -20,6 +20,9 @@ Y una hoja de momentos que no dependen del lugar (assets/ui/vinetas_momentos.png
   y los carteles de cambio de escena (SceneRouter: el título sale debajo):
     6 antes (la noche del operativo)   7 la moto (ANTES)   8 el billar   9 el desmayo   10 el desmayo (sin Lukas)
     11 el final (la reja del colegio)
+  y: 12 mirar desde el puente, al atardecer   13 lo mismo, sin Lukas   14 desde el puente, de día
+     15 el espejo de Lisandro (antes de PLOMO)   16 el espejo, capítulo 3 (la bolsita)
+Y una hoja del prólogo (assets/ui/vinetas_prologo.png): una fila por cada texto de la huida (PROLOGO).
 
 El motor (formas, luz, actores) está en tools/art/vinetas_motor.py.
     python tools/art/draw_vinetas.py                    todo
@@ -1342,7 +1345,519 @@ def fin(f):
 
 MOMENTOS = [lambda f: intruso(False, f), lambda f: intruso(True, f), lambda f: lukas_pecho(False, f),
             lambda f: lukas_pecho(True, f), entierro, collar,
-            antes, moto, billar_card, lambda f: desmayo(False, f), lambda f: desmayo(True, f), fin]
+            antes, moto, billar_card, lambda f: desmayo(False, f), lambda f: desmayo(True, f), fin,
+            lambda f: atardecer(False, False, f), lambda f: atardecer(True, False, f), lambda f: atardecer(False, True, f),
+            lambda f: espejo(False, f), lambda f: espejo(True, f)]
+
+
+# ---------------------------------------------------------------- Mirar desde el puente; el espejo de Lisandro
+
+def _man_back_seated(cv, env, x, y, coat=COAT):
+    """Él, sentado de espaldas (mirando lo que mira). Origen: el piso, en la mitad."""
+    a = Actor(cv, env, x, y)
+    a.part(coat, lambda d: (d.cap(-6, -6, 6, -6, 13), d.cap(-5, -9, -6, -26, 12), d.cap(5, -9, 6, -26, 12)), shade=3)
+    a.part(coat, lambda d: d.ell(0, -27, 10, 4), shade=1)                            # los hombros
+    a.part(HAIR, lambda d: d.ell(0, -35, 6.4, 6.6), shade=2)
+    a.part(SKIN, lambda d: (d.ell(-6.6, -34, 1.6, 2.4), d.ell(6.6, -34, 1.6, 2.4)), shade=0, rim=False)   # las orejas
+    a.part(SKIN, lambda d: d.rect(-3, -29.5, 3, -27.5), shade=0)                     # la nuca
+    return a
+
+
+def _lukas_back_seated(cv, env, x, y):
+    a = Actor(cv, env, x, y)
+    a.part(TAN, lambda d: d.ell(0, -6, 8, 6.5), shade=2)
+    a.part(BLACK, lambda d: d.cap(0, -8, 0, -17, 7), shade=1)
+    a.part(TAN, lambda d: d.ell(0, -21, 5.2, 5), shade=2)
+    a.part(EAR, lambda d: (d.ell(-5.2, -18, 2.4, 5), d.ell(5.2, -18, 2.4, 5)), shade=1)
+    a.part(TAN, lambda d: d.cap(6, -1.5, 13, -2.5, 2.4), shade=1)                   # la cola, en el piso
+    a.dot(14, -3, a.lit(WHITE, 0.6))
+    return a
+
+
+def atardecer(solo, day, f):
+    """Lo que mira desde el puente: el río, los cerros, el sol que se mete. Y los dos, de espaldas."""
+    cv = Cv(f)
+    if day:
+        env = Env((0.78, 0.8, 0.86), (1.2, 1.15, 1.05), (1, -1), half=0.4)
+        cv.grad((0, 0, W, 58), [(110, 160, 220), (150, 190, 230), (196, 220, 236)])
+        hills, hills2 = (96, 140, 104), (70, 110, 86)
+    else:
+        env = Env((0.5, 0.36, 0.46), (1.45, 0.96, 0.62), (-1, -1), half=0.5)
+        cv.grad((0, 0, W, 58), [(70, 58, 112), (150, 90, 130), (236, 136, 104), (252, 190, 120), (255, 226, 170)])
+        hills, hills2 = (90, 62, 96), (66, 46, 76)
+    sun_y = 46 + f * 2 if not day else 14
+    if not day:
+        cv.glow(150, sun_y, 46, (255, 222, 160), 0.7)
+    cv.fill(cv.mask(lambda d: d.ell(150, sun_y, 11, 11)), (255, 240, 200) if not day else (255, 250, 230))
+    cv.fill(cv.mask(lambda d: [d.ell(x, 58 - (x * 7) % 11, 28, 14) for x in range(-10, 270, 34)]), hills)   # los cerros
+    cv.fill(cv.mask(lambda d: [d.ell(x + 16, 62 - (x * 5) % 7, 24, 9) for x in range(-10, 270, 30)]), hills2)
+    for bx, bw, bh in [(30, 8, 8), (40, 6, 12), (48, 10, 6), (176, 8, 10), (186, 12, 14), (200, 6, 8)]:
+        cv.fill(cv.box(bx, 62 - bh, bx + bw, 62), mix(hills2, (40, 30, 50), 0.4))
+    cv.grad((0, 62, W, 82), [(150, 104, 130), (120, 84, 120), (90, 66, 104)] if not day else [(110, 150, 196), (90, 130, 180), (74, 110, 160)])
+    shine = (255, 214, 160) if not day else (240, 248, 255)
+    for yy in range(63, 82, 2):                                                       # el sol en el agua
+        for xx in range(150 - (yy - 60) * 2, 151 + (yy - 60) * 2, 3):
+            if (xx + yy + f * 3) % 7 < 3:
+                cv.px(xx, yy, shine)
+    for i, (bx, by) in enumerate(((96, 30), (104, 26), (112, 32))):                   # los pájaros
+        cv.post.append(lambda d, bx=bx, by=by: d.line([(bx + f * 2 - 1, by - 1), (bx + f * 2, by), (bx + f * 2 + 1, by - 1)], fill=(60, 40, 70)))
+    # La baranda del puente, y el borde donde se sientan.
+    cv.shape(cv.box(0, 82, W, 86), (150, 146, 156), env, shade=0, half=False)
+    cv.shape(cv.box(0, 86, W, H), (120, 116, 126), env, shade=0, half=False, emph=0.7)
+    for xx in range(4, W, 22):
+        cv.shape(cv.box(xx, 66, xx + 3, 82), (150, 146, 156), env, shade=0, half=False, emph=0.85)
+    cv.shape(cv.box(0, 64, W, 67), (160, 156, 166), env, shade=0, half=False, emph=0.9)
+    _man_back_seated(cv, env, 112, 95)
+    if not solo:
+        _lukas_back_seated(cv, env, 136, 95)
+    return cv
+
+
+def espejo(cap3, f):
+    """Antes de cada sueño de PLOMO: Lisandro, en el espejo del baño. Esta noche, él es Lisandro."""
+    cv = Cv(f)
+    on = f != 2
+    env = Env((0.62, 0.62, 0.58), (1.25, 1.2, 1.05), (1, -1), half=0.4) if on else Env((0.4, 0.4, 0.4), (0.8, 0.8, 0.8), (1, -1))
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    ys, xs = np.mgrid[0:H, 0:W]
+    cv.fill(np.ones((H, W), bool), dk((200, 214, 196), 0.95))                          # las baldosas
+    cv.fill(((xs % 10 == 0) | (ys % 10 == 0)), dk((200, 214, 196), 0.7))
+    # El espejo, con su grieta; adentro, la cara.
+    cv.shape(cv.box(94, 8, 172, 82), (170, 150, 110), env, shade=1, half=False)
+    cv.fill(cv.box(98, 12, 168, 78), dk((150, 170, 180), 0.8))
+    face = Image.open("assets/portraits/lisandro.png").convert("RGBA").crop((10, 4, 86, 84))
+    arr = np.asarray(face).astype(float)
+    tint = np.array(env.amb) * (1.05 if on else 0.8)
+    for yy in range(arr.shape[0]):
+        for xx in range(arr.shape[1]):
+            if arr[yy, xx, 3] > 128 and 12 + yy < 78 and 96 + xx < 168:
+                c = arr[yy, xx, :3] * tint
+                if cap3 and 30 < xx < 60 and 30 < yy < 52 and arr[yy, xx, 0] > 200 and arr[yy, xx, 1] > 200:
+                    c = np.array([230, 120, 120]) * tint                              # los ojos, rojos
+                cv.a[12 + yy, 96 + xx] = np.clip(c, 0, 255).astype(np.uint8)
+    cv.post.append(lambda d: (d.line([(150, 12), (140, 34), (148, 46)], fill=(230, 240, 244)), d.line([(140, 34), (128, 40)], fill=(230, 240, 244))))
+    for k in range(3):
+        cv.post.append(lambda d, k=k: d.line([(104 + k * 6, 16), (100 + k * 6, 24)], fill=(236, 244, 248)))
+    # El bombillo, que titila.
+    cv.fill(cv.mask(lambda d: d.ell(133, 3, 4, 3)), (255, 244, 200) if on else (110, 110, 100))
+    if on:
+        cv.glow(133, 4, 40, (255, 240, 200), 0.5)
+    # El lavamanos, la llave que gotea, y (en el capítulo 3) la bolsita.
+    cv.shape(cv.mask(lambda d: (d.rect(84, 84, 182, 92), d.ell(133, 92, 44, 8))), (232, 232, 236), env, shade=2)
+    cv.shape(cv.mask(lambda d: d.path([(140, 84), (140, 79), (134, 79)], 3)), (180, 184, 196), env, shade=0)
+    cv.px(134, 82 + f % 3, (190, 220, 250))
+    if cap3:
+        cv.shape(cv.mask(lambda d: d.poly([(160, 84), (172, 84), (170, 76), (162, 76)])), (240, 240, 244), env, shade=1)
+        cv.post.append(lambda d: d.line([(161, 78), (171, 78)], fill=(220, 60, 60)))
+    # Él (Lisandro), de espaldas: el saco blanco, la nuca, las manos en el lavamanos.
+    a = Actor(cv, env, 52, 108)
+    a.part((236, 234, 226), lambda d: (d.cap(-14, -10, 14, -10, 34), d.ell(0, -30, 26, 12)), shade=3)
+    a.part((24, 22, 26), lambda d: d.ell(0, -48, 13, 12), shade=2)
+    a.part((236, 234, 226), lambda d: d.path([(18, -32), (34, -26), (48, -22)], 8), shade=2)
+    a.part(SKIN, lambda d: d.ell(51, -22, 4, 3), shade=1)
+    return cv
+
+
+# ---------------------------------------------------------------- EL PROLOGO, con la misma calidad
+
+def _woman(cv, env, x, y, coat, hair, flip=False, skirt=None, scale=1.0, hold=None):
+    """Una mujer de pie (Diana Carolina, Lorena): pelo largo, vestido. Origen: los pies."""
+    a = Actor(cv, env, x, y, flip, scale=scale)
+    a.part(hair, lambda d: d.poly([(-6, -56), (6, -56), (8, -34), (-7, -34)]), shade=2)
+    man_stand(a, coat=coat, pants=skirt or coat, hair=hair, beard=None, tie=False, bulk=0.92)
+    a.part(skirt or coat, lambda d: d.poly([(-7, -27), (7.5, -27), (10, -6), (-9.5, -6)]))
+    if hold:
+        a.part(coat, lambda d: d.path([(2, -40), (10, -33), (14, -38)], 4.2))
+        a.part(hold, lambda d: d.rect(12, -44, 18, -36), shade=0)
+    return a
+
+
+def _man_run(cv, env, x, y, flip=False, clean=False):
+    """Corriendo: el cuerpo para adelante, las piernas abiertas. Origen: el piso."""
+    a = Actor(cv, env, x, y, flip)
+    a.clean = clean
+    a.part(PANTS, lambda d: d.path([(0, -22), (-10, -12), (-16, -4)], 6), emph=0.85)
+    a.part(SHOE_B, lambda d: d.cap(-20, -4, -14, -3, 4))
+    a.part(PANTS, lambda d: d.path([(0, -22), (10, -14), (8, -2)], 6.4))
+    a.part(SHOE_A, lambda d: d.cap(7, -1.5, 14, -1.5, 4))
+    a.part(PACK, lambda d: d.cap(-6, -40, -8, -30, 9))
+    a.part(COAT, lambda d: d.cap(0, -24, 6, -42, 13))
+    a.part(COAT, lambda d: d.path([(4, -38), (14, -32), (20, -36)], 4.4))
+    a.part(SKIN, lambda d: d.ell(21, -37, 2, 2), shade=1)
+    from vinetas_motor import _head
+    _head(a, 9, -50, (0.8, 0.2))
+    return a
+
+
+def _night_env():
+    return ENV[("noche", 0)].but(L=(1, -1))
+
+
+def p_apartamento(f):
+    """ANTES. Un apartamento con todo pago: la nevera, el sofá, la moto. Él, sin barba. Lukas, con cama propia y dos cobijas."""
+    cv = Cv(f)
+    env = Env((0.62, 0.52, 0.5), (1.3, 1.08, 0.8), (1, -1), half=0.45)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, 76), [dk((214, 196, 170), 1.05), dk((214, 196, 170), 0.9)], horizontal=True)
+    ground(cv, 76, (170, 120, 84), env)
+    for xx in range(0, W, 16):
+        cv.fill(cv.box(xx, 76, xx + 1, H), dk((170, 120, 84), 0.75))
+    cv.shape(cv.box(160, 14, 214, 52), (110, 90, 70), env, shade=1, half=False)       # la ventana, de noche
+    cv.grad((164, 18, 210, 48), [(20, 22, 50), (36, 34, 70)])
+    for wx, wy in ((170, 40), (180, 34), (196, 42), (204, 30)):
+        cv.px(wx, wy, (240, 210, 120))
+    cv.fill(cv.box(186, 18, 188, 48), dk((110, 90, 70), 1.0))
+    cv.shape(cv.box(10, 34, 34, 84), (232, 232, 236), env, shade=2)                   # la nevera, con imanes
+    cv.fill(cv.box(10, 52, 34, 53), dk((232, 232, 236), 0.6))
+    for k, c in enumerate(((230, 80, 80), (90, 180, 230), (250, 210, 90))):
+        cv.fill(cv.box(14 + k * 6, 40, 18 + k * 6, 44), c)
+    cv.shape(cv.mask(lambda d: (d.rect(40, 62, 96, 82), d.rect(40, 52, 96, 64), d.rect(36, 58, 42, 84), d.rect(94, 58, 100, 84))), (120, 76, 110), env, shade=2)   # el sofá
+    for wx in (128, 166):                                                              # la moto, en la sala (es lo que se hace)
+        ring = cv.mask(lambda d: d.ell(wx, 86, 9, 9)) & ~cv.mask(lambda d: d.ell(wx, 86, 6, 6))
+        cv.shape(ring, (50, 50, 58), env, shade=1)
+    cv.shape(cv.mask(lambda d: (d.path([(128, 86), (140, 72), (156, 72), (166, 86)], 2.6), d.rect(140, 74, 156, 86))), (60, 60, 70), env, shade=0)
+    cv.shape(cv.mask(lambda d: d.ell(150, 66, 10, 4.5)), (44, 44, 52), env, shade=1)
+    cv.shape(cv.box(196, 86, 232, 96), (150, 110, 70), env, shade=1, half=False)      # la cama de Lukas, dos cobijas
+    cv.fill(cv.box(198, 83, 230, 86), (200, 70, 70))
+    cv.fill(cv.box(200, 80, 228, 83), (70, 110, 200))
+    lukas_curl(Actor(cv, env, 214, 84), breath(f))
+    a = Actor(cv, env, 112, 92)
+    a.clean = True
+    man_stand(a, beard=None)                                                           # él, sin barba
+    cv.fill(cv.mask(lambda d: (d.rect(92, 0, 94, 12), d.ell(93, 15, 5, 3))), dk((250, 220, 150), 1.4))   # la lámpara
+    cv.glow(93, 16, 40, (255, 220, 160), 0.4)
+    return cv
+
+
+def p_estacion(f):
+    """A las cuatro, Diana Carolina entró a una estación. Salió a las cinco y media, con copia."""
+    cv = Cv(f)
+    env = Env((0.64, 0.56, 0.6), (1.34, 1.06, 0.8), (-1, -1), half=0.45)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, 60), [(120, 130, 180), (220, 170, 150), (250, 210, 160)])
+    cv.shape(cv.box(30, 18, 200, 88), (190, 190, 176), env, shade=0, half=False)
+    cv.fill(cv.box(30, 18, 200, 22), dk((60, 90, 160), 1.2))
+    cv.shape(cv.box(84, 26, 146, 38), (40, 70, 150), env, shade=0, half=False)
+    cv.post.append(lambda d: d.text((88, 28), "POLICIA", font=FONT, fill=(236, 240, 250)))
+    for wx in (40, 64, 160, 184):
+        cv.fill(cv.box(wx, 46, wx + 12, 62), dk((90, 110, 140), 0.8))
+        cv.fill(cv.box(wx, 52, wx + 12, 53), dk((40, 40, 50), 1.0))
+    cv.fill(cv.box(104, 52, 126, 88), dk((70, 60, 60), 0.6))
+    cv.fill(cv.box(0, 88, W, 92), dk((170, 166, 160), 1.0))
+    ground(cv, 92, (130, 126, 130), env)
+    cv.post.append(lambda d: (d.ellipse([206, 6, 230, 30], outline=(60, 50, 60)), d.line([(218, 18), (218, 10)], fill=(60, 50, 60)), d.line([(218, 18), (224, 22)], fill=(60, 50, 60)),
+                              d.text((200, 34), "17:30", font=FONT, fill=(60, 40, 50))))
+    _woman(cv, env, 150 + f, 96, (60, 180, 180), (60, 42, 34), hold=(250, 250, 240))   # ella, con la copia
+    small_man(cv, 92, 88, 0.55, dk((60, 80, 70), 1.0))                                  # un agente, en la puerta
+    return cv
+
+
+def p_denuncia(f):
+    """La denuncia: aborto, que él la obligó; armado y peligroso."""
+    cv = Cv(f)
+    env = Env((0.6, 0.56, 0.5), (1.3, 1.1, 0.8), (1, -1), half=0.4)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, H), [dk((130, 90, 60), 1.0), dk((130, 90, 60), 0.75)], horizontal=True)   # el escritorio
+    for yy in range(4, H, 9):
+        cv.fill(cv.box(0, yy, W, yy + 1), dk((130, 90, 60), 0.6))
+    paper = cv.mask(lambda d: d.poly([(60, 6), (176, 4), (182, 98), (64, 99)]))
+    cv.shape(paper, (240, 236, 222), env, shade=2)
+    ink = (40, 34, 40)
+    def text(d):
+        d.text((92, 12), "DENUNCIA", font=FONT, fill=ink)
+        d.line([(74, 24), (170, 23)], fill=(150, 150, 160))
+        d.text((74, 30), "ABORTO", font=FONT, fill=ink)
+        for k in range(4):
+            d.line([(74, 44 + k * 6), (170 - (k % 2) * 20, 44 + k * 6)], fill=(150, 150, 160))
+    cv.post.append(text)
+    stamp = (210, 50, 50)
+    cv.post.append(lambda d: (d.rectangle([80, 72, 166, 92], outline=stamp), d.text((90, 74), "ARMADO Y", font=FONT, fill=stamp), d.text((86, 83), "PELIGROSO", font=FONT, fill=stamp)))
+    cv.shape(cv.mask(lambda d: d.cap(196, 20, 222, 80, 3.4)), (40, 60, 140), env, shade=1)   # el esfero
+    cv.shape(cv.mask(lambda d: d.ell(212, 92, 14, 6)), (200, 150, 110), env, shade=1)        # el tinto de la oficina
+    return cv
+
+
+def p_lorena(f):
+    """Lorena confirmó la dirección por teléfono. Mandó una foto. Agregó lo del arma, de su cosecha."""
+    cv = Cv(f)
+    env = Env((0.6, 0.5, 0.6), (1.35, 0.9, 1.05), (1, -1), half=0.45)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, H), [dk((230, 170, 200), 1.0), dk((230, 170, 200), 0.75)], horizontal=True)   # un cuarto rosado
+    cv.shape(cv.box(0, 74, W, H), (210, 140, 170), env, shade=0, half=False)          # la cama
+    for k in range(6):
+        cv.fill(cv.mask(lambda d, k=k: d.ell(20 + k * 40, 30 + (k % 2) * 10, 6, 6)), dk((250, 230, 240), 1.0))   # corazoncitos de pared
+    a = _woman(cv, env, 92, 100, (246, 140, 176), (112, 70, 40), scale=1.35)
+    a.part((236, 72, 132), lambda d: (d.poly([(-6, -60), (0, -57), (-6, -54)]), d.poly([(6, -60), (0, -57), (6, -54)])))   # el moño
+    a.part((246, 140, 176), lambda d: d.path([(-2, -40), (-6, -48), (-2, -52)], 4.2))   # el teléfono, a la oreja
+    a.part((40, 40, 50), lambda d: d.rect(-4, -56, 0, -48))
+    # Lo que mandó: la foto de él, el pin de la dirección, y un arma que no hay (de su cosecha).
+    cv.shape(cv.box(142, 16, 178, 62), (40, 40, 50), env, shade=0, half=False)
+    cv.fill(cv.box(145, 20, 175, 58), dk((150, 170, 200), 1.0))
+    man_stand(Actor(cv, env, 160, 66, scale=0.55))
+    cv.fill(cv.mask(lambda d: (d.ell(196, 30, 7, 7), d.poly([(190, 33), (196, 46), (202, 33)]))), (230, 60, 60))
+    cv.fill(cv.mask(lambda d: d.ell(196, 30, 2.5, 2.5)), (250, 240, 240))
+    gun = (220, 60, 60) if f % 2 == 0 else (240, 120, 120)
+    cv.post.append(lambda d: (d.line([(188, 60), (222, 60), (222, 66), (204, 66), (202, 76), (192, 76), (194, 66), (188, 66), (188, 60)], fill=gun),
+                              d.text((206, 80), "+", font=FONT, fill=gun)))
+    return cv
+
+
+def p_direccion(f):
+    """De todo ese papel, lo único cierto es la dirección: la puerta del 302."""
+    cv = Cv(f)
+    env = Env((0.5, 0.48, 0.5), (1.25, 1.1, 0.85), (1, -1), half=0.4)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, 88), [dk((176, 170, 150), 1.0), dk((176, 170, 150), 0.82)], horizontal=True)
+    ground(cv, 88, (140, 120, 100), env)
+    cv.shape(cv.box(84, 6, 156, 90), (130, 92, 64), env, shade=2)
+    for yy in (20, 50):
+        cv.shape(cv.box(92, yy, 148, yy + 24), (130, 92, 64), env, shade=1, half=False, emph=0.9)
+    cv.shape(cv.box(108, 10, 132, 18), (210, 190, 120), env, shade=0, half=False)
+    cv.post.append(lambda d: d.text((108, 10), "302", font=FONT, fill=(60, 40, 30)))
+    cv.fill(cv.mask(lambda d: d.ell(120, 32, 2, 2)), (40, 30, 30))                    # la mirilla
+    cv.shape(cv.mask(lambda d: d.ell(146, 52, 3, 3)), (230, 200, 120), env, shade=0)
+    cv.shape(cv.box(96, 90, 146, 96), (120, 70, 50), env, shade=0, half=False)        # el tapete
+    cv.post.append(lambda d: d.text((98, 89), "HOLA", font=FONT, fill=dk((240, 220, 180), 1.2)))
+    cv.fill(cv.mask(lambda d: (d.ell(196, 30, 10, 10), d.poly([(187, 35), (196, 56), (205, 35)]))), (230, 60, 60))   # el pin
+    cv.fill(cv.mask(lambda d: d.ell(196, 30, 3.5, 3.5)), (250, 240, 240))
+    cv.post.append(lambda d: d.line([(184, 66 + f), (162, 60)], fill=(230, 60, 60), width=2))
+    return cv
+
+
+def p_arroz(f):
+    """21:40. Él está haciendo arroz."""
+    cv = Cv(f)
+    env = Env((0.6, 0.54, 0.5), (1.32, 1.1, 0.8), (-1, -1), half=0.45)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.fill(np.ones((H, W), bool), dk((214, 220, 200), 1.0))
+    ys, xs = np.mgrid[0:H, 0:W]
+    cv.fill(((xs % 12 == 0) | (ys % 12 == 0)) & (ys < 76), dk((214, 220, 200), 0.82))
+    ground(cv, 76, (180, 160, 130), env)
+    cv.shape(cv.box(110, 56, 200, 92), (230, 230, 232), env, shade=2)                 # la estufa
+    for bx in (126, 170):
+        cv.fill(cv.mask(lambda d, bx=bx: d.ell(bx, 58, 9, 2.5)), dk((40, 40, 46), 1.0))
+    cv.shape(cv.mask(lambda d: (d.rect(160, 40, 182, 56), d.ell(171, 40, 11, 2.5))), (176, 180, 190), env, shade=2)   # la olla
+    for k in range(3):
+        x0 = 164 + k * 6
+        cv.post.append(lambda d, x0=x0: d.line([(x0, 36 - (f + k) % 2), (x0 + 2, 30), (x0 - 2, 24), (x0, 18 + f % 2)], fill=(236, 236, 240)))
+    for k in range(3):                                                                 # la llama, azul
+        cv.fill(cv.mask(lambda d, k=k: d.poly([(164 + k * 6, 56), (167 + k * 6, 50 + (f + k) % 2), (170 + k * 6, 56)])), (90, 150, 250))
+    cv.post.append(lambda d: (d.rectangle([20, 10, 64, 28], fill=(30, 26, 30)), d.text((24, 15), "21:40", font=FONT, fill=(250, 90, 80))))
+    a = Actor(cv, env, 132, 96)
+    a.clean = True
+    man_stand(a, beard=None)
+    a.part(COAT, lambda d: d.path([(4, -40), (16, -38), (26, -46)], 4.4))              # revolviendo
+    a.part((176, 180, 190), lambda d: d.cap(26, -46, 34, -60, 2))
+    lukas_sit(Actor(cv, env, 98, 96), f % 2)
+    return cv
+
+
+def p_policia(f):
+    """—¡POLICIA! ¡ABRA! ¡SABEMOS QUE ESTA ARMADO!"""
+    cv = Cv(f)
+    red = f % 2 == 0
+    env = Env((0.4, 0.38, 0.46), (1.4, 0.6, 0.6) if red else (0.6, 0.7, 1.4), (1, -1), half=0.45)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, 86), [dk((176, 170, 150), 0.9), dk((176, 170, 150), 0.7)], horizontal=True)
+    ground(cv, 86, (150, 120, 96), env)
+    shake = [0, 2, -2, 1][f]
+    cv.shape(cv.box(84 + shake, 4, 152 + shake, 88), (130, 92, 64), env, shade=2)
+    cv.fill(cv.box(84, 86, 152, 90), (255, 70, 70) if red else (80, 110, 255))         # la luz, por debajo de la puerta
+    cv.glow(118, 88, 46, (255, 70, 70) if red else (80, 110, 255), 0.7, squash=0.25)
+    cv.fill(cv.mask(lambda d: d.ell(118 + shake, 32, 2.5, 2.5)), (255, 90, 90) if red else (110, 140, 255))
+    for k in range(8):
+        ang = k * 0.785 + 0.3
+        cv.post.append(lambda d, ang=ang: d.line([(118 + shake + np.cos(ang) * 22, 50 + np.sin(ang) * 22), (118 + shake + np.cos(ang) * 32, 50 + np.sin(ang) * 32)], fill=(250, 230, 120), width=2))
+    a = Actor(cv, env, 196, 96)
+    a.clean = True
+    man_stand(a, beard=None)
+    lukas_down(Actor(cv, env, 172, 98, flip=True), 0, "up", ear_up=True)
+    cv.post.append(lambda d: (d.line([(150, 70), (158, 64)], fill=(250, 226, 120)), d.line([(152, 78), (160, 78)], fill=(250, 226, 120))))
+    return cv
+
+
+def p_cucharon(f):
+    """Tiene un cucharón."""
+    cv = Cv(f)
+    env = Env((0.56, 0.52, 0.5), (1.3, 1.1, 0.85), (1, -1), half=0.45)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, H), [dk((214, 220, 200), 1.0), dk((214, 220, 200), 0.8)], horizontal=True)
+    a = Actor(cv, env, 0, 0)
+    a.part(COAT, lambda d: d.poly([(0, 100), (0, 60), (60, 40), (90, 52), (100, 100)]), shade=3)   # el brazo, en primer plano
+    a.part(SKIN, lambda d: (d.ell(112, 46, 18, 14), d.ell(104, 36, 8, 6)), shade=2)               # la mano, apretada
+    for k in range(4):
+        cv.post.append(lambda d, k=k: d.line([(104 + k * 6, 38), (104 + k * 6, 50)], fill=dk(SKIN, 0.75)))
+    a.part((190, 194, 204), lambda d: d.cap(116, 40, 176, 8, 6), shade=1)                         # el cucharón, como un arma
+    a.part((190, 194, 204), lambda d: d.ell(186, 6, 16, 12), shade=2)
+    for k in range(5):                                                                   # el arroz que se cae
+        cv.px(176 + k * 5, 18 + (f * 4 + k * 7) % 60, (250, 250, 240))
+    cv.post.append(lambda d: d.text((150, 74), "¿ARMA?", font=FONT, fill=(210, 50, 50)))
+    return cv
+
+
+def p_vecino(f):
+    """—¡Es ese! ¡El del 302! ¡Yo siempre dije que ese era raro! ¡Saluda mucho!"""
+    cv = Cv(f)
+    env = Env((0.5, 0.48, 0.5), (1.2, 1.1, 0.9), (-1, -1), half=0.4)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, 88), [dk((190, 180, 150), 1.0), dk((190, 180, 150), 0.8)])
+    ground(cv, 88, (140, 120, 100), env)
+    for dx, num in ((20, "301"), (150, "302")):
+        cv.shape(cv.box(dx, 10, dx + 60, 90), (130, 92, 64), env, shade=1)
+        cv.post.append(lambda d, dx=dx, num=num: d.text((dx + 18, 14), num, font=FONT, fill=(230, 210, 140)))
+    cv.fill(cv.box(76, 10, 82, 90), dk((20, 16, 20), 1.0))                            # el 301, entreabierto
+    a = Actor(cv, env, 92, 96)
+    man_stand(a, coat=(120, 100, 130), pants=(80, 70, 90), hair=(200, 196, 190), beard=None, tie=False)   # el vecino, en bata
+    a.part((120, 100, 130), lambda d: d.path([(3, -40), (16, -46), (32, -48 - f % 2)], 4.2))   # señalando
+    a.part(SKIN, lambda d: d.ell(34, -48 - f % 2, 2, 2), shade=1)
+    for i, sx in enumerate((206, 222)):
+        small_man(cv, sx, 96, 0.62, (40, 50, 70), rim=(255, 90, 90) if (f + i) % 2 else (90, 120, 255))
+    return cv
+
+
+def p_tiro(f):
+    """El primer tiro entra por la ventana de la sala. El arroz se quema solo."""
+    cv = Cv(f)
+    env = Env((0.36, 0.34, 0.42), (1.3, 0.8, 0.7), (1, -1), half=0.4)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, 80), [dk((200, 190, 170), 0.85), dk((200, 190, 170), 0.65)])
+    ground(cv, 80, (150, 110, 80), env)
+    cv.shape(cv.box(90, 10, 170, 64), (110, 90, 70), env, shade=1, half=False)
+    cv.fill(cv.box(94, 14, 166, 60), (255, 70, 70) if f % 2 == 0 else (80, 110, 255))
+    cv.fill(cv.box(128, 14, 130, 60), dk((110, 90, 70), 1.0))
+    for k in range(9):                                                                   # el vidrio, roto en estrella
+        ang = k * 0.7 + 0.2
+        cv.post.append(lambda d, ang=ang: d.line([(146, 32), (146 + np.cos(ang) * 12, 32 + np.sin(ang) * 10), (146 + np.cos(ang + 0.2) * 22, 32 + np.sin(ang + 0.2) * 18)], fill=(240, 244, 250)))
+    cv.post.append(lambda d: (d.ellipse([143, 29, 149, 35], fill=(20, 20, 24)), d.line([(146, 32), (60, 60)], fill=(255, 230, 140), width=1)))
+    cv.shape(cv.mask(lambda d: (d.rect(20, 60, 80, 84), d.rect(20, 48, 80, 62))), (120, 76, 110), env, shade=2)   # el sofá
+    a = Actor(cv, env, 50, 96)
+    a.clean = True
+    man_sit(a, 0, "alerta")                                                              # agachado detrás del sofá
+    for k in range(3):                                                                   # el humo del arroz, en la cocina
+        x0 = 200 + k * 8
+        cv.post.append(lambda d, x0=x0: d.line([(x0, 70), (x0 + 3, 56 - f), (x0 - 2, 42), (x0 + 2, 28 + f)], fill=(120, 116, 120), width=2))
+    cv.shape(cv.mask(lambda d: (d.rect(194, 70, 226, 84))), (90, 90, 100), env, shade=1)
+    lukas_down(Actor(cv, env, 168, 98, flip=True), 0, "down")
+    return cv
+
+
+def p_orden(f):
+    """La mochila. La foto. El perro. La ventana de atrás. En ese orden."""
+    cv = Cv(f)
+    env = Env((0.34, 0.36, 0.52), (0.9, 0.96, 1.3), (1, -1), half=0.35)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, H), [dk((180, 170, 150), 0.9), dk((180, 170, 150), 0.7)], horizontal=True)
+    cv.shape(cv.box(100, 8, 190, 76), (110, 90, 70), env, shade=1, half=False)         # la ventana de atrás, abierta
+    cv.grad((104, 12, 186, 72), [(14, 16, 40), (26, 26, 60)])
+    stars(cv, f, 8, 70, seed=21, m=cv.box(104, 12, 186, 72))
+    cv.shape(cv.box(96, 76, 194, 82), (150, 130, 110), env, shade=0, half=False)
+    cv.fill(cv.box(0, 82, W, H), dk((150, 110, 80), 0.8))
+    # Él, saliendo: una pierna afuera, la mochila puesta, Lukas debajo del brazo, la foto en la mano.
+    a = Actor(cv, env, 132, 84)
+    a.clean = True
+    a.part(PANTS, lambda d: d.path([(0, -8), (16, -20), (34, -24)], 6.4))
+    a.part(SHOE_A, lambda d: d.cap(34, -26, 40, -24, 4))
+    a.part(PANTS, lambda d: d.path([(0, -8), (-6, 0), (-8, 10)], 6), emph=0.85)
+    a.part(PACK, lambda d: d.cap(-10, -34, -12, -22, 10))
+    a.part(COAT, lambda d: d.cap(-2, -12, 2, -36, 13))
+    from vinetas_motor import _head
+    _head(a, 4, -44, (0.8, 0.2))
+    lk = Actor(cv, env, 144, 62)
+    lukas_curl(lk, 0, eye=True)
+    a.part(COAT, lambda d: d.path([(2, -32), (14, -26), (22, -22)], 4.6))
+    a.part(COAT, lambda d: d.path([(-4, -32), (-14, -40), (-18, -50)], 4.4))             # la otra mano, arriba: la foto
+    cv.shape(cv.box(110, 30, 122, 40), (240, 230, 200), env, shade=0, half=False)
+    n = ["1", "2", "3", "4"]
+    cv.post.append(lambda d: [d.text((20 + k * 18, 88), n[k], font=FONT, fill=(250, 214, 110) if k <= f else (90, 80, 70)) for k in range(4)])
+    return cv
+
+
+def p_techos(f):
+    """Catorce techos. Abajo, el megáfono le habla a un apartamento vacío. Sale el humo del arroz."""
+    cv = Cv(f)
+    env = _night_env()
+    sky(cv, "noche", 0, 50)
+    stars(cv, f, 20, 30, seed=24)
+    hx = 190 - f * 6                                                                     # el helicóptero, y su luz
+    cv.cone((hx, 14), (hx - 40, 90), (hx + 10, 90), (255, 255, 230), 0.4, falloff=0.3)
+    cv.fill(cv.mask(lambda d: (d.ell(hx, 11, 6, 3), d.rect(hx + 4, 10, hx + 15, 11.5), d.rect(hx - 8, 6.6, hx + 8, 7.6))), (14, 14, 26))
+    for k, (x0, w, top) in enumerate(((0, 60, 64), (66, 50, 58), (122, 56, 66), (184, 56, 60))):
+        cv.shape(cv.box(x0, top, x0 + w, H), (120, 96, 96), env, shade=0, half=False, emph=0.8 - (k % 2) * 0.1)
+        cv.fill(cv.box(x0, top, x0 + w, top + 2), col((170, 130, 110), env.key * 0.9))
+        for wx in range(x0 + 6, x0 + w - 6, 14):
+            cv.fill(cv.box(wx, top + 10, wx + 6, top + 18), (240, 200, 120) if (wx + k) % 3 == 0 else (30, 28, 44))
+    cv.shape(cv.mask(lambda d: (d.rect(130, 50, 150, 66), d.ell(140, 50, 10, 3))), (90, 96, 110), env, shade=1)   # un tanque de agua
+    for k in range(3):                                                                   # el humo, del 302
+        x0 = 30 + k * 6
+        cv.post.append(lambda d, x0=x0: d.line([(x0, 62), (x0 + 3, 50 - f), (x0 - 2, 38), (x0 + 3, 26 + f)], fill=(110, 106, 120), width=2))
+    _man_run(cv, env, 98 + f * 2, 58 - (3 if f in (1, 2) else 0))
+    lk = Actor(cv, env, 80 + f * 2, 58)
+    lukas_down(lk, 0, "up")
+    cv.post.append(lambda d: d.text((8, 4), "14", font=FONT, fill=(250, 214, 110)))
+    return cv
+
+
+def p_rio(f):
+    """El agua está fría. El río no pide documentos. Arriba, alguien dice por radio que el sujeto se ahogó."""
+    cv = Cv(f)
+    env = _night_env()
+    sky(cv, "noche", 0, 40)
+    stars(cv, f, 14, 20, seed=27)
+    cv.shape(cv.box(0, 18, W, 30), (120, 116, 128), env, shade=0, half=False, emph=0.7)   # el puente, arriba
+    for xx in range(0, W, 16):
+        cv.fill(cv.box(xx, 10, xx + 2, 18), col((120, 116, 128), env.amb * 0.7))
+    cv.fill(cv.box(0, 9, W, 11), col((120, 116, 128), env.amb * 0.9))
+    for k, (lx, c) in enumerate(((60, (255, 70, 70)), (150, (80, 110, 255)), (200, (255, 70, 70)))):
+        on = (f + k) % 2 == 0
+        cv.fill(cv.box(lx, 12, lx + 8, 16), c if on else mix(c, (20, 20, 30), 0.6))
+        if on:
+            cv.glow(lx + 4, 14, 20, c, 0.5)
+    for k, x0 in enumerate((70 + f * 8, 170 - f * 6)):                                    # las linternas, buscando
+        cv.cone((x0, 30), (x0 - 30 + k * 20, 99), (x0 + 10 + k * 20, 99), (250, 250, 220), 0.35, falloff=0.2)
+    cv.grad((0, 30, W, H), [(18, 26, 52), (14, 20, 40), (10, 14, 30)])
+    for yy in range(36, H, 5):
+        for xx in range((yy * 7 + f * 5) % 23, W, 23):
+            cv.fill(cv.box(xx, yy, xx + 8, yy + 1), (40, 56, 90))
+    # Dos cabezas en el agua: él y Lukas, que nada mejor que él.
+    cv.shape(cv.mask(lambda d: d.ell(120, 74 + (f % 2), 6.4, 6)), HAIR, env, shade=1)
+    cv.fill(cv.mask(lambda d: d.ell(120, 80, 12, 2)), (90, 120, 170))
+    lk = cv.mask(lambda d: d.ell(146, 76 - (f % 2), 5, 4.5))
+    cv.shape(lk, TAN, env, shade=1)
+    cv.fill(cv.mask(lambda d: d.ell(150, 77 - (f % 2), 3, 2)), col(WHITE, env.amb))
+    cv.fill(cv.mask(lambda d: d.ell(146, 81, 10, 2)), (90, 120, 170))
+    return cv
+
+
+def p_asi_no(f):
+    """Lo agarran... No. Así no fue."""
+    cv = Cv(f)
+    env = _night_env()
+    sky(cv, "noche", 0, 60)
+    cv.fill(cv.box(0, 70, W, H), (40, 34, 44))
+    a = Actor(cv, env, 120, 92)
+    man_sit(a, 0, "golpeado")
+    for i, sx in enumerate((92, 152)):
+        small_man(cv, sx, 94, 0.9, (40, 50, 70), rim=(255, 90, 90) if i else (90, 120, 255))
+    # La cinta: rayas, y la X de "así no fue".
+    ys, xs = np.mgrid[0:H, 0:W]
+    band = ((ys + f * 13) % 26) < 2
+    cv.fill(band, (220, 220, 230))
+    cv.veil(np.ones((H, W), bool), (20, 20, 30), 0.3)
+    cv.post.append(lambda d: (d.line([(70, 10), (170, 90)], fill=(230, 50, 50), width=4), d.line([(170, 10), (70, 90)], fill=(230, 50, 50), width=4),
+                              d.text((8, 6), "<< REW", font=FONT, fill=(230, 236, 250))))
+    return cv
+
+
+PROLOGO = [p_apartamento, p_estacion, p_denuncia, p_lorena, p_direccion, p_arroz, p_policia, p_cucharon, p_vecino, p_tiro,
+           p_orden, p_techos, p_rio, p_asi_no]
+
+
+def build_prologo():
+    sheet = Image.new("RGBA", (W * FRAMES, H * len(PROLOGO)), (0, 0, 0, 0))
+    for i, fn in enumerate(PROLOGO):
+        sheet.paste(strip(fn), (0, i * H))
+    sheet.save(OUT + "vinetas_prologo.png")
+    return "prologo"
 
 
 # ---------------------------------------------------------------- Las hojas
@@ -1384,6 +1899,9 @@ def prueba(path, specs, zoom=3, cols=3):
     ims = []
     for sp in specs:
         p = sp.split(":")
+        if p[0] == "prologo":
+            ims.append(frame(PROLOGO[int(p[1])](int(p[2]) if len(p) > 2 else 1).image()))
+            continue
         if p[0] == "momentos":
             ims.append(frame(MOMENTOS[int(p[1])](int(p[2]) if len(p) > 2 else 1).image()))
         else:
@@ -1400,10 +1918,12 @@ if __name__ == "__main__":
     if args and args[0] == "--prueba":
         prueba(args[1], args[2:])
         sys.exit()
-    names = args or (list(SPOTS) + ["momentos"])
+    names = args or (list(SPOTS) + ["momentos", "prologo"])
     jobs = [n for n in names if n in SPOTS]
     with Pool(min(7, max(1, len(jobs)))) as pool:
         for done in pool.imap_unordered(build_spot, jobs):
             print(done)
     if "momentos" in names:
         print(build_momentos())
+    if "prologo" in names:
+        print(build_prologo())

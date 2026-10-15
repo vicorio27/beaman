@@ -15,11 +15,45 @@ const KINDS := ["dormir_noche", "sueno_noche", "despierta_alba", "despierta_noch
 const FINAL := 24  # el último amanecer
 ## Las filas de la hoja de momentos.
 enum M {INTRUSO, INTRUSO_SOLO, LUKAS_PECHO, LUKAS_QUIETO, ENTIERRO, COLLAR,
-	ANTES, MOTO, BILLAR, DESMAYO, DESMAYO_SOLO, FIN}
+	ANTES, MOTO, BILLAR, DESMAYO, DESMAYO_SOLO, FIN,
+	ATARDECER, ATARDECER_SOLO, PUENTE_DIA, ESPEJO, ESPEJO_3}
 const FRAME_TIME := 0.42
 
 var _frames: Array = []
 var _t := 0.0
+
+
+## Una viñeta grande encima del juego (arriba; el diálogo va debajo), mientras dura lo que se cuenta.
+## Devuelve la capa: se quita con hide_over(capa).
+static func show_over(sheet: String, row: int) -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.layer = 12
+	var shade := ColorRect.new()
+	shade.color = Color(0.02, 0.02, 0.04, 0.0)
+	shade.size = Vector2(320, 180)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(shade)
+	var v := Vineta.new()
+	v.show_row(sheet, row)
+	v.position = Vector2(16, 0)
+	v.scale = Vector2(1.2, 1.2)
+	v.modulate.a = 0.0
+	layer.add_child(v)
+	var tree := Engine.get_main_loop() as SceneTree
+	(tree.current_scene if tree.current_scene else tree.root).add_child(layer)  # (si cambia la escena, se va con ella)
+	var t := layer.create_tween()
+	t.tween_property(shade, "color:a", 0.75, 0.5)
+	t.parallel().tween_property(v, "modulate:a", 1.0, 0.6)
+	return layer
+
+
+static func hide_over(layer: CanvasLayer) -> void:
+	if not is_instance_valid(layer):
+		return
+	var t := layer.create_tween()
+	for c in layer.get_children():
+		t.parallel().tween_property(c, "modulate:a", 0.0, 0.5)
+	t.tween_callback(layer.queue_free)
 
 
 func _init() -> void:
