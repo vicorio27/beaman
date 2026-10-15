@@ -24,15 +24,20 @@ const ENTRIES := [
 	["cobija", "Cobija", "Duerme mejor: menos hambre en la noche. Con el toldo: nivel 2."],
 	["cocinita", "Cocinita", "Se puede cocinar: arroz y media hora = sopa caliente."],
 	["candado", "Candado", "Si duerme en otro lado, nadie le abre la caja."],
-	["alarma", "Alarma latas", "Las latas suenan: menos chance de que se metan de noche."],
-	["trampa", "Trampa clavos", "El que entra sin avisar sale cojeando: menos robos."],
+	["alarma", "Alarma", "Las latas suenan: menos chance de que se metan de noche."],
+	["trampa", "Trampa", "El que entra sin avisar sale cojeando: menos robos."],
+	["piso", "Piso cartón", "Cuatro cartones de doble capa: el frío no sube. Menos hambre de noche, más ánimo."],
+	["cama_estiba", "Cama estiba", "Dos estibas: lejos del piso mojado. Si llueve, no amanece empapado. Más ánimo."],
+	["repisa", "Repisa", "Una estiba y clavos en la pared: la caja guarda dos cosas más."],
 	["nivel_3", "-> Rancho", "Paredes de estiba: caja más grande, muchos menos robos, más ánimo."],
 	["nivel_4", "-> Ranchito", "Techo de zinc y radio: la caja más grande y lo mejor para el ánimo."],
 ]
 ## Lo que se compra hecho (no tiene receta): quién lo vende.
 const SELLER := "Wilson"
+const VISIBLE := 8  # las filas que caben (más abajo va lo que da)
 
 var _cursor := 0
+var _top := 0  # la primera fila que se ve
 var _root: Control
 var _rows: Control
 var _detail: Control
@@ -136,17 +141,26 @@ func _state(id: String) -> String:
 		return "listo"
 	if c.get(id, false):
 		return "puesto"
-	return "listo" if GameState.count(id) > 0 else "falta"
+	if GameState.count(id) > 0:
+		return "listo"
+	for n in _needs(id):  # (se arma aquí mismo con lo que pide)
+		if n[1] < n[2]:
+			return "falta"
+	return "listo" if Items.RECIPES.has(id) or Items.BUILDS.has(id) else "falta"
 
 
 ## Lo que hace falta: [[item, tiene, necesita], ...]. Las mejoras con receta piden los ingredientes
-## (se arma con [C] en la mochila); las que se compran, el objeto.
+## (se arma aquí mismo, en el cambuche); las que se compran, el objeto.
 func _needs(id: String) -> Array:
 	var out := []
 	if id.begins_with("nivel_"):
 		var plan: Dictionary = Items.EXPANSIONS[int(id.substr(6))]["needs"]
 		for item in plan:
 			out.append([item, GameState.count(item), plan[item]])
+		return out
+	if Items.BUILDS.has(id):
+		for item in Items.BUILDS[id]:
+			out.append([item, GameState.count(item), Items.BUILDS[id][item]])
 		return out
 	if GameState.count(id) > 0 or not Items.RECIPES.has(id):
 		return [[id, GameState.count(id), 1]]
@@ -184,8 +198,8 @@ static func stats(c: Dictionary) -> Dictionary:
 		guard *= 0.75
 	if c.get("trampa", false):
 		guard *= 0.75
-	return {"caja": GameState.BOX_CAPACITY[lvl], "seguridad": 1.0 - GameState.LEVEL_THEFT[lvl] * guard,
-		"animo": GameState.LEVEL_MOOD[lvl]}
+	return {"caja": GameState.BOX_CAPACITY[lvl] + (2 if c.get("repisa", false) else 0),
+		"seguridad": 1.0 - GameState.LEVEL_THEFT[lvl] * guard, "animo": GameState.LEVEL_MOOD[lvl] + GameState.extra_mood(c)}
 
 
 static func art_of(c: Dictionary) -> String:
@@ -201,11 +215,16 @@ func _refresh() -> void:
 	for box in [_rows, _now, _after, _detail]:
 		for ch in box.get_children():
 			ch.queue_free()
-	# La lista.
-	for i in ENTRIES.size():
+	# La lista (se corre si el cursor se sale de lo que se ve).
+	_top = clampi(_top, maxi(0, _cursor - VISIBLE + 1), _cursor)
+	if _top > 0:
+		_label("^", Vector2(132, 24), DIM, _rows)
+	if _top + VISIBLE < ENTRIES.size():
+		_label("v", Vector2(132, 32 + VISIBLE * ROW_H - 4), DIM, _rows)
+	for i in range(_top, mini(_top + VISIBLE, ENTRIES.size())):
 		var e: Array = ENTRIES[i]
 		var st := _state(e[0])
-		var y := 32 + i * ROW_H
+		var y := 32 + (i - _top) * ROW_H
 		var sel := i == _cursor
 		if sel:
 			_rect(Vector2(8, y - 2), Vector2(132, ROW_H), Color(0.9, 0.74, 0.36, 0.25), _rows)
@@ -233,13 +252,13 @@ func _refresh() -> void:
 	_bar("ÁNIMO", a["animo"] / 10.0, b["animo"] / 10.0, "+%d" % int(b["animo"]), Vector2(150, 110))
 	# Lo que se ve en el cambuche: techo, cocina, candado, cobija (prendido si lo tiene).
 	var x := 150
-	for f in ["toldo", "cocinita", "candado", "cobija", "alarma", "trampa"]:
+	for f in Items.UPGRADES:
 		var has: bool = after.get(f, false)
 		var new: bool = has and not now.get(f, false)
 		if new:
 			_rect(Vector2(x - 1, 121), Vector2(14, 14), Color(0.45, 0.9, 0.45, 0.5), _detail)
 		_icon(f, Vector2(x, 122), 0.75, _detail, 1.0 if has else 0.25)
-		x += 16
+		x += 14
 	# Qué da y qué hace falta.
 	_rect(Vector2(8, 138), Vector2(304, 1), Color(0.85, 0.74, 0.5, 0.5), _detail)
 	var gives := _label(ENTRIES[_cursor][2], Vector2(10, 141), CREAM, _detail)
@@ -267,9 +286,7 @@ func _needs_row(id: String, at: Vector2) -> void:
 		var t := _label("%d/%d" % [mini(n[1], n[2]), n[2]], Vector2(x + 13, at.y + 2), GOOD if ok else BAD, _detail)
 		t.add_theme_font_size_override("font_size", 8)
 		x += 13 + t.text.length() * 8 + 4
-	if st == "falta" and not id.begins_with("nivel_") and Items.RECIPES.has(id):
-		_label("[C]", Vector2(x, at.y + 2), DIM, _detail)
-	elif st == "falta" and not id.begins_with("nivel_"):
+	if st == "falta" and not id.begins_with("nivel_") and not Items.RECIPES.has(id) and not Items.BUILDS.has(id):
 		_label(SELLER, Vector2(x, at.y + 2), DIM, _detail)
 
 
@@ -325,8 +342,8 @@ func _explain(id: String) -> void:
 				lines.append(["%s: tiene %d (listo)" % [item_name, need[1]], GOOD])
 		if id.begins_with("nivel_"):
 			lines.append(["Consiga lo que falta y vuelva.", DIM])
-		elif Items.RECIPES.has(id):
-			lines.append([Controls.keys_in("Se arma en la mochila, con C."), DIM])
+		elif Items.RECIPES.has(id) or Items.BUILDS.has(id):
+			lines.append(["Se arma aquí mismo, con eso.", DIM])
 		else:
 			lines.append(["Lo vende %s." % SELLER, DIM])
 	_why = Control.new()
@@ -354,7 +371,7 @@ func _flash_detail() -> void:
 
 
 func _icon(id: String, at: Vector2, scale: float, parent: Control, alpha := 1.0) -> void:
-	var path := "res://assets/items/%s.png" % id
+	var path := "res://assets/items/%s.png" % Items.ICON_OF.get(id, id)
 	if not ResourceLoader.exists(path):
 		return
 	var t := TextureRect.new()

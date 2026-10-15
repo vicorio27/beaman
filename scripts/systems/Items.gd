@@ -107,9 +107,23 @@ const DB := {
 	"trampa": {"name": "Tabla con clavos", "desc": "Una estiba con los clavos para arriba, escondida en la entrada. El que entra sin avisar, sale cojeando.",
 		"type": "material", "stack": 1},
 	"cobija": {"name": "Cobija", "desc": "De lana. Va en el cambuche: se duerme mejor.", "type": "material", "stack": 1},
+	# Lo que se arma en el cambuche con cartón y estibas (BUILDS): no va en la mochila, va puesto.
+	"piso": {"name": "Piso de cartón", "desc": "Cartón de doble capa. El frío no sube.", "type": "material", "stack": 1},
+	"cama_estiba": {"name": "Cama de estibas", "desc": "Dos estibas: lejos del piso mojado.", "type": "material", "stack": 1},
+	"repisa": {"name": "Repisa", "desc": "Una estiba en la pared, con clavos. Caben más cosas.", "type": "material", "stack": 1},
 }
 
-## Recetas para combinar en la mochila [C]: resultado -> ingredientes {id: cantidad}.
+## Lo que se arma directamente en el cambuche (no pasa por la mochila): mejora -> materiales.
+const BUILDS := {
+	"piso": {"carton": 4},
+	"cama_estiba": {"estiba": 2},
+	"repisa": {"estiba": 1, "clavos": 1},
+}
+## Los que no tienen ícono propio usan el de su material.
+const ICON_OF := {"piso": "carton", "cama_estiba": "estiba", "repisa": "estiba"}
+
+## Recetas: resultado -> ingredientes {id: cantidad}. Se arman en el cambuche (Armar, o Mejorar si
+## es una mejora): hace falta dónde y un rato, no se arma caminando.
 const RECIPES := {
 	"cama_carton": {"carton": 3},
 	"toldo": {"plastico": 1, "cuerda": 1},
@@ -120,7 +134,7 @@ const RECIPES := {
 }
 
 ## Mejoras que se ponen en el cambuche (se gasta el objeto).
-const UPGRADES := ["toldo", "cocinita", "candado", "cobija", "alarma", "trampa"]
+const UPGRADES := ["toldo", "cocinita", "candado", "cobija", "alarma", "trampa", "piso", "cama_estiba", "repisa"]
 
 
 static func info(id: String) -> Dictionary:
@@ -128,7 +142,7 @@ static func info(id: String) -> Dictionary:
 
 
 static func icon(id: String) -> Texture2D:
-	return load("res://assets/items/%s.png" % id)
+	return load("res://assets/items/%s.png" % ICON_OF.get(id, id))
 
 
 ## ¿Alcanzan los ingredientes de la receta?

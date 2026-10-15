@@ -23,7 +23,7 @@ signal bond_changed(id: String, level: int)
 ## El cambuche cambió (se armó, se mudó, se mejoró, se guardó algo).
 signal cambuche_changed
 
-const SLOTS := 8
+const SLOTS := 10  # (los dos últimos, cuando Wilson le cose la mochila: bag_slots)
 ## Cuánta hambre se pierde por hora de juego (spec: de 80 a 20 en un día sin comer).
 const HUNGER_PER_HOUR := 4.0
 ## Higiene: baja con las horas; debajo de DIRTY algunos negocios no lo atienden.
@@ -246,16 +246,21 @@ func add_money(amount: int) -> void:
 
 # ---------------------------------------------------------------- Mochila
 
+## Los casilleros que se pueden usar: 8, o 10 con la mochila cosida por Wilson (flag mochila_grande).
+func bag_slots() -> int:
+	return SLOTS if flags.get("mochila_grande", false) else 8
+
+
 ## Agrega; devuelve cuántos no entraron (0 = entró todo).
 func add_item(id: String, qty := 1) -> int:
 	var stack: int = Items.info(id)["stack"]
-	for i in SLOTS:  # primero completar pilas existentes
+	for i in bag_slots():  # primero completar pilas existentes
 		var s = inventory[i]
 		if qty > 0 and s != null and s["id"] == id and s["qty"] < stack:
 			var n := mini(qty, stack - s["qty"])
 			s["qty"] += n
 			qty -= n
-	for i in SLOTS:
+	for i in bag_slots():
 		if qty > 0 and inventory[i] == null:
 			var n := mini(qty, stack)
 			inventory[i] = {"id": id, "qty": n}
@@ -299,7 +304,8 @@ func remove_slot(i: int, qty := 1) -> void:
 
 func has_space_for(id: String) -> bool:
 	var stack: int = Items.info(id)["stack"]
-	for s in inventory:
+	for i in bag_slots():
+		var s = inventory[i]
 		if s == null or (s["id"] == id and s["qty"] < stack):
 			return true
 	return false
@@ -540,11 +546,16 @@ func cambuche_level() -> int:
 
 
 func cambuche_mood() -> float:
-	return LEVEL_MOOD[cambuche_level()]
+	return LEVEL_MOOD[cambuche_level()] + extra_mood(cambuche)
+
+
+## Lo que suman el piso de cartón y la cama de estibas (Items.BUILDS) al ánimo de la noche.
+static func extra_mood(c: Dictionary) -> float:
+	return (2.0 if c.get("piso", false) else 0.0) + (2.0 if c.get("cama_estiba", false) else 0.0)
 
 
 func box_capacity() -> int:
-	return BOX_CAPACITY[cambuche_level()]
+	return BOX_CAPACITY[cambuche_level()] + (2 if cambuche.get("repisa", false) else 0)
 
 
 func move_cambuche(spot: String) -> void:
@@ -589,13 +600,16 @@ func new_day(spot: String) -> Array:
 	var roof: bool = roofed(spot)
 	# Hambre e higiene de la noche.
 	var night_hunger := 8.0 if spot == "pension" else (10.0 if in_cambuche and cambuche["cobija"] else 15.0)
+	if in_cambuche and cambuche.get("piso", false):
+		night_hunger -= 3.0  # (el frío no sube del piso)
+	var raised: bool = in_cambuche and cambuche.get("cama_estiba", false)  # la cama de estibas: lejos del agua
 	if rained and not roof:
-		night_hunger += 8.0
+		night_hunger += 4.0 if raised else 8.0
 	night_hunger *= 1.0 + 0.3 * diff("hambre")
 	set_hunger(hunger - night_hunger)
 	set_hygiene(100.0 if spot == "pension" else hygiene - 10.0)
 	change_mood(SLEEP_MOOD.get(spot, 0.0) + (cambuche_mood() if in_cambuche else 0.0))
-	if rained and not roof:
+	if rained and not roof and not raised:
 		change_mood(-5.0)
 	if spot == "pension":
 		lines.append("Durmió en una cama. Se despertó tres veces a revisar la puerta.")
@@ -810,6 +824,7 @@ func load_game() -> Dictionary:
 	loneliness = data.get("loneliness", 20.0)
 	day = data["day"]
 	inventory = data["inventory"]
+	inventory.resize(SLOTS)  # (las partidas viejas tenían 8)
 	quests = data["quests"]
 	flags = data["flags"]
 	stats = data["stats"]

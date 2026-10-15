@@ -454,7 +454,7 @@ func feed() -> void:
 
 func fetch() -> void:
 	if GameState.count("pelota_trapo") == 0:
-		Narrator.say("(No tiene con qué jugar. Una pelota de trapo: camiseta + cuerda [C].)", false, "lukas_triste")
+		Narrator.say("(No tiene con qué jugar. Una pelota de trapo: camiseta + cuerda, en el cambuche.)", false, "lukas_triste")
 		return
 	var dir := Vector2.DOWN
 	match player.facing:

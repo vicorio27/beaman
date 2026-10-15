@@ -1949,3 +1949,9 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **Mirar desde el puente:** de día y al atardecer sale lo que él mira (el río, los cerros; él y Lukas de espaldas). `Vineta.show_over()` pone una viñeta grande encima del juego mientras dura el diálogo.
 - **Lisandro en el espejo:** antes de cada capítulo del Dealer, Lisandro se mira en el espejo (en el capítulo 3, con la bolsita). En la revancha no: ahí él es él.
 - **Las caras de Lukas:** cada acción de Lukas sale con su retrato al lado del aviso (`Narrator.say(texto, arriba, cara)`): feliz, come, pelota, escucha, triste, huele, enfermo, truco, ladra.
+
+## El cambuche por dentro, y armar
+- **Se arma en el cambuche, no en la mochila.** Las mejoras con receta (toldo, cocinita, alarma, trampa) se arman en Mejorar con los ingredientes; lo que va a la mochila (cama de cartón, pelota de trapo) en Armar. La tecla C solo recuerda que se arma en el cambuche.
+- **Cartón y estibas:** piso de cartón (4 cartones: menos hambre de noche, +2 ánimo), cama de estibas (2 estibas: la lluvia no lo empapa, +2 ánimo), repisa (estiba + clavos: la caja guarda 2 más). La lista de Mejorar se corre cuando no cabe.
+- **La casita:** con toldo, el cambuche tiene un adentro que se camina (`scenes/world/CambucheInside.tscn`): la cama (dormir, o una siesta al día), la caja (y en la repisa lo guardado), la alcancía, el tablero, la cocinita y la tabla con la piedra para armar. Lo que tiene se ve puesto; la foto y el dibujo de Victoria van colgados. Se sale por la cortina al mismo sitio.
+- **La mochila con Wilson:** con camiseta, plástico y cuerda, Wilson le cose dos bolsillos: 10 casilleros en vez de 8 (los dos de más se ven oscuros hasta entonces).

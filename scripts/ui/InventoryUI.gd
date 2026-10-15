@@ -1,15 +1,15 @@
 extends CanvasLayer
 ## Tab: arriba las MISIONES (principal, secundarias, opcionales); abajo la MOCHILA
-## (8 casilleros, nombre y descripción del elegido).
+## (8 casilleros, 10 si Wilson se la cosió; nombre y descripción del elegido).
 ## Desde la fila de arriba de la mochila, ARRIBA sube a las misiones: arriba/abajo elige una y abajo
 ## se ve el detalle (qué hacer, dónde, a qué hora, qué falta). Bajando de la última, vuelve a la mochila.
 ##   Abrir/cerrar: inventario (Tab / I / Y del joystick). Moverse: flechas.
 ##   Usar / comer: interactuar. Tirar: tirar (X). Cerrar: cancelar.
-##   Armar (C): recetas para combinar (Items.RECIPES); arriba/abajo elige, interactuar arma.
+##   Armar no: se arma en el cambuche (C solo lo recuerda).
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
-const COLS := 4
-const CELL := 22
+const COLS := 5
+const CELL := 18
 const ORIGIN := Vector2(16, 84)
 const TEXT_X := 110.0
 const TEXT_W := 170.0  # el panel termina en x=286: a la derecha quedan los botones táctiles
@@ -33,8 +33,6 @@ var _d_title: Label
 var _d_kind: Label
 var _d_text: Label
 var _qhint: Label
-var _crafting := false
-var _recipe := 0
 
 
 func _ready() -> void:
@@ -77,14 +75,14 @@ func _ready() -> void:
 		var pos := ORIGIN + Vector2((i % COLS) * CELL, (i / COLS) * CELL)
 		var c := ColorRect.new()
 		c.position = pos
-		c.size = Vector2(CELL - 2, CELL - 2)
+		c.size = Vector2(CELL - 1, CELL - 1)
 		_root.add_child(c)
 		_cells.append(c)
 		var ic := TextureRect.new()
-		ic.position = pos + Vector2(2, 2)
+		ic.position = pos + Vector2(0.5, 0.5)
 		_root.add_child(ic)
 		_icons.append(ic)
-		var q := _label("", pos + Vector2(11, 12), Color.WHITE)
+		var q := _label("", pos + Vector2(9, 9), Color.WHITE)
 		_qty.append(q)
 	_name = _label("", Vector2(TEXT_X, ORIGIN.y), Color(0.95, 0.92, 0.85))
 	_desc = _label("", Vector2(TEXT_X, ORIGIN.y + 14), Color(0.75, 0.72, 0.68))
@@ -95,8 +93,8 @@ func _ready() -> void:
 	_name.size = Vector2(TEXT_W, 10)
 	_name.clip_text = true
 	_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_label(Controls.keys_in("[E]usar [X]tirar [C]armar"), Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 6), Color(0.55, 0.52, 0.5))
-	_label(Controls.keys_in("[L]libreta [Q]salir"), Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 18), Color(0.55, 0.52, 0.5))
+	_label(Controls.keys_in("[E]usar [X]tirar"), Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 10), Color(0.55, 0.52, 0.5))
+	_label(Controls.keys_in("[L]libreta [Q]salir"), Vector2(ORIGIN.x - 2, ORIGIN.y + 2 * CELL + 22), Color(0.55, 0.52, 0.5))
 	_desc.add_theme_font_size_override("font_size", 8)
 	for k in range(first_bag, _root.get_child_count()):
 		_bag.append(_root.get_child(k))
@@ -147,24 +145,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		if lib:
 			lib.open()
 		return
-	if _crafting:
-		_craft_input(event)
-		return
 	if _qsel >= 0:
 		_quest_input(event)
 		return
 	if event.is_action_pressed("move_up") and _cursor < COLS and not _qlist.is_empty():
 		_qsel = 0  # de la fila de arriba de la mochila, a las misiones
 	elif event.is_action_pressed("craft"):
-		_crafting = true
+		_say("(Para armar hace falta dónde: en el cambuche, con un piso y un rato.)")
 	elif event.is_action_pressed("cancel"):
 		_toggle(false)
 	elif event.is_action_pressed("move_right"):
-		_cursor = (_cursor + 1) % GameState.SLOTS
+		_cursor = (_cursor + 1) % GameState.bag_slots()
 	elif event.is_action_pressed("move_left"):
-		_cursor = (_cursor - 1 + GameState.SLOTS) % GameState.SLOTS
+		_cursor = (_cursor - 1 + GameState.bag_slots()) % GameState.bag_slots()
 	elif event.is_action_pressed("move_down") or event.is_action_pressed("move_up"):
 		_cursor = (_cursor + COLS) % GameState.SLOTS
+		if _cursor >= GameState.bag_slots():
+			_cursor -= COLS
 	elif event.is_action_pressed("interact"):
 		var line := GameState.use_slot(_cursor)
 		if line != "":
@@ -201,27 +198,10 @@ func _quest_input(event: InputEvent) -> void:
 	_refresh()
 
 
-func _craft_input(event: InputEvent) -> void:
-	var n := Items.RECIPES.size()
-	if event.is_action_pressed("cancel") or event.is_action_pressed("craft") or event.is_action_pressed("inventory"):
-		_crafting = false
-	elif event.is_action_pressed("move_down") or event.is_action_pressed("move_right"):
-		_recipe = (_recipe + 1) % n
-	elif event.is_action_pressed("move_up") or event.is_action_pressed("move_left"):
-		_recipe = (_recipe - 1 + n) % n
-	elif event.is_action_pressed("interact"):
-		_say(GameState.craft(Items.RECIPES.keys()[_recipe]))
-	else:
-		return
-	get_viewport().set_input_as_handled()
-	_refresh()
-
-
 func _toggle(open: bool) -> void:
 	if open and (SceneRouter.busy or GameState.ui_open):
 		return
 	_open = open
-	_crafting = false
 	_qsel = -1
 	_qtop = 0
 	_root.visible = open
@@ -239,7 +219,7 @@ func _say(line: String) -> void:
 func _refresh() -> void:
 	for i in GameState.SLOTS:
 		var s = GameState.inventory[i]
-		_cells[i].color = Color(0.9, 0.74, 0.36, 0.9) if i == _cursor else Color(0.24, 0.2, 0.24)
+		_cells[i].color = Color(0.9, 0.74, 0.36, 0.9) if i == _cursor else (Color(0.24, 0.2, 0.24) if i < GameState.bag_slots() else Color(0.1, 0.08, 0.1))  # (sin coser: oscuros)
 		_icons[i].texture = Items.icon(s["id"]) if s != null else null
 		_qty[i].text = str(s["qty"]) if s != null and s["qty"] > 1 else ""
 	_refresh_quests()
@@ -258,14 +238,6 @@ func _refresh() -> void:
 		_desc.text = _note
 		_desc.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
 		_note = ""
-		return
-	if _crafting:
-		var id: String = Items.RECIPES.keys()[_recipe]
-		var ok := Items.can_craft(id)
-		_name.text = "ARMAR %d/%d: %s" % [_recipe + 1, Items.RECIPES.size(), Items.info(id)["name"]]
-		_desc.text = "Con: %s.\n%s\n[arriba/abajo] otra receta" % [Items.recipe_text(id),
-			Controls.keys_in("[E] armar") if ok else "Falta algo."]
-		_desc.add_theme_color_override("font_color", Color(0.6, 0.95, 0.6) if ok else Color(0.75, 0.72, 0.68))
 		return
 	_desc.add_theme_color_override("font_color", Color(0.75, 0.72, 0.68))
 	var sel = GameState.inventory[_cursor]

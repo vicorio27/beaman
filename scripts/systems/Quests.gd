@@ -26,8 +26,8 @@ const DEFS := {
 	"lo_bueno": {"title": "Lo bueno del barrio", "kind": "optional",
 		"detail": "Seis cosas buenas del barrio, sin plata: pescar en la orilla del río, el atardecer en el puente (de 5 a 7 de la tarde), tapar penaltis con los pelados del lote (de 9 a 6), la banca del parquecito, el columpio y el perro del barrio."},
 	# Día 2 — principales: aprender lo básico, en orden (y después, el recuerdo de la moto)
-	"t_cambuche": {"title": "Armá el cambuche: 3 cartones [C]", "kind": "main",
-		"detail": "Armar el cambuche con tres cartones: abrir la mochila (Tab) y [C] armar, parado en un lugar que sirva: debajo del puente, el lote del fondo (junto al río, al oriente), el parque o el kiosco viejo."},
+	"t_cambuche": {"title": "Armá el cambuche: 3 cartones", "kind": "main",
+		"detail": "Con tres cartones en la mochila, ir a un lugar que sirva y darle [E] donde dice ARMAR: debajo del puente, el lote del fondo (junto al río, al oriente), el parque o el kiosco viejo."},
 	"t_lukas": {"title": "Dale de comer a Lukas [F]", "kind": "main",
 		"detail": "Darle de comer a Lukas: menú de Lukas [F] > Comida. Concentrado, o compartir algo de comida de la mochila. Una vez al día."},
 	"t_bano": {"title": "Bañate: baño de la plaza, $1.000", "kind": "main",
@@ -101,7 +101,7 @@ const DEFS := {
 	"regalo_hija": {"title": "Regalo para Victoria", "kind": "side",
 		"detail": "Juntar $150.000 en la alcancía del cambuche para el regalo de Victoria (cambuche > Alcancía > meter). Lo que está en la alcancía no se gasta ni se lo roban dormido."},
 	"armar_cambuche": {"title": "Armá tu cambuche [C en la mochila]", "kind": "side",
-		"detail": "Armar un cambuche con tres cartones: abrir la mochila (Tab) y [C] armar, debajo del puente, en el lote del fondo, en el parque o en el kiosco viejo. Con cambuche se duerme mejor y hay dónde guardar cosas."},
+		"detail": "Armar un cambuche con tres cartones ([E] donde dice ARMAR): debajo del puente, en el lote del fondo, en el parque o en el kiosco viejo. Con cambuche se duerme mejor y hay dónde guardar cosas."},
 	# Encargos del día (DayTasks): uno por día marcado, hasta la noche
 	"hoy_comer3": {"title": "Hoy: comer tres veces", "kind": "side",
 		"detail": "Comer tres veces hoy, cualquier cosa. Se cumple sola. Si no se cumple, mañana pesa."},

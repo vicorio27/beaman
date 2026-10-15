@@ -268,7 +268,7 @@ func _dreams() -> void:
 
 func _cambuche() -> void:
 	if not GameState.has_cambuche():
-		_detail("Todavía no tiene", "Tres cartones (o una cama de cartón [C]) y armarlo debajo del puente, donde se despierta.", 30, 5)
+		_detail("Todavía no tiene", "Tres cartones (o una cama de cartón) y armarlo debajo del puente, donde se despierta.", 30, 5)
 		return
 	var c := GameState.cambuche
 	var lvl := GameState.cambuche_level()

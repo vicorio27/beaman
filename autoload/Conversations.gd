@@ -135,6 +135,8 @@ func run(id: String, npc: Node) -> void:
 			await _frutas()
 		"caneca":
 			await _caneca(npc)
+		"casa_cama", "casa_caja", "casa_alcancia", "casa_tablero", "casa_armar", "casa_cocina":
+			await _casa(id)
 		"billar_guardia":
 			await _billar_guardia()
 		"billar_barra":
@@ -452,6 +454,8 @@ func _wilson() -> void:
 		])
 	while true:
 		var w_opts := ["Vender latas y botellas", "Comprar"]
+		if not f.get("mochila_grande", false):
+			w_opts.append("Mostrarle la mochila")
 		if _ruta_open():
 			w_opts.append("Hacer la ruta (latas contra reloj)")
 		w_opts.append_array(["Quedarse ahí", "Salir"])
@@ -464,6 +468,9 @@ func _wilson() -> void:
 		elif w_opts[i] == "Hacer la ruta (latas contra reloj)":
 			await _wilson_ruta()
 			return
+		elif w_opts[i] == "Mostrarle la mochila":
+			await _wilson_mochila()
+			continue
 		match i:
 			0:
 				var cans := GameState.count("lata")
@@ -498,6 +505,34 @@ func _wilson() -> void:
 				_ask_wilson += 1
 			_:
 				return
+
+
+## Wilson le cose la mochila: dos bolsillos más (GameState.bag_slots). Él trae los materiales; Wilson
+## pone la aguja, el hilo y la charla. Flag: mochila_grande.
+const MOCHILA_NEEDS := {"camiseta": 1, "plastico": 1, "cuerda": 1}
+
+
+func _wilson_mochila() -> void:
+	var missing := []
+	for id in MOCHILA_NEEDS:
+		if GameState.count(id) < MOCHILA_NEEDS[id]:
+			missing.append(Items.info(id)["name"].to_lower())
+	if not missing.is_empty():
+		await Dialogue.talk([["", "(Le muestra la mochila. Le muestra cómo se le sale todo. Le muestra el roto.)"],
+			["WILSON", "—Ah, no, eso se le cose. Dos bolsillos, a los lados. Como los de los turistas, pero sin turista."],
+			["WILSON", "—Tráigame una camiseta vieja, un plástico y una cuerda. La aguja la pongo yo. La aguja es mía, nadie la toca."],
+			["", "(Le falta: %s.)" % ", ".join(missing)]])
+		return
+	for id in MOCHILA_NEEDS:
+		GameState.remove_item(id, MOCHILA_NEEDS[id])
+	await Dialogue.talk([["WILSON", "—A ver, a ver. Siéntese. No, no se siente: sosténgame esto."],
+		["", "(Wilson cose sentado en el carro. Usa los dientes de dedal. Habla todo el tiempo, con el hilo en la boca.)"],
+		["WILSON", "—Mi mamá era modista. Bueno, no. Mi mamá le cosía a todo el barrio sin cobrar. Eso es ser modista sin el título."],
+		["", "(Dos bolsillos: uno de camiseta, uno de plástico, por si llueve. La cuerda, por dentro, para que no se abran.)"],
+		["WILSON", "—Listo. Ahora le caben dos cosas más. No me dé las gracias. Bueno, démelas, pero en latas."]])
+	TimeManager.skip(1.0)
+	GameState.flags["mochila_grande"] = true
+	GameState.inventory_changed.emit()
 
 
 # ---------------------------------------------------------------- Samuel (vive en la calle)
@@ -3017,6 +3052,46 @@ func _buhonero(npc: Node) -> void:
 	await Dialogue.talk(BUHONERO_QUEDA[opts[i]] if trato and BUHONERO_QUEDA.has(opts[i]) else BUHONERO_MIRAN[n % BUHONERO_MIRAN.size()])
 	if trato and int(f.get("buhonero_tratos", 0)) in [2, 4]:
 		Narrator.say("(A la gente se le está yendo la cara. A él le parece que antes tenían más.)")
+
+
+# ---------------------------------------------------------------- Adentro del cambuche
+## Lo de la casita (scripts/world/CambucheInside.gd): lo mismo que el menú del cambuche, pero cada cosa
+## en su sitio.
+func _casa(id: String) -> void:
+	var spot: SleepSpot = get_tree().current_scene.get("spot")
+	if spot == null:
+		return
+	match id:
+		"casa_cama":
+			if GameState.is_active("donde_dormir") or spot._is_night():
+				var i := await Dialogue.talk([["", "(¿Dormir? Afuera ya es de noche. Aquí adentro siempre es un poco de noche.)"]], ["Dormir", "Todavía no"])
+				if i == 0 and await spot._pocket_check():
+					GameState.flags["sleep_spot"] = spot.spot_id
+					GameState.complete_quest("donde_dormir")
+					SceneRouter.go(SleepSpot.NIGHT_SCENE)
+				return
+			if GameState.flags.get("casa_siesta", -1) == GameState.day:
+				await Dialogue.talk([["", "(Ya se acostó hoy. Se sienta en la cama. Mira el techo. El techo lo mira a él.)"]])
+				return
+			GameState.flags["casa_siesta"] = GameState.day
+			await Dialogue.talk([["", "(Se acuesta un rato. El plástico del techo suena como si lloviera, aunque no llueva. Lukas se le acomoda en los pies.)" if GameState.lukas_alive()
+				else "(Se acuesta un rato. El plástico del techo suena como si lloviera, aunque no llueva. Los pies le quedan fríos: antes no.)"]])
+			TimeManager.skip(1.0)
+			GameState.change_mood(4.0)
+		"casa_caja":
+			await spot._box()
+		"casa_alcancia":
+			await spot._piggy_bank()
+		"casa_tablero":
+			await run("tablero", null)
+		"casa_cocina":
+			await spot._cook()
+		"casa_armar":
+			var i := await Dialogue.talk([["", "(La tabla y la piedra. El taller.)"]], ["Mejorar el cambuche", "Armar algo", "Nada"])
+			if i == 0:
+				await spot._upgrade()
+			elif i == 1:
+				await spot.craft_menu()
 
 
 # ---------------------------------------------------------------- Las canecas: esculcar

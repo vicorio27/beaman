@@ -28,7 +28,23 @@ const UPGRADE_LINES := {
 	"alarma": "(Latas colgadas alrededor del cambuche, a la altura de la rodilla.)",
 	"trampa": "(Tabla con clavos en la entrada, tapada con cartón.)",
 	"cobija": "(Cobija puesta.)",
+	"piso": "(Cuatro cartones, dos capas, las esquinas metidas. El piso ya no le chupa el calor. Samuel tenía razón: estrato dos.)",
+	"cama_estiba": "(Dos estibas, una encima de la otra. Una cama a veinte centímetros del suelo. Desde aquí arriba el agua es problema de otros.)",
+	"repisa": "(Una estiba clavada a la pared. Una repisa. Pone encima la foto. Después la quita: mejor en la mochila. Después la vuelve a poner.)",
 }
+## Cuando se arma ahí mismo con los ingredientes (antes era en la mochila).
+const CRAFT_LINES := {
+	"toldo": "(Plástico, cuerda y veinte minutos de nudos. Los nudos no los aprendió en ningún lado. Toldo puesto.)",
+	"cocinita": "(Una lata abierta, una vela adentro, tres huecos para el aire. Una cocinita. Le cabe una olla si la olla es pequeña y optimista.)",
+	"alarma": "(Dos latas colgadas de una cuerda, alrededor del cambuche. Las prueba con la rodilla: clin. Lukas le ladra a la alarma.)",
+	"trampa": "(Una estiba con los clavos para arriba, tapada con cartón, en la entrada. Ahora hay que acordarse de no pisarla. Se pone un recordatorio: un zapato.)",
+}
+## Lo que se arma en el cambuche y va a la mochila (lo que no es mejora).
+const CRAFT_LINES_ITEM := {
+	"cama_carton": "(Tres cartones doblados en acordeón. Una cama portátil. Se la echa al hombro como un músico su instrumento.)",
+	"pelota_trapo": "(Una camiseta enrollada, amarrada con cuerda. Una pelota. Lukas la mira armarse como quien mira un parto.)",
+}
+
 
 @export var spot_id := "banco"
 
@@ -59,6 +75,11 @@ func _ready() -> void:
 	add_child(_hint)
 	_visual = Node2D.new()
 	add_child(_visual)
+	var out := Marker2D.new()  # por donde sale de la casita (CambucheInside)
+	out.name = "Salida"
+	out.position = Vector2(0, 20)
+	out.set_meta("facing", "down")
+	add_child(out)
 	body_entered.connect(_on_enter)
 	body_exited.connect(_on_exit)
 	GameState.cambuche_changed.connect(_refresh_visual)
@@ -152,7 +173,9 @@ func _cambuche() -> void:
 			await _offer_sleep()
 		return
 	while true:
-		var opts := ["Caja", "Alcancía", "Mejorar", "Cocinar", "Tablero", "Salir"]
+		# Con toldo ya hay un adentro: la caja, la alcancía, la cocina y el tablero están allá.
+		var opts := ["Entrar", "Mejorar", "Armar", "Salir"] if GameState.cambuche["toldo"] \
+			else ["Caja", "Alcancía", "Mejorar", "Armar", "Cocinar", "Tablero", "Salir"]
 		if GameState.is_active("donde_dormir") or _is_night():
 			opts.push_front("Dormir")
 		var i := await Dialogue.talk([["", "(Su cambuche. %s)" % _status()]], opts)
@@ -168,8 +191,13 @@ func _cambuche() -> void:
 				await _box()
 			"Alcancía":
 				await _piggy_bank()
+			"Entrar":
+				enter_house()
+				return
 			"Mejorar":
 				await _upgrade()
+			"Armar":
+				await craft_menu()
 			"Cocinar":
 				await _cook()
 			"Tablero":
@@ -225,7 +253,7 @@ func _build() -> void:
 		return
 	if not has_bed and not has_cartons:
 		await Dialogue.talk([["", ABOUT[spot_id]],
-			["", "(Para armar un cambuche: tres cartones, o una cama de cartón [C].)"]])
+			["", "(Para armar un cambuche: tres cartones, o una cama de cartón.)"]])
 		return
 	var build := await Dialogue.talk([["", ABOUT[spot_id]], ["", "(¿Armar el cambuche acá?)"]],
 		["Armar el cambuche", "Todavía no"])
@@ -314,6 +342,18 @@ func _upgrade() -> void:
 		if id == "":
 			return
 		var c := GameState.cambuche
+		if Items.BUILDS.has(id) or (GameState.count(id) == 0 and Items.RECIPES.has(id)):
+			# Se arma ahí mismo: se gastan los materiales y se va un rato.
+			var need: Dictionary = Items.BUILDS[id] if Items.BUILDS.has(id) else Items.RECIPES[id]
+			for item in need:
+				GameState.remove_item(item, need[item])
+			c[id] = true
+			TimeManager.skip(0.5)
+			GameState.change_mood(2.0)
+			GameState.cambuche_changed.emit()
+			await _hammer()
+			await Dialogue.talk([["", CRAFT_LINES.get(id, UPGRADE_LINES.get(id, "(Listo.)"))]])
+			continue
 		if id.begins_with("nivel_"):
 			var plan: Dictionary = Items.EXPANSIONS[int(id.substr(6))]
 			for item in plan["needs"]:
@@ -330,9 +370,60 @@ func _upgrade() -> void:
 			await Dialogue.talk([["", UPGRADE_LINES[id]]])
 
 
+## Armar lo que va a la mochila (la cama de cartón, la pelota de trapo): aquí, no caminando.
+func craft_menu() -> void:
+	while true:
+		var ids := []
+		var opts := []
+		for r in Items.RECIPES:
+			if r in Items.UPGRADES:
+				continue  # (las mejoras se arman en Mejorar)
+			ids.append(r)
+			opts.append(Items.info(r)["name"] + ("" if Items.can_craft(r) else " -"))
+		opts.append("Salir")
+		var with := []
+		for r in ids:
+			with.append("%s: %s" % [Items.info(r)["name"], Items.recipe_text(r)])
+		var i := await Dialogue.talk([["", "(Aquí hay dónde: un piso, una tabla, un rato. %s.)" % ". ".join(with)]], opts)
+		if i >= ids.size():
+			return
+		var id: String = ids[i]
+		if not Items.can_craft(id):
+			await Dialogue.talk([["", "(Faltan cosas: %s.)" % Items.recipe_text(id)]])
+			continue
+		var line := GameState.craft(id)
+		if line.begins_with("(Arma"):
+			TimeManager.skip(0.25)
+			await _hammer()
+			line = CRAFT_LINES_ITEM.get(id, line)
+		await Dialogue.talk([["", line]])
+
+
+## Él, armando: se agacha y le da con la piedra (o con las manos) un ratico.
+func _hammer() -> void:
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	if p == null:
+		return
+	if p.has_method("face"):
+		p.face("up")
+	var t := p.create_tween()
+	for k in 4:
+		t.tween_property(p, "scale:y", 0.9, 0.09)
+		t.tween_property(p, "scale:y", 1.0, 0.09)
+		t.tween_callback(func() -> void: GameState.block_input(0.2))
+	await t.finished
+
+
+## Con toldo: adentro (scenes/world/CambucheInside.tscn). Se vuelve por la misma puerta.
+func enter_house() -> void:
+	var scene := get_tree().current_scene
+	GameState.flags["casa_volver"] = [scene.scene_file_path, str(scene.get_path_to(get_node("Salida")))]
+	SceneRouter.go("res://scenes/world/CambucheInside.tscn")
+
+
 func _cook() -> void:
 	if not GameState.cambuche["cocinita"]:
-		await Dialogue.talk([["", "(Sin cocinita no hay cocina. Lata y vela, [C] en la mochila.)"]])
+		await Dialogue.talk([["", "(Sin cocinita no hay cocina. Lata y vela: se arma en Mejorar.)"]])
 		return
 	if GameState.count("arroz") == 0:
 		await Dialogue.talk([["", "(No hay qué cocinar. Arroz donde Germán.)"]])
