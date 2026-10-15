@@ -1,5 +1,5 @@
 extends "res://scripts/dreams/Plomo.gd"
-## PLOMO 3: "Clínica Irene". Retoma donde terminó el episodio 2: el pasillo blanco que huele a
+## PLOMO 3: "Clínica Eiren". Retoma donde terminó el episodio 2: el pasillo blanco que huele a
 ## hospital. La clínica que filtró sus datos. Urgencias → pasillo (Zaida aparece: no pelea) →
 ## la sala de espera (Lilato, mini jefa recurrente: tiene la llave) → el Archivo Central, donde lo
 ## espera El Expediente: un monstruo hecho de su historia clínica.
@@ -14,11 +14,11 @@ func setup() -> void:
 	dream_id = "plomo3"
 	dream_hard = 0.6
 	title_text = "PLOMO 3"
-	subtitle = "EPISODIO 3: CLINICA IRENE"
+	subtitle = "EPISODIO 3: CLINICA EIREN"
 	recap = [
 		["", "ANTERIORMENTE EN PLOMO..."],
 		["", "José Mario cayó. La salida de la oficina daba a un pasillo blanco."],
-		["", "Huele a alcohol. En una pared, un cartel: CLINICA IRENE. SU INFORMACION ESTA SEGURA CON NOSOTROS."],
+		["", "Huele a alcohol. En una pared, un cartel: CLINICA EIREN. SU INFORMACION ESTA SEGURA CON NOSOTROS."],
 		["", "Ja."],
 	]
 	weapon_prefix = "w_"

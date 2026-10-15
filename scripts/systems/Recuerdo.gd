@@ -20,7 +20,7 @@ const ALL := {
 	"bebe": ["recuerdo_bebe",
 		["(Una foto en un hospital. Él, con una camisa planchada, sostiene una cobija con una cara adentro.)",
 			"(Tiene las manos tiesas, como si le hubieran dado algo que se rompe con mirarlo.)"],
-		"Victoria. 3,1 kilos.\n29 de octubre.",
+		"Victoria. 2.810 gramos. 51 centímetros.\n29 de octubre.",
 		["(Ella ahora sale del colegio y no sabe quién es él. Todavía.)"]],
 	"lukas": ["recuerdo_lukas",
 		["(Una foto: una caja de zapatos en el piso de una cocina. Adentro, un cachorro de orejas enormes.)",

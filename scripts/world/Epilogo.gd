@@ -103,7 +103,7 @@ func _run() -> void:
 		p.queue_free()
 	_people.clear()
 	_head.text = ""
-	await Dialogue.talk([["", "BE A MAN"], ["", "Para los que se quedan en la calle. Y para los perros que se quedan con ellos."], ["", "FIN."]])
+	await Dialogue.talk([["", "BE A MAN"], ["", "Para los que se quedan en la calle. Y para los perros que se quedan con ellos."], ["", "FIN."], ["", "Tiempo jugado: %s." % GameState.play_time_text()]])
 	GameState.flags["juego_terminado"] = true
 	while SceneRouter.busy:
 		if not is_inside_tree():

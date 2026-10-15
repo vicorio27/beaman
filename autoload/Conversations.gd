@@ -21,7 +21,7 @@ const SHOP_EFRAIN := [
 	["celular", 9000, "—Celular de flecha, con chip y saldo. Indestructible: se cae de un cuarto piso y el que se rompe es el piso. Ah, y una señora preguntó por usted. Le di el número. Me pagó. Yo vendo historias, mijo."],
 ]
 const SHOP_GERMAN := [
-	["pan", 1500, "—Mil quinientos. El de hoy. El de ayer se lo regalo, pero no le diga a nadie."],
+	["pan", 600, "—Seiscientos. El de ayer: duro pero honrado. El de hoy es para los que tienen dientes de hoy."],
 	["arroz", 2000, "—Una libra. Rinde. Mi señora sacaba cuatro almuerzos de una libra. Yo saco dos y medio."],
 	["vela", 500, "—Cuidado con el fuego, mijo. El cartón no avisa."],
 	["concentrado", 2000, "—Para el perrito. Dígale que es de parte de Germán. Que me debe un ladrido."],
@@ -133,6 +133,8 @@ func run(id: String, npc: Node) -> void:
 			await _ultimo_trabajo()
 		"frutas":
 			await _frutas()
+		"caneca":
+			await _caneca(npc)
 		"billar_guardia":
 			await _billar_guardia()
 		"billar_barra":
@@ -1043,8 +1045,8 @@ func _zaida(npc: Node) -> void:
 		["ZAIDA", "—¿...? ¡No! ¿Sos vos? Qué casualidad tan grande."],
 		["", "(...)"],
 		["ZAIDA", "—Igualito. Callado como una tumba. Me encanta: así hablo yo por los dos, que es como me gusta."],
-		["ZAIDA", "—Te ves... bueno, te ves. Me contaron que estuviste en la Clínica Irene. No me mirés así, la gente habla. Vos no, pero la gente sí."],
-		["", "(Lo de la Clínica Irene no lo sabe nadie. Nadie que no haya ido a preguntar.)"],
+		["ZAIDA", "—Te ves... bueno, te ves. Me contaron que estuviste en la Clínica Eiren. No me mirés así, la gente habla. Vos no, pero la gente sí."],
+		["", "(Lo de la Clínica Eiren no lo sabe nadie. Nadie que no haya ido a preguntar.)"],
 		["ZAIDA", "—¿Y qué hacés por acá? ¿La cédula? Necesitás una dirección, ¿cierto? No me contestés, ya sé que sí."],
 		["ZAIDA", "—Poné la mía. Y conozco a alguien adentro: te consigo turno para mañana a primera hora. Sin fila."],
 		["ZAIDA", "—No me tenés que dar nada. Bueno... ya hablaremos. Yo hablo, vos asentís. Como antes."],
@@ -1726,6 +1728,14 @@ func _noche(id: String) -> void:
 			else:
 				await _vicio("billar")
 		"noche_chica", "noche_chica2", "noche_chica3":
+			var nch := int(GameState.flags.get("chicas_n", 0)) + 1
+			GameState.flags["chicas_n"] = nch
+			if nch == 5:  # tanto insistir: una vez, y ya
+				await Dialogue.talk([["", "(Otra vez debajo del poste. Verónica se le acerca, sola. Le acomoda la corbata. No le cobra.)"],
+					["VERONICA", "—... David Lisandro."],
+					["", "(Nadie le dice así hace años. Ella lo dice una vez, bajito, como quien devuelve algo que no era suyo.)"],
+					["VERONICA", "—Ya. Una vez. No me la pida más."]])
+				return
 			var opts := ["Seguir de largo"]
 			if GameState.money >= 10000:
 				opts.push_front("Pagar un rato de compañía ($10.000)")
@@ -2427,7 +2437,7 @@ func _colegio() -> void:
 		MusicDirector.force("")
 		await Dialogue.talk([
 			["", "(Doce y cuarto. Los niños salen en fila, gritando.)"],
-			["", "(Ella sale de última. Mochila rosada. Una media más abajo que la otra.)"],
+			["", "(Ella sale de última. Mochila morada, con una cinta negra. Una media más abajo que la otra.)"],
 			["", "(Es la única cara que él ve. Las demás, nada.)"],
 			["", "(No se mueve. Aprieta la reja hasta que se le ponen blancos los nudillos.)"],
 		])
@@ -2597,8 +2607,8 @@ func _audiencia() -> void:
 		["", "(Una oficina chiquita. Un ventilador que no ventila. Lorena, del otro lado de la mesa, sin mirarlo.)"],
 		["DEFENSORA", "—La mamá dice que usted es peligroso."],
 		["", "(...)"],
-		["DEFENSORA", "—¿No va a decir nada? ¿Nada? ... Señor, así no lo puedo ayudar. Aquí dice que estuvo en la Clínica Irene."],
-		["", "(Pone sobre la mesa un papel doblado mil veces: un certificado de la Clínica Irene. Dos años limpio. Lukas apoya la cabeza en el escritorio.)"],
+		["DEFENSORA", "—¿No va a decir nada? ¿Nada? ... Señor, así no lo puedo ayudar. Aquí dice que estuvo en la Clínica Eiren."],
+		["", "(Pone sobre la mesa un papel doblado mil veces: un certificado de la Clínica Eiren. Dos años limpio. Lukas apoya la cabeza en el escritorio.)"],
 		["LORENA", "—¿Y qué? ¿Eso qué cambia?"],
 		["DEFENSORA", "—La niña dibuja a un señor con un perro. Me lo trajo la profesora. Dice que lo ve a la salida."],
 		["", "(Lorena no contesta. Por primera vez, no tiene nada que decir.)"],
@@ -2721,6 +2731,8 @@ func _veterinaria() -> void:
 		await Dialogue.talk([["DRA. PILAR", "—... Me contó Leonor. Lo siento mucho, mijo."], ["", "(Le da un abrazo. Él no lo devuelve. Tampoco se suelta.)"]])
 		return
 	await Recuerdo.show("lukas")  # la primera vez en la veterinaria: la caja de zapatos
+	if (GameState.lukas_stage() >= 1 or GameState.lukas_sick()) and f.get("pilar_dia", -1) != GameState.day:
+		await _vet_coca()  # comer primero; lo demás, después
 	if GameState.lukas_stage() >= 1:
 		await _vet_cronico()
 		return
@@ -3007,6 +3019,89 @@ func _buhonero(npc: Node) -> void:
 		Narrator.say("(A la gente se le está yendo la cara. A él le parece que antes tenían más.)")
 
 
+# ---------------------------------------------------------------- Las canecas: esculcar
+## Cada caneca, una vez al día (scripts/systems/Vecindario.gd las marca). Lo que hay lo decide la suerte
+## del día: comida, unas monedas, nada... o una rata que sale a defender lo suyo.
+## Flags: caneca_<nombre> (el día en que la esculcó).
+const CANECA_COMIDA := {
+	"pan": "(Medio pan, en una bolsa amarrada. Alguien lo botó con cariño.)",
+	"fruta": "(Un banano negro por fuera. Por dentro, todavía es banano.)",
+	"arepa": "(Una arepa entera, envuelta en servilleta. La servilleta tiene escrito un teléfono. Él se come la arepa y guarda el teléfono.)",
+	"empanada": "(Una empanada fría, en su bolsita. Sin morder. Hay gente que compra por comprar.)",
+}
+const CANECA_NADA := [
+	"(Cáscaras, un zapato solo, un calendario de 2019. Nada. El zapato no es de su talla. Lo revisa igual.)",
+	"(Una caja de pizza. Vacía. Huele a pizza: eso ya es algo.)",
+	"(Botellas. Wilson ya pasó por aquí: dejó una nota. \"Llegué primero\".)",
+	"(Bolsas y más bolsas. Adentro de la última bolsa, otra bolsa. Como las muñecas rusas, pero sin muñeca.)",
+]
+
+
+func _caneca(spot: Node) -> void:
+	var f := GameState.flags
+	var key := "caneca_%s" % (str(spot.name) if spot else "x")
+	if f.get(key, -1) == GameState.day:
+		await Dialogue.talk([["", "(Ya la esculcó hoy. La caneca no se llena sola. Bueno, sí, pero de noche.)"]])
+		return
+	f[key] = GameState.day
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%s%d" % [key, GameState.day])
+	var r := rng.randf()
+	GameState.set_hygiene(GameState.hygiene - 5.0)
+	TimeManager.skip(0.15)
+	if r < 0.15:
+		await _rata(spot)
+	elif r < 0.45:
+		var keys := CANECA_COMIDA.keys()
+		var food: String = keys[rng.randi() % keys.size()]
+		if GameState.has_space_for(food):
+			GameState.add_item(food)
+			await Dialogue.talk([["", CANECA_COMIDA[food]]])
+		else:
+			await Dialogue.talk([["", "(Hay comida, pero no le cabe en la mochila. La deja encima de la caneca, para el siguiente.)"]])
+	elif r < 0.65:
+		var plata := 500 * (1 + rng.randi() % 6)
+		GameState.add_money(plata)
+		await Dialogue.talk([["", "(Entre el cartón, $%d en monedas. Pegajosas. La plata pegajosa también compra.)" % plata]])
+	else:
+		await Dialogue.talk([["", CANECA_NADA[rng.randi() % CANECA_NADA.size()]]])
+
+
+## Una rata sale de la caneca: le salta a la mano, se le sube por la manga y se va. Lukas la persigue.
+func _rata(spot: Node) -> void:
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	if p and spot is Node2D:
+		var rat := ColorRect.new()
+		rat.size = Vector2(5, 3)
+		rat.color = Color(0.38, 0.34, 0.36)
+		rat.z_index = 50
+		rat.position = (spot as Node2D).global_position + Vector2(-2, -12)
+		p.get_parent().add_child(rat)
+		var tail := ColorRect.new()
+		tail.size = Vector2(3, 1)
+		tail.position = Vector2(-3, 1)
+		tail.color = Color(0.7, 0.5, 0.5)
+		rat.add_child(tail)
+		var t := rat.create_tween()
+		t.tween_property(rat, "position", p.global_position + Vector2(-2, -18), 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.tween_property(rat, "position", p.global_position + Vector2(3, -6), 0.15)
+		t.tween_property(rat, "position", p.global_position + Vector2(60, 4), 0.4)
+		t.tween_callback(rat.queue_free)
+		var shake := p.create_tween()
+		for k in 4:
+			shake.tween_property(p, "position:x", p.position.x + (2 if k % 2 == 0 else -2), 0.05)
+		shake.tween_property(p, "position:x", p.position.x, 0.05)
+		await t.finished
+	GameState.change_mood(-4.0)
+	GameState.set_hygiene(GameState.hygiene - 8.0)
+	var lines := [["", "(Una rata. Del tamaño de un gato con autoestima. Le salta a la mano, se le mete por la manga y sale por el cuello.)"]]
+	if GameState.lukas_alive():
+		lines.append(["", "(Lukas la persigue hasta la esquina. No la alcanza. Vuelve caminando como si sí.)"])
+	else:
+		lines.append(["", "(Nadie la persigue. Antes, alguien la habría perseguido.)"])
+	await Dialogue.talk(lines)
+
+
 # ---------------------------------------------------------------- El palo de guayaba: comida gratis
 ## Guayabas (scripts/systems/Vecindario.gd las pone en un árbol). Gratis, pero no le gustan: cada una
 ## quita menos hambre que la anterior, y a la tercera se hostiga y no puede con otra hasta mañana.
@@ -3171,12 +3266,13 @@ func _billar_borracho() -> void:
 
 
 # ---------------------------------------------------------------- La tienda de videojuegos: el amigo
-## El de la tienda de videojuegos (la pone scripts/systems/Vecindario.gd). El único amigo que tiene: el
-## único que le hace charla sin pedirle nada. No tiene nombre: ninguno de los dos se lo ha preguntado
-## al otro, y así está bien. Flags: amigo_n (charlas), amigo_dia, amigo_jugo (día).
-const AMIGO := "EL DE LA TIENDA"
+## La Caverna de Gamer, la tienda de videojuegos (la pone scripts/systems/Vecindario.gd). Álvaro, pero
+## le gusta que le digan Al: el único amigo que tiene, el único que le hace charla sin pedirle nada.
+## Flags: amigo_n (charlas), amigo_dia, amigo_jugo (día).
+const AMIGO := "AL"
 const AMIGO_CHARLAS := [
-	[[AMIGO, "—¡Quiubo! Pase, pase. Aquí no se compra nada, tranquilo. Nadie compra. Esto es más museo que tienda."],
+	[[AMIGO, "—¡Quiubo! Bienvenido a La Caverna de Gamer. Pase, pase. Aquí no se compra nada, tranquilo. Nadie compra. Esto es más museo que tienda."],
+		[AMIGO, "—Álvaro. Pero dígame Al. Álvaro me dice mi mamá cuando le rayo un disco."],
 		[AMIGO, "—¿Usted no habla? Perfecto. Yo llevo once años hablándole a un Nintendo. Usted por lo menos parpadea."]],
 	[[AMIGO, "—Le explico el negocio: vendo juegos de hace veinte años a gente que no existe. Va bien. Cero reclamos."],
 		[AMIGO, "—El perro puede entrar. Es el único cliente que huele la mercancía antes de no comprarla."]],
@@ -3184,7 +3280,7 @@ const AMIGO_CHARLAS := [
 	[[AMIGO, "—¿Sabe qué tiene de bueno un jefe final? Que uno sabe cuál es. En la vida a uno lo acaba un recibo de la luz."],
 		[AMIGO, "—Y no tiene barra de vida, el recibo. Uno le pega y le pega."]],
 	[[AMIGO, "—Mi mamá dice que consiga amigos. Yo le digo: tengo uno. Me pregunta cómo se llama. Ahí se me cae todo."],
-		[AMIGO, "—¿Cómo se llama usted? ... No, no me diga. Así queda parejo: usted tampoco me pregunte."],
+		[AMIGO, "—¿Cómo se llama usted? ... No, no me diga. Así yo soy el único con nombre en esta amistad. Me gusta tener algo."],
 		["", "(Se dan la mano. Es la primera vez. Ninguno de los dos sabe cuándo soltar. Suelta Lukas, ladrando.)"]],
 	[[AMIGO, "—Hoy vino un niño y preguntó si tenía el FIFA. Le vendí un trompo. Le va a durar más."]],
 	[[AMIGO, "—Si un día no abro, es que pasé de nivel. O que me cortaron la luz. Lo segundo es más probable."],
@@ -3193,10 +3289,10 @@ const AMIGO_CHARLAS := [
 		[AMIGO, "—En mi cabeza usted dice cosas muy inteligentes. No me las dañe."]],
 ]
 const AMIGO_JUEGOS := [
-	"(La consola de exhibición tiene un solo control bueno. El otro lo tiene el de la tienda. Juegan a los puños en un callejón con luces de neón. El muñeco de él se parece a alguien.)",
-	"(Carreras. El de la tienda maneja con todo el cuerpo: en las curvas se inclina él, la silla y medio mostrador. Pierde igual.)",
-	"(Un juego de disparos, de los de pasillos. El de la tienda grita en cada esquina. Él no grita. Lukas ladra por los dos.)",
-	"(Lucha libre. Cuatro botones. El de la tienda dice que hay un truco. Lleva once años buscándolo. Hoy tampoco.)",
+	"(La consola de exhibición tiene un solo control bueno. El otro lo tiene Al. Juegan a los puños en un callejón con luces de neón. El muñeco de él se parece a alguien.)",
+	"(Carreras. Al maneja con todo el cuerpo: en las curvas se inclina él, la silla y medio mostrador. Pierde igual.)",
+	"(Un juego de disparos, de los de pasillos. Al grita en cada esquina. Él no grita. Lukas ladra por los dos.)",
+	"(Lucha libre. Cuatro botones. Al dice que hay un truco. Lleva once años buscándolo. Hoy tampoco.)",
 ]
 
 
@@ -3207,15 +3303,15 @@ func _amigo() -> void:
 		await Dialogue.talk([
 			[AMIGO, "—¿Y el socio?"],
 			["", "(Él no señala a ningún lado.)"],
-			["", "(El de la tienda apaga las maquinitas. Todas. Una por una. Es la primera vez que la tienda queda en silencio.)"],
+			["", "(Al apaga las maquinitas. Todas. Una por una. Es la primera vez que la tienda queda en silencio.)"],
 			[AMIGO, "—Siéntese. Hoy tampoco hablo yo."],
 			["", "(No habla. Le cuesta. Se le nota en la pierna, que no se queda quieta. Pero no habla.)"]])
 		TimeManager.skip(1.0)
 		GameState.company(40.0)
 		return
 	var n := int(f.get("amigo_n", 0))
-	var i := await Dialogue.talk([["", "(La tienda de videojuegos. Adentro suenan seis juegos al tiempo. Ninguno tiene jugador.)" if n == 0
-		else "(El de la tienda lo ve llegar y le baja el volumen a todo. No hace eso con nadie más. No viene nadie más.)"]],
+	var i := await Dialogue.talk([["", "(La Caverna de Gamer. Adentro suenan seis juegos al tiempo. Ninguno tiene jugador.)" if n == 0
+		else "(Al lo ve llegar y le baja el volumen a todo. No hace eso con nadie más. No viene nadie más.)"]],
 		["Charlar", "Jugar en la consola de exhibición", "Seguir"])
 	if i == 2:
 		return
@@ -3800,7 +3896,7 @@ func _cumpleanos(in_person: bool) -> void:
 	f["cumple_hecho"] = true
 	GameState.complete_quest("v_cumple")
 	var saved: int = GameState.cambuche.get("alcancia", 0) if GameState.has_cambuche() else 0
-	var gift := "una bicicleta rosada, con canasta y timbre" if saved >= GameState.GIFT_GOAL else \
+	var gift := "una bicicleta morada con negro, con canasta y timbre" if saved >= GameState.GIFT_GOAL else \
 		("una caja de colores de cuarenta y ocho" if saved >= 40000 else "un clavel y un dibujo de él mismo, de palitos, con Lukas")
 	MusicDirector.force("")
 	if in_person:
@@ -3826,6 +3922,7 @@ func _cumpleanos(in_person: bool) -> void:
 	await Dialogue.talk([
 		["", "BE A MAN"],
 		["", "FIN."],
+		["", "Tiempo jugado: %s." % GameState.play_time_text()],
 	])
 	f["juego_terminado"] = true
 	while SceneRouter.busy:

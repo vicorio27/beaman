@@ -224,14 +224,9 @@ static func _vet(id: String) -> void:
 
 static func _rosa() -> void:
 	await Dialogue.talk([
-		["DOÑA ROSA", "—¡Por fin! Cuídeme el puesto dos horas, que tengo cita en el Seguro. No regale nada. Bueno, a los niños sí. A los policías no."],
-		["", "(Dos horas vendiendo empanadas. Sin decir el precio: señalando el letrero.)"],
-		["DOÑA ROSA", "—¿Vendió? ¿Cuántas? ... Hágame la seña. ... ¿Veinte? ¿Veinte? Yo vendo quince gritando desde las seis."],
-		["DOÑA ROSA", "—Tome, para usted y para el perro. Y no vuelva a vender así, que me deja mal parada."],
-	])
-	TimeManager.skip(2.0)
-	GameState.add_money(6000)
-	GameState.add_item("empanada", 2)
+		["DOÑA ROSA", "—¡Por fin! Cuídeme el puesto, que tengo cita en el Seguro. No regale nada. Bueno, a los niños sí. A los policías no."]])
+	GameState.flags["f_puesto_hecho"] = true
+	SceneRouter.go("res://scenes/world/Puesto.tscn")  # el minijuego del puesto (antes solo se contaba)
 
 
 static func _samuel() -> bool:

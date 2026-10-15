@@ -1,8 +1,9 @@
 extends Node
 ## Cosas del barrio que se ponen por código (lo agrega Location en los lugares de afuera):
-##   - La tienda de VIDEOJUEGOS (City, al lado del billar) y el que la atiende: el único amigo que
-##     tiene. No tiene nombre: ninguno de los dos se lo ha preguntado al otro. Abre de 10 a 8.
-##     Lo que dice está en Conversations._amigo (npc_id "amigo").
+##   - LA CAVERNA DE GAMER, la tienda de videojuegos (City, al lado del billar), y Álvaro, "Al", que la
+##     atiende: el único amigo que tiene. Abre de 10 a 8. Lo que dice: Conversations._amigo.
+##   - Las canecas (trash_*, dumpster_*): se pueden esculcar (Conversations._caneca).
+##   - En la esquina de la avenida, sin postes en la mitad: los semáforos y las cebras son de Traffic.gd.
 ##   - José Mario Camilo, en el centro, en la puerta de La Empresa: su jefe de antes. Sale después de
 ##     que muere Lukas (de 7 a 6) y le ofrece el último trabajo que él hace (Conversations._ultimo_trabajo).
 ##   - Tom Queen, el padrino (el buhonero; "algunos me dicen el Lobo"): alguien que solo ve él. Alto,
@@ -65,6 +66,21 @@ func _ready() -> void:
 func _setup() -> void:
 	if _scene.name == "City":
 		_add_shop()
+		for pole in ["pole_426_300", "pole_864_300"]:  # (estaban metidos en la avenida)
+			var pn := _world.find_child(pole, false, false)
+			if pn:
+				pn.queue_free()
+	for n in _world.find_children("*", "", false, false):  # las canecas: esculcar
+		var nm := str(n.name)
+		if (nm.begins_with("trash_") or nm.begins_with("dumpster_")) and n is Node2D:
+			var spot := Area2D.new()
+			spot.set_script(load("res://scripts/world/ServiceSpot.gd"))
+			spot.name = "Caneca_" + nm
+			spot.service_id = "caneca"
+			spot.hint = "ESCULCAR"
+			spot.area = Vector2(22, 16)
+			spot.position = (n as Node2D).position + Vector2(0, 8)
+			_world.add_child(spot)
 	var f := GameState.flags
 	var h := fmod(TimeManager.minutes / 60.0, 24.0)
 	if _scene.name == "Centro" and not GameState.lukas_alive() and GameState.day > int(f.get("lukas_muerto", GameState.day)) \
@@ -147,13 +163,13 @@ func _add_shop() -> void:
 	shop.name = "videojuegos"
 	shop.texture = load("res://assets/barrio/videojuegos.png")
 	shop.centered = false
-	shop.offset = Vector2(-50, -60)
+	shop.offset = Vector2(-55, -70)
 	shop.position = SHOP_AT
 	_world.add_child(shop)
 	var body := StaticBody2D.new()
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
-	rect.size = Vector2(98, 26)
+	rect.size = Vector2(108, 26)
 	shape.shape = rect
 	shape.position = Vector2(0, -14)
 	body.add_child(shape)

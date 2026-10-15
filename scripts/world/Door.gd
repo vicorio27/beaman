@@ -73,10 +73,20 @@ func _physics_process(_delta: float) -> void:
 		_use(false)
 
 
+## Los negocios tienen horario: [abre, cierra]. Cerrado, la puerta no se abre.
+const HOURS := {"Bakery.tscn": [6, 21], "Cafe.tscn": [6, 22]}
+
+
 func _use(asked: bool) -> void:
 	# Puertas con algo para entregar (el pedido de Marta, la carta de Samuel).
 	if Conversations.door_hook(name):
 		return
+	for k in HOURS:
+		if target_scene.ends_with(k):
+			var h := TimeManager.hour()
+			if h < HOURS[k][0] or h >= HOURS[k][1]:
+				Narrator.say("(Cerrado. Abre a las %d. Por la vidriera se ven las sillas encima de las mesas, patas arriba, como perros dormidos.)" % HOURS[k][0])
+				return
 	if target_scene != "":
 		SceneRouter.go(target_scene, target_spawn)
 	elif shove and (asked or not _told):

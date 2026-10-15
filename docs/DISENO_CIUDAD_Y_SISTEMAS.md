@@ -225,7 +225,7 @@ muestra o se publica, no hay datos reales de nadie).
 | **Brenda** (su mamá) | Cuando se enteró, se fue a Ibagué y lo dejó solo | Que lo abandonen cuando más lo necesita |
 | **Mauricio** (su papá) | Se fue cuando él tenía 15; le dice a todos que todavía los ve | La mentira de que alguien está, sin estar |
 | **José Mario Camilo** (su jefe) | Le contó a la empresa su problema con las drogas; todos lo miran con asco | La vergüenza |
-| **Clínica Irene** (salud mental) | Filtró sus datos | No poder confiar ni en quien lo tiene que cuidar |
+| **Clínica Eiren** (salud mental) | Filtró sus datos | No poder confiar ni en quien lo tiene que cuidar |
 | **Zaida** | Fue su amiga; intentó manipularlo | Ser manipulado. **Jefa ambigua** (ver abajo) |
 | **Los rappitenderos** (app "Rapidito") | Los sentía siguiéndolo | Sentirse vigilado (ver abajo) |
 
@@ -235,7 +235,7 @@ muestra o se publica, no hay datos reales de nadie).
 |---|---|---|---|
 | 1 | Beat 'em up | El Tuerto (callejón) | **Lilato → serpiente** |
 | 2 | Carreras | Rappitenderos en moto (persecución) | **Lisandro** (te persigue para matarte) |
-| 3 | Sigilo | José Mario Camilo (la oficina: que no te vean) | **Clínica Irene** (sacar tu expediente) |
+| 3 | Sigilo | José Mario Camilo (la oficina: que no te vean) | **Clínica Eiren** (sacar tu expediente) |
 | 4 | Plataformas / huida | Guillermo | **Camila** |
 | 5 | Ritmo / baile, o casa embrujada | Mauricio (aparece y desaparece: "todavía los veo") | **Brenda** (la casa que se vacía) |
 | 6 | Conversación / juicio | — | **Zaida** (ambigua) |
@@ -430,7 +430,7 @@ Lilato, que es el jefe final del sueño, acá aparece antes de todo, cuando la q
 - **Fotos tipo documento** en Foto Express, en el centro: $8.000, y solo si está limpio.
 - **Una dirección**, de una de dos maneras:
   - **Germán:** *"Déjeme hablarlo con mi señora. Venga mañana."* Al día siguiente se la da anotada en una bolsa de pan: *"Si le llega correspondencia, se la guardo con el pan."*
-  - **Zaida:** aparece "por casualidad" frente a la Registraduría. Sabe lo de la Clínica Irene y que necesita una dirección, aunque él no se lo dijo. Ofrece la suya y una cita sin fila para el día siguiente. Si aceptás, `flags.zaida_favor` queda como deuda para más adelante: *"Yo te encuentro. Siempre te encuentro."*
+  - **Zaida:** aparece "por casualidad" frente a la Registraduría. Sabe lo de la Clínica Eiren y que necesita una dirección, aunque él no se lo dijo. Ofrece la suya y una cita sin fila para el día siguiente. Si aceptás, `flags.zaida_favor` queda como deuda para más adelante: *"Yo te encuentro. Siempre te encuentro."*
 
 **El viaje:** al centro se llega desde el paradero de la plaza: bus $2.500 (20 min) o caminando (1 hora, gratis).
 
@@ -560,7 +560,7 @@ Cada sueño terminado deja una habilidad. Son 4 en los primeros niveles y despu�
 | Día 5 | 3 | Beat 'em up | 2 | Camila y Guillermo |
 | (por hacer) | 4 | PLOMO | 2: "La Empresa" | José Mario Camilo |
 | (por hacer) | 5 | Beat 'em up | 3: la terminal | Brenda |
-| (por hacer) | 6 | PLOMO | 3: Clínica Irene | (Zaida, ambigua) |
+| (por hacer) | 6 | PLOMO | 3: Clínica Eiren | (Zaida, ambigua) |
 
 **Beat 'em up, episodio 2 (sueño 3):**
 - *"ANTERIORMENTE... La serpiente cayó al río. Y él cayó con ella."*
@@ -585,7 +585,7 @@ Cada sueño terminado deja una habilidad. Son 4 en los primeros niveles y despu�
   - Mini jefa: Recursos Humanos, que tiene la tarjeta de acceso.
   - Jefe: **José Mario Camilo**, que tira chismes. *"—Yo solo conté la verdad. ¿O no consumía?"* / *"—Usted no era el problema. Yo necesitaba uno."*
   - Al final, la salida da a un pasillo blanco que huele a hospital.
-- **PLOMO 3: "Clínica Irene"**.
+- **PLOMO 3: "Clínica Eiren"**.
   - Enemigos: enfermeros con jeringa, archivistas que tiran papeles y guardas.
   - Mini jefa: Lilato (*"Tomá la llave. Ya que ahora te querés curar..."*).
   - Jefe: **El Expediente**, un monstruo hecho de su historia clínica (*"Datos: compartidos. Con una tal Zaida."*). Él le contesta: *"No soy un expediente. Soy un tipo con un perro."*
@@ -696,7 +696,7 @@ Medición en la ciudad (objetos que no son de favores): Día 1: 16 visibles y 3 
 | 2, PLOMO 1 (Lisandro) | Sangre fría |
 | 3, beat 'em up 2 (Camila y Guillermo) | Labia |
 | 4, PLOMO 2 (José Mario) | Rebusque |
-| 5, PLOMO 3 (Clínica Irene) | Lazo con Lukas |
+| 5, PLOMO 3 (Clínica Eiren) | Lazo con Lukas |
 | 6, beat 'em up 3 (Brenda) **— por hacer** | **Cocinero de calle**: la mamá se fue y aprendió a cocinarse solo |
 | 7, el sueño de Mauricio **— por hacer** | **Paso firme**: el papá se fue cuando él tenía 15 y aprendió a caminar solo |
 
@@ -1716,7 +1716,7 @@ Probado: cada versión de cada evento con cada opción, sin errores. La ruta con
 
 **Él no habla, ni por dentro.** Se quitaron todas sus líneas ("ÉL" y "ÉL, A LUKAS") de la vida real y de los sueños, unas 250. Lo que llevaba información quedó como narración en tercera persona:
 - el rayón de la moto lo hizo él;
-- lo de la Clínica Irene no lo sabe nadie;
+- lo de la Clínica Eiren no lo sabe nadie;
 - el clavel es para Victoria, que cumple doce el 29 de octubre;
 - la mano es la misma de su papá;
 - el paquete de Zaida no era harina.
@@ -1928,3 +1928,17 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **Cómo es José Mario Camilo:** medio calvo; se hizo implantes y le están saliendo a parches. Chivera. Dientes torcidos. Tira la piedra y esconde la mano: nada lo decide él (lo dice nómina, seguridad, el inventario, el protocolo), y "si alguien pregunta, yo a usted hoy no lo vi". Su retrato lo muestra así; el muñeco del mapa todavía es el de antes.
 - **El buhonero, el que solo ve él** (`Conversations._buhonero`, lo pone `Vecindario.gd`): "Me dicen el Lobo. Yo no vendo: yo soluciono." Desde el día 3 sale algunos días en un sitio solo del barrio (30% al principio; 5% más por cada vez que lo ha visto, hasta 75%). Le "hace" favores: el hambre, $15.000, que esa noche no lo toquen, la fiebre de Lukas. No recibe plata: verlo cuesta 1 de locura y un trato 3, y con la locura se le borran las caras a los demás (`GameState.sameness`). Entre más lo busca, más sale y más solo queda. Lo de Lukas viejo no lo arregla: "eso no es un problema, eso es el tiempo". Los favores van entre comillas: después de cada uno queda una pista de quién lo hizo de verdad (el almuerzo era de alguien, a Germán le faltan quince mil en la caja, queda un palo del tamaño de su mano, una jeringa de la Dra. Pilar en el bolsillo). Nunca se dice.
 - **El buhonero es Tom Queen, el padrino** (manda sobre lo anterior): alto, bigote blanco, sombrero negro, todo de negro. Le dice "ahijado"; se presenta como su padrino ("los padrinos aparecen cuando hay problemas") y "algunos me dicen el Lobo". En el mapa sale más alto y oscuro que los demás; su retrato es `tomqueen.png`, con la placa "el padrino".
+
+## Tanda de arreglos (pedidos del 15 de octubre)
+- **La tienda se llama LA CAVERNA DE GAMER** (el canal de un amigo del usuario). El que atiende es Álvaro, pero le gusta que le digan **Al**.
+- **El pan:** $600 (el de ayer, "duro pero honrado").
+- **Victoria:** nació con 2.810 gramos y 51 centímetros. Le gusta el morado con negro; lo rosado es de Lorena.
+- **Zaida:** pelirroja, gordita, blanca, de ojos grandes (como Lorena).
+- **La clínica se llama Eiren.**
+- **El puesto de doña Rosa:** el encargo del día también lleva al minijuego (antes solo se contaba).
+- **Horarios:** la panadería abre de 6 a 9 de la noche y el café de 6 a 10; cerrados, la puerta no abre. Doña Rosa recoge el puesto a las ocho.
+- **Verónica:** si él insiste (la quinta vez), le dice una vez "David Lisandro". Una vez, y ya.
+- **La veterinaria:** la coca de Lukas también con Lukas enfermo, antes de lo demás.
+- **Las canecas:** se esculcan una vez al día: comida, monedas, nada... o una rata (15%).
+- **La esquina:** sin postes en la avenida; semáforo (verde, amarillo, rojo) y cebras. Los carros frenan en la raya. Si uno se les atraviesa, pitan con groserías.
+- **El tiempo jugado** se cuenta (`GameState.play_time_text`) y sale al final, con el FIN.

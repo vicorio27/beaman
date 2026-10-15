@@ -17,7 +17,7 @@ const NIGHT_TO := 5.5
 
 ## Lo que solo está de día (por el comienzo del nombre del nodo).
 const DAY_ONLY := {
-	"City": ["pelaos_"],
+	"City": ["pelaos_", "Rosa"],  # (doña Rosa recoge el puesto a las ocho)
 	"Parque": ["palomas_", "Servicio_palomas", "Fabiola", "Leonor", "Efrain", "Viejos", "Viejo 2", "Aurelio"],
 }
 ## Gente de noche: [npc_id, fila, posición, mira, ruta (opcional)].

@@ -325,7 +325,7 @@ def eye(b, g, ex, ey, w, near, sk):
         b.line([(ex - w + 2, ey + 3), (ex + w - 3, ey + 3)], mix(mid, dark, 0.6))
         return
     white = EYE_WHITE if not p.get("destruido") else (240, 208, 202)
-    rows = 3 if p.get("nino") else 2
+    rows = 3 if p.get("nino") or p.get("ojos_grandes") else 2
     for r in range(rows):
         cut_ = 1 if r == rows - 1 else 0
         b.line([(ex - w + 1 + cut_, ey + r), (ex + w - 2 - cut_, ey + r)], white)
@@ -705,12 +705,12 @@ CAST = {
     "samuel": {"destruido": True, "piel": "media", "pelo": "corto", "pelo_color": (150, 146, 140), "barba": True,
                "barba_color": (200, 196, 190), "viejo": True, "sombrero": "gorra", "sombrero_color": (150, 50, 40),
                "ropa": (110, 84, 60), "tipo": "saco", "camisa": (70, 66, 64), "fondo": (100, 80, 60)},
-    "victoria": {"nino": True, **M, "piel": "clara", "pelo": "largo", "pelo_color": (70, 44, 34), "ropa": (240, 140, 170),
-                 "tipo": "camiseta", "fondo": (230, 170, 80), "chiquita": True, "cachetes": True,
-                 "moño_pelo": (230, 80, 120), "sonrisa": True},
-    "zaida": {**M, "piel": "morena", "pelo": "largo", "pelo_color": (24, 20, 28), "ropa": (120, 70, 140),
+    "victoria": {"nino": True, **M, "piel": "clara", "pelo": "largo", "pelo_color": (70, 44, 34), "ropa": (112, 66, 160),
+                 "tipo": "camiseta", "fondo": (150, 100, 210), "chiquita": True, "cachetes": True,
+                 "moño_pelo": (40, 30, 50), "sonrisa": True},
+    "zaida": {**M, "piel": "clara", "pelo": "melena", "pelo_color": (200, 86, 42), "gordo": True, "ojos_grandes": True, "ropa": (120, 70, 140),
               "tipo": "vestido", "labios": (120, 40, 70), "fondo": (90, 60, 130), "arete": True,
-              "chal": (160, 110, 190), "ojos": "cerrados"},
+              "chal": (160, 110, 190)},
     "pilar": {**M, "piel": "clara", "pelo": "melena", "pelo_color": (110, 80, 60), "gafas": "claras",
               "ropa": (240, 240, 236), "tipo": "bata", "camisa": (120, 170, 200), "fondo": (80, 140, 150),
               "labios": (190, 100, 100)},
@@ -719,7 +719,7 @@ CAST = {
                   "labios": (140, 60, 70)},
     "celador": {"piel": "media", "pelo": "corto", "bigote": True, "sombrero": "gorra", "sombrero_color": (40, 50, 80),
                 "ropa": (44, 52, 84), "tipo": "uniforme", "camisa": (170, 200, 228), "fondo": (60, 70, 100)},
-    "lilato": {**M, "piel": "clara", "pelo": "linda", "pelo_color": (112, 70, 40), "ropa": (246, 140, 176),
+    "lilato": {**M, "ojos_grandes": True, "piel": "clara", "pelo": "linda", "pelo_color": (112, 70, 40), "ropa": (246, 140, 176),
                "tipo": "vestido", "labios": (214, 40, 80), "cachetes": True, "moño_pelo": (236, 72, 132),
                "fondo": (220, 110, 160), "chiquita": True},
     "brenda": {**M, "piel": "negra", "pelo": "afro", "pelo_color": (28, 24, 26), "canas_afro": True,

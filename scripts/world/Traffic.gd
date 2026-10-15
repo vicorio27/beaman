@@ -31,6 +31,68 @@ var _jam := 0.0          # cuánto lleva él parando el tráfico
 var _jam_now := false    # este cuadro, ¿alguien frenó por él?
 var _jam_lane := 0
 var _busted := false
+## El semáforo de la esquina (la avenida con la calle): verde para uno, amarillo, rojo; el otro al revés.
+## Los carros frenan en la raya; el que viene detrás frena por el de adelante.
+const CYCLE := [["avenida", 9.0], ["amarillo_a", 2.0], ["calle", 7.0], ["amarillo_c", 2.0]]
+var _light := 0
+var _light_t := 0.0
+var _lamps: Array = []
+
+
+func _ready() -> void:
+	# Las cebras: dos cruzando la avenida (a los lados de la calle) y una cruzando la calle.
+	var zebra := Node2D.new()
+	zebra.name = "Cebras"
+	zebra.z_index = 0  # (en el World ordenado por altura, en y = 0: debajo de todo lo que camina)
+	zebra.draw.connect(func() -> void:
+		var white := Color(0.92, 0.92, 0.88, 0.85)
+		for x0 in [428.0, 502.0]:
+			for k in 7:
+				zebra.draw_rect(Rect2(x0, 226.0 + k * 9.0, 16.0, 5.0), white)
+		for k in 6:
+			zebra.draw_rect(Rect2(451.0 + k * 8.0, 296.0, 4.0, 14.0), white))
+	add_child(zebra)
+	# Los semáforos, en las esquinas.
+	for spec in [[Vector2(442, 214), "calle"], [Vector2(508, 214), "avenida"], [Vector2(442, 302), "avenida"], [Vector2(508, 302), "calle"]]:
+		var lamp := Node2D.new()
+		lamp.position = spec[0]
+		lamp.set_meta("for", spec[1])
+		lamp.draw.connect(_draw_lamp.bind(lamp))
+		get_parent().add_child.call_deferred(lamp)
+		_lamps.append(lamp)
+
+
+func _draw_lamp(lamp: Node2D) -> void:
+	var dark := Color(0.16, 0.16, 0.2)
+	lamp.draw_rect(Rect2(-1, -30, 2, 30), dark)
+	lamp.draw_rect(Rect2(-3, -42, 6, 13), Color(0.1, 0.1, 0.12))
+	var st := _state_for(str(lamp.get_meta("for")))
+	var cols := [Color(1, 0.2, 0.2), Color(1, 0.8, 0.2), Color(0.3, 1, 0.4)]
+	for k in 3:
+		var on: bool = (st == "rojo" and k == 0) or (st == "amarillo" and k == 1) or (st == "verde" and k == 2)
+		lamp.draw_rect(Rect2(-1.5, -40.5 + k * 4, 3, 3), cols[k] if on else cols[k].darkened(0.75))
+
+
+## "verde", "amarillo" o "rojo" para la avenida o para la calle.
+func _state_for(road: String) -> String:
+	var st: String = CYCLE[_light][0]
+	if st == road:
+		return "verde"
+	if st == "amarillo_" + road.left(1):
+		return "amarillo"
+	return "rojo"
+
+
+## ¿Este carro tiene que frenar en la raya?
+func _red_light(lane_i: int, s: Node2D) -> bool:
+	match lane_i:
+		0:
+			return _state_for("avenida") != "verde" and s.position.x > 532.0 and s.position.x < 546.0
+		1:
+			return _state_for("avenida") != "verde" and s.position.x > 398.0 and s.position.x < 412.0
+		3:
+			return _state_for("calle") != "verde" and s.position.y > 332.0 and s.position.y < 346.0
+	return false
 
 
 func _process(delta: float) -> void:
@@ -43,6 +105,13 @@ func _process(delta: float) -> void:
 			if night:
 				_timers[i] *= 3.0
 			_spawn(i)
+	_light_t += delta
+	if _light_t >= CYCLE[_light][1]:
+		_light_t = 0.0
+		_light = (_light + 1) % CYCLE.size()
+		for lamp in _lamps:
+			if is_instance_valid(lamp):
+				lamp.queue_redraw()
 	_jam_now = false
 	for m in _movers.duplicate():
 		_move(m, delta)
@@ -91,6 +160,9 @@ func _move(m: Dictionary, delta: float) -> void:
 	var s: AnimatedSprite2D = m["node"]
 	var lane: Array = LANES[m["lane"]]
 	var dir: Vector2 = lane[0]
+	if _red_light(m["lane"], s):  # el semáforo
+		s.pause()
+		return
 	if _blocked(s, dir):
 		s.pause()
 		if not m["honked"]:
@@ -174,7 +246,7 @@ func _honk(s: Node2D) -> void:
 	if not s.is_inside_tree():
 		return
 	var l := Label.new()
-	l.text = ["¡PIIIP!", "¡PIP PIP!", "¡MUÉVASE!"].pick_random()
+	l.text = ["¡PIIIP!", "¡QUÍTESE, GÜEVÓN!", "¡ABRA, PIROBO!", "¡¿SE VA A MATAR O QUÉ?!", "¡MUÉVASE, HP!", "¡LA CALLE NO ES SUYA!", "¡ÑERO, ABRA!"].pick_random()
 	l.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 	l.add_theme_font_size_override("font_size", 8)
 	l.add_theme_constant_override("outline_size", 3)

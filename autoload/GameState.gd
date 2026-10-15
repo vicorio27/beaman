@@ -77,7 +77,7 @@ var flags := {}
 ## Hay alguna ventana abierta (mochila, diálogo): el jugador no se mueve y el reloj se frena.
 var ui_open := false
 ## Estadísticas del día (para el resumen al dormir).
-var stats := {"money_earned": 0, "food_eaten": 0}
+var stats := {"money_earned": 0, "food_eaten": 0, "segundos": 0.0}
 var _block_until := 0
 
 
@@ -95,6 +95,17 @@ func _ready() -> void:
 	new_game()
 
 
+## El tiempo jugado de verdad (segundos de reloj, mientras corre el juego). Sale al final.
+func _process(delta: float) -> void:
+	if not get_tree().paused:
+		stats["segundos"] = float(stats.get("segundos", 0.0)) + delta
+
+
+func play_time_text() -> String:
+	var t := int(stats.get("segundos", 0.0))
+	return "%d h %02d min" % [t / 3600, (t / 60) % 60]
+
+
 func new_game() -> void:
 	money = 0
 	hunger = 80.0
@@ -108,7 +119,7 @@ func new_game() -> void:
 	day = 1
 	flags = {}
 	quests = {}
-	stats = {"money_earned": 0, "food_eaten": 0}
+	stats = {"money_earned": 0, "food_eaten": 0, "segundos": 0.0}
 	# Día 1.
 	for id in ["conseguir_comida", "latas", "cartones", "lukas_olfato", "lo_bueno"]:
 		quests[id] = "active"
