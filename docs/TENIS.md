@@ -99,6 +99,31 @@ Los atributos van de 1 a 10.
 
 El motor no se toca, salvo que la habilidad necesite un tipo de contra nuevo. En ese caso se agrega en `counter_rule()`.
 
+## El dibujo
+
+**Los tenistas** salen de `tools/art/draw_tenistas.py` y quedan en `assets/tenis/<id>.png`.
+- Celdas de 32x42 con los pies en (16, 40). La fila 0 es de espaldas (el de abajo) y la fila 1 de frente (el de arriba).
+- Hay 20 poses: listo (2), correr (4), drive (preparar, pegar, terminar), revés (lo mismo), saque (lanzar, pegar, terminar), tirada, en el piso, celebra, lamentarse y dejada.
+- Cada pose es un esqueleto que se pinta con piezas de 2 px. Después va el contorno del juego y encima, a mano, lo de cada uno:
+  - Bublikov: altísimo, despeinado, raya negra.
+  - Sabalenkova: cola mona, falda y el tigre en el antebrazo.
+  - Monfiz: piel oscura, balaca, camiseta amarilla con el costado negro.
+  - Yokovich: cuello blanco y franja azul.
+
+`TenisMatch._pose()` escoge la pose según la cancha:
+- Un golpe reciente: drive o revés según el lado de la pelota.
+- La pelota que llega: prepara.
+- El saque, la estirada, el piso.
+- Correr o estar listo.
+- Después del punto: celebrar (ganador o ace) o lamentarse (error no forzado).
+
+**El coliseo** sale de `tools/art/draw_tenis_coliseo.py` y queda en `assets/tenis/coliseo.png`, más `coliseo_grita.png` con el público de pie.
+- La cancha va en perspectiva: de 6.6 px por metro en el fondo a 8.6 en el frente, y 4.6 a lo largo. Es la misma cuenta de `TenisMatch.w2s`; si se cambia en un lado, se cambia en el otro.
+- Tiene tribunas con gradas, pasillos y puestos vacíos, la tribuna del fondo, las vallas con los patrocinadores del barrio (la Caverna del Gamer, la panadería de Don Germán), los reflectores y la silla del juez.
+- La gente se para después de un ganador, de un peloteo largo o cuando se cierra un juego.
+
+**El tablero**, arriba a la izquierda, muestra por jugador el nombre, los juegos y los puntos (0, 15, 30, 40, AD), el cansancio y el medidor de la habilidad. Una pelotica marca quién saca.
+
 ## Las pruebas
 
 Todas corren sin ventana:
@@ -132,7 +157,7 @@ Todas corren sin ventana:
 
 ## Lo que falta
 
-- **El dibujo de los tenistas:** ahora son muñecos de prueba. También la cancha y el público.
+- **El dibujo que falta:** los recogebolas (él), las caras de cerca para los diálogos y un público que se mueva más.
 - **La música:** rock original.
 - **Los otros seis:** Moutet, Tiafoe, Shelton, Kyrgios, Sinner y Federer.
 - **El cuadro del torneo.**
