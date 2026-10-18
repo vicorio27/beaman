@@ -42,7 +42,7 @@ const PLAYERS := {
 	# sube el error, y el peloteo largo y normal lo aburre.
 	"bublikov": {"name": "Alexander Bublikov", "short": "BUB", "color": Color(0.55, 0.75, 0.95), "hand": "right",
 		"title": "El agente del caos",
-		"attr": {"power": 9, "precision": 7, "defense": 7, "touch": 9, "composure": 6, "chaos": 7},
+		"attr": {"power": 9, "precision": 6.75, "defense": 7, "touch": 9, "composure": 6, "chaos": 8},
 		"traits": {"trick_tax": 0.15, "boredom": 0.02, "underarm": 0.35},
 		"ai": {"shots": {"drive": 1.0, "slice": 0.7, "lob": 0.3, "drop": 0.22}, "risk": 0.7, "home_depth": 0.5,
 			"return_depth": 0.8, "style": {"drop": 0.08}},
@@ -51,7 +51,7 @@ const PLAYERS := {
 	# se le descuadra.
 	"sabalenkova": {"name": "Aryna Sabalenkova", "short": "SAB", "color": Color(0.95, 0.5, 0.6), "hand": "right",
 		"title": "La artillería",
-		"attr": {"power": 10, "precision": 6, "defense": 5, "touch": 3, "composure": 5, "chaos": 3},
+		"attr": {"power": 10, "precision": 5.75, "defense": 5, "touch": 3, "composure": 5, "chaos": 3},
 		"traits": {"lateral_tax": 0.3},
 		"ai": {"shots": {"drive": 1.0, "slice": 0.12, "lob": 0.05, "drop": 0.03}, "risk": 0.75, "home_depth": 0.95,
 			"return_depth": 0.0, "style": {"drive": 0.1}},
@@ -60,7 +60,7 @@ const PLAYERS := {
 	# desde la tribuna (el saque por abajo lo mata).
 	"monfiz": {"name": "Gaël Monfiz", "short": "MON", "color": Color(0.95, 0.85, 0.35), "hand": "right",
 		"title": "El acróbata",
-		"attr": {"power": 6, "precision": 5, "defense": 9, "touch": 6, "composure": 5, "chaos": 6},
+		"attr": {"power": 6, "precision": 4.75, "defense": 9, "touch": 6, "composure": 6, "chaos": 6},
 		"traits": {"drain": 0.3},
 		"ai": {"shots": {"drive": 1.0, "slice": 0.25, "lob": 0.7, "drop": 0.08}, "risk": 0.45, "home_depth": 0.35,
 			"return_depth": 2.6, "style": {"lob": 0.13}},
@@ -69,15 +69,64 @@ const PLAYERS := {
 	# que lo gana es la variedad: el que le repite, le da de comer.
 	"yokovich": {"name": "Novak Yokovich", "short": "YOK", "color": Color(0.9, 0.3, 0.3), "hand": "right",
 		"title": "El devorador de esperanzas",
-		"attr": {"power": 3, "precision": 4, "defense": 6, "touch": 3, "composure": 7, "chaos": 3},
+		"attr": {"power": 3, "precision": 5, "defense": 6, "touch": 3, "composure": 7, "chaos": 3},
 		"traits": {"return_k": 0.93},
 		"ai": {"shots": {"drive": 1.0, "slice": 0.6, "lob": 0.15, "drop": 0.1}, "risk": 0.5, "home_depth": 0.55,
 			"return_depth": 0.5, "style": {"slice": 0.05}},
 		"ability": "todavia_no"},
+	# El provocador: cambia el ritmo, deja, corta, y se queja de todo. Cuando no manda, se pierde.
+	"moutette": {"name": "Corentin Moutette", "short": "MOU", "color": Color(0.5, 0.78, 0.95), "hand": "left",
+		"title": "El provocador",
+		"attr": {"power": 5, "precision": 7, "defense": 6, "touch": 9, "composure": 5, "chaos": 8},
+		"traits": {"rhythm_need": 0.1},
+		"ai": {"shots": {"drive": 1.0, "slice": 0.8, "lob": 0.3, "drop": 0.6}, "risk": 0.55, "home_depth": 0.5,
+			"return_depth": 0.6, "style": {"drop": 0.08, "slice": 0.04}},
+		"ability": "queja"},
+	# El showman: ataque y público. Un ganador lo prende; si se lo neutralizan, se apaga.
+	"tiafuego": {"name": "Frances Tiafuego", "short": "TIA", "color": Color(0.6, 0.9, 0.35), "hand": "right",
+		"title": "El showman",
+		"attr": {"power": 5, "precision": 4.5, "defense": 4, "touch": 6, "composure": 4, "chaos": 5},
+		"traits": {},
+		"ai": {"shots": {"drive": 1.0, "slice": 0.25, "lob": 0.1, "drop": 0.1}, "risk": 0.75, "home_depth": 0.7,
+			"return_depth": 0.3, "style": {"drive": 0.08}, "wide": 0.1},
+		"ability": "vamos"},
+	# El lanzacohetes: zurdo, el saque más rápido del torneo. El segundo saque y la defensa, flojos.
+	"sheltron": {"name": "Ben Sheltron", "short": "SHE", "color": Color(0.98, 0.6, 0.25), "hand": "left",
+		"title": "El lanzacohetes",
+		"attr": {"power": 10, "precision": 5.75, "defense": 5, "touch": 4, "composure": 5, "chaos": 4},
+		"traits": {"second_tax": 0.25, "defense_tax": 0.25},
+		"ai": {"shots": {"drive": 1.0, "slice": 0.2, "lob": 0.08, "drop": 0.05}, "risk": 0.7, "home_depth": 0.8,
+			"return_depth": 0.2, "style": {"drive": 0.1}, "wide": 0.14},
+		"ability": "llamada"},
+	# El volátil: todo el talento, cero paciencia. Se prende, y si el punto se alarga, se calienta.
+	"kyrgistan": {"name": "Nick Kyrgistán", "short": "KYR", "color": Color(0.9, 0.25, 0.3), "hand": "right",
+		"title": "El volátil",
+		"attr": {"power": 8, "precision": 4, "defense": 5, "touch": 6, "composure": 2, "chaos": 7},
+		"traits": {},
+		"ai": {"shots": {"drive": 1.0, "slice": 0.3, "lob": 0.1, "drop": 0.3}, "risk": 0.8, "home_depth": 0.6,
+			"return_depth": 0.4, "style": {"drive": 0.05, "drop": 0.1}},
+		"ability": "modo_k"},
+	# El compilador: profundo, limpio, siempre igual. Lo que lo saca es que le cambien la secuencia.
+	"pecador": {"name": "Jannik Pecador", "short": "PEC", "color": Color(0.98, 0.55, 0.3), "hand": "right",
+		"title": "El compilador",
+		"attr": {"power": 6, "precision": 6.75, "defense": 6, "touch": 4, "composure": 8, "chaos": 1},
+		"traits": {},
+		"ai": {"shots": {"drive": 1.0, "slice": 0.15, "lob": 0.05, "drop": 0.03}, "risk": 0.45, "home_depth": 0.6,
+			"return_depth": 0.4, "style": {"drive": 0.12}, "depth": 0.08},
+		"ability": "ejecucion"},
+	# El artista: toque, cortado, cambio de ritmo y la subida a la red. Apurado y por el revés, sufre.
+	"fedorer": {"name": "Roger Fedorer", "short": "FED", "color": Color(0.95, 0.95, 0.92), "hand": "right",
+		"title": "El artista",
+		"attr": {"power": 6, "precision": 4.5, "defense": 6, "touch": 10, "composure": 6, "chaos": 4},
+		"traits": {"backhand_tax": 0.45},
+		"ai": {"shots": {"drive": 1.0, "slice": 0.6, "lob": 0.15, "drop": 0.25}, "risk": 0.6, "home_depth": 0.65,
+			"return_depth": 0.3, "style": {"slice": 0.06, "drop": 0.03}},
+		"ability": "firma"},
 }
 
-## Los de la tajada vertical (los que ya tienen todo): el torneo usa esta lista.
-const ROSTER := ["bublikov", "sabalenkova", "monfiz", "yokovich"]
+## Los del torneo, en el orden del selector.
+const ROSTER := ["bublikov", "sabalenkova", "monfiz", "yokovich", "moutette", "tiafuego", "sheltron", "kyrgistan",
+	"pecador", "fedorer"]
 
 ## Dificultad de la máquina: no le cambia los atributos; le cambia qué tan rápido reacciona, qué tan
 ## bien decide, qué tan limpio ejecuta y qué tan seguido le juega la contra a la habilidad del otro.

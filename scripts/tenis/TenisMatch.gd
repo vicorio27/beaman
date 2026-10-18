@@ -46,6 +46,7 @@ var _run_d := [0.0, 0.0]  # lo que lleva corrido (para el paso)
 var _picking := -1  # escogiendo: 0 el tenista, 1 el rival (-1: jugando)
 var _pick := [0, 1]
 var _pick_ls: Array = []
+var _pick_title: Label
 
 
 func _ready() -> void:
@@ -100,19 +101,21 @@ func _build_picker() -> void:
 		var path := "res://assets/tenis/%s.png" % id
 		if ResourceLoader.exists(path):
 			_sheets[id] = load(path)
-	var head := _label(Vector2(0, 14), Color(1, 0.9, 0.5))
+	var head := _label(Vector2(0, 10), Color(1, 0.9, 0.5))
 	head.size = Vector2(Controls.right_edge(), 10)
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pick_ls.append(head)
+	# Un nombre por fila; el apodo del marcado va abajo (y él, grande, a la derecha).
 	for i in TenisData.ROSTER.size():
 		var d: Dictionary = TenisData.player(TenisData.ROSTER[i])
-		var n := _label(Vector2(40, 38 + i * 28), d["color"])
+		var n := _label(Vector2(30, 28 + i * 12), d["color"])
 		n.text = d["name"]
-		var t := _label(Vector2(40, 48 + i * 28), Color(0.7, 0.72, 0.8))
-		t.text = d["title"]
-		var arrow := _label(Vector2(26, 38 + i * 28), Color(1, 0.95, 0.75))
+		var arrow := _label(Vector2(18, 28 + i * 12), Color(1, 0.95, 0.75))
 		_pick_ls.append(arrow)
-	var foot := _label(Vector2(0, 160), Color(0.85, 0.9, 1.0))
+	_pick_title = _label(Vector2(0, 154), Color(0.75, 0.78, 0.86))
+	_pick_title.size = Vector2(Controls.right_edge(), 10)
+	_pick_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var foot := _label(Vector2(0, 168), Color(0.85, 0.9, 1.0))
 	foot.size = Vector2(Controls.right_edge(), 10)
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	foot.text = "FLECHAS: CAMBIAR   E: ESCOGER"
@@ -124,6 +127,7 @@ func _update_picker() -> void:
 	for i in TenisData.ROSTER.size():
 		var a: Label = _pick_ls[1 + i]
 		a.text = ">" if i == _pick[_picking] else ("·" if _picking == 1 and i == _pick[0] else "")
+	_pick_title.text = TenisData.player(TenisData.ROSTER[_pick[_picking]])["title"]
 
 
 func _picker_input() -> void:
@@ -210,7 +214,7 @@ func _on_event(kind: String, d: Dictionary) -> void:
 			elif k == "drop":
 				_anim[p.idx] = {"seq": ["dejada"], "cuts": [], "t": 0.0, "len": 0.35}
 			else:
-				var fore: bool = (sim.ball.x - p.pos.x) * p.sign >= 0.0 and k != "slice"
+				var fore: bool = sim.on_forehand(p) and k != "slice"
 				var a := "drive" if fore else "reves"
 				_anim[p.idx] = {"seq": [a, a + "_fin"], "cuts": [0.09], "t": 0.0, "len": 0.38}
 		"point":
@@ -288,7 +292,7 @@ func _draw() -> void:
 			if tex != null:
 				var t := Time.get_ticks_msec() / 1000.0
 				var col := POSES.find("listo" if fmod(t, 0.8) < 0.4 else "listo2")
-				draw_texture_rect_region(tex, Rect2(Vector2(254, 52), CELL * 2), Rect2(Vector2(col * CELL.x, CELL.y), CELL))
+				draw_texture_rect_region(tex, Rect2(Vector2(240, 40), CELL * 2), Rect2(Vector2(col * CELL.x, CELL.y), CELL))
 		return
 	var hw := TenisData.HALF_W
 	var hl := TenisData.HALF_L
@@ -376,7 +380,7 @@ func _pose(p) -> String:
 	if sim.live and sim.last_hitter != p.idx and sim.ball.y * p.sign > 0.0:
 		var dist := Vector2(sim.ball.x, sim.ball.y).distance_to(p.pos)
 		if dist < p.reach() * 2.6:
-			return "drive_atras" if (sim.ball.x - p.pos.x) * p.sign >= 0.0 else "reves_atras"
+			return "drive_atras" if sim.on_forehand(p) else "reves_atras"
 	if p.vel.length() > 0.7:
 		return "corre%d" % (1 + int(_run_d[p.idx] / 0.55) % 4)
 	return "listo" if fmod(sim.t, 0.8) < 0.4 else "listo2"

@@ -50,6 +50,10 @@ static func think(sim: TenisSim, idx: int) -> Dictionary:
 				var pick: float = opts[sim.rng.randi() % 3]
 				inp["aim"] = Vector2(pick * (0.6 + 0.4 * risk) if sim.serve_try == 1 else pick * 0.3, 0)
 				inp["ability"] = TenisAbilities.can_activate(sim, p, "serve") and _wants_ability(sim, p, o, "serve")
+		elif _countering(sim, p, o, "serve_deep"):
+			var back := TenisData.HALF_L + 1.8
+			if p.pos.y * p.sign < back:
+				inp["move"] = Vector2(0, p.sign)
 		return inp
 	if sim.state != "rally":
 		return inp
@@ -75,6 +79,8 @@ static func think(sim: TenisSim, idx: int) -> Dictionary:
 			inp["ability"] = true
 	else:
 		var home := Vector2(clampf(sim.ball.x * 0.45, -2.0, 2.0), p.sign * (TenisData.HALF_L + 2.5 - float(cfg.get("home_depth", 0.5)) * 3.0))
+		if _countering(sim, p, o, "stay_back"):
+			home.y = p.sign * (TenisData.HALF_L + 1.9)
 		# La contra del amague: quieto y al centro cuando el otro va a pegar con el medidor lleno.
 		if _countering(sim, p, o, "balanced") and sim.live:
 			if absf(p.pos.x) < 0.6:
@@ -176,6 +182,10 @@ static func _phi(x: float) -> float:
 ## su manera de jugar) y un poco de ruido según la dificultad.
 static func _choose(sim: TenisSim, p, o, cfg: Dictionary, inp: Dictionary) -> void:
 	var risk := _risk(p, cfg)
+	var safe := _countering(sim, p, o, "safe_ball")
+	var disrupt := _countering(sim, p, o, "disrupt")
+	var pressure := _countering(sim, p, o, "pressure")
+	var deep := _countering(sim, p, o, "deep_ball") or safe or pressure
 	var margin := lerpf(1.4, 0.35, risk)
 	var d: float = sim.difficulty(p)
 	var weights: Dictionary = cfg.get("shots", {"drive": 1.0})
@@ -198,6 +208,10 @@ static func _choose(sim: TenisSim, p, o, cfg: Dictionary, inp: Dictionary) -> vo
 		for lat in [-1.0, -0.4, 0.0, 0.4, 1.0]:
 			var tx: float = lat * (TenisData.HALF_W - margin)
 			var depth: float = shot["depth"]
+			if kind in ["drive", "slice"]:
+				depth = minf(depth + float(cfg.get("depth", 0.0)), 0.95)  # el que la manda más al fondo
+			if deep and kind != "drop":
+				depth = minf(depth + 0.12, 0.95)  # bien al fondo: que no tenga con qué lucirse
 			var ty: float = -p.sign * clampf(TenisData.HALF_L * depth, 1.5, TenisData.HALF_L - margin * 0.8)
 			var target := Vector2(tx, ty)
 			var flight := Vector2(sim.ball.x, sim.ball.y).distance_to(target) / v
@@ -208,6 +222,8 @@ static func _choose(sim: TenisSim, p, o, cfg: Dictionary, inp: Dictionary) -> vo
 			var val := (1.0 - p_out) * (0.5 + 0.4 * clampf(press / 1.5, -1.0, 1.0)) + 0.04 * log(wk)
 			# Su estilo: lo que le gusta pegar (si entra). Es lo que lo hace reconocible.
 			val += float(cfg.get("style", {}).get(kind, 0.0)) * (1.0 - p_out)
+			if absf(lat) == 1.0:  # el que busca los ángulos (el zurdo)
+				val += float(cfg.get("wide", 0.0)) * (1.0 - p_out)
 			if kind == "lob" and o_depth < 6.0:
 				val += 0.25  # el otro en la red: por encima
 			val -= 0.22 * clampf(t_rec - (flight + 0.8), 0.0, 1.5)  # quedar vendido
@@ -218,6 +234,15 @@ static func _choose(sim: TenisSim, p, o, cfg: Dictionary, inp: Dictionary) -> vo
 				val += 0.25 * (1.0 - p_out)
 			if vary:
 				val += _variety(p, kind, lat) * (1.0 - p_out)
+			if disrupt and (kind in ["slice", "lob", "drop"] or (absf(lat) >= 0.4 and signf(lat) != last_side)):
+				val += 0.24 * (1.0 - p_out)
+			if safe and lat == 0.0:
+				val += 0.16 * (1.0 - p_out)  # al centro y al fondo: nada de regalos
+			if pressure and kind != "drop":  # apurarlo desde el fondo, y a su revés (nada de dejadas)
+				val += 0.6 * clampf(press / 1.5, -1.0, 1.0) * (1.0 - p_out)
+				var hand := -1.0 if o.data.get("hand", "right") == "left" else 1.0
+				if (tx - o.pos.x) * o.sign * hand < 0.0:
+					val += 0.06 * (1.0 - p_out)
 			val += sim.rng.randfn(0.0, 1.0) * float(p.ai["noise"]) * 0.15
 			if not by_kind.has(kind) or val > float(by_kind[kind][0]):
 				by_kind[kind] = [val, lat]
@@ -239,7 +264,8 @@ static func _choose(sim: TenisSim, p, o, cfg: Dictionary, inp: Dictionary) -> vo
 		if roll <= 0.0:
 			break
 	inp["hit"] = pick
-	inp["aim"] = Vector2(float(by_kind[pick][1]) * p.sign, 0.0)
+	var aim_y := 1.0 if deep else float(cfg.get("depth", 0.0)) / 0.12
+	inp["aim"] = Vector2(float(by_kind[pick][1]) * p.sign, aim_y)
 	inp["margin"] = margin
 
 

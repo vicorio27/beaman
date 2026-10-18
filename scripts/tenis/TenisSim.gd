@@ -41,7 +41,8 @@ class P:
 	var recent: Array = []      # sus últimos golpes: [tipo, lado (-1..1, en x de la cancha)]
 	var ai := {}
 	var stats := {"winners": 0, "ue": 0, "fe": 0, "aces": 0, "df": 0, "points": 0, "abilities": 0,
-		"shots": {"drive": 0, "slice": 0, "lob": 0, "drop": 0, "serve": 0, "underarm": 0, "trick": 0}}
+		"shots": {"drive": 0, "slice": 0, "lob": 0, "drop": 0, "serve": 0, "underarm": 0, "trick": 0},
+		"hits": 0, "deep": 0, "fast": 0, "wide": 0}  # cómo pega (para ver que cada uno juega distinto)
 	var sign := 1.0             # +1 abajo, -1 arriba
 
 	func a(k: String) -> float:
@@ -147,8 +148,8 @@ func _move_players(inputs: Array, serving: bool) -> void:
 			p.vel = Vector2.ZERO
 			continue
 		var dir: Vector2 = inputs[p.idx].get("move", Vector2.ZERO)
-		if serving:
-			dir = Vector2(dir.x, 0) if p.idx != score.server else Vector2.ZERO  # el que saca, quieto
+		if serving:  # el que saca, quieto; el que resta escoge de lado y de fondo
+			dir = dir if p.idx != score.server else Vector2.ZERO
 		if dir.length() > 1.0:
 			dir = dir.normalized()
 		var target: Vector2 = dir * p.max_speed()
@@ -156,7 +157,7 @@ func _move_players(inputs: Array, serving: bool) -> void:
 		p.pos += p.vel * DT
 		var ymin := 0.4
 		p.pos.x = clampf(p.pos.x, -W - 3.5, W + 3.5)
-		var depth := clampf(p.pos.y * p.sign, ymin, H + 4.5)
+		var depth := clampf(p.pos.y * p.sign, ymin if not serving else H - 1.5, H + 4.5)
 		p.pos.y = depth * p.sign
 		var effort: float = p.vel.length() / p.max_speed()
 		if effort > 0.6:
@@ -231,7 +232,9 @@ func _serve(s: P, inp: Dictionary) -> void:
 	else:
 		s.trick_streak = 0
 	s.stats["shots"][kind] += 1
-	_shoot(s, kind, Vector2(tx, ty), power, 0.0, {"serve": true, "second": second, "trick": kind == "underarm"})
+	var ctx := {"serve": true, "second": second, "trick": kind == "underarm", "d": 0.0}
+	TenisAbilities.on_hit(self, s, players[1 - s.idx], kind, ctx)
+	_shoot(s, kind, Vector2(tx, ty), power, 0.0, ctx)
 
 
 # ---------------------------------------------------------------- Pegarle
@@ -332,7 +335,7 @@ func _shoot(p: P, kind: String, target: Vector2, power: float, d: float, ctx: Di
 	var sigma := sigma_for(p, kind, d, v) * float(ctx.get("sigma_k", 1.0))
 	var err := Vector2(_gauss() * sigma, _gauss() * sigma * 1.25)
 	var aim_at := target + err
-	var spin: float = shot["spin"] + float(ctx.get("spin_add", 0.0))
+	var spin: float = shot_spin(p, kind) + float(ctx.get("spin_add", 0.0))
 	var z0 := ball.z if not ctx.get("serve", false) else (0.8 if kind == "underarm" else 2.7)
 	var from := Vector2(ball.x, ball.y)
 	var sol := solve(from, z0, aim_at, v, spin, shot["net_margin"])
@@ -355,7 +358,12 @@ func _shoot(p: P, kind: String, target: Vector2, power: float, d: float, ctx: Di
 	last_hitter = p.idx
 	hits += 1
 	_missed_reach = [99.0, 99.0]
-	p.recent.append([kind, target.x / W])
+	p.recent.append([kind, target.x / W, absf(target.y) / H])
+	if not ctx.get("serve", false):
+		p.stats["hits"] += 1
+		p.stats["deep"] += int(absf(target.y) >= 0.85 * H)
+		p.stats["fast"] += int(vh >= 21.0)
+		p.stats["wide"] += int(absf(target.x) >= 0.7 * W)
 	if p.recent.size() > 4:
 		p.recent.pop_front()
 	last_shot = {"kind": kind, "d": d, "serve": ctx.get("serve", false), "second": ctx.get("second", false),
@@ -389,6 +397,15 @@ static func solve(from: Vector2, z0: float, to: Vector2, v: float, spin: float, 
 	return Vector2(vh, vz)
 
 
+## El efecto del golpe: el que pega duro le mete más liftado (si no, no le entra: la pelota no baja).
+## Es lo que deja que la potencia se vea en la velocidad de verdad.
+static func shot_spin(p: P, kind: String) -> float:
+	var s: float = TenisData.SHOTS[kind]["spin"]
+	if kind == "drive" or kind == "serve":
+		s += 0.08 * (p.a("power") - 5.0)
+	return s
+
+
 ## Qué tan probable es que ese golpe no entre (red o afuera), con el mismo error que el golpe de verdad,
 ## en muestras fijas. Es lo que sabe un jugador de sí mismo: lo usa la máquina para decidir.
 func risk_of(p: P, kind: String, target: Vector2, d: float) -> float:
@@ -397,7 +414,7 @@ func risk_of(p: P, kind: String, target: Vector2, d: float) -> float:
 	var sigma := sigma_for(p, kind, d, v)
 	var from := Vector2(ball.x, ball.y)
 	var z0 := ball.z
-	var spin: float = shot["spin"]
+	var spin: float = shot_spin(p, kind)
 	var g := TenisData.GRAVITY * (1.0 + 0.35 * spin)
 	var o: P = players[1 - p.idx]
 	var bad := 0
@@ -441,7 +458,8 @@ func sigma_for(p: P, kind: String, d: float, v := -1.0) -> float:
 	if kind == "drop":  # la dejada desde el fondo es un riesgo: más lejos de la red, más error
 		e0 *= 1.0 + absf(p.pos.y) / 8.0
 	var hands := 1.3 - 0.04 * p.a("touch")  # las manos: cuánto le pesa la difícil
-	return e0 * (1.0 + hands * d) * pf * mental * chaos * exec * TenisAbilities.mult(p, "sigma") * traits_k(p, kind)
+	return e0 * (1.0 + hands * d) * pf * mental * chaos * exec * TenisAbilities.mult(p, "sigma") \
+		* TenisAbilities.o_mult(players[1 - p.idx], "sigma") * traits_k(p, kind, d)
 
 
 ## Los rasgos (TenisData "traits"): lo que cada uno hace mejor o peor, como regla de la cancha.
@@ -449,8 +467,24 @@ func sigma_for(p: P, kind: String, d: float, v := -1.0) -> float:
 ##   boredom     en peloteos largos de lo mismo se aburre: más error por golpe pasado el sexto
 ##   lateral_tax pegarle corriendo de lado le cuesta (la que está hecha para pararse y pegar)
 ##   return_k    el resto: menos error devolviendo el saque (menos de 1)
-func traits_k(p: P, kind: String) -> float:
+##   rhythm_need cuando no manda (le llega difícil), más error (el que vive de cambiar el ritmo)
+##   defense_tax a la defensiva sufre: más error cuanto más difícil le llega
+##   second_tax  el segundo saque, más inseguro
+##   backhand_tax el revés bajo presión (la pelota de su lado del revés, y difícil)
+func traits_k(p: P, kind: String, d := 0.0) -> float:
 	var k := 1.0
+	var rn := p.trait_k("rhythm_need")
+	if rn > 0.0 and d >= 0.6:
+		k *= 1.0 + rn
+	var dt := p.trait_k("defense_tax")
+	if dt > 0.0:
+		k *= 1.0 + dt * maxf(0.0, d - 0.5)
+	var st := p.trait_k("second_tax")
+	if st > 0.0 and kind == "serve" and serve_try == 2:
+		k *= 1.0 + st
+	var bt := p.trait_k("backhand_tax")
+	if bt > 0.0 and d >= 0.45 and not on_forehand(p):
+		k *= 1.0 + bt
 	var tt := p.trait_k("trick_tax")
 	if tt > 0.0 and (kind == "drop" or kind == "underarm"):
 		k *= 1.0 + tt * maxf(0.0, p.trick_streak - 1)
@@ -464,6 +498,12 @@ func traits_k(p: P, kind: String) -> float:
 	if rk > 0.0 and last_shot.get("serve", false) and last_hitter != p.idx:
 		k *= rk
 	return k
+
+
+## ¿La pelota le queda del lado del drive? (la mano de la raqueta; zurdo, al revés)
+func on_forehand(p: P) -> bool:
+	var hand := -1.0 if p.data.get("hand", "right") == "left" else 1.0
+	return (ball.x - p.pos.x) * p.sign * hand >= 0.0
 
 
 func _gauss() -> float:

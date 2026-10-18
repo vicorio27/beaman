@@ -12,6 +12,12 @@ cada uno (el pelo, la cara, las rayas, el tatuaje). Las proporciones son las de 
                antebrazo izquierdo (rayas naranjas).
   Monfiz       alto, piel oscura, piernas largas; balaca amarilla; camiseta amarilla y negra.
   Yokovich     flaco y elástico; pelo castaño corto; camiseta roja, pantaloneta azul oscura.
+  Moutette     bajito y zurdo; pelo negro crespo; camiseta celeste, pantaloneta blanca.
+  Tiafuego     piel oscura, trencitas; verde limón y morado: el más vistoso.
+  Sheltron     alto y zurdo, rapado; camiseta naranja, pantaloneta azul.
+  Kyrgistán    la gorra roja al revés, todo de negro, tatuajes en el brazo de la raqueta.
+  Pecador      el pelo zanahoria crespo, muy blanco; camiseta menta con cuello blanco.
+  Fedorer      todo de blanco, balaca blanca, pelo café; la raqueta roja.
 
 Hoja: celdas de 32x42 (los pies en y = 40). Fila 0: de espaldas; fila 1: de frente. Columnas = POSES (ver abajo).
 Salida: assets/tenis/<id>.png. Uso: python tools/art/draw_tenistas.py  (desde la carpeta del proyecto)
@@ -118,6 +124,42 @@ PLAYERS = {
         "t": (206, 52, 56), "T": (160, 34, 44), "p": (40, 52, 104), "P": (28, 36, 76),
         "w": (240, 240, 236), "k": (240, 240, 236), "K": (60, 70, 120), "a": (240, 240, 236),
         "r": (230, 230, 236), "hair": "corto"},
+    "moutette": {
+        "h": -2, "sh": 4, "slouch": 0, "skirt": False, "lefty": True,
+        "s": (236, 186, 156), "S": (206, 146, 124), "h1": (34, 30, 34), "h2": (60, 50, 54),
+        "t": (140, 196, 236), "T": (96, 152, 204), "p": (236, 236, 232), "P": (190, 192, 198),
+        "w": (240, 240, 236), "k": (240, 240, 236), "K": (96, 152, 204), "a": (40, 52, 104),
+        "r": (40, 52, 104), "hair": "rizado"},
+    "tiafuego": {
+        "h": 0, "sh": 5, "slouch": 0, "skirt": False,
+        "s": (112, 72, 52), "S": (84, 52, 40), "h1": (28, 24, 26), "h2": (52, 42, 40),
+        "t": (170, 224, 84), "T": (122, 180, 60), "p": (112, 72, 156), "P": (82, 50, 116),
+        "w": (240, 240, 236), "k": (240, 240, 236), "K": (112, 72, 156), "a": (112, 72, 156),
+        "r": (112, 72, 156), "hair": "trenzas"},
+    "sheltron": {
+        "h": 2, "sh": 5, "slouch": 0, "skirt": False, "lefty": True,
+        "s": (156, 104, 76), "S": (122, 78, 58), "h1": (30, 26, 28), "h2": (50, 42, 42),
+        "t": (248, 150, 60), "T": (210, 108, 40), "p": (40, 70, 150), "P": (28, 50, 112),
+        "w": (240, 240, 236), "k": (248, 150, 60), "K": (40, 70, 150), "a": (240, 240, 236),
+        "r": (40, 70, 150), "hair": "rapado"},
+    "kyrgistan": {
+        "h": 1, "sh": 5, "slouch": 0, "skirt": False,
+        "s": (228, 172, 140), "S": (196, 134, 110), "h1": (40, 32, 30), "h2": (66, 52, 48),
+        "t": (44, 44, 50), "T": (28, 28, 34), "p": (44, 44, 50), "P": (28, 28, 34),
+        "w": (240, 240, 236), "k": (210, 40, 50), "K": (140, 30, 40), "a": (210, 40, 50),
+        "r": (210, 40, 50), "hair": "gorra"},
+    "pecador": {
+        "h": 1, "sh": 4, "slouch": 0, "skirt": False,
+        "s": (246, 208, 182), "S": (222, 170, 150), "h1": (226, 118, 48), "h2": (186, 86, 36),
+        "t": (150, 222, 192), "T": (106, 180, 150), "p": (236, 236, 232), "P": (190, 192, 198),
+        "w": (240, 240, 236), "k": (240, 240, 236), "K": (106, 180, 150), "a": (106, 180, 150),
+        "r": (240, 240, 236), "hair": "rizado"},
+    "fedorer": {
+        "h": 0, "sh": 4, "slouch": 0, "skirt": False,
+        "s": (232, 180, 150), "S": (202, 140, 118), "h1": (108, 78, 58), "h2": (82, 58, 44),
+        "t": (244, 244, 240), "T": (200, 202, 208), "p": (244, 244, 240), "P": (196, 198, 204),
+        "w": (240, 240, 236), "k": (240, 240, 236), "K": (196, 198, 204), "a": (244, 244, 240),
+        "r": (190, 40, 44), "hair": "corto"},
 }
 
 
@@ -344,6 +386,36 @@ def head(cv, d, x, y, front):
     elif style == "corto":
         cv.dot(x + 2, y + 1, h2)
         cv.dot(x + 5, y + 1, h2)
+    elif style == "rizado":  # crespo: bolitas arriba y a los lados
+        for px_, py_ in ((0, -1), (2, -1), (4, -1), (6, -1), (-1, 1), (8, 1), (1, -2), (5, -2)):
+            cv.dot(x + px_, y + py_, h1)
+        for px_, py_ in ((1, 0), (3, 1), (5, 0), (6, 2)):
+            cv.dot(x + px_, y + py_, h2)
+        if front:
+            cv.dot(x - 1, y + 3, h1)
+            cv.dot(x + 8, y + 3, h1)
+    elif style == "trenzas":  # trencitas cortas, paradas
+        for xx in range(0, 8, 2):
+            cv.dot(x + xx, y - 1, h1)
+            cv.dot(x + xx + 1, y, h2)
+        if not front:
+            for xx in range(0, 8, 2):
+                cv.dot(x + xx, y + 6, h1)
+    elif style == "gorra":  # la gorra al revés: la visera atrás
+        cap, cap_d = d["a"], (140, 30, 40)
+        for yy in range(3):
+            for xx in range(8):
+                if not (xx in (0, 7) and yy == 0):
+                    cv.dot(x + xx, y + yy, cap)
+        for xx in range(1, 7):
+            cv.dot(x + xx, y + 2, cap_d)
+        if not front:  # la visera, hacia la nuca
+            for xx in range(1, 7):
+                cv.dot(x + xx, y + 3, cap_d)
+                cv.dot(x + xx, y + 4, cap)
+        else:  # por delante: el pelo que se sale por debajo y la tira
+            cv.dot(x, y + 3, h1)
+            cv.dot(x + 7, y + 3, h1)
     if front:  # la cara: ojos, la sombra de un lado, la boca
         cv.dot(x + 2, y + 4, EYE)
         cv.dot(x + 5, y + 4, EYE)
@@ -402,16 +474,33 @@ def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q):
         # La muñequera de la mano derecha
         hr = j("hr")
         paint(hr[0], hr[1] - 1, (255, 255, 255))
-    if pid == "bublikov":  # la muñequera negra
+    if pid in ("bublikov", "tiafuego", "sheltron"):  # la muñequera
         hr = j("hr")
         paint(hr[0], hr[1] - 1, d["a"])
+    if pid == "fedorer":  # la balaca blanca sobre el pelo café
+        for xx in range(0, 8):
+            paint(hx + xx, hy + 2, (250, 250, 248))
+        if not front:  # las puntas del nudo, atrás
+            paint(hx + 3, hy + 6, (250, 250, 248))
+            paint(hx + 4, hy + 7, (250, 250, 248))
+    if pid == "kyrgistan":  # los tatuajes del brazo derecho
+        er, hr = j("er"), j("hr")
+        for t in (0.25, 0.55, 0.8):
+            paint(er[0] + (hr[0] - er[0]) * t, er[1] + (hr[1] - er[1]) * t, (52, 64, 110))
+    if pid == "pecador" and standing:  # el cuello blanco
+        for x in range(CW):
+            if px[x, ty0 + DY][:3] in (d["t"], d["T"]):
+                paint(x, ty0, (240, 240, 236))
 
 
 def sheet(pid: str) -> Image.Image:
     out = Image.new("RGBA", (CW * len(POSES), CH * 2), (0, 0, 0, 0))
     for row, front in enumerate((False, True)):
         for col, pose in enumerate(POSES):
-            out.paste(draw(pid, pose, front), (col * CW, row * CH))
+            im = draw(pid, pose, front)
+            if PLAYERS[pid].get("lefty"):  # zurdo: la raqueta en la otra mano
+                im = im.transpose(Image.FLIP_LEFT_RIGHT)
+            out.paste(im, (col * CW, row * CH))
     return out
 
 

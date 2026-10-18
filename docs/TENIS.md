@@ -41,55 +41,48 @@ La máquina estima su riesgo con la misma física y el mismo σ, sobre 16 muestr
 
 La dificultad de la máquina cambia la reacción, el ruido al decidir, la limpieza al ejecutar y qué tan seguido le juega la contra al otro. Nunca le cambia los atributos.
 
-## Los tenistas de la tajada vertical
+## Los tenistas
 
-Los atributos van de 1 a 10.
+Los atributos van de 1 a 10 y pueden llevar cuartos (5.75): un punto entero de precisión mueve demasiado el equilibrio.
 
-| | Bublikov | Sabalenkova | Monfiz | Yokovich |
-|---|---|---|---|---|
-| Apodo | El agente del caos | La artillería | El acróbata | El devorador de esperanzas |
-| Potencia | 9 | 10 | 6 | 3 |
-| Precisión | 7 | 6 | 5 | 4 |
-| Defensa | 7 | 5 | 9 | 6 |
-| Toque | 9 | 3 | 6 | 3 |
-| Compostura | 6 | 5 | 5 | 7 |
-| Caos | 7 | 3 | 6 | 3 |
-| Rasgos | Cada dejada o saque por abajo seguido le sube el error; en peloteos largos se aburre; saca por abajo al que resta lejos. | Pegarle corriendo de lado le sube el error. | Se cansa 30% más corriendo y resta desde la tribuna. | Resta mejor: 7% menos error devolviendo el saque. |
-| Estilo | Dejadas y cortados | Plano y parada adentro | Globos y cortados desde atrás | Cortado y paciencia |
+| Tenista | Apodo | Pot | Prec | Def | Toq | Comp | Caos | Rasgos y manera de jugar |
+|---|---|---|---|---|---|---|---|---|
+| Alexander Bublikov | El agente del caos | 9 | 6.75 | 7 | 9 | 6 | 8 | Dejadas y cortados. Lo raro repetido le sube el error; en peloteos largos se aburre; saca por abajo al que resta lejos. |
+| Aryna Sabalenkova | La artillería | 10 | 5.75 | 5 | 3 | 5 | 3 | Plano, duro y parada adentro. Corriendo de lado falla más. |
+| Gaël Monfiz | El acróbata | 6 | 4.75 | 9 | 6 | 6 | 6 | Globos y cortados desde la tribuna. Se cansa 30% más. |
+| Novak Yokovich | El devorador de esperanzas | 3 | 5 | 6 | 3 | 7 | 3 | Cortado y paciencia; resta mejor (7% menos error). |
+| Corentin Moutette | El provocador (zurdo) | 5 | 7 | 6 | 9 | 5 | 8 | Dejadas, cortados y cambios de ritmo. Si no manda, se pierde. |
+| Frances Tiafuego | El showman | 5 | 4.5 | 4 | 6 | 4 | 5 | Ataque y ángulos; vive del público. |
+| Ben Sheltron | El lanzacohetes (zurdo) | 10 | 5.75 | 5 | 4 | 5 | 4 | El saque más rápido y los ángulos abiertos. Segundo saque y defensa, flojos. |
+| Nick Kyrgistán | El volátil | 8 | 4 | 5 | 6 | 2 | 7 | Talento y dejadas, cero paciencia. |
+| Jannik Pecador | El compilador | 6 | 6.75 | 6 | 4 | 8 | 1 | Todo al fondo y limpio (95% de sus golpes van al fondo). |
+| Roger Fedorer | El artista | 6 | 4.5 | 6 | 10 | 6 | 4 | Cortado, toque, subida. Apurado y por el revés, sufre (45% más error). |
+
+Lo que los distingue en la cancha (del todos contra todos): el tipo de golpe, y qué parte va al fondo, dura (21 m/s o más) o abierta. Por ejemplo, Sabalenkova y Sheltron pegan igual de duro, pero Sheltron abre la cancha el 40% de las veces y ella el 5%.
+
+La potencia se ve en la velocidad: el que pega más duro le mete más liftado (si no, la pelota no le bajaría y el cálculo del golpe la frenaría para que entre).
 
 ### Las habilidades
 
-**¿Por qué no?** (Bublikov)
-- Cuesta 45 y se arma para el golpe siguiente.
-- Efecto: el amague. La pelota sale hacia un lado y se tuerce en el aire al otro, a contrapié del rival.
-- La contra: estar quieto y al centro cuando él le pega.
-- Contrarrestada: la curva queda casi en nada y erra un 30% más.
-
-**Demolición controlada** (Sabalenkova)
-- Cuesta 55 y dura 3 golpes.
-- Efecto: 30% menos error y 12% más potencia. Cada pelota pica alta y le pesa al otro (+0.45 de dificultad).
-- La contra: mandarle cortadas, globos o dejadas, o hacerla correr de lado.
-- Contrarrestada: no empuja y erra un 60% más.
-
-**La gravedad es opcional** (Monfiz)
-- Cuesta 35. Se usa cuando la pelota se le va y le da 0.45 s de estirada.
-- Efecto: alcance ×1.9 y velocidad ×1.5. Devuelve a contrapié y con más potencia.
-- Costo: gasta 14 de energía y queda en el piso: 0.7 s si le pegó, 1.3 s si no.
-- La contra: hacerlo correr de lado a lado, con las dos últimas pelotas abiertas y cada una a un lado.
-- Contrarrestada: devuelve sin ventaja, erra un 50% más y se demora 0.7 s más en pararse.
-
-**Todavía no** (Yokovich)
-- Cuesta 50 y dura 3 golpes.
-- Efecto: devuelve la difícil con 22% menos error y después pega con 10% menos error y 8% más potencia. Queda confiado.
-- La contra: variar, con dos golpes distintos y los dos lados en las últimas tres.
-- Contrarrestada: no hay bonificación y erra un 45% más.
+| Habilidad | De | Cuesta | Qué hace | La contra | Contrarrestada |
+|---|---|---|---|---|---|
+| ¿Por qué no? | Bublikov | 45 | El amague: sale para un lado y se tuerce al otro, a contrapié. | Quieto y al centro cuando él le pega. | Casi sin curva y 30% más error. |
+| Demolición controlada | Sabalenkova | 55 | 3 golpes: 30% menos error, 12% más potencia, pelotas altas que pesan. | Cortadas, globos, dejadas, o hacerla correr. | Sin empuje y 60% más error. |
+| La gravedad es opcional | Monfiz | 35 | Se tira (0.45 s): alcance ×1.9, devuelve a contrapié; queda en el piso. | Moverlo de lado a lado, bien abierto. | Sin ventaja, 50% más error, más rato en el piso. |
+| Todavía no | Yokovich | 50 | Devuelve la difícil (22% menos error) y los dos siguientes salen mejor. | Variar: dos golpes distintos y los dos lados. | Sin nada y 45% más error. |
+| Queja formal | Moutette | 45 | Se queja de todo: mientras dura (3 golpes suyos), el otro erra 45% más. | Quedarse atrás y tranquilo. | No le llega al otro, y el que falla más (30%) es él. |
+| ¡Vamos! | Tiafuego | 50 | 2 golpes con el público: 35% menos error, 15% más potencia. Se carga con ganadores. | Devolverle profundo: no hay pelota para lucirse. | 80% más error. |
+| Llamada de larga distancia | Sheltron | 60 | En el primer saque: 25% más potencia y la pelota pesa. | Restar bien atrás. | Sin potencia extra, 80% más error, y la devolución le queda fácil al otro. |
+| Modo Kyrgios | Kyrgistán | 45 | 3 golpes: 40% menos error. Si pierde ese punto, se calienta dos puntos. | Nada de regalos: profunda y al centro. | 50% más error. |
+| Ejecución perfecta | Pecador | 45 | 4 golpes: 35% menos error. Se carga pegando limpio. | Romperle la secuencia: cortadas, globos, cambios de lado. Se juzga golpe a golpe. | 50% más error en ese golpe. |
+| Punto de firma | Fedorer | 50 | Dos golpes: un cambio de ritmo lento con curva, y el remate a contrapié. | Apurarlo y no darle una cómoda (al fondo). | 40% más error. |
 
 **Reglas comunes:**
-- El medidor se carga golpeando, con ganadores y con lo de cada uno: la defensa difícil, pegarle corriendo, lo raro.
+- El medidor se carga golpeando, con ganadores y con lo de cada uno: la defensa difícil, pegarle corriendo, lo raro, cambiar de golpe, pegar limpio.
 - No se carga mientras la habilidad está prendida.
 - Todas se acaban al terminar el punto. Si no se alcanzó a usar, se pierde lo gastado.
 - La barra naranja titila cuando la habilidad está lista, y la rayita marca cuánto cuesta.
-- La máquina sabe cuál es su contra: si se la están jugando, se guarda la habilidad.
+- La máquina sabe cuál es su contra: si se la están jugando, se guarda la habilidad. La máquina rival se la juega con la probabilidad de su dificultad (fácil nunca, normal la mitad de los puntos, difícil casi siempre).
 
 ### Agregar un tenista
 
@@ -109,6 +102,9 @@ El motor no se toca, salvo que la habilidad necesite un tipo de contra nuevo. En
   - Sabalenkova: cola mona, falda y el tigre en el antebrazo.
   - Monfiz: piel oscura, balaca, camiseta amarilla con el costado negro.
   - Yokovich: cuello blanco y franja azul.
+  - Moutette: bajito, crespo, celeste. Sheltron: alto, rapado, naranja. Los dos zurdos (la hoja se voltea).
+  - Tiafuego: trencitas, verde limón y morado. Kyrgistán: gorra roja al revés, de negro, tatuajes.
+  - Pecador: pelo zanahoria crespo, menta. Fedorer: todo de blanco, balaca blanca, raqueta roja.
 
 `TenisMatch._pose()` escoge la pose según la cancha:
 - Un golpe reciente: drive o revés según el lado de la pelota.
@@ -137,19 +133,29 @@ Todas corren sin ventana:
 
 **`tenis_tests.gd`** (27 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; y cómo se reparten los puntos.
 
-**`tenis_roster.gd`, la parte `unit`** (29 pruebas):
+**`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.
-- La estirada: cuándo sale, que cansa, y el piso si falla.
-- El amague se tuerce, y cada contra se prende con lo que pasa en la cancha.
+- La estirada: cuándo sale, que cansa, y el piso si falla. El amague se tuerce.
+- Lo nuevo de los seis: la queja sobre el otro, el cañonazo en el saque, los dos golpes de la firma, el bajón de Kyrgistán, la racha que se corta a la mitad.
+- Cada contra se prende con lo que pasa en la cancha.
 
-**`tenis_roster.gd`, las simulaciones** (resultado del 2026-10-18):
+**`tools/tests/tenis_balance.py`**: el todos contra todos y las contras, repartidos en 8 procesos de Godot y juntados al final (unos 10 minutos). Con `rate`, una medición rápida de cada uno contra el parejo (un minuto), para ajustar.
+
+```
+python tools/tests/tenis_balance.py 16 8      # 16 partidos por cruce, 8 procesos
+python tools/tests/tenis_balance.py rate 32   # cada uno contra "base"
+```
+
+Resultado del 2026-10-18 (45 cruces, 16 partidos cada uno; las contras con 48 partidos por caso):
 
 | Criterio | Resultado |
 |---|---|
-| Nadie gana más del 65% ni menos del 35% en el todos contra todos (32 partidos por cruce) | Bublikov 46%, Sabalenkova 42%, Monfiz 51%, Yokovich 61% |
-| Cada uno juega distinto: la mezcla de golpes difiere en 0.15 o más entre cualquier par | El par más parecido (Monfiz y Yokovich) difiere en 0.27 |
-| La contra le quita 20% o más a cada habilidad (puntos ganados cuando la usa, contra forzada sí o no) | −33%, −40%, −27% y −31% |
-| La contra se puede jugar: la máquina que la sabe la logra más seguido | 46→98%, 33→71%, 0→59% y 31→87% |
+| Nadie gana más del 65% ni menos del 35% | De 40.3% (Sheltron) a 56.2% (Bublikov) |
+| Cada uno juega distinto: golpe, fondo, dureza o apertura (0.15 o más) | El par más parecido (Monfiz y Tiafuego) difiere en 0.20 |
+| Cada contra le quita 20% o más a su habilidad | De −22% a −54% |
+| La máquina que sabe la contra la logra más seguido | Las diez: por ejemplo 31→67% contra Fedorer, 0→56% contra Moutette |
+
+Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ganan más a los que pegan plano, porque eso es justo la contra de sus habilidades.
 
 **Reparto de los puntos** (20 partidos entre dos tenistas parejos):
 - Peloteo promedio de 8.9 golpes.
@@ -159,7 +165,6 @@ Todas corren sin ventana:
 
 - **El dibujo que falta:** los recogebolas (él), las caras de cerca para los diálogos y un público que se mueva más.
 - **La música:** rock original.
-- **Los otros seis:** Moutet, Tiafoe, Shelton, Kyrgios, Sinner y Federer.
 - **El cuadro del torneo.**
 - **Los diálogos:** en una tabla de datos.
 - **La historia:** el gota a gota y la llegada del torneo al barrio; él de recogebolas; los tenistas que abandonan y él que termina el partido con la raqueta de ellos; el premio.
