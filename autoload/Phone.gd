@@ -103,7 +103,8 @@ func _process(delta: float) -> void:
 		call_in("desconocido")
 
 
-## Entra una llamada. kind: "lorena", "lorena_otra_vez" (le colgaron) o "desconocido".
+## Entra una llamada. kind: "lorena", "lorena_otra_vez" (le colgaron), "desconocido" o "carolina"
+## (Diana Carolina, desde un número que no tiene guardado: Carolina.gd decide qué dice).
 func call_in(kind: String) -> void:
 	var f := GameState.flags
 	f["llamadas_hoy"] = int(f.get("llamadas_hoy", 0)) + 1
@@ -112,7 +113,7 @@ func call_in(kind: String) -> void:
 	if kind == "desconocido" and int(f.get("lorena_llamada", 0)) > 1 and randf() < 0.25:
 		kind = "lorena"
 		hidden = true
-	_caller.text = "DESCONOCIDO" if (kind == "desconocido" or hidden) else "LORENA"
+	_caller.text = "DESCONOCIDO" if (kind in ["desconocido", "carolina"] or hidden) else "LORENA"
 	if int(f.get("lorena_llamada", 0)) == 0 and kind == "lorena":
 		_caller.text = "DESCONOCIDO"  # la primera vez, todavía no tiene el número guardado
 	_ringing = true
@@ -140,7 +141,9 @@ func call_in(kind: String) -> void:
 			else:
 				Narrator.say("(Deja de sonar. Se le acabó el saldo. A ella. Por fin una buena noticia.)")
 		return
-	if kind.begins_with("lorena"):
+	if kind == "carolina":
+		await Carolina.llamada()
+	elif kind.begins_with("lorena"):
 		f["lorena_hoy"] = true
 		await _lorena(kind == "lorena_otra_vez", hidden)
 	else:

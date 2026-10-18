@@ -23,6 +23,9 @@ const DEFS := {
 	# Día 1 — opcionales
 	"lukas_olfato": {"title": "Que Lukas busque comida [F]", "kind": "optional",
 		"detail": "Abrir el menú de Lukas [F] y elegir \"Buscá\": va olfateando hasta lo más cercano (prefiere comida) y ladra donde está."},
+	# La noche en que Lukas se le va (NightSequence._lombardia): buscarlo por el barrio, de madrugada.
+	"noche_lukas": {"title": "Buscá a Lukas", "kind": "main",
+		"detail": "A la una y diez lo despertó el frío: Lukas no estaba. Se oyó un ladrido para el lado de la avenida. Lombardía de noche es otro barrio."},
 	"lo_bueno": {"title": "Lo bueno del barrio", "kind": "optional",
 		"detail": "Seis cosas buenas del barrio, sin plata: pescar en la orilla del río, el atardecer en el puente (de 5 a 7 de la tarde), tapar penaltis con los pelados del lote (de 9 a 6), la banca del parquecito, el columpio y el perro del barrio."},
 	# Día 2 — principales: aprender lo básico, en orden (y después, el recuerdo de la moto)

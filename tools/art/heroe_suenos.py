@@ -167,11 +167,80 @@ def avatar():
     im.save(DIR / "avatar_player.png")
 
 
+## Los colores de taparse (los de la hoja ya vestida).
+K=(46,34,47,255)
+SK=(214,150,120,255)
+SH=(172,110,90,255)
+WR=(255,255,255,255)
+WR2=(214,208,192,255)
+J=(40,38,46,255)
+
+
+def guard(src, recoil=0):
+    """Taparse (fila 9 de la hoja): los dos antebrazos delante de la cara, como un boxeador, el puño
+    de adelante a la altura de la frente; un poco agachado. recoil=1: el cuadro del golpe que le entra
+    (se va un píxel para atrás y para abajo). Sale del cuadro quieto (fila 0)."""
+    f = src.copy()
+    px = f.load()
+    # quitar los brazos de los lados (cols absolutas 15..20 y 28..33, filas 29..37)
+    for y in range(28, 38):
+        for x in list(range(15, 21)) + list(range(28, 34)):
+            px[x, y] = (0, 0, 0, 0)
+    # el torso: tapar los huecos que quedan con el saco
+    for y in range(29, 37):
+        for x in (20, 21):
+            if px[x, y][3] == 0: px[x, y] = K
+        for x in (27, 28):
+            if px[x, y][3] == 0: px[x, y] = K
+    # agacharse un poco: todo lo de arriba de la cintura baja 1 (+ recoil)
+    dy = 1 + recoil
+    top = f.crop((0, 0, 48, 37))
+    body = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    body.paste(f.crop((0, 37, 48, 48)), (0, 37))
+    body.alpha_composite(top, (-recoil, dy))
+    f = body; px = f.load()
+    def rect(x0, y0, x1, y1, c):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                px[x, y] = c
+    ox = -recoil
+    # Los hombros (los brazos suben de ahí): el de atrás, oscuro; el de adelante, a la luz.
+    rect(17+ox, 28+dy, 21+ox, 33+dy, K); rect(18+ox, 29+dy, 20+ox, 32+dy, SH)
+    rect(28+ox, 28+dy, 32+ox, 34+dy, K); rect(29+ox, 29+dy, 31+ox, 33+dy, SK)
+    for y in range(30+dy, 34+dy): px[31+ox, y] = SH
+    # El antebrazo de atrás: cruzado delante de la boca, más oscuro (queda detrás del otro).
+    rect(22+ox, 22+dy, 25+ox, 32+dy, K)
+    rect(23+ox, 23+dy, 24+ox, 31+dy, SH)
+    rect(22+ox, 20+dy, 25+ox, 23+dy, K); rect(23+ox, 21+dy, 24+ox, 22+dy, WR2)
+    # El antebrazo de adelante: delante de la cara, el puño a la altura de la frente, con la venda.
+    rect(25+ox, 21+dy, 28+ox, 33+dy, K)
+    rect(26+ox, 22+dy, 27+ox, 32+dy, SK)
+    for y in range(25+dy, 33+dy): px[27+ox, y] = SH
+    rect(25+ox, 18+dy, 28+ox, 22+dy, K)
+    rect(26+ox, 19+dy, 27+ox, 21+dy, WR)
+    px[27+ox, 21+dy] = WR2
+    # los codos, recogidos contra el pecho
+    rect(21+ox, 31+dy, 24+ox, 34+dy, K); rect(22+ox, 32+dy, 23+ox, 33+dy, SH)
+    rect(25+ox, 32+dy, 28+ox, 35+dy, K); rect(26+ox, 33+dy, 27+ox, 34+dy, SK)
+    return f
+
+
+def with_guard(sheet, cw):
+    """Pone los dos cuadros de taparse en la fila 9."""
+    if cw != 48:
+        return sheet
+    idle = sheet.crop((0, 0, 48, 48))
+    for k in range(2):
+        sheet.paste(Image.new("RGBA", (48, 48), (0, 0, 0, 0)), (k * 48, 9 * 48))
+        sheet.alpha_composite(guard(idle, k), (k * 48, 9 * 48))
+    return sheet
+
+
 def main():
     for name, cw in SHEETS.items():
         if name == "player_hang.png":
             continue  # el colgado del camión se dibuja aparte (draw_colgado.py)
-        heroize(dress(Image.open(SRC / ("orig_" + name)), cw, sleeves=False), cw).save(DIR / name)
+        with_guard(heroize(dress(Image.open(SRC / ("orig_" + name)), cw, sleeves=False), cw).convert("RGBA"), cw).save(DIR / name)
         print("héroe:", name)
     avatar()
 

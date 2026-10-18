@@ -43,6 +43,8 @@ func _process(delta: float) -> void:
 	_jobs()
 	_ruta()
 	_daily()
+	_denuncia()
+	_lombardia()
 	DayTasks.tick(get_tree().current_scene)
 
 
@@ -602,6 +604,55 @@ func _cedula() -> void:
 	if scene and scene.name == "Centro" and g.is_active("c_direccion") and not g.flags.get("zaida_favor", false) \
 			and g.count("carta_german") == 0 and scene.find_child("Zaida", true, false) == null:
 		_spawn_zaida(scene)
+
+
+## La noche de Lombardía (NightSequence._lombardia): Lukas se fue solo, de madrugada, al carrito de
+## los perros calientes. Ahí espera sentado hasta que él lo encuentre por el barrio.
+const LUKAS_NOCHE := Vector2(606, 434)
+var _lombardia_busy := false
+
+
+func _lombardia() -> void:
+	var f := GameState.flags
+	if not f.get("lombardia_activa", false) or _lombardia_busy:
+		return
+	var scene := get_tree().current_scene
+	if scene == null or scene.name != "City":
+		return
+	var lukas := scene.find_child("Lukas", true, false)
+	var player := scene.find_child("Player", true, false) as Node2D
+	if lukas == null or player == null:
+		return
+	if lukas.state != "lost":
+		lukas.wait_at(LUKAS_NOCHE)
+		return
+	if player.global_position.distance_to(lukas.global_position) > 26.0 or Dialogue.active or GameState.input_blocked():
+		return
+	_lombardia_busy = true
+	f["lombardia_activa"] = false
+	f["lombardia_vuelta"] = true  # al acostarse otra vez, sigue la misma noche
+	await Dialogue.talk([
+		["", "(Ahí está. Sentado frente al carrito de los perros calientes, muy derecho, con cara de cliente.)"],
+		["EL DE LOS PERROS", "—¿Es suyo? Llegó hace media hora. Ya se comió media salchicha. Me pagó con ojitos: aquí se acepta."],
+		["EL DE LOS PERROS", "—Usted tiene cara de no haber dormido. Bienvenido a Lombardía de noche. Aquí nadie ha dormido."],
+		["", "(Lukas lo mira como diciendo: \"¿Y usted qué hace despierto a esta hora?\")"]])
+	lukas.state = "follow"
+	GameState.complete_quest("noche_lukas")
+	Narrator.say("(Ya que está despierto: el barrio de noche. Cuando quiera, a dormir otra vez.)")
+	_lombardia_busy = false
+
+
+## La denuncia que se va cayendo y Diana Carolina, que lo busca (scripts/systems/Carolina.gd). La
+## página 14 (en el parque) solo aparece cuando ella ya la retiró del todo.
+func _denuncia() -> void:
+	var scene := get_tree().current_scene
+	Carolina.tick(scene)
+	if scene and scene.name == "Parque":
+		var p14 := scene.find_child("Pickup_recorte_3*", true, false) as Node2D
+		if p14:
+			var ok: bool = GameState.flags.get("denuncia_retirada", false)
+			p14.visible = ok
+			p14.process_mode = Node.PROCESS_MODE_INHERIT if ok else Node.PROCESS_MODE_DISABLED
 
 
 ## Una secundaria que se cumple o se "descumple" según el estado (la plata va y viene).

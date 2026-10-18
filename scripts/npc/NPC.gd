@@ -174,6 +174,9 @@ func _talk() -> void:
 		_look("right" if to.x > 0 else "left")
 	else:
 		_look("down" if to.y > 0 else "up")
+	var lukas := get_tree().current_scene.find_child("Lukas", true, false)
+	if lukas and lukas.has_method("greet"):
+		lukas.greet(self, npc_id)  # va y lo huele
 	await Conversations.run(npc_id, self)
 	talking = false
 

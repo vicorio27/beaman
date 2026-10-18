@@ -38,7 +38,7 @@ func setup() -> void:
 		"—..."]
 	boss_name = "CAMILA Y GUILLERMO"
 	bg_path = "res://assets/prologue/ep2_bg.png"
-	intro_title = "SUEÑO 3"
+	intro_title = "OTRA NOCHE"
 	lilato_cameo = false
 	rain = false
 	next_scene = NIGHT

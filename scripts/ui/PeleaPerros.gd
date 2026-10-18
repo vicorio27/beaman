@@ -11,6 +11,9 @@ extends CanvasLayer
 ##   - Huir (o hacerse el muerto): no pasa nada; otro día se vuelven a ver.
 ## Lukas gana experiencia y sube de nivel (flags lukas_xp; nivel: lukas_level()); con el nivel aprende
 ## ataques. Los trucos que ya sabe también sirven aquí. Si le dan duro, sale herido (cojea ese día).
+## Se siente otro juego: entra con destellos y barras que cierran la pantalla, suena su propio tema
+## ("perros", tools/audio/compose.py perros), los perros entran cada uno por su lado y el fondo (cielo,
+## nubes que pasan, pasto) es de los juegos de bolsillo. Al terminar vuelve la música del barrio.
 
 signal _done(result: String)
 
@@ -68,6 +71,8 @@ var _foe_hp_label: Label
 var _my_hp_label: Label
 var _foe_spr: TextureRect
 var _me_spr: TextureRect
+var _scene_bg: Control
+var _t := 0.0
 
 
 ## El nivel de Lukas (1..5), por la experiencia.
@@ -113,23 +118,20 @@ func _ready() -> void:
 		if (need is int and lv >= need) or (need is String and GameState.lukas_knows(need)):
 			_moves.append(id)
 	_moves.append("huir")
+	MusicDirector.force("perros")
 	_build()
+	_root.visible = false
 	_run()
 
 
 func _build() -> void:
 	_root = Control.new()
 	add_child(_root)
-	# El fondo: el andén de la pelea (cielo arriba, la calle abajo).
-	var sky := ColorRect.new()
-	sky.size = Vector2(320, 180)
-	sky.color = Color(0.62, 0.74, 0.82)
-	_root.add_child(sky)
-	var ground := ColorRect.new()
-	ground.position = Vector2(0, 70)
-	ground.size = Vector2(320, 110)
-	ground.color = Color(0.56, 0.5, 0.42)
-	_root.add_child(ground)
+	# El fondo: el cielo en franjas, las nubes que pasan, el pasto con sus matas.
+	_scene_bg = Control.new()
+	_scene_bg.size = Vector2(320, 180)
+	_scene_bg.draw.connect(_draw_bg)
+	_root.add_child(_scene_bg)
 	for spot in [[Vector2(206, 74), Vector2(84, 14)], [Vector2(22, 118), Vector2(110, 16)]]:  # las tarimas
 		var e := Panel.new()
 		var sb := StyleBoxFlat.new()
@@ -172,6 +174,74 @@ func _build() -> void:
 	_menu = Control.new()
 	_root.add_child(_menu)
 	_refresh_bars()
+
+
+func _process(delta: float) -> void:
+	_t += delta
+	if _scene_bg:
+		_scene_bg.queue_redraw()
+
+
+func _draw_bg() -> void:
+	var c := _scene_bg
+	var bands := [Color(0.47, 0.66, 0.86), Color(0.55, 0.72, 0.88), Color(0.63, 0.78, 0.9), Color(0.72, 0.84, 0.92)]
+	for i in bands.size():
+		c.draw_rect(Rect2(0, i * 18, 320, 18), bands[i])
+	for k in 3:  # las nubes, despacio
+		var x := fposmod(k * 130.0 + _t * (6.0 + k * 2.0), 400.0) - 60.0
+		var y := 10.0 + k * 14.0
+		for b in [[0, 4, 10], [8, 0, 12], [18, 3, 10], [26, 6, 8]]:
+			c.draw_rect(Rect2(x + b[0], y + b[1], b[2] + 6, 8 - b[1] * 0.5), Color(0.97, 0.98, 1.0))
+		c.draw_rect(Rect2(x + 2, y + 8, 34, 2), Color(0.82, 0.88, 0.96))
+	c.draw_rect(Rect2(0, 70, 320, 110), Color(0.46, 0.66, 0.36))
+	c.draw_rect(Rect2(0, 70, 320, 3), Color(0.38, 0.56, 0.3))
+	for i in 46:  # las matas de pasto
+		var x := float((i * 53) % 320)
+		var y := 76.0 + float((i * 37) % 60)
+		var sway := 1.0 if fmod(_t * 1.5 + i * 0.3, 2.0) < 1.0 else 0.0
+		c.draw_rect(Rect2(x, y, 1, 3), Color(0.3, 0.5, 0.24))
+		c.draw_rect(Rect2(x + 2 + sway, y - 1, 1, 4), Color(0.3, 0.5, 0.24))
+		c.draw_rect(Rect2(x + 4, y + 1, 1, 2), Color(0.3, 0.5, 0.24))
+
+
+## La entrada: tres destellos, las barras negras que cierran la pantalla de lado y lado, se abren, y
+## los perros entran: el otro por la izquierda, Lukas por la derecha.
+func _intro() -> void:
+	var cover := Control.new()
+	add_child(cover)
+	var flash := ColorRect.new()
+	flash.size = Vector2(320, 180)
+	flash.color = Color(1, 1, 1, 0)
+	cover.add_child(flash)
+	for k in 3:
+		var t := create_tween()
+		t.tween_property(flash, "color:a", 0.9, 0.06)
+		t.tween_property(flash, "color:a", 0.0, 0.09)
+		await t.finished
+	var bars: Array = []
+	var close := create_tween().set_parallel(true)
+	for i in 9:
+		var b := ColorRect.new()
+		b.color = INK
+		b.size = Vector2(320, 20)
+		b.position = Vector2(-320.0 if i % 2 == 0 else 320.0, i * 20.0)
+		cover.add_child(b)
+		bars.append(b)
+		close.tween_property(b, "position:x", 0.0, 0.32).set_delay(i * 0.03).set_trans(Tween.TRANS_QUAD)
+	await close.finished
+	_root.visible = true
+	var foe_to := _foe_spr.position
+	var me_to := _me_spr.position
+	_foe_spr.position.x = -90.0
+	_me_spr.position.x = 340.0
+	await get_tree().create_timer(0.15).timeout
+	var open := create_tween().set_parallel(true)
+	for i in bars.size():
+		open.tween_property(bars[i], "position:x", 320.0 if i % 2 == 0 else -320.0, 0.3).set_delay(i * 0.02)
+	open.tween_property(_foe_spr, "position", foe_to, 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	open.tween_property(_me_spr, "position", me_to, 0.7).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await open.finished
+	cover.queue_free()
 
 
 func _face(id: String) -> Texture2D:
@@ -249,6 +319,7 @@ func _say(t: String) -> void:
 
 
 func _run() -> void:
+	await _intro()
 	await _say("(¡%s, el perro de esta cuadra, no deja pasar a Lukas!)" % _foe_name)
 	await _say("(Él no pelea. Le hace señas a Lukas, como con los trucos. ¿Qué le pide?)")
 	while true:
@@ -433,4 +504,5 @@ func _end(how: String) -> void:
 		GameState.change_mood(-3.0)
 	GameState.ui_open = false
 	GameState.block_input(0.3)
+	MusicDirector.release()  # vuelve la del barrio
 	_done.emit(result)

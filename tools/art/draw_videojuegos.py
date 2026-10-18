@@ -1,6 +1,6 @@
 """La tienda de videojuegos del barrio (python tools/art/draw_videojuegos.py).
 
-La Caverna de Gamer. Una fachada como las demás (techo de chapa visto desde arriba, fachada abajo): 110x70, con el pie de la
+La Caverna del Gamer. Una fachada como las demás (techo de chapa visto desde arriba, fachada abajo): 110x70, con el pie de la
 fachada en el borde de abajo. Vitrina con dos pantallas prendidas, un control colgado y la puerta.
 Salida: assets/barrio/videojuegos.png. La pone en el mapa scripts/systems/Vecindario.gd.
 """
@@ -37,8 +37,8 @@ for _ in range(120):
     d.point((x, y), fill=random.choice([(50, 44, 80), (68, 62, 106)]))
 d.rectangle([0, H - 3, W - 1, H - 1], fill=(34, 30, 54))
 
-# El letrero: LA CAVERNA DE GAMER (el canal de un amigo). Dos renglones, bajitos: arriba pasa el cable.
-for k, text in enumerate(("LA CAVERNA", "DE GAMER")):
+# El letrero: LA CAVERNA DEL GAMER (el canal de un amigo). Dos renglones, bajitos: arriba pasa el cable.
+for k, text in enumerate(("LA CAVERNA", "DEL GAMER")):
     tw = int(d.textlength(text, font=FONT))
     sx = (W - tw) // 2
     y = ROOF + 8 + k * 10

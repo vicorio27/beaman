@@ -140,7 +140,7 @@ func run(id: String, npc: Node) -> void:
 		"feria_carrusel", "feria_chocones", "feria_montana", "feria_dardos", "feria_garra", "feria_rueda":
 			await _feria(id.substr(6))
 		"caverna_cerrada":
-			await Dialogue.talk([["", "(La Caverna de Gamer, cerrada. Abre a las diez. Por la vidriera, las maquinitas apagadas parecen dormidas. El gato de Al no: el gato vigila.)"]])
+			await Dialogue.talk([["", "(La Caverna del Gamer, cerrada. Abre a las diez. Por la vidriera, las maquinitas apagadas parecen dormidas. El gato de Al no: el gato vigila.)"]])
 		"casa_cama", "casa_caja", "casa_alcancia", "casa_tablero", "casa_armar", "casa_cocina":
 			await _casa(id)
 		"billar_guardia":
@@ -762,31 +762,6 @@ func _bano_anim() -> void:
 	out.parallel().tween_property(p, "global_position", from, 0.4)
 	await out.finished
 
-
-## Mecerse: mientras se impulsa, se le ve ir y venir.
-func _swing_start() -> Tween:
-	var p := get_tree().get_first_node_in_group("player") as Node2D
-	if p == null or p.get_node_or_null("Sprite") == null:
-		return null
-	var sp: Node2D = p.get_node("Sprite")
-	var t := sp.create_tween().set_loops()
-	t.tween_property(sp, "position:x", 5.0, 0.55).set_trans(Tween.TRANS_SINE)
-	t.parallel().tween_property(sp, "rotation", -0.22, 0.55).set_trans(Tween.TRANS_SINE)
-	t.tween_property(sp, "position:x", -5.0, 1.1).set_trans(Tween.TRANS_SINE)
-	t.parallel().tween_property(sp, "rotation", 0.22, 1.1).set_trans(Tween.TRANS_SINE)
-	t.tween_property(sp, "position:x", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
-	t.parallel().tween_property(sp, "rotation", 0.0, 0.55).set_trans(Tween.TRANS_SINE)
-	return t
-
-
-func _swing_stop(t: Tween) -> void:
-	if t != null:
-		t.kill()
-	var p := get_tree().get_first_node_in_group("player") as Node2D
-	if p != null and p.get_node_or_null("Sprite") != null:
-		var sp: Node2D = p.get_node("Sprite")
-		sp.position.x = 0.0
-		sp.rotation = 0.0
 
 
 # ---------------------------------------------------------------- Baño público y pensión
@@ -2123,8 +2098,12 @@ func _pelaos() -> void:
 	else:
 		end = [["BRAYAN", "—%d a %d. Fresco, señor. El arquero de antes era una caneca, y la caneca también perdía." % [res[2], res[1]]]]
 	if GameState.lukas_alive():
-		end.append(["", "(Lukas se roba la pelota y sale corriendo. Los tres pelados detrás. Nadie la recupera en diez minutos. Nadie quiere.)"])
+		end.append(["BRAYAN", "—¡Señor! ¡Su perro! ¡Se llevó la pelota! ¡Cójalo!"])
 	await Dialogue.talk(end)
+	if GameState.lukas_alive():  # a correr detrás de Lukas, con los tres pelados (PelotaLukas)
+		var caught: bool = await PelotaLukas.play(self)
+		await Dialogue.talk([["", "(La recupera. Bueno: se tiran encima los cuatro y Lukas encima de todos. Nadie se acuerda de quién ganó los penaltis.)"
+			if caught else "(No lo alcanza nadie. Lukas la trae solo, cuando se cansa, y la suelta a los pies de la Flaca. Ella le da el bombón. A Lukas.)"]])
 	TimeManager.skip(1.0)
 	GameState.change_mood(6.0)
 	GameState.company(25.0)
@@ -2182,10 +2161,13 @@ func _columpio() -> void:
 			"(Se mece. Un pelado pasa y lo mira raro. Él se mece más alto.)",
 			"(Se mece con los ojos cerrados. Por un rato no es nadie. Es descansado no ser nadie.)"].pick_random()]]
 	await Dialogue.talk(lines)
-	var swing := _swing_start()
-	var hits: int = await Ritmo.play(self, "Impulsarse cuando llega atrás", 5,
-		{"hit": "¡Más alto!", "miss": "Se frena un poco.", "speed": 90.0, "speedup": 22.0})
-	_swing_stop(swing)
+	# Columpiarse de verdad: el péndulo, con abajo/arriba al ritmo (ColumpioRide). Hasta que quiera.
+	var swing := get_tree().current_scene.find_child("swing_*", true, false) as Sprite2D
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	var top := 0.0
+	if swing and p:
+		top = await ColumpioRide.ride(swing, p)
+	var hits := clampi(int(round(top * 4.0)), 0, 4)
 	var end := ["(Se mece bajito. Igual cuenta.)", "(Se mece. El estómago se le sube un poquito.)",
 		"(Va alto. Las cadenas crujen. Él no se baja.)", "(Va tan alto que por un segundo ve por encima del muro. Y se ríe. Sin sonido, pero se ríe.)"]
 	var after := [["", end[clampi(hits - 1, 0, 3)]]]
@@ -2262,6 +2244,9 @@ const TV_SHOWS := {
 		[["", "(Fútbol. Pierde el equipo de todos. Un señor patea un poste. El poste gana.)"]],
 	],
 }
+## Dónde empieza cada franja en la hoja de viñetas de la tele (tools/art/draw_vinetas_tele.py): una
+## fila por programa, en el mismo orden de TV_SHOWS.
+const TV_FILAS := {"mañana": 0, "noticias": 3, "novela": 6, "f1": 9, "futbol": 14}
 const TV_OWNER := [
 	["DON JAIRO", "—Hermano, esto no es cine. ... Bueno, quédese. Pero no se me recueste en el vidrio, que lo acabé de limpiar."],
 	["DON JAIRO", "—¿Va a comprar el televisor? ... Ya sé que no. Pregunto para que se sienta incluido."],
@@ -2278,10 +2263,13 @@ func _vitrina_tv() -> void:
 	var band := "mañana" if h < 12 else ("noticias" if h < 14 else ("novela" if h < 18 else "futbol"))
 	if (GameState.day % 7 == 0 and h < 12) or (band == "futbol" and randf() < 0.3):
 		band = "f1"  # domingo en la mañana, en vivo; en la tarde, la repetición
-	var show: Array = TV_SHOWS[band].pick_random()
+	var k: int = randi() % (TV_SHOWS[band] as Array).size()
+	var show: Array = TV_SHOWS[band][k]
+	var pic := Vineta.show_over("tele", int(TV_FILAS[band]) + k)  # lo que están dando, en su viñeta
 	var i := await Dialogue.talk([["", "(La vitrina de TV RADIO: nueve televisores, el mismo canal, sin sonido.)"]] + show,
 		["Ver un rato (1 hora)", "Quedarse la tarde (3 horas)", "Seguir"])
 	if i == 2:
+		Vineta.hide_over(pic)
 		return
 	var hours := 1.0 if i == 0 else 3.0
 	await _sit_ground("up")  # en el andén, frente a la vitrina
@@ -2306,6 +2294,7 @@ func _vitrina_tv() -> void:
 	if GameState.lukas_alive():
 		lines.push_front(["", "(Lukas se echa a sus pies y se duerme. A Lukas la tele le da igual: él ve todo en olores.)"])
 	await Dialogue.talk(lines)
+	Vineta.hide_over(pic)
 
 
 func _palomas() -> void:
@@ -3071,6 +3060,9 @@ func _buhonero(npc: Node) -> void:
 			await sp.create_tween().tween_property(sp, "modulate:a", 0.0, 0.5).finished
 		npc.queue_free()
 	await Dialogue.talk(BUHONERO_QUEDA[opts[i]] if trato and BUHONERO_QUEDA.has(opts[i]) else BUHONERO_MIRAN[n % BUHONERO_MIRAN.size()])
+	var p := get_tree().get_first_node_in_group("player")
+	if p and p.has_method("wake_confused"):
+		p.wake_confused(false)  # ya no hay nadie ahí: mira para todos lados
 	if trato and int(f.get("buhonero_tratos", 0)) in [2, 4]:
 		Narrator.say("(A la gente se le está yendo la cara. A él le parece que antes tenían más.)")
 
@@ -3419,12 +3411,12 @@ func _billar_borracho() -> void:
 
 
 # ---------------------------------------------------------------- La tienda de videojuegos: el amigo
-## La Caverna de Gamer, la tienda de videojuegos (la pone scripts/systems/Vecindario.gd). Álvaro, pero
+## La Caverna del Gamer, la tienda de videojuegos (la pone scripts/systems/Vecindario.gd). Álvaro, pero
 ## le gusta que le digan Al: el único amigo que tiene, el único que le hace charla sin pedirle nada.
 ## Flags: amigo_n (charlas), amigo_dia, amigo_jugo (día).
 const AMIGO := "AL"
 const AMIGO_CHARLAS := [
-	[[AMIGO, "—¡Quiubo! Bienvenido a La Caverna de Gamer. Pase, pase. Aquí no se compra nada, tranquilo. Nadie compra. Esto es más museo que tienda."],
+	[[AMIGO, "—¡Quiubo! Bienvenido a La Caverna del Gamer. Pase, pase. Aquí no se compra nada, tranquilo. Nadie compra. Esto es más museo que tienda."],
 		[AMIGO, "—Álvaro. Pero dígame Al. Álvaro me dice mi mamá cuando le rayo un disco."],
 		[AMIGO, "—¿Usted no habla? Perfecto. Yo llevo once años hablándole a un Nintendo. Usted por lo menos parpadea."]],
 	[[AMIGO, "—Le explico el negocio: vendo juegos de hace veinte años a gente que no existe. Va bien. Cero reclamos."],
@@ -3463,7 +3455,7 @@ func _amigo() -> void:
 		GameState.company(40.0)
 		return
 	var n := int(f.get("amigo_n", 0))
-	var i := await Dialogue.talk([["", "(La Caverna de Gamer. Adentro suenan seis juegos al tiempo. Ninguno tiene jugador.)" if n == 0
+	var i := await Dialogue.talk([["", "(La Caverna del Gamer. Adentro suenan seis juegos al tiempo. Ninguno tiene jugador.)" if n == 0
 		else "(Al lo ve llegar y le baja el volumen a todo. No hace eso con nadie más. No viene nadie más.)"]],
 		["Charlar", "Jugar en la consola de exhibición", "Seguir"])
 	if i == 2:
@@ -3501,10 +3493,10 @@ const CASES := {
 			["npc:marta", "Lo que sabe Marta"], ["npc:wilson", "Lo que dice la calle (Wilson)"]],
 		"reveal": [["", "(Pega los recortes en el cartón, en orden.)"],
 			["", "(Un operativo en el sur. Policía y ejército. Por una denuncia de Diana Carolina. Un hombre huyó por el río.)"],
-			["", "(Página 14, meses después: la denuncia fue retirada. No hubo cargos.)"],
+			["", "(Página 14, días después: la denuncia fue retirada. No hubo cargos. La retiró ella, de a poquitos.)"],
 			["", "(Todo el barrio vio la portada. Nadie leyó la página 14.)"],
 			["", "(Y lo que no sale en ningún recorte: esa noche le sellaron la casa y le guardaron la cédula. Nadie le devolvió ninguna de las dos.)"],
-			["", "(No hubo cargos. Pero cada patrulla que pasa lo conoce. Lo mueven de la plaza, del parque, del puente. Hace meses.)"],
+			["", "(No hubo cargos. Pero cada patrulla que pasa lo conoce. Lo mueven de la plaza, del parque, del puente. Desde esa noche.)"],
 			["", "(Se queda mirando el cartón. Una hora. No se mueve.)"]]},
 	"tejas": {"title": "LA CASA DE TEJAS", "quest": "m_tejas", "start": "casa_tejas_misterio",
 		"clues": [["carta_ines", "La carta de Madrid"], ["npc:samuel", "Lo que sabe Samuel"], ["npc:german", "Lo que sabe Germán"]],
@@ -4007,7 +3999,7 @@ func _agente() -> void:
 		["", "(Un hombre de civil, con las manos juntas. No reza. Espera.)"],
 		["AGENTE", "—Usted no se acuerda de mí. Yo sí de usted. Yo estaba en el operativo."],
 		["AGENTE", "—La mamá de la niña nos dio la dirección. Y la foto. Y nos dijo que usted estaba armado. Que iba a hacerle algo a la niña."],
-		["AGENTE", "—No era cierto. Lo supimos esa misma noche. Nadie lo escribió. La denuncia la retiraron meses después. En silencio."],
+		["AGENTE", "—No era cierto. Lo supimos esa misma noche. Nadie lo escribió. La denuncia la fue retirando ella misma, de a poquitos. En silencio."],
 		["AGENTE", "—Pero la ficha no la cerraron. El sargento firmó que usted estaba armado. Si usted consigue casa, trabajo, abogado... alguien pregunta por esa firma."],
 		["AGENTE", "—Entonces la orden fue otra: que no se quede quieto. Que no tenga dirección. Un hombre sin dirección no demanda a nadie."],
 		["AGENTE", "—Su cédula está en un cajón de la estación. Evidencia de un caso que no existe. Y cada vez que le pidieron papeles en la plaza, no fue casualidad. Yo fui dos veces."],
@@ -4031,7 +4023,7 @@ func _verdad() -> void:
 		["LORENA", "—..."],
 		["DEFENSORA", "—Visitas sin supervisión. Y el cumpleaños de la niña, con el papá. La custodia la revisamos con otra audiencia. Y con otra actitud."],
 		["AGENTE", "—Y hay una ficha abierta en la estación, doctora. Con una firma que no es cierta. Por esa ficha no lo dejan dormir dos noches en el mismo sitio."],
-		["DEFENSORA", "—¿Meses moviéndolo de andén en andén por una denuncia retirada? ... Hoy mismo oficio a la estación. Que la cierren. Y que me expliquen el cajón."],
+		["DEFENSORA", "—¿Semanas moviéndolo de andén en andén por una denuncia que la misma denunciante retiró? ... Hoy mismo oficio a la estación. Que la cierren. Y que me expliquen el cajón."],
 		["", "(Lorena no lo mira. No tiene a quién llamar.)"],
 		["DEFENSORA", "—¿Quiere decir algo, señor? ... ¿Algo? ... Bueno. Usted ya habló con esa página. Mejor que cualquier abogado."],
 		["", "(Sale de la oficina. Afuera, Lukas mueve la cola.)" if GameState.lukas_alive() else "(Sale de la oficina. Afuera no lo espera nadie. Toca el collar en la mochila.)"],

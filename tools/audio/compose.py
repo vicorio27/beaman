@@ -681,7 +681,63 @@ def chase_song():
     return x + siren * 0.09
 
 
+PERROS_CHORDS = ["A", "A", "F", "G", "A", "A", "Bb", "E"] * 2
+PERROS_A = [
+    ("A5", .5), ("E5", .5), ("A5", .5), ("C6", .5), ("B5", 1), ("A5", .5), ("G5", .5),
+    ("A5", 1.5), ("E5", .5), ("G5", 1), ("A5", 1),
+    ("F5", .5), ("A5", .5), ("C6", .5), ("F6", .5), ("E6", 1), ("D6", .5), ("C6", .5),
+    ("D6", 1), ("B5", 1), ("G5", 1), ("B5", 1),
+    ("A5", .5), ("E5", .5), ("A5", .5), ("C6", .5), ("E6", 1), ("D6", .5), ("C6", .5),
+    ("B5", 1.5), ("C6", .5), ("A5", 2),
+    ("Bb5", .5), ("F5", .5), ("Bb5", .5), ("D6", .5), ("C6", 1), ("Bb5", 1),
+    ("G#5", .5), ("B5", .5), ("E6", .5), ("G#5", .5), ("B5", 2),
+]
+PERROS_B_END = [("E6", 2), ("D6", 2), ("C6", 2), ("B5", 2), ("C6", 2), ("D6", 2), ("E6", 3), ("G#5", 1)]
+
+
+def perros_song():
+    """Lukas contra un perro de la calle: la pelea por turnos, como en los juegos de bolsillo. La menor,
+    rápida: el bajo salta de octava en corcheas, la melodía en cuadrada fina, y en la segunda parte los
+    arpegios en semicorcheas antes de la frase larga que sube."""
+    bars = 16
+    tr = Track(156, bars * 4)
+    for bar, ch in enumerate(PERROS_CHORDS):
+        root = midi(ch + "2")
+        minor = ch in ("A",)
+        third = 3 if minor else 4
+        for k in range(8):
+            iv = [0, 12][k % 2]
+            tr.add(bar * 4 + k * 0.5, tri(hz(root + iv), tr.sec(0.42)), 0.6)
+        if bar >= 8 and bar < 12:  # los arpegios
+            for k in range(16):
+                iv = [0, third, 7, 12, 7, third][k % 6]
+                tr.add(bar * 4 + k * 0.25, square(hz(root + 36 + iv), tr.sec(0.2), 0.125, decay=0.06), 0.16)
+        else:
+            for k in range(4):  # el colchón: el acorde en negras, cortito
+                for iv in (0, third, 7):
+                    tr.add(bar * 4 + k + 0.5, square(hz(root + 24 + iv), tr.sec(0.18), 0.25, decay=0.08), 0.05)
+    tr.line(0, PERROS_A, square, 0.3, duty=0.25, vib=0.003)
+    tr.line(48, PERROS_B_END, square, 0.3, duty=0.25, vib=0.006)
+    harm = [((midi(n) - 3) if n else None, l) for n, l in PERROS_B_END]
+    tr.line(48, harm, square, 0.12, duty=0.125)
+    for bar in range(bars):  # la batería de 8 bits: bombo, caja y platillo cerrado
+        b = bar * 4
+        for k in (0, 1.5, 2, 3.5) if bar % 4 == 3 else (0, 2, 2.5):
+            tr.add(b + k, kick(), 0.8)
+        tr.add(b + 1, snare(), 0.5)
+        tr.add(b + 3, snare(), 0.5)
+        if bar % 8 == 7:
+            for k in (3.25, 3.5, 3.75):
+                tr.add(b + k, snare(), 0.4)
+        for h in np.arange(0, 4, 0.5):
+            tr.add(b + h, hat(), 0.2)
+    return tr.buf
+
+
 if __name__ == "__main__":
+    if "perros" in sys.argv:  # Lukas pelea con un perro de la calle
+        save("perros", perros_song())
+        sys.exit()
     if "feria" in sys.argv:  # la feria del lote: la cumbia del barrio, pero de fiesta (más rápida)
         save("feria", cumbia(118, False))
         sys.exit()
@@ -703,6 +759,7 @@ if __name__ == "__main__":
     save("city_day", cumbia(92, False))
     save("city_night", cumbia(70, True))
     save("feria", cumbia(118, False))
+    save("perros", perros_song())
     save("bakery", bolero())
     save("cafe", vals())
     save("night", night_piano())

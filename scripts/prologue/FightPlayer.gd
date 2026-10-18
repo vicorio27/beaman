@@ -71,6 +71,7 @@ const SHOVE_COOLDOWN := 0.6
 var guarding := false
 var _guard_pressed := 99.0  # hace cuánto apretó B
 var _shove_cd := 0.0
+var _guard_hit := 0.0       # aguantando un golpe, tapado
 var _taught := false
 
 
@@ -104,9 +105,10 @@ func tick(delta: float) -> void:
 	if Input.is_action_just_pressed("cancel"):
 		_guard_pressed = 0.0
 	guarding = Input.is_action_pressed("cancel") and state in [State.IDLE, State.WALK]
+	_guard_hit = maxf(0.0, _guard_hit - delta)
 	if guarding:
-		play("crouch")
-		sprite.modulate = Color(0.75, 0.9, 1.25)
+		play("guard_hit" if _guard_hit > 0.0 else "guard")
+		sprite.modulate = Color(0.85, 0.92, 1.12)
 		walk(Vector2.ZERO, delta)
 		return
 	if Input.is_action_just_pressed("drop") and state in [State.IDLE, State.WALK] and _shove_cd <= 0.0:
@@ -279,11 +281,19 @@ func take_hit(damage: int, from_x: float, heavy := false) -> void:
 	if from_front and _guard_pressed <= PARRY and state in [State.IDLE, State.WALK, State.ATTACK]:
 		_parry(from_x)
 		return
-	if guarding and from_front:
-		damage = maxi(1, roundi(damage * GUARD_TAKEN))
+	if guarding and from_front and state in [State.IDLE, State.WALK]:
+		# Tapado: le entra poquito, no lo tumba ni lo atonta; aguanta y se corre un poquito.
+		damage = maxi(1, roundi(damage * GUARD_TAKEN * TAKEN))
+		if hp - damage > 0:
+			hp -= damage
+			_on_hurt(damage)
+			_push = -facing * 34.0
+			_guard_hit = 0.22
+			play("guard_hit")
+			if arena.has_method("_pop"):
+				arena._pop("TAPADO", position + Vector2(0, -50), Color(0.75, 0.85, 1.0))
+			return
 		heavy = false
-		if arena.has_method("_pop"):
-			arena._pop("TAPADO", position + Vector2(0, -50), Color(0.75, 0.85, 1.0))
 	damage = maxi(1, roundi(damage * TAKEN))
 	super.take_hit(damage, from_x, heavy)
 	if state == State.DOWN and weapon != "":

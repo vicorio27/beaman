@@ -235,7 +235,7 @@ PEOPLE = {
                          "p": (66, 90, 140), "q": (46, 64, 104), "k": (240, 236, 228)}, 5),
     # Diana Carolina, trotando: cola de caballo, audífonos, chaqueta deportiva turquesa, licra negra.
     "diana": person(head("cola", audifonos=True), body("saco", corbata=False),
-                    {**SKIN, "h": (60, 42, 34), "H": (90, 66, 52),
+                    {**SKIN, "h": (30, 26, 30), "H": (62, 56, 66),
                      "j": (60, 180, 180), "J": (40, 140, 140), "i": (240, 240, 236),
                      "p": (36, 34, 40), "q": (26, 24, 30), "k": (240, 236, 228)}, 6),
     # Raúl, "el millonario": canoso, bigote, guayabera dorada, cadena.

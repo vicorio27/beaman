@@ -199,6 +199,49 @@ func shoved(dir: Vector2) -> void:
 	seated = ""
 
 
+## Vuelve de una alucinación (la moto, el padrino): desconcertado. Del piso (from_ground) se incorpora;
+## mira para un lado, para el otro, otra vez; sacude la cabeza; un "?" encima. Un par de segundos quieto.
+func wake_confused(from_ground := true) -> void:
+	if seated != "":
+		return
+	seated = "-"
+	_quirk = ""
+	GameState.block_input(3.2)
+	sprite.flip_h = false
+	if from_ground:
+		sprite.play("sit_down")  # quedó sentado en el piso, donde estaba
+		sprite.position.y = -8.0
+		await get_tree().create_timer(0.9).timeout
+		sprite.play("sit_crouch")
+		await get_tree().create_timer(0.3).timeout
+	var mark := Node2D.new()  # el "?", dibujado (no es letra: no se monta sobre los avisos), al lado de la cabeza
+	mark.position = Vector2(9, -24)
+	mark.draw.connect(func() -> void:
+		for p in [[0, 0], [1, 0], [2, 0], [-1, 1], [3, 1], [3, 2], [2, 3], [1, 4], [1, 6]]:
+			mark.draw_rect(Rect2(p[0] - 1, p[1] - 1, 3, 3), Color(0.08, 0.06, 0.1))
+		for p in [[0, 0], [1, 0], [2, 0], [-1, 1], [3, 1], [3, 2], [2, 3], [1, 4], [1, 6]]:
+			mark.draw_rect(Rect2(p[0], p[1], 1, 1), Color(1, 0.9, 0.5)))
+	add_child(mark)
+	facing = "side"
+	for look in [false, true, false]:  # para un lado, para el otro
+		sprite.flip_h = look
+		sprite.play("idle_side")
+		await get_tree().create_timer(0.45).timeout
+	var shake := sprite.create_tween()  # sacude la cabeza
+	for k in 3:
+		shake.tween_property(sprite, "rotation", 0.12, 0.06)
+		shake.tween_property(sprite, "rotation", -0.12, 0.06)
+	shake.tween_property(sprite, "rotation", 0.0, 0.05)
+	await shake.finished
+	facing = "down"
+	sprite.play("idle_down")
+	var fade := mark.create_tween()
+	fade.tween_property(mark, "position:y", -28.0, 0.6)
+	fade.parallel().tween_property(mark, "modulate:a", 0.0, 0.6)
+	fade.tween_callback(mark.queue_free)
+	seated = ""
+
+
 ## Mirar hacia "down", "up", "left" o "right".
 func face(direction: String) -> void:
 	if direction in ["left", "right"]:

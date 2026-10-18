@@ -1930,10 +1930,10 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **El buhonero es Tom Queen, el padrino** (manda sobre lo anterior): alto, bigote blanco, sombrero negro, todo de negro. Le dice "ahijado"; se presenta como su padrino ("los padrinos aparecen cuando hay problemas") y "algunos me dicen el Lobo". En el mapa sale más alto y oscuro que los demás; su retrato es `tomqueen.png`, con la placa "el padrino".
 
 ## Tanda de arreglos (pedidos del 15 de octubre)
-- **La tienda se llama LA CAVERNA DE GAMER** (el canal de un amigo del usuario). El que atiende es Álvaro, pero le gusta que le digan **Al**.
+- **La tienda se llama LA CAVERNA DEL GAMER** (el canal de un amigo del usuario). El que atiende es Álvaro, pero le gusta que le digan **Al**.
 - **El pan:** $600 (el de ayer, "duro pero honrado").
 - **Victoria:** nació con 2.810 gramos y 51 centímetros. Le gusta el morado con negro; lo rosado es de Lorena.
-- **Zaida:** pelirroja, gordita, blanca, de ojos grandes (como Lorena).
+- **Zaida:** pelinegra (como Diana Carolina; las únicas castañas son Lorena y Victoria), gordita, blanca, de ojos grandes (como Lorena).
 - **La clínica se llama Eiren.**
 - **El puesto de doña Rosa:** el encargo del día también lleva al minijuego (antes solo se contaba).
 - **Horarios:** la panadería abre de 6 a 9 de la noche y el café de 6 a 10; cerrados, la puerta no abre. Doña Rosa recoge el puesto a las ocho.
@@ -1969,7 +1969,7 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - **El ajedrez de los viejos** (`scripts/ui/Ajedrez.gd`): una partida de verdad entre Don Ramiro (blancas, siempre el caballo del rey) y Don Octavio. Sigue corriendo aunque él no esté (una jugada cada 4 minutos del juego): llega y la partida va por donde va. Se puede mirar (comentan las jugadas) o jugar por Don Ramiro, que se va al baño; si le gana a Octavio, Ramiro le da $2.000.
 
 ## Los lugares por dentro
-- **Interiores** (`scenes/world/Interior.tscn`, `scripts/world/Interior.gd`): la iglesia, la veterinaria, la pensión, el baño público, la Defensoría, la Registraduría, el estudio de fotos y **La Caverna de Gamer** se entran (de día, en su horario; cerrados, la puerta dice lo de antes). Adentro: los muebles, quien atiende (con la misma conversación de siempre) y gente haciendo su vida (`scripts/npc/Vecino.gd`: rezan, barren, hacen fila, ven novela; si uno les da [E], dicen algo en una burbuja). En La Caverna, Al atiende detrás del mostrador; el gato duerme en la repisa.
+- **Interiores** (`scenes/world/Interior.tscn`, `scripts/world/Interior.gd`): la iglesia, la veterinaria, la pensión, el baño público, la Defensoría, la Registraduría, el estudio de fotos y **La Caverna del Gamer** se entran (de día, en su horario; cerrados, la puerta dice lo de antes). Adentro: los muebles, quien atiende (con la misma conversación de siempre) y gente haciendo su vida (`scripts/npc/Vecino.gd`: rezan, barren, hacen fila, ven novela; si uno les da [E], dicen algo en una burbuja). En La Caverna, Al atiende detrás del mostrador; el gato duerme en la repisa.
 - **El colegio no se entra**: él es el de la reja. Ahí pasa lo de Victoria.
 - **La gente de afuera** que no camina, de vez en cuando mira para otro lado y dice algo suyo (en burbuja): Germán, Rosa, Marta, Wilson, Samuel, los viejos, el celador, el padre.
 
@@ -1978,3 +1978,41 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 - Los juegos (`scripts/ui/FeriaJuegos.gd`): **carros chocones** ($2.000: 30 segundos manejando y chocando), **carrusel** ($1.000: Lukas le ladra en cada vuelta), **montaña rusa** ($3.000: [E] manos arriba en las bajadas), **dardos** ($1.000: con dos globos, peluche), **la garra** ($500: la garra floja de siempre) y **la rueda de Chicago** ($2.000).
 - **Arriba de la rueda, el recuerdo:** una fiesta de diciembre de antes, él sin barba. Fondo blanco al ritmo (aguardiente) y tres caladas (mantener y soltar en lo verde; si se pasa, tose). Baja con ganas de un trago y no se lo toma.
 - **El peluche** (un oso morado con corazón negro) se le puede dejar a Victoria en la reja: le gustan esos colores.
+
+## La huida, rehecha (frenética)
+- **Ya no se agacha: se tira al piso y pasa apretado** por debajo, acostado boca arriba con los dientes apretados y la corbata en la cara (`player_slide.png`, cuadros 3 y 4). Lo de pasar por debajo viene en dos capas (atrás y adelante): él pasa por en medio de las patas. Cada cosa sale una sola vez: en los techos, **el tanque negro elevado** (gotea encima), **el palomar** (salen las palomas), **la mesa del cumpleaños** con la familia (la tía grita; las velas se apagan) y **la placa apuntalada con guadua** (larga: mantener abajo); en el puente, **el tráiler de la mula** sin cabezote y **el poste de la luz caído** (chispas). Si no se tiró, se da en la frente y pasa arrastrado, pero le cuesta.
+- **Lo que se salta:** el murito con vidrios de botella, la pipeta de gas, el arrume de ladrillos, los huecos y, en el puente, los conos y los taxis del trancón. **Los techos no son parejos:** hay que subir al de al lado (si no salta, se estrella) y caer al de abajo.
+- **El helicóptero, siempre encima:** la luz (esconderse detrás del tanque), **la ráfaga que barre el techo** de frente o de atrás (saltarla cuando pasa) y **la mira** (lo sigue, se queda quieta donde él va a estar y disparan: tirarse lo adelanta y se le sale).
+- **Los vecinos, desde sus terrazas:** la de los rulos, el de la barriga en esqueleto, la rezandera y el pelado que transmite en vivo. Gritan lo del aborto, sin piedad y cada uno a su manera (sin repetir), en un globo al lado de la cabeza; algunos tiran chancla, huevo (se le queda en el pelo), matera o biblia: al piso. En el puente gritan los taxistas.
+- **Alzar a Lukas:** hay una calle muy ancha para él. Lukas se para en el borde; con [E] lo alza y corre con él en brazos un rato (sin poder tirarse al piso), hasta que lo pone en el suelo.
+- **Más largo y más rápido:** unos 75 segundos de techos (la velocidad sube) y 25 de puente. Las amenazas están puestas para no pisarse entre ellas; un bot la terminó entera con uno o dos tropiezos.
+- Arte: `tools/art/draw_huida.py` (→ `assets/prologue/huida/`). Sonidos: `tools/audio/huida_sfx.py` (rotor, ráfaga, aleteo, ploc, chispa).
+
+## Arreglos sueltos
+- **Pantalla llena:** el juego escala a cualquier tamaño (no solo múltiplos enteros); las láminas del prólogo llevan detrás la misma viñeta, grande y oscura.
+- **Pelo:** Zaida y Diana Carolina son pelinegras; las únicas castañas son Lorena y Victoria.
+- La tienda se llama **La Caverna del Gamer**. Al salir de ella (o de la feria) se queda en su puerta, no en el puente.
+- **La feria por fuera** (`tools/art/draw_feria_lote.py`): por encima de la reja se ve todo: la montaña rusa con su carrito que da la vuelta, el carrusel con los caballitos que suben y bajan, los chocones moviéndose (con chispas en la malla), la garra, los dardos y el carrito de las obleas; de noche, las guirnaldas de bombillos. Cerrada, todo quieto. No se camina por encima: se entra por el arco.
+
+## Lukas y la gente
+- **Lukas huele a la gente:** cuando él le habla a alguien, Lukas va y lo huele. Según quién (`Lukas.GREET`), se queda a que lo consientan (corazoncitos) o se devuelve bravo (resopla) y se le sienta de espaldas.
+- **La pelota de los pelados** (`scripts/ui/PelotaLukas.gd`): después de los penaltis, Lukas se roba la pelota y hay que ir tras él por todo el lote; los tres pelados corren también. Lukas hace el quiebre cuando lo tienen cerca y se cansa con los segundos. Al final se tiran todos al pasto.
+- **Las peleas de Lukas se sienten otro juego** (`PeleaPerros.gd`): entran con tres destellos y barras negras, suena su propio tema ("perros", `compose.py perros`), los perros entran cada uno por su lado y el fondo es de juego de bolsillo (cielo, nubes, pasto).
+
+## Lo interactivo
+- **El columpio** (`scripts/world/ColumpioRide.gd`): se mece de verdad, como un péndulo, visto de frente. Abajo cuando va para adelante, arriba cuando va para atrás: se impulsa. E: frena con los pies. Lukas le ladra en cada ida.
+- **La tele de la vitrina:** cada programa trae su viñeta (`tools/art/draw_vinetas_tele.py`, 17): el televisor grande con el programa animado adentro, los otros con el mismo canal, y él y Lukas en la vereda con la luz de la pantalla en la espalda.
+- **La moto** (con Lorena o solo): al llegar no frena; la cámara se queda y la moto se pierde en el horizonte con sus pasajeros.
+- **Después de una alucinación** (la moto, el padrino) se levanta desconcertado: del piso, mira a los lados, sacude la cabeza, un "?" al lado de la cabeza (`Player.wake_confused`).
+- **El cambuche a la intemperie:** con solo toldo (niveles 1 y 2) no hay paredes: el andén alrededor, la gente que pasa (y a veces se para a mirar), el toldo que se mueve y gotea si llueve, el poste de luz, la luz de la hora. Con estibas (3) se cierra.
+
+## El beat 'em up
+- Abajo, siempre: **E pegar · Q taparse · X empujar**.
+- **Taparse** tiene su dibujo (los antebrazos delante de la cara, como un boxeador; `heroe_suenos.py`, fila 9) y un cuadro de aguante cuando le entra el golpe.
+- Los sueños ya no dicen "SUEÑO 1": cada uno es una sorpresa.
+
+## La denuncia se cae, y Carolina pide perdón
+`scripts/systems/Carolina.gd`. Una cosa por día, en la ciudad: la ve en la esquina (día 5); una llamada en silencio y un "perdón" (o una nota, sin celular; día 10); el recorte de la página 9, "la denunciante rectifica" (día 15); su carta debajo del cartón (día 20); habla con él, por teléfono o en persona al lado del puente (día 25: Lorena la llevó, lo del arma lo puso Lorena, la decisión fue de ella); y la denuncia queda retirada (día 30): ahí aparece la página 14 en el parque. La ficha de la policía sigue abierta hasta la Defensoría.
+
+## Lombardía de noche
+El barrio se llama **Lombardía**. Una noche (desde el día 8, una sola vez) lo despierta el frío: Lukas no está. Sale a buscarlo a la una y diez, por el barrio de noche (los del kiosco, las muchachas del poste, el celador, el billar). Lukas está sentado frente al carrito de los perros calientes, con media salchicha adentro. Al acostarse otra vez sigue la misma noche.

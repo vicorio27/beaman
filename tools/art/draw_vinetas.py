@@ -1547,7 +1547,7 @@ def p_estacion(f):
     ground(cv, 92, (130, 126, 130), env)
     cv.post.append(lambda d: (d.ellipse([206, 6, 230, 30], outline=(60, 50, 60)), d.line([(218, 18), (218, 10)], fill=(60, 50, 60)), d.line([(218, 18), (224, 22)], fill=(60, 50, 60)),
                               d.text((200, 34), "17:30", font=FONT, fill=(60, 40, 50))))
-    _woman(cv, env, 150 + f, 96, (60, 180, 180), (60, 42, 34), hold=(250, 250, 240))   # ella, con la copia
+    _woman(cv, env, 150 + f, 96, (60, 180, 180), (30, 26, 30), hold=(250, 250, 240))   # ella, con la copia
     small_man(cv, 92, 88, 0.55, dk((60, 80, 70), 1.0))                                  # un agente, en la puerta
     return cv
 

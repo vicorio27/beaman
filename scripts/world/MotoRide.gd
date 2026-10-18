@@ -7,7 +7,9 @@ extends Node2D
 ## y conos.
 ##   Arriba / E: acelerar. Abajo: frenar. Izquierda / derecha: doblar.
 ##   (En las carreras de los sueños E no acelera: es la patada / la botella; ver Carrera.gd.)
-## Al llegar: la imagen de la llegada, ella en la puerta, y de vuelta al presente.
+## Al llegar no frena: la cámara se queda y la moto sigue derecho, achicándose, hasta perderse en el
+## horizonte (con quien vaya atrás). Después, la imagen de la llegada, ella en la puerta, y de vuelta
+## al presente.
 ## Hay que llegar a tiempo (TIME_LIMIT; la vuelta limpia, a fondo, son ~43 s): si no, ella ya no está en
 ## la puerta y el recuerdo se rebobina ("No. Así no fue.") y se vuelve a empezar desde la salida.
 ## (Las carreras de los sueños y Rapidito heredan de acá y no tienen este límite: time_limit = 0.)
@@ -112,6 +114,8 @@ var segments: Array[Seg] = []
 var cars: Array = []            # {"tex", "offset", "z", "speed", "w"}
 var track_len := 0.0
 var finish_z := 0.0
+var _away := 0.0       # pasada la meta: hace cuánto se va alejando la moto de la cámara (que se quedó)
+var _vanish := Vector2(W / 2.0, H / 2.0)  # el fondo de la calle, donde se pierde
 var cam_depth := 0.0
 var player_z := 0.0
 var position_z := 0.0
@@ -300,9 +304,14 @@ func _physics_process(dt: float) -> void:
 			speed = move_toward(speed, 0.0, MAX_SPEED * dt * 0.8)
 			position_z += speed * dt
 		"finish":
-			speed = move_toward(speed, 0.0, MAX_SPEED * dt * 0.6)
+			# La cámara frena y se queda; la moto no: sigue hasta perderse al fondo.
+			speed = move_toward(speed, 0.0, MAX_SPEED * dt * 0.5)
 			position_z += speed * dt
-			if speed <= 1.0:
+			_away += dt
+			_engine.volume_db = linear_to_db(clampf(1.0 - _away / 5.0, 0.05, 1.0))
+			if _away > 1.3:
+				_hud_center.text = ""  # que se vea irse
+			if _away > 5.0:
 				state = "arrival"
 				_arrival()
 	_move_cars(dt)
@@ -466,6 +475,7 @@ func _draw() -> void:
 			continue
 		_vis.append(s)
 		maxy = s.sy2
+		_vanish = Vector2(s.x2, s.sy2)
 	# La calle, de atrás para adelante (lo cercano tapa a lo lejano).
 	for k in range(_vis.size() - 1, -1, -1):
 		_draw_segment(_vis[k])
@@ -491,6 +501,16 @@ func _draw() -> void:
 		var tex: Texture2D = _bike[_lean]
 		var bounce := sin(Time.get_ticks_msec() / 60.0) * (1.0 if absf(player_x) > 1.0 else 0.3) * (speed / MAX_SPEED)
 		var at := Vector2(W / 2.0 - tex.get_width() / 2.0, H - tex.get_height() - 4 + bounce)
+		if state == "finish":  # se va: sube hacia el fondo de la calle y se achica, con todo y pasajeros
+			var k := 1.0 - exp(-_away / 1.6)
+			var size := tex.get_size()
+			var foot := Vector2(W / 2.0, H - 4.0 + bounce)
+			var sc := 1.0 - k
+			draw_set_transform(foot.lerp(_vanish, k) + shake, 0.0, Vector2(sc, sc))
+			draw_texture(tex, Vector2(-size.x / 2.0, -size.y))
+			_draw_rider_extra(Vector2(-size.x / 2.0, -size.y), size)
+			draw_set_transform(Vector2.ZERO)
+			return
 		if _wheelie > 0.0:  # en una rueda: la moto se para (se ve más alta) y tiembla
 			var up := minf(1.0, _wheelie / 0.25)
 			at += Vector2(sin(_wheelie * 30.0) * 0.6, -7.0 * up)
@@ -707,4 +727,5 @@ func _back_to_present() -> void:
 	GameState.complete_quest("moto_cafe")
 	GameState.start_quest("sobrevivir")
 	GameState.start_quest("lukas_comida")
+	f["despierta_confundido"] = true  # vuelve en sí frente a la café, desconcertado (Player.wake_confused)
 	SceneRouter.go(CITY, "FromCafe", "", "(La café de enfrente arranca y se va. El dueño ni lo miró.)")

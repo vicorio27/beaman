@@ -86,6 +86,9 @@ func _process(delta: float) -> void:
 			_sprite.play("idle_down")
 			say(talk[_talk_i % talk.size()])
 			_talk_i += 1
+			var lukas := get_tree().current_scene.find_child("Lukas", true, false)
+			if lukas and lukas.has_method("greet"):
+				lukas.greet(self, str(spec.get("id", name)))
 			GameState.company(2.0)
 			_wait = maxf(_wait, 2.5)
 		return

@@ -1,6 +1,6 @@
 extends Node
 ## Cosas del barrio que se ponen por código (lo agrega Location en los lugares de afuera):
-##   - LA CAVERNA DE GAMER, la tienda de videojuegos (City, al lado del billar), y Álvaro, "Al", que la
+##   - LA CAVERNA DEL GAMER, la tienda de videojuegos (City, al lado del billar), y Álvaro, "Al", que la
 ##     atiende: el único amigo que tiene. Abre de 10 a 8. Lo que dice: Conversations._amigo.
 ##   - Las canecas (trash_*, dumpster_*): se pueden esculcar (Conversations._caneca).
 ##   - En la esquina de la avenida, sin postes en la mitad: los semáforos y las cebras son de Traffic.gd.
@@ -113,6 +113,7 @@ func _setup() -> void:
 		d.position = spec[2]
 		_world.add_child(d)
 	_add_buhonero()
+	_respawn()
 	var tree := _world.find_child("tree_sparse*", false, false) as Node2D
 	if tree:
 		for at in [Vector2(-9, -34), Vector2(6, -40), Vector2(11, -28), Vector2(-3, -26)]:  # las guayabas
@@ -135,6 +136,22 @@ func _setup() -> void:
 
 
 ## El buhonero: algunos días, en un sitio solo. Un día sí lo sacó la suerte, otro no (la misma todo el día).
+## Lo que se pone aquí (la puerta de La Caverna, la de la feria) llega después de que Location ubicó al
+## jugador: si venía de salir por una de esas puertas, quedó en el puente. Se le pone en su puerta.
+func _respawn() -> void:
+	var sp := SceneRouter.spawn_point
+	if sp == "" or not (_scene is Location):
+		return
+	var at := _scene.get_node_or_null(sp) as Node2D
+	var player: Node2D = _scene.player
+	if at == null or player == null or player.global_position.distance_to(at.global_position) < 1.0:
+		return
+	player.global_position = at.global_position
+	var cam := player.get_node_or_null("Camera2D") as Camera2D
+	if cam:
+		cam.reset_smoothing()
+
+
 func _add_buhonero() -> void:
 	var spots: Array = BUHONERO_AT.get(_scene.name, [])
 	var f := GameState.flags
@@ -198,13 +215,64 @@ func _add_shop() -> void:
 	_shop_hours()
 
 
-## La feria del lote de atrás del billar: el arco con bombillos y, al fondo, la rueda de Chicago
-## (de día, quieta y apagada). La feria por dentro: scenes/world/Feria.tscn.
+## La feria del lote de atrás del billar: el arco con bombillos, la rueda de Chicago y, por encima de
+## la reja, todo lo de adentro (tools/art/draw_feria_lote.py): la montaña rusa con su carrito, el
+## carrusel con los caballitos, los chocones, la garra, los dardos, las obleas. Abierta (de 16 a 24),
+## todo se mueve; de noche, los bombillos. Cerrada, quieto. La feria por dentro: scenes/world/Feria.tscn.
 const FERIA_AT := Vector2(790, 100)
 const RUEDA_AT := Vector2(890, 78)
+const FERIA_LOTE := Vector2(690, 0)
+const CHOCONES := [Color(0.85, 0.2, 0.25), Color(0.25, 0.55, 0.9), Color(0.95, 0.8, 0.2), Color(0.3, 0.75, 0.4), Color(0.85, 0.4, 0.8)]
 
 
 func _add_feria() -> void:
+	var info: Dictionary = (load("res://assets/barrio/feria_lote.json") as JSON).data  # (como recurso: así va en la versión web)
+	var back := Sprite2D.new()
+	back.name = "feria_lote"
+	back.texture = load("res://assets/barrio/feria_lote.png")
+	back.centered = false
+	back.position = FERIA_LOTE
+	_world.add_child(back)
+	var rides := Node2D.new()  # lo que se mueve, entre las dos capas
+	rides.name = "feria_juegos"
+	rides.position = FERIA_LOTE
+	var cars: Array = []
+	for i in CHOCONES.size():
+		cars.append({"p": Vector2(info["rink"][0] + 6 + i * 13, info["rink"][1] + 4 + (i % 2) * 10),
+			"v": Vector2.from_angle(i * 1.7) * 18.0})
+	rides.draw.connect(func() -> void: _draw_rides(rides, info, cars))
+	_world.add_child(rides)
+	var front := Sprite2D.new()
+	front.name = "feria_frente"
+	front.texture = load("res://assets/barrio/feria_frente.png")
+	front.centered = false
+	front.position = FERIA_LOTE
+	_world.add_child(front)
+	var body := StaticBody2D.new()  # adentro se entra por el arco, no por encima de la reja
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(330, 90)
+	shape.shape = rect
+	shape.position = FERIA_LOTE + Vector2(165, 45)
+	body.add_child(shape)
+	_world.add_child(body)
+	var anim := Timer.new()
+	anim.wait_time = 1.0 / 30.0
+	anim.autostart = true
+	anim.timeout.connect(func() -> void:
+		if Feria_open():
+			for c in cars:
+				var r: Array = info["rink"]
+				c["p"] += c["v"] * anim.wait_time
+				if c["p"].x < r[0] + 3 or c["p"].x > r[2] - 3:
+					c["v"].x *= -1.0
+				if c["p"].y < r[1] + 2 or c["p"].y > r[3] - 2:
+					c["v"].y *= -1.0
+				c["p"] = c["p"].clamp(Vector2(r[0] + 3, r[1] + 2), Vector2(r[2] - 3, r[3] - 2))
+				if randf() < 0.01:
+					c["v"] = c["v"].rotated(randf_range(-1.2, 1.2))
+		rides.queue_redraw())
+	add_child(anim)
 	var wheel := Node2D.new()
 	wheel.name = "rueda_feria"
 	wheel.position = RUEDA_AT
@@ -252,6 +320,76 @@ func _add_feria() -> void:
 		wheel.queue_redraw()
 		arch.queue_redraw())
 	add_child(redraw)
+
+
+func _draw_rides(n: Node2D, info: Dictionary, cars: Array) -> void:
+	var on := Feria_open()
+	var t := Time.get_ticks_msec() / 1000.0
+	var ink := Color(0.13, 0.1, 0.14)
+	# La montaña rusa: el carrito recorre el riel (sube despacio, baja rápido) y espera en la estación.
+	var track: Array = info["track"]
+	var pos := Vector2(track[0][0] + 6, track[0][1])
+	if on:
+		var total := 0.0
+		for i in track.size() - 1:
+			total += Vector2(track[i][0], track[i][1]).distance_to(Vector2(track[i + 1][0], track[i + 1][1]))
+		var lap := fmod(t, 9.0)
+		var d := 0.0 if lap > 6.5 else total * ease(lap / 6.5, 1.8)
+		for i in track.size() - 1:
+			var a := Vector2(track[i][0], track[i][1])
+			var b := Vector2(track[i + 1][0], track[i + 1][1])
+			var seg := a.distance_to(b)
+			if d <= seg:
+				pos = a.lerp(b, d / seg)
+				break
+			d -= seg
+	n.draw_rect(Rect2(pos + Vector2(-4, -4), Vector2(9, 4)), ink)
+	n.draw_rect(Rect2(pos + Vector2(-3, -3), Vector2(7, 2)), Color(0.95, 0.8, 0.2))
+	if on:  # los de adentro, con los brazos arriba
+		for k in [-2, 2]:
+			n.draw_rect(Rect2(pos + Vector2(k, -6), Vector2(1, 2)), Color(0.85, 0.62, 0.5))
+			n.draw_rect(Rect2(pos + Vector2(k, -8), Vector2(1, 1)), Color(0.85, 0.62, 0.5))
+	# El carrusel: seis caballitos alrededor del eje, subiendo y bajando en sus tubos.
+	var cc: Array = info["carrusel"]
+	var turn := t * 0.7 if on else 0.4
+	var horses: Array = []
+	for i in 6:
+		var a := turn + i * TAU / 6.0
+		horses.append([sin(a), a, i])
+	horses.sort_custom(func(p, q): return p[0] < q[0])  # los de atrás primero
+	for hz in horses:
+		var a: float = hz[1]
+		var x: float = float(cc[0]) + cos(a) * (float(cc[2]) - 6.0)
+		var y: float = float(cc[1]) - 12.0 + sin(a) * 3.0 + (sin(t * 3.0 + hz[2]) * 2.0 if on else 0.0)
+		var dim := 0.75 if hz[0] < 0.0 else 1.0
+		n.draw_line(Vector2(x, float(cc[1]) - 27.0), Vector2(x, float(cc[1]) - 3.0 + sin(a) * 3.0), Color(0.85, 0.7, 0.3) * dim, 1.0)
+		var face := 1.0 if cos(a + PI / 2.0) > 0.0 else -1.0
+		var col: Color = [Color(0.95, 0.94, 0.9), Color(0.55, 0.35, 0.25), Color(0.95, 0.94, 0.9)][int(hz[2]) % 3] * dim
+		n.draw_rect(Rect2(x - 3, y - 1, 6, 3), ink)
+		n.draw_rect(Rect2(x - 2, y, 4, 1), col)
+		n.draw_rect(Rect2(x + 2.0 * face - (1.0 if face < 0 else 0.0), y - 3, 2, 3), col)    # el cuello y la cabeza
+		n.draw_rect(Rect2(x - 2, y + 2, 1, 2), col)                                           # las patas
+		n.draw_rect(Rect2(x + 1, y + 2, 1, 2), col)
+		n.draw_rect(Rect2(x - 1, y - 1, 2, 1), Color(0.85, 0.2, 0.3) * dim)                   # la silla
+	# Los chocones: cada carrito con su tubo a la malla; abierto, chispas arriba.
+	var rink: Array = info["rink"]
+	for i in cars.size():
+		var p: Vector2 = cars[i]["p"] if on else Vector2(rink[0] + 6 + i * 13, rink[3] - 4)
+		n.draw_rect(Rect2(p + Vector2(-4, -2), Vector2(8, 5)), ink)
+		n.draw_rect(Rect2(p + Vector2(-3, -1), Vector2(6, 3)), CHOCONES[i])
+		n.draw_rect(Rect2(p + Vector2(-1, -2), Vector2(2, 1)), Color(0.85, 0.62, 0.5))
+		n.draw_line(p + Vector2(2, -2), Vector2(p.x + 2, float(rink[1]) - 10.0), Color(0.4, 0.4, 0.45), 1.0)
+		if on and int(t * 10.0 + i * 3) % 7 == 0:
+			n.draw_rect(Rect2(p.x + 1, float(rink[1]) - 11.0, 3, 2), Color(0.7, 0.9, 1.0))
+	# Los bombillos: de noche (abierta), titilando en tandas.
+	if on and (TimeManager.hour() >= 17 or TimeManager.hour() < 1):
+		var bulbs: Array = info["bulbs"]
+		for i in bulbs.size():
+			var lit := int(t * 4.0 + i) % 3 != 0
+			var c := Color.from_hsv(fmod(i * 0.17, 1.0), 0.6, 1.0) if lit else Color(0.4, 0.36, 0.3)
+			n.draw_rect(Rect2(float(bulbs[i][0]), float(bulbs[i][1]), 1, 1), c)
+			if lit:
+				n.draw_rect(Rect2(float(bulbs[i][0]) - 1, float(bulbs[i][1]) - 1, 3, 3), Color(c.r, c.g, c.b, 0.25))
 
 
 static func Feria_open() -> bool:

@@ -268,6 +268,16 @@ func _run() -> void:
 		if _rain_tonight():
 			await _say("Empieza a llover. Aquí, por una vez, no." if GameState.roofed(spot)
 				else "Empieza a llover. No hay para dónde correrse.")
+		# Volvió a acostarse después de buscar a Lukas por el barrio: sigue la misma noche.
+		if GameState.flags.get("lombardia_vuelta", false):
+			GameState.flags.erase("lombardia_vuelta")
+			await _say("Vuelve a acostarse. Lukas se le echa encima, con olor a salchicha. A él no le importa.")
+			await _summary(spot)
+			return
+		# Una noche, Lukas se le va: lo despierta el frío y sale a buscarlo (Lombardía de noche).
+		if _lombardia_tonight():
+			await _lombardia(spot)
+			return
 		# La noche en que Lukas se muere (no hay sueño esa noche).
 		if GameState.lukas_dies_tonight():
 			await _lukas_dies()
@@ -289,7 +299,7 @@ func _run() -> void:
 			if dream[0] in ["callejon1", "camion", "lilato1"]:
 				GameState.flags["sueno_suelto"] = [dream[0], dream[1]]
 				Dream.reset()
-			SceneRouter.go(dream[1], "", "SUEÑO %d" % seen.size())
+			SceneRouter.go(dream[1])  # sin "SUEÑO 1": que sea una sorpresa
 			return
 		await _summary(spot)
 		return
@@ -332,6 +342,26 @@ func _show_back() -> void:
 	ink.size = Vector2(106, 48)
 	ink.rotation = -0.04
 	_photo.add_child(ink)
+
+
+## La noche de Lombardía: una sola vez, desde el día 8, con Lukas sano. Él se despierta solo.
+func _lombardia_tonight() -> bool:
+	var f := GameState.flags
+	return GameState.day >= 8 and not f.get("lombardia_hecha", false) and GameState.lukas_alive() \
+		and GameState.lukas_stage() == 0
+
+
+func _lombardia(spot: String) -> void:
+	var f := GameState.flags
+	f["lombardia_hecha"] = true
+	f["lombardia_activa"] = true
+	_show_pic(spot if spot in Vineta.SPOTS else "banco", Vineta.spot_row("despierta", "noche", _rain_tonight(), true))
+	await _say("A la una y diez lo despierta el frío del lado izquierdo. El lado de Lukas.")
+	await _say("Lukas no está.")
+	await _say("Lejos, para el lado de la avenida, un ladrido. Ese ladrido lo reconoce hasta dormido.")
+	GameState.start_quest("noche_lukas")
+	TimeManager.set_time(1, 10)
+	SceneRouter.go(CITY, "Wake_" + spot, "LOMBARDIA — 01:10", "(Lombardía de noche es otro barrio. El mismo, pero con el volumen al revés.)")
 
 
 func _summary(spot: String) -> void:

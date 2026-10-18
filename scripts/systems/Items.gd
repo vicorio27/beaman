@@ -92,8 +92,15 @@ const DB := {
 		"type": "pista", "stack": 1, "fixed": true},
 	"recorte_2": {"name": "Recorte con foto", "desc": "\"...con apoyo del Ejército. El hombre escapó por el río...\" La foto es borrosa. Es él.",
 		"type": "pista", "stack": 1, "fixed": true},
-	"recorte_3": {"name": "Esquina de periódico", "desc": "Meses después, página 14, abajo: \"La denuncia fue retirada. No hubo cargos.\"",
+	"recorte_3": {"name": "Esquina de periódico", "desc": "Página 14, abajo: \"La denuncia fue retirada. No hubo cargos.\"",
 		"type": "pista", "stack": 1, "fixed": true},
+	# Lo de Diana Carolina (scripts/systems/Carolina.gd): lo que le va llegando de ella.
+	"nota_perdon": {"name": "Nota doblada", "desc": "Una hoja de cuaderno, doblada en cuatro. Dice: \"Perdón.\" Las íes con circulito.",
+		"type": "especial", "stack": 1, "fixed": true},
+	"recorte_4": {"name": "Recorte chiquito", "desc": "Página 9: \"La denunciante rectifica. 'Nadie me obligó', dijo ante la Fiscalía.\" Del tamaño de una estampilla.",
+		"type": "pista", "stack": 1, "fixed": true},
+	"carta_carolina": {"name": "Carta de Carolina", "desc": "\"Lo que dije de usted no es verdad. Ya empecé a retirarlo. No le pido nada.\" — C.",
+		"type": "especial", "stack": 1, "fixed": true},
 	"carta_ines": {"name": "Carta vieja", "desc": "Matasellos de Madrid, 2018: \"Mamá, el otro año voy. Te lo prometo.\" Estaba frente a la casa de tejas.",
 		"type": "pista", "stack": 1, "fixed": true},
 	# El coleccionable (uno solo, siete pedazos): la foto rota, regada por la ciudad. No se pierde.

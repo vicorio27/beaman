@@ -21,6 +21,9 @@ func _ready() -> void:
 	player.global_position = spawn.global_position
 	if spawn.has_meta("facing"):
 		player.face(spawn.get_meta("facing"))
+	if GameState.flags.get("despierta_confundido", false):  # viene de una alucinación
+		GameState.flags.erase("despierta_confundido")
+		player.wake_confused.call_deferred()
 
 	var cam: Camera2D = player.get_node("Camera2D")
 	var view := get_viewport_rect().size

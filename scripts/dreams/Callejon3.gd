@@ -55,7 +55,7 @@ func setup() -> void:
 		"—..."]
 	boss_name = "BRENDA"
 	bg_path = "res://assets/prologue/ep3_bg.png"
-	intro_title = "SUEÑO 6"
+	intro_title = "OTRA NOCHE"
 	lilato_cameo = false
 	rain = false
 	next_scene = NIGHT

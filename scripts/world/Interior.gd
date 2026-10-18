@@ -1,7 +1,7 @@
 extends Location
 ## Adentro de los lugares que antes eran solo una conversación en la puerta: la iglesia, la
 ## veterinaria, la pensión, el baño público, la Defensoría, la Registraduría, el estudio de fotos y La
-## Caverna de Gamer. Un cuarto que se camina, con sus muebles, la persona de siempre atendiendo (lo
+## Caverna del Gamer. Un cuarto que se camina, con sus muebles, la persona de siempre atendiendo (lo
 ## que dice es lo mismo de antes: Conversations, por su service_id) y gente haciendo su vida (Vecino).
 ## Cuál es: GameState.flags["interior"] = [id, escena de afuera, camino al Servicio de afuera].
 ## Se entra con ServiceSpot.interior (lo pone Vecindario) y se sale por la puerta de abajo, al mismo sitio.
@@ -92,7 +92,7 @@ const PLACES := {
 				"talk": ["—Sonría, me dicen. Llevo cuarenta años sin hacerlo. No me lo van a sacar con un pajarito."]},
 			{"row": 15, "path": [Vector2(108, 52)], "pose": "down", "say": ["—¡Papá, sonría! ... ¡Así no! ¡Así da miedo!"], "talk": ["—Es mi foto de grado. Mi papá vino. Eso ya es el regalo. No le diga."]}]},
 	"caverna": {"size": Vector2(208, 128), "floor": Color(0.16, 0.14, 0.22), "wall": Color(0.22, 0.18, 0.34),
-		"title": "LA CAVERNA DE GAMER", "tiles": false, "dark": true,
+		"title": "LA CAVERNA DEL GAMER", "tiles": false, "dark": true,
 		"props": [["arcade", Vector2(14, 6), Vector2(20, 34)], ["arcade", Vector2(40, 6), Vector2(20, 34)], ["arcade", Vector2(66, 6), Vector2(20, 34)],
 			["arcade", Vector2(14, 70), Vector2(20, 34)], ["poster", Vector2(96, 6), Vector2(24, 22)], ["shelf_games", Vector2(126, 6), Vector2(70, 22)],
 			["counter", Vector2(130, 46), Vector2(62, 14)], ["tv", Vector2(70, 72), Vector2(28, 20)], ["rug", Vector2(66, 96), Vector2(36, 18)]],

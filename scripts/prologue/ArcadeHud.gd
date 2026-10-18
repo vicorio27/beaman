@@ -23,6 +23,17 @@ func _ready() -> void:
 	_life = _add_bar(Vector2(18, 14), Color(0.95, 0.8, 0.3))
 	_score = _add_label("000000", Vector2(40, 4))
 	_counter = _add_label("", Vector2(262, 4))
+	# Los botones, siempre a la vista (abajo, sobre una franja oscura): qué hace cada uno.
+	var strip := ColorRect.new()
+	strip.color = Color(0.04, 0.03, 0.06, 0.6)
+	strip.position = Vector2(0, 168)
+	strip.size = Vector2(Controls.right_edge(), 12)
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(strip)
+	var keys := _add_label(Controls.keys_in("E pegar  Q taparse  X empujar"), Vector2(0, 170))
+	keys.size = Vector2(Controls.right_edge(), 10)
+	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	keys.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
 
 	_boss_box = Control.new()
 	_boss_box.visible = false

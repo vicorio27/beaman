@@ -15,6 +15,8 @@ const PLAYER := {
 	"hurt": [7, 3, 12.0, false, 0],
 	"fall": [8, 3, 8.0, false, 0],
 	"crouch": [6, 1, 1.0, false, 0],
+	"guard": [9, 1, 1.0, false, 0],      # tapado: los antebrazos delante de la cara (heroe_suenos.py)
+	"guard_hit": [9, 1, 1.0, false, 1],  # tapado, aguantando el golpe
 }
 
 ## Matones (goon, punk, thug comparten distribución).

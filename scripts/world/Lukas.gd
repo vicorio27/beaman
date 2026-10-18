@@ -11,6 +11,8 @@ extends CharacterBody2D
 ##     · Jugar: con la pelota de trapo; se la tira, la va a buscar y (casi siempre) la trae.
 ##     · Hablarle: a Lukas sí le habla, en voz alta. Baja la soledad (barra de compañía del HUD).
 ##     · Juego de miradas: cara a cara (Dialogue.face_off). Él, Lukas, él... y Lukas ladra: "dame algo".
+##   - Cuando él le habla a alguien, Lukas va y lo huele (greet). Según quién (GREET): se queda a que lo
+##     consientan, con corazoncitos, o se devuelve donde él, bravo (resopla) y se le sienta de espaldas.
 
 signal found_something(item_id: String)
 signal at_bowl
@@ -35,6 +37,12 @@ const PET_LINES := [
 	"(Lukas se pone panza arriba.)",
 	"(Lukas le apoya la cabeza en la rodilla. Se quedan así.)",
 ]
+## A quién quiere Lukas (true: se queda a que lo consientan; false: se devuelve bravo). Los demás, según
+## cómo le huelan (siempre lo mismo para la misma persona).
+const GREET := {"german": true, "rosa": true, "marta": true, "wilson": true, "samuel": true, "padre": true,
+	"viejos": true, "viejo2": true, "leonor": true, "fabiola": true, "aurelio": true, "al": true, "brenda": true,
+	"ramiro": true, "mono": false, "celador": false, "efrain": false, "lisandro": false, "lilato": false,
+	"lorena": false, "policia": false, "camila": false, "guillermo": false, "zaida": false}
 const FETCH_LINES := [
 	"(La trae. La suelta a medio metro.)",
 	"(La trae toda babeada.)",
@@ -57,6 +65,9 @@ var _bowl_spot := Vector2.ZERO
 var _bowl_right := false
 var _settle_spot := Vector2.ZERO
 var _settle_t := 0.0
+var _greet_who: Node2D
+var _greet_likes := false
+var _greet_t := 0.0
 
 
 ## Acomodarse en `at` mientras él está sentado: va, se sienta, da una vuelta, se echa y al rato se
@@ -484,7 +495,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_cooldown -= delta
 	var to_player := player.global_position - global_position
-	if to_player.length() > TELEPORT_DIST and not state in ["seek", "settle_go", "settled"]:
+	if to_player.length() > TELEPORT_DIST and not state in ["seek", "settle_go", "settled", "lost"]:
 		_teleport_behind()
 		return
 	match state:
@@ -562,6 +573,10 @@ func _physics_process(delta: float) -> void:
 				sprite.play("lie")
 			elif _settle_t > 9.0 and sprite.animation == "lie":
 				sprite.play("sleep")
+		"greet_go", "greet_sniff", "greet_stay", "greet_back":
+			_greet_tick(delta)
+		"lost":  # se fue solo de noche: está donde está, sentado, esperando que lo encuentren
+			velocity = Vector2.ZERO
 		"drinking":
 			_found_time -= delta
 			if _found_time <= 0.0:
@@ -580,7 +595,7 @@ func _walk(v: Vector2) -> void:
 	velocity = v
 	move_and_slide()
 	if v == Vector2.ZERO:
-		if not state in ["sit", "found", "settle_go", "settled"]:
+		if not state in ["sit", "found", "settle_go", "settled", "greet_sniff", "greet_stay", "greet_back"]:
 			sprite.play("idle_" + facing)
 		return
 	if absf(v.x) > absf(v.y):
@@ -613,6 +628,100 @@ func _teleport_behind() -> void:
 		return
 	global_position = player.global_position + Vector2(-14, 4)
 	state = "follow"
+
+
+## Se le fue (la noche de Lombardía): queda sentado en `at` hasta que él lo encuentre (QuestDirector).
+func wait_at(at: Vector2) -> void:
+	state = "lost"
+	global_position = at
+	facing = "side"
+	sprite.flip_h = true
+	sprite.play("sit")
+
+
+## Él le habla a alguien: Lukas va a olerlo.
+func greet(who: Node2D, id: String) -> void:
+	if not state in ["follow", "sit"] or who == null or not GameState.lukas_alive():
+		return
+	_greet_who = who
+	_greet_likes = GREET.get(id, absi(hash(id)) % 3 != 0)
+	_greet_t = 0.0
+	state = "greet_go"
+
+
+## Un dibujito que sube y se borra encima de él: "corazon" o "bravo" (el resoplido).
+func _float(kind: String) -> void:
+	var n := Node2D.new()
+	n.position = Vector2(randf_range(-3, 3), -18)
+	n.z_index = 5
+	n.draw.connect(func() -> void:
+		if kind == "corazon":
+			for p in [[1, 0], [3, 0], [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [1, 2], [2, 2], [3, 2], [2, 3]]:
+				n.draw_rect(Rect2(p[0] - 2, p[1] - 2, 1, 1), Color(0.95, 0.3, 0.45))
+		else:
+			for p in [[-3, 0, 2.0], [0, -1, 2.5], [3, 0, 2.0]]:
+				n.draw_circle(Vector2(p[0], p[1]), p[2], Color(0.85, 0.85, 0.9, 0.85)))
+	add_child(n)
+	var t := n.create_tween()
+	t.set_parallel(true)
+	t.tween_property(n, "position:y", n.position.y - 10.0, 0.9)
+	t.tween_property(n, "modulate:a", 0.0, 0.9).set_delay(0.3)
+	t.chain().tween_callback(n.queue_free)
+
+
+func _greet_tick(delta: float) -> void:
+	_greet_t += delta
+	if not is_instance_valid(_greet_who):
+		state = "follow"
+		return
+	var talking := Dialogue.active or _greet_t < 3.5
+	match state:
+		"greet_go":
+			var side := -1.0 if global_position.x < _greet_who.global_position.x else 1.0
+			var to := _greet_who.global_position + Vector2(side * 10.0, 3.0) - global_position
+			if to.length() < 3.0 or _greet_t > 3.0:
+				state = "greet_sniff"
+				_greet_t = 0.0
+				_walk(Vector2.ZERO)
+				facing = "side"
+				sprite.flip_h = _greet_who.global_position.x > global_position.x
+				sprite.play("sniff")
+			else:
+				_walk(to.normalized() * SEEK_SPEED)
+		"greet_sniff":
+			velocity = Vector2.ZERO
+			if _greet_t > 1.3:
+				_greet_t = 0.0
+				if _greet_likes:
+					state = "greet_stay"
+					sprite.play("sit")
+				else:
+					state = "greet_back"
+					sprite.play("bark")
+					_float("bravo")
+		"greet_stay":  # lo consienten: la cola, los corazones
+			velocity = Vector2.ZERO
+			if fmod(_greet_t, 1.1) < delta:
+				_float("corazon")
+			if fmod(_greet_t, 0.5) < 0.25:
+				sprite.flip_h = _greet_who.global_position.x > global_position.x
+			if not talking:
+				state = "follow"
+		"greet_back":  # se devuelve, bravo, y se le sienta de espaldas un rato
+			var to_p := player.global_position + Vector2(-12, 4) - global_position
+			if _greet_t < 0.6:
+				velocity = Vector2.ZERO
+			elif to_p.length() > 4.0 and _greet_t < 4.0:
+				_walk(to_p.normalized() * SEEK_SPEED)
+			else:
+				_walk(Vector2.ZERO)
+				facing = "side"
+				sprite.flip_h = _greet_who.global_position.x < global_position.x  # de espaldas a esa persona
+				sprite.play("sit")
+				if fmod(_greet_t, 1.6) < delta:
+					_float("bravo")
+				if not talking and _greet_t > 5.0:
+					state = "sit"
 
 
 ## Sale a olfatear. Devuelve true si encontró algo para ir a buscar.
