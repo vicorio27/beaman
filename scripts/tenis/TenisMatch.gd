@@ -6,9 +6,12 @@ extends Node2D
 ## dejada). X: globo. F: la habilidad. Se puede apretar un poquito antes: el golpe sale cuando llega.
 ## Configurar antes de entrar: TenisMatch.setup = {"p0": id, "p1": id, "format": "arcade", "difficulty": "normal",
 ## "seed": n, "ai0": false}. Al terminar emite finished(winner) y, si setup["back"] dice, vuelve.
-## Si se abre sin setup (F6 en el editor), primero se escoge tenista y rival.
+## Si se abre sin setup (F6 en el editor), primero se escoge tenista y rival (TenisPicker).
+## Al final del partido sale el resumen (ganadores, errores, aces...); con E (o solo, si
+## setup["auto_close"] dice cuántos segundos) se cierra y emite closed(winner).
 
 signal finished(winner: int)
+signal closed(winner: int)
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 ## La cancha en perspectiva (la misma cuenta que tools/art/draw_tenis_coliseo.py, que pinta el fondo):
@@ -43,10 +46,7 @@ const FEET := Vector2(16, 40)
 var _sheets := {}   # id -> Texture2D (los que no tienen dibujo, como "base", van con el muñeco)
 var _anim := [{}, {}]  # por jugador: {"pose", "t"} lo que está haciendo (un golpe, celebrar...)
 var _run_d := [0.0, 0.0]  # lo que lleva corrido (para el paso)
-var _picking := -1  # escogiendo: 0 el tenista, 1 el rival (-1: jugando)
-var _pick := [0, 1]
-var _pick_ls: Array = []
-var _pick_title: Label
+var _summary_t := -1.0  # desde cuándo se ve el resumen del final (-1: no hay)
 
 
 func _ready() -> void:
@@ -56,8 +56,13 @@ func _ready() -> void:
 	add_child(_hud)
 	MusicDirector.force("")
 	if setup.is_empty():
-		_picking = 0
-		_build_picker()
+		var picker := TenisPicker.new()
+		picker.titles = ["ESCOGE TU TENISTA", "ESCOGE EL RIVAL"]
+		picker.picked.connect(func(ids: Array) -> void:
+			picker.queue_free()
+			setup = {"p0": ids[0], "p1": ids[1], "format": "arcade", "difficulty": "normal"}
+			_start())
+		add_child(picker)
 		return
 	_start()
 
@@ -93,68 +98,15 @@ func _label(at: Vector2, col: Color) -> Label:
 	return l
 
 
-# ---------------------------------------------------------------- Escoger
-
-## La lista de los que hay: nombre y apodo, uno debajo del otro; la flecha marca el escogido.
-func _build_picker() -> void:
-	for id in TenisData.ROSTER:
-		var path := "res://assets/tenis/%s.png" % id
-		if ResourceLoader.exists(path):
-			_sheets[id] = load(path)
-	var head := _label(Vector2(0, 10), Color(1, 0.9, 0.5))
-	head.size = Vector2(Controls.right_edge(), 10)
-	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_pick_ls.append(head)
-	# Un nombre por fila; el apodo del marcado va abajo (y él, grande, a la derecha).
-	for i in TenisData.ROSTER.size():
-		var d: Dictionary = TenisData.player(TenisData.ROSTER[i])
-		var n := _label(Vector2(30, 28 + i * 12), d["color"])
-		n.text = d["name"]
-		var arrow := _label(Vector2(18, 28 + i * 12), Color(1, 0.95, 0.75))
-		_pick_ls.append(arrow)
-	_pick_title = _label(Vector2(0, 154), Color(0.75, 0.78, 0.86))
-	_pick_title.size = Vector2(Controls.right_edge(), 10)
-	_pick_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var foot := _label(Vector2(0, 168), Color(0.85, 0.9, 1.0))
-	foot.size = Vector2(Controls.right_edge(), 10)
-	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	foot.text = "FLECHAS: CAMBIAR   E: ESCOGER"
-	_update_picker()
-
-
-func _update_picker() -> void:
-	_pick_ls[0].text = "ESCOGE TU TENISTA" if _picking == 0 else "ESCOGE EL RIVAL"
-	for i in TenisData.ROSTER.size():
-		var a: Label = _pick_ls[1 + i]
-		a.text = ">" if i == _pick[_picking] else ("·" if _picking == 1 and i == _pick[0] else "")
-	_pick_title.text = TenisData.player(TenisData.ROSTER[_pick[_picking]])["title"]
-
-
-func _picker_input() -> void:
-	var n: int = TenisData.ROSTER.size()
-	if Input.is_action_just_pressed("move_down"):
-		_pick[_picking] = (_pick[_picking] + 1) % n
-	elif Input.is_action_just_pressed("move_up"):
-		_pick[_picking] = (_pick[_picking] + n - 1) % n
-	elif Input.is_action_just_pressed("interact"):
-		if _picking == 0:
-			_picking = 1
-			if _pick[1] == _pick[0]:
-				_pick[1] = (_pick[0] + 1) % n
-		else:
-			for l in _hud.get_children():
-				l.queue_free()
-			setup = {"p0": TenisData.ROSTER[_pick[0]], "p1": TenisData.ROSTER[_pick[1]], "format": "arcade",
-				"difficulty": "normal"}
-			_picking = -1
-			_start()
-			return
-	_update_picker()
-
-
 func _process(delta: float) -> void:
-	if _picking >= 0:
-		_picker_input()
+	if sim == null:
+		return
+	if _summary_t >= 0.0:
+		_summary_t += delta
+		var auto: float = setup.get("auto_close", 0.0)
+		if (_summary_t > 0.6 and Input.is_action_just_pressed("interact")) or (auto > 0.0 and _summary_t > auto):
+			_summary_t = -2.0
+			closed.emit(sim.score.winner)
 		queue_redraw()
 		return
 	_read_human(delta)
@@ -238,14 +190,47 @@ func _on_event(kind: String, d: Dictionary) -> void:
 			_flash[d["player"]] = 1.0
 			_pop(str(d.get("name", "")).to_upper())
 		"match":
-			_pop("¡GANA %s!" % TenisData.player(sim.players[d["winner"]].id)["name"].to_upper())
+			_pop("")
+			_show_summary(d["winner"])
 			finished.emit(d["winner"])
+
+
+# ---------------------------------------------------------------- El resumen del final
+
+## Lo que pasó en el partido, lado a lado: quién ganó, el marcador y los números de cada uno.
+func _show_summary(w: int) -> void:
+	_summary_t = 0.0
+	var a = sim.players[0]
+	var b = sim.players[1]
+	var longest := 0
+	for info in sim.point_log:
+		longest = maxi(longest, int(info["rally"]))
+	var head := _label(Vector2(88, 40), Color(1, 0.9, 0.4))
+	head.size = Vector2(224, 10)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.text = "¡GANA %s!  %s" % [TenisData.player(sim.players[w].id)["short"], TenisBracket.score_text(sim.score, w)]
+	_label(Vector2(212, 56), TenisData.player(a.id)["color"].lightened(0.3)).text = TenisData.player(a.id)["short"]
+	_label(Vector2(268, 56), TenisData.player(b.id)["color"].lightened(0.3)).text = TenisData.player(b.id)["short"]
+	var rows := [["GANADORES", a.stats["winners"], b.stats["winners"]], ["ACES", a.stats["aces"], b.stats["aces"]],
+		["ERRORES", a.stats["ue"], b.stats["ue"]], ["DOBLE FALTA", a.stats["df"], b.stats["df"]],
+		["HABILIDAD", a.stats["abilities"], b.stats["abilities"]], ["PUNTOS", a.stats["points"], b.stats["points"]]]
+	for i in rows.size():
+		var y := 70 + i * 12
+		_label(Vector2(98, y), Color(0.8, 0.82, 0.9)).text = rows[i][0]
+		_label(Vector2(216, y), Color(1, 0.95, 0.8)).text = str(rows[i][1])
+		_label(Vector2(272, y), Color(1, 0.95, 0.8)).text = str(rows[i][2])
+	_label(Vector2(98, 146), Color(0.8, 0.82, 0.9)).text = TenisData.caps("peloteo más largo: %d" % longest)
+	var foot := _label(Vector2(88, 162), Color(0.85, 0.9, 1.0))
+	foot.size = Vector2(224, 10)
+	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	foot.text = "E: SEGUIR"
 
 
 func _pop(t: String) -> void:
 	if t == "":
+		_pop_l.text = ""
 		return
-	_pop_l.text = t
+	_pop_l.text = TenisData.caps(t)
 	_pop_t = 1.4
 
 
@@ -285,14 +270,6 @@ func w2s(p: Vector2) -> Vector2:
 
 func _draw() -> void:
 	if sim == null:
-		draw_texture(BG, Vector2.ZERO)
-		draw_rect(Rect2(0, 0, 320, 180), Color(0.04, 0.04, 0.08, 0.72))  # escogiendo: el coliseo, apagado
-		if _picking >= 0:  # el que está marcado, grande y de frente, a la derecha de la lista
-			var tex: Texture2D = _sheets.get(TenisData.ROSTER[_pick[_picking]])
-			if tex != null:
-				var t := Time.get_ticks_msec() / 1000.0
-				var col := POSES.find("listo" if fmod(t, 0.8) < 0.4 else "listo2")
-				draw_texture_rect_region(tex, Rect2(Vector2(240, 40), CELL * 2), Rect2(Vector2(col * CELL.x, CELL.y), CELL))
 		return
 	var hw := TenisData.HALF_W
 	var hl := TenisData.HALF_L
@@ -338,6 +315,9 @@ func _draw() -> void:
 		draw_rect(Rect2(at + Vector2(0, 4), Vector2(64 * p.meter / 100.0, 3)), mcol)
 		if not ab.is_empty():  # la marca de cuánto cuesta
 			draw_rect(Rect2(at + Vector2(64 * float(ab["cost"]) / 100.0, 3), Vector2(1, 5)), Color(1, 1, 1, 0.7))
+	if _summary_t != -1.0:  # el resumen: un recuadro oscuro en el centro (los textos son Labels)
+		draw_rect(Rect2(88, 34, 224, 140), Color(0.05, 0.05, 0.09, 0.93))  # a la derecha del tablero
+		draw_rect(Rect2(88, 34, 224, 140), Color(0.5, 0.42, 0.3), false, 1.0)
 
 
 func _draw_net() -> void:

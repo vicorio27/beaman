@@ -25,6 +25,7 @@ func _run() -> void:
 	_scoring()
 	_error_bounds()
 	_matches()
+	_bracket()
 	print("\n%d pasaron, %d fallaron" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -163,6 +164,57 @@ func _error_bounds() -> void:
 			mono2 = false
 	check("la probabilidad de fallar no sube con la precisión", mono2, str(outs))
 	check("falla un golpe neutro entre 1% y 60%", outs[9] >= 0.0 and outs[9] <= 0.25 and outs[0] <= 0.6, "prec 10: %.0f%%  prec 1: %.0f%%" % [outs[9] * 100, outs[0] * 100])
+
+
+# ---------------------------------------------------------------- El cuadro
+
+func _bracket() -> void:
+	check("orden de siembra de 8", str(TenisBracket.seed_order(8)) == str([1, 8, 4, 5, 3, 6, 2, 7]), str(TenisBracket.seed_order(8)))
+	var ids: Array = TenisData.TOURNAMENT["entrants"]
+	var b := TenisBracket.new(ids)
+	check("con 10: previa, cuartos, semifinal y final", b.rounds.size() == 4 and b.rounds[0]["name"] == "Previa"
+		and b.rounds[1]["name"] == "Cuartos" and b.rounds[3]["name"] == "Final")
+	var pre: Array = b.rounds[0]["matches"]
+	check("la previa: 7 contra 10 y 8 contra 9", pre[0]["a"] == ids[6] and pre[0]["b"] == ids[9] and pre[1]["a"] == ids[7] and pre[1]["b"] == ids[8])
+	var qf: Array = b.rounds[1]["matches"]
+	check("el 1 espera al ganador de 8-9; el 2, al de 7-10", qf[0]["a"] == ids[0] and qf[0]["b"] == "" and qf[3]["a"] == ids[1] and qf[3]["b"] == "")
+	check("el 4 contra el 5 y el 3 contra el 6", qf[1]["a"] == ids[3] and qf[1]["b"] == ids[4] and qf[2]["a"] == ids[2] and qf[2]["b"] == ids[5])
+	var m := b.next_match()
+	check("primero se juega la previa", m.get("round", -1) == 0)
+	check("no se puede anotar a uno que no juega", not b.report(m, ids[0]))
+	b.report(m, m["b"], "4-2")
+	check("el ganador de la previa entra a cuartos en su puesto", qf[3]["b"] == ids[9])
+	check("no se anota dos veces", not b.report(m, m["a"]))
+	check("el que perdió sale", not b.alive(ids[6]) and b.alive(ids[9]))
+	# Guardar y cargar a mitad de torneo.
+	var copy := TenisBracket.from_dict(b.to_dict())
+	check("se guarda y se carga igual", str(copy.to_dict()) == str(b.to_dict()) and copy.next_match()["slot"] == b.next_match()["slot"])
+	# Todo el torneo: siempre termina con un campeón, y cada ronda tiene la mitad de vivos.
+	var t0 := Time.get_ticks_msec()
+	var champs := {}
+	var ok := true
+	for k in 3:
+		var full := TenisBracket.new(ids)
+		var guard := 0
+		while not full.next_match().is_empty() and guard < 20:
+			full.simulate(full.next_match(), 900 + k * 31 + guard)
+			guard += 1
+		ok = ok and guard == 9 and full.champion() != ""
+		champs[full.champion()] = true
+		var alive := 0
+		for id in ids:
+			alive += int(full.alive(id))
+		ok = ok and alive == 1 and full.reached(full.champion()) == "Campeón"
+	check("el torneo entero: 9 partidos, un campeón, nadie más vivo", ok, "campeones: %s (%d ms)" % [champs.keys(), Time.get_ticks_msec() - t0])
+	var prize: Dictionary = TenisData.TOURNAMENT["prize"]
+	var r := TenisBracket.new(ids)
+	r.report(r.next_match(), ids[9])
+	check("la bolsa según hasta dónde llegó", prize[r.reached(ids[6])] == prize["Previa"] and prize[r.reached(ids[9])] == prize["Cuartos"])
+	# Con otros números de inscritos también arma bien.
+	var four := TenisBracket.new(["a", "b", "c", "d"])
+	check("con 4: semifinal y final, sin previa", four.rounds.size() == 2 and not four.has_playins())
+	var five := TenisBracket.new(["a", "b", "c", "d", "e"])
+	check("con 5: una previa (4 contra 5)", five.has_playins() and five.rounds[0]["matches"].size() == 1 and five.rounds[0]["matches"][0]["a"] == "d")
 
 
 # ---------------------------------------------------------------- Partidos enteros

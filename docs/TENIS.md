@@ -92,6 +92,35 @@ La potencia se ve en la velocidad: el que pega más duro le mete más liftado (s
 
 El motor no se toca, salvo que la habilidad necesite un tipo de contra nuevo. En ese caso se agrega en `counter_rule()`.
 
+## El torneo y el cuadro
+
+`TenisBracket.gd` es el cuadro, sin dibujo: siembra, previa, avance, eliminación, quién llegó hasta dónde, simular un partido entre máquinas, y guardar y cargar (`to_dict` / `from_dict`).
+
+Con cualquier número de inscritos, el cuadro es la potencia de 2 más grande que cabe, y los que sobran juegan una previa entre los peores sembrados. Con los 10:
+
+| Ronda | Quiénes |
+|---|---|
+| Previa (día 1) | 7 contra 10 y 8 contra 9 |
+| Cuartos (día 2) | El 1 contra el ganador de 8-9, el 4 contra el 5, el 3 contra el 6, y el 2 contra el ganador de 7-10 |
+| Semifinal (día 3) y final (día 4) | El 1 y el 2 solo se pueden cruzar en la final |
+
+`TenisData.TOURNAMENT` lleva:
+- Los inscritos en orden de siembra (el ranking de la parodia): Yokovich, Pecador, Sabalenkova, Fedorer, Sheltron, Tiafuego, Monfiz, Kyrgistán, Bublikov y Moutette.
+- El formato de cada ronda (hoy todas arcade).
+- Las rondas por día.
+- La bolsa de los profesionales: de $2.000.000 por llegar a la previa a $50.000.000 el campeón. Es plata de ellos, no del protagonista; lo de él se define con la historia.
+
+`scenes/tenis/TenisTorneo.tscn` (F6 en el editor) es el torneo de principio a fin:
+1. Se escoge con quién jugar (`TenisPicker`, el mismo selector del partido suelto).
+2. Sale el cuadro. El tuyo va en dorado, el que perdió queda apagado y el próximo partido titila.
+3. Si el próximo partido es el tuyo, se juega (E). Si no, se ve entre máquinas (E) o se simula al instante (X).
+4. Al final de cada partido sale el resumen (ganadores, aces, errores, dobles faltas, habilidad, puntos, el peloteo más largo) y se vuelve al cuadro con el resultado anotado.
+5. Al final, el campeón, su bolsa y hasta dónde llegaste tú.
+
+Se guarda en `TenisTorneo.saved` mientras el juego está abierto. Guardarlo en la partida (GameState) va con la historia.
+
+Las mayúsculas en pantalla pasan por `TenisData.caps()`, que quita las tildes de las vocales: la fuente dibuja la mayúscula con tilde como si fuera minúscula ("DíA").
+
 ## El dibujo
 
 **Los tenistas** salen de `tools/art/draw_tenistas.py` y quedan en `assets/tenis/<id>.png`.
@@ -131,7 +160,7 @@ Todas corren sin ventana:
 
 `TENIS_ONLY=unit|sim|counter` corre solo una parte y `TENIS_N` pone los partidos por cruce.
 
-**`tenis_tests.gd`** (27 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; y cómo se reparten los puntos.
+**`tenis_tests.gd`** (42 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5).
 
 **`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.
@@ -165,6 +194,5 @@ Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ga
 
 - **El dibujo que falta:** los recogebolas (él), las caras de cerca para los diálogos y un público que se mueva más.
 - **La música:** rock original.
-- **El cuadro del torneo.**
 - **Los diálogos:** en una tabla de datos.
 - **La historia:** el gota a gota y la llegada del torneo al barrio; él de recogebolas; los tenistas que abandonan y él que termina el partido con la raqueta de ellos; el premio.

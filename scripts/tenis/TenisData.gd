@@ -124,6 +124,20 @@ const PLAYERS := {
 		"ability": "firma"},
 }
 
+## El torneo: los inscritos en orden de siembra (el ranking de la parodia: el 1 primero), el formato
+## de cada ronda y la bolsa (lo que se lleva cada profesional según hasta dónde llegó; es de ellos,
+## no del protagonista: lo de él se define con la historia). Con 10: previa del 7 al 10, y después
+## cuartos, semifinal y final. Una ronda por día ("rounds_per_day").
+const TOURNAMENT := {
+	"name": "Highway to Hell",
+	"entrants": ["yokovich", "pecador", "sabalenkova", "fedorer", "sheltron", "tiafuego", "monfiz", "kyrgistan",
+		"bublikov", "moutette"],
+	"format": {"Previa": "arcade", "Cuartos": "arcade", "Semifinal": "arcade", "Final": "arcade"},
+	"rounds_per_day": 1,
+	"prize": {"Previa": 2000000, "Cuartos": 5000000, "Semifinal": 12000000, "Final": 25000000,
+		"Campeón": 50000000},
+}
+
 ## Los del torneo, en el orden del selector.
 const ROSTER := ["bublikov", "sabalenkova", "monfiz", "yokovich", "moutette", "tiafuego", "sheltron", "kyrgistan",
 	"pecador", "fedorer"]
@@ -135,6 +149,15 @@ const DIFFICULTY := {
 	"normal": {"react": 0.2, "decide_noise": 0.25, "exec": 1.1, "counter": 0.5},
 	"dificil": {"react": 0.12, "decide_noise": 0.1, "exec": 1.0, "counter": 0.9},
 }
+
+
+## En mayúsculas para la pantalla, sin tildes en las vocales (la fuente pone la mayúscula con tilde
+## como si fuera minúscula: "DíA").
+static func caps(s: String) -> String:
+	var u := s.to_upper()
+	for pair in [["Á", "A"], ["É", "E"], ["Í", "I"], ["Ó", "O"], ["Ú", "U"]]:
+		u = u.replace(pair[0], pair[1])
+	return u
 
 
 static func player(id: String) -> Dictionary:
