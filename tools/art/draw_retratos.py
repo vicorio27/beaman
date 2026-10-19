@@ -9,9 +9,12 @@ color de cada uno ("fondo"): se reconocen de lejos.
 
 Cada cara se arma por partes con lo que dice el reparto (CAST): la forma (hombre, mujer, gordo, viejo,
 niño), la piel, el pelo (corto, rizado, engominado, calvo, melena, largo, linda, cola, afro, hongo,
-moño), barba, bigote, chivera, gafas, sombrero, y la ropa (saco, camiseta, delantal, chaleco, uniforme,
-vestido, bata, sotana). Y el gesto: serios casi todos (ceño, párpado caído); "sonrisa", "destruido"
-(ojeras, ojo rojo, barba de días), "ojos": "cerrados".
+moño, despeinado, rapado, trenzas), barba, bigote, chivera, gafas, sombrero (gorra, gorra_reves,
+sombrero, boina, pañoleta), balaca, y la ropa (saco, camiseta, delantal, chaleco, uniforme, vestido,
+bata, sotana; la camiseta de tenis lleva "cuello", "raya", "franja" o "costado" de otro color). Y el
+gesto: serios casi todos (ceño, párpado caído); "sonrisa", "grito", "destruido" (ojeras, ojo rojo,
+barba de días), "ojos": "cerrados" o "aburridos", y "sudor".
+Los del torneo de tenis (los diez, el organizador y el juez) van al final del reparto.
 También iguales.png: el maniquí gris sin cara (todos iguales; lo usa retrato_iguales.gdshader).
 Lukas también sale de aquí (lukas.png, y lukas_ladra.png: ladrando, con una oreja al aire).
 
@@ -208,7 +211,7 @@ def hair(b, g, front):
     cx, cy, rx, ry = g["cx"], g["cy"], g["rx"], g["ry"]
     face_poly = FACE_HIGH if style in ("engominado", "calvo") else (FACE_F if p.get("mujer") or p.get("nino") else FACE_M)
     face = b.M(lambda d: d.poly(face_poly))
-    grow = {"rizado": 4.5, "afro": 0, "corto": 1.6, "engominado": 1.0}.get(style, 2.4)
+    grow = {"rizado": 4.5, "afro": 0, "corto": 1.6, "engominado": 1.0, "rapado": 0.5, "trenzas": 1.4}.get(style, 2.4)
     cap = b.M(lambda d: d.ell(cx, cy - 1, rx + grow, ry + grow)) & ~face
     m = np.zeros((H, W), bool)
     if not front:  # lo que cae por detrás de la cabeza y del cuello
@@ -228,9 +231,14 @@ def hair(b, g, front):
             m = b.M(lambda d: [d.ell(cx + np.cos(a) * 22, cy - 2 + np.sin(a) * 22, 6, 6) for a in np.linspace(3.3, 6.2, 9)])
         elif style == "calvo":
             m = b.M(lambda d: d.poly([(25, 37), (31, 33), (33, 50), (28, 54)]))
+        elif style == "trenzas":  # las puntas de las trencitas, por detrás de la nuca
+            m = b.M(lambda d: [d.path([(24 + k * 3, 40 + k), (21 + k * 3, 58 + k * 2)], 2.2) for k in range(4)])
         if m.any():
             b.vol(m, t3, sw=3, lw=2)
         return m
+    if style == "rapado":  # casi a ras: el color del pelo mezclado con la piel
+        sk = SKINS[p.get("piel", "clara")]
+        t3 = (mix(t3[0], sk[0], 0.25), mix(t3[1], sk[1], 0.3), mix(t3[2], sk[2], 0.35))
     if style == "calvo":  # una franja encima de la oreja, y nada arriba
         m = b.M(lambda d: d.poly([(26.5, 36), (32, 33), (34, 40), (33, 47), (30, 40)]))
     elif style == "afro":
@@ -247,7 +255,11 @@ def hair(b, g, front):
                                    d.poly([(68, 34), (73, 40), (75, low - 6), (70, low - 4), (70.5, 46)])))
         if style == "linda":  # la capul
             m = m | b.M(lambda d: d.poly([(34, 30), (44, 24), (62, 25), (68, 31), (67, 35), (56, 32), (44, 33.5), (35, 37)]))
-        if style in ("corto", "engominado", "rizado") and not p.get("mujer") and not p.get("nino"):
+        if style == "despeinado":  # mechones parados para todos lados
+            m = m | b.M(lambda d: (d.poly([(34, 22), (30, 10), (40, 18)]), d.poly([(42, 16), (44, 4), (50, 14)]),
+                                   d.poly([(52, 14), (60, 5), (60, 16)]), d.poly([(62, 18), (73, 12), (68, 24)]),
+                                   d.poly([(26, 34), (17, 30), (27, 28)])))
+        if style in ("corto", "engominado", "rizado", "despeinado", "rapado", "trenzas") and not p.get("mujer") and not p.get("nino"):
             m = m | b.M(lambda d: d.poly([(29.5, 38), (34, 38), (34, 46), (31, 49)]))        # la patilla
     b.vol(m, t3, sw=3, lw=2, bottom=0)
     # Los mechones: una luz que le da la vuelta a la cabeza, y sombras finas.
@@ -256,6 +268,15 @@ def hair(b, g, front):
     if style == "engominado":
         for k in range(4):
             b.line([(38 + k * 7, 16 + (k % 2)), (33 + k * 8, 26)], t3[0])
+    elif style == "trenzas":  # las trencitas pegadas, de la frente a la nuca
+        for k in range(6):
+            x0 = 36 + k * 6
+            b.line([(x0, 23 - (k in (2, 3)) * 2), (x0 - 12, 31 + k)], t3[0])
+            b.line([(x0 + 2, 23 - (k in (2, 3)) * 2), (x0 - 10, 31 + k)], t3[2])
+    elif style == "rapado":
+        ys, xs = np.nonzero(m)
+        for i in b.rng.choice(len(ys), size=min(len(ys), 60), replace=False):
+            b.cv.px(xs[i], ys[i], t3[0])
     elif style in ("rizado", "afro"):
         ys, xs = np.nonzero(m)
         for i in b.rng.choice(len(ys), size=min(len(ys), 70), replace=False):
@@ -297,6 +318,13 @@ def hat(b, g):
         b.vol(dome, t3, sw=4, lw=2, bottom=1)
         b.vol(b.M(lambda d: d.poly([(56, 25), (86, 30), (86, 33.5), (56, 30.5)])), t3, sw=0, lw=1, bottom=1, dither=False)
         b.line([(24, 28), (58, 29)], t3[0])
+    elif kind == "gorra_reves":  # la visera para atrás (a la izquierda: él mira a la derecha), el broche adelante
+        b.vol(b.M(lambda d: d.poly([(36, 27), (10, 31), (10, 34.5), (38, 31)])), t3, sw=0, lw=1, bottom=1, dither=False)
+        dome = b.M(lambda d: d.ell(48, 24, 24, 15)) & b.above(30)
+        b.vol(dome, t3, sw=4, lw=2, bottom=1)
+        b.line([(26, 29), (70, 28)], t3[0])
+        b.put(b.M(lambda d: d.ell(58, 27, 5, 2.5)) & dome, (236, 232, 222))   # el hueco del ajuste, con el pelo
+        b.line([(54, 27), (62, 27)], tones(p.get("pelo_color", (40, 34, 34)))[1])
     elif kind == "sombrero":
         b.vol(b.M(lambda d: d.ell(48, 27, 37, 6.5)), t3, sw=4, lw=2, bottom=2)
         crown = b.M(lambda d: (d.rect(30, 8, 66, 26), d.ell(48, 9, 18, 5)))
@@ -326,6 +354,8 @@ def eye(b, g, ex, ey, w, near, sk):
         return
     white = EYE_WHITE if not p.get("destruido") else (240, 208, 202)
     rows = 3 if p.get("nino") or p.get("ojos_grandes") else 2
+    if p.get("ojos") == "aburridos":  # el párpado a media asta: solo se ve la mitad de abajo
+        rows = 1
     for r in range(rows):
         cut_ = 1 if r == rows - 1 else 0
         b.line([(ex - w + 1 + cut_, ey + r), (ex + w - 2 - cut_, ey + r)], white)
@@ -341,6 +371,9 @@ def eye(b, g, ex, ey, w, near, sk):
     # El párpado de arriba, en tinta; la esquina de afuera.
     b.line([(ex - w, ey - 1), (ex + w - 1, ey - 1)], INK)
     b.dot(ex - w if near else ex + w - 1, ey, INK)
+    if p.get("ojos") == "aburridos":
+        b.line([(ex - w, ey - 1), (ex + w - 1, ey - 1)], mix(mid, dark, 0.7))
+        b.line([(ex - w, ey - 2), (ex + w - 1, ey - 2)], mix(mid, dark, 0.45))
     if tired or p.get("viejo"):  # el párpado, que pesa
         b.line([(ex - w + 1, ey - 2), (ex + w - 2, ey - 2)], mix(mid, dark, 0.8))
     else:
@@ -417,7 +450,12 @@ def face(b, g, head, sk):
     b._fr = (mid_x, my, ax, ay)
     x0, x1 = mid_x - 8, mid_x + 6
     lips = p.get("labios")
-    if p.get("sonrisa"):
+    if p.get("grito"):  # la boca abierta de par en par: los dientes de arriba y la lengua
+        b.put(b.M(lambda d: d.ell(mid_x - 1, my + 3, 7, 5.5)), (60, 20, 30))
+        b.put(b.M(lambda d: d.rect(mid_x - 6, my - 2, mid_x + 4, my - 1)), (244, 238, 222))
+        b.put(b.M(lambda d: d.ell(mid_x - 1, my + 6.5, 4, 2)), (196, 90, 96))
+        b.arc(mid_x - 9, my - 3, mid_x + 7, my + 9, 0, 360, INK)
+    elif p.get("sonrisa"):
         b.line([(x0 - 1, my - 1), (x0 + 2, my + 1), (x1 - 2, my + 1), (x1 + 1, my - 1)], INK)
         b.line([(x0 - 2, my - 3), (x0 - 3, my)], mix(mid, dark, 0.8))
         if lips:
@@ -436,7 +474,7 @@ def face(b, g, head, sk):
         b.dot(x0 + 5, my + 2, (226, 204, 130))
         b.dot(x0 + 8, my + 3, (244, 238, 222))
         b.dot(x1 - 5, my + 1, INK)
-    elif not lips:
+    elif not lips and not p.get("grito"):
         b.line([(x0 + 4, my + 3), (x1 - 3, my + 3)], mix(mid, dark, 0.45))         # el labio de abajo
     b._fr = None
     if p.get("arete"):
@@ -545,8 +583,21 @@ def clothes(b, g, body):
             b.put(b.box(62, 98, 74, 99), t3[0])
             b.put(b.box(70, 92, 71, 98), (60, 90, 170))                                 # el esfero
     elif kind == "camiseta":
+        if p.get("costado"):  # el costado de otro color (del lado de allá)
+            b.put(body & b.M(lambda d: d.poly([(70, 84 + y), (96, 96 + y), (96, 114), (76, 114)])), tones(p["costado"])[1])
+        if p.get("franja"):  # la franja de lado a lado, a la altura del pecho
+            fr = tones(p["franja"])
+            b.put(body & b.M(lambda d: d.rect(0, 98 + y, 96, 102 + y)), fr[1])
+            b.put(body & b.M(lambda d: d.rect(0, 98 + y, 96, 98 + y)), fr[2])
+        if p.get("raya"):  # la raya del cuello a la cintura
+            b.put(body & b.M(lambda d: d.poly([(48, 86 + y), (53, 86 + y), (55, 114), (50, 114)])), tones(p["raya"])[1])
         b.put(b.M(lambda d: d.ell(50, 82 + y, 12, 6)) & body, sk[1])
         b.cv.a[edge(b.M(lambda d: d.ell(50, 82 + y, 13.5, 7.5)) & body, 0, 1, 2) & ~b.above(82 + y)] = t3[0]
+        if p.get("cuello"):  # el cuello de polo, de otro color, y la tapa de los botones
+            cu = tones(p["cuello"])
+            b.vol(b.M(lambda d: (d.poly([(37, 80 + y), (45, 77 + y), (49, 87 + y), (41, 90 + y)]),
+                                 d.poly([(63, 80 + y), (55, 77 + y), (51, 87 + y), (59, 90 + y)]))), cu, sw=1, lw=1, bottom=1, dither=False)
+            b.line([(50, 87 + y), (50, 96 + y)], cu[0])
     elif kind == "vestido":
         b.put(b.M(lambda d: d.ell(50, 82 + y, 19, 10)) & body, sk[1])
         b.cv.a[b.M(lambda d: d.ell(44, 88 + y, 6, 2)) & body] = sk[0]
@@ -612,6 +663,16 @@ def portrait(p, seed=0):
     if p.get("audifonos"):
         b.vol(b.M(lambda d: d.ell(48, 34, 26, 26)) & ~b.M(lambda d: d.ell(48, 36, 23.5, 25)) & b.above(40), tones((60, 60, 70)), sw=1, lw=1, bottom=0, dither=False)
         b.vol(b.M(lambda d: d.ell(28.5, 45, 5.5, 8)), tones((70, 180, 190)), sw=2, lw=1)
+    if p.get("balaca"):  # la balaca: de la sien a la sien, por encima de la frente
+        bt = tones(p["balaca"])
+        band = b.M(lambda d: d.poly([(25, 33), (40, 25), (60, 24), (72, 30), (72, 35), (60, 29.5), (40, 30.5), (26, 38)]))
+        b.vol(band, bt, sw=1, lw=1, bottom=1, dither=False)
+        if p.get("balaca_puntas"):  # el nudo, con las puntas colgando atrás
+            b.vol(b.M(lambda d: (d.path([(24, 35), (14, 46)], 2.5), d.path([(24, 35), (17, 50)], 2.5))), bt, sw=0, lw=1, bottom=0, dither=False)
+    if p.get("sudor"):  # unas gotas en la frente y la sien
+        for (sx, sy) in ((60, 33), (66, 40), (40, 34)):
+            b.dot(sx, sy, (236, 246, 255))
+            b.dot(sx, sy + 1, (170, 200, 230))
     hat(b, g)
     glasses(b, g)
     if p.get("moño_pelo"):
@@ -952,6 +1013,36 @@ CAST = {
                  "sombrero_color": (30, 28, 34), "cinta": (16, 14, 20), "bigote": True, "barba_color": (240, 238, 232),
                  "sonrisa": True, "ropa": (30, 28, 34), "tipo": "saco", "camisa": (36, 34, 42),
                  "corbata": (16, 14, 20), "fondo": (170, 110, 230)},
+    # El torneo de tenis (Highway to Hell): los diez, con los colores de su dibujo (draw_tenistas.py).
+    "bublikov": {"piel": "clara", "pelo": "despeinado", "pelo_color": (46, 38, 40), "ojos": "aburridos",
+                 "ropa": (238, 238, 232), "tipo": "camiseta", "raya": (32, 32, 38), "fondo": (70, 76, 96)},
+    "sabalenkova": {**M, "piel": "clara", "pelo": "cola", "pelo_color": (232, 200, 120), "grito": True, "sudor": True,
+                    "ropa": (240, 112, 112), "tipo": "camiseta", "arete": True, "fondo": (240, 140, 50)},
+    "monfiz": {"piel": "negra", "pelo": "rapado", "pelo_color": (30, 26, 28), "balaca": (246, 210, 64), "sonrisa": True,
+               "ropa": (246, 210, 64), "tipo": "camiseta", "costado": (40, 40, 46), "fondo": (200, 160, 40)},
+    "yokovich": {"piel": "clara", "pelo": "corto", "pelo_color": (98, 70, 52), "ropa": (206, 52, 56), "tipo": "camiseta",
+                 "cuello": (240, 240, 236), "franja": (40, 52, 104), "fondo": (40, 60, 120)},
+    "moutette": {"piel": "clara", "pelo": "rizado", "pelo_color": (34, 30, 34), "ropa": (140, 196, 236), "tipo": "camiseta",
+                 "cuello": (40, 52, 104), "sudor": True, "fondo": (96, 152, 204)},
+    "tiafuego": {"piel": "negra", "pelo": "trenzas", "pelo_color": (28, 24, 26), "sonrisa": True, "ropa": (170, 224, 84),
+                 "tipo": "camiseta", "cuello": (112, 72, 156), "fondo": (112, 72, 156)},
+    "sheltron": {"piel": "morena", "pelo": "rapado", "pelo_color": (30, 26, 28), "ropa": (248, 150, 60), "tipo": "camiseta",
+                 "cuello": (40, 70, 150), "fondo": (40, 70, 150)},
+    "kyrgistan": {"piel": "clara", "pelo": "corto", "pelo_color": (40, 32, 30), "sombrero": "gorra_reves",
+                  "sombrero_color": (210, 40, 50), "chivera": True, "barba_color": (40, 32, 30), "cadena": True,
+                  "ropa": (44, 44, 50), "tipo": "camiseta", "sudor": True, "fondo": (140, 30, 40)},
+    "pecador": {"piel": "clara", "pelo": "rizado", "pelo_color": (226, 118, 48), "pecas": True, "ojo_color": (60, 90, 110),
+                "ropa": (150, 222, 192), "tipo": "camiseta", "cuello": (240, 240, 236), "fondo": (60, 140, 110)},
+    "fedorer": {"piel": "clara", "pelo": "corto", "pelo_color": (108, 78, 58), "balaca": (250, 250, 248),
+                "balaca_puntas": True, "sonrisa": True, "ropa": (244, 244, 240), "tipo": "camiseta",
+                "cuello": (244, 244, 240), "fondo": (190, 40, 44)},
+    # El organizador: gordo, engominado, saco morado de feria, camisa rosada, cadena y el audífono del canal.
+    "organizador": {"gordo": True, "piel": "media", "pelo": "engominado", "pelo_color": (60, 54, 56), "canas": 0.2,
+                    "bigote": True, "barba_color": (60, 54, 56), "audifonos": True, "cadena": True,
+                    "ropa": (112, 60, 150), "tipo": "saco", "camisa": (236, 128, 168), "fondo": (230, 170, 50)},
+    # El juez de silla: viejo, calvo, gafas, saco azul y corbata. Ha visto de todo. Esto no.
+    "juez": {"piel": "clara", "pelo": "calvo", "pelo_color": (190, 186, 180), "viejo": True, "gafas": "claras",
+             "ropa": (40, 52, 96), "tipo": "saco", "camisa": (236, 232, 222), "corbata": (130, 30, 40), "fondo": (60, 120, 90)},
 }
 
 

@@ -182,6 +182,13 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 - Tiene tribunas con gradas, pasillos y puestos vacíos, la tribuna del fondo, las vallas con los patrocinadores del barrio (la Caverna del Gamer, la panadería de Don Germán), los reflectores y la silla del juez.
 - La gente se para después de un ganador, de un peloteo largo o cuando se cierra un juego.
 
+**Las caras para los diálogos** salen de `tools/art/draw_retratos.py` (`assets/portraits/<id>.png`), con los colores de su dibujo de la cancha. En `Dialogue.SPEAKERS`, cada uno lleva su apodo en la placa.
+- Los diez: Bublikov despeinado y aburrido, Sabalenkova gritando (la cola rubia, el sudor), Monfiz con la balaca amarilla, Yokovich con la franja azul, Moutette crespo y sudando, Tiafuego con trencitas, Sheltron rapado, Kyrgistán con la gorra roja al revés, la chivera y la cadena, Pecador pelirrojo con pecas, y Fedorer con la balaca blanca anudada atrás.
+- El organizador: gordo, engominado, saco morado y camisa rosada, cadena y el audífono del canal.
+- El juez de silla: viejo, calvo, gafas, saco azul y corbata.
+
+Para ellos, el generador de retratos aprendió: el pelo despeinado, rapado y en trencitas; la balaca; la gorra al revés; la camiseta de tenis (cuello, raya, franja o costado de otro color); los ojos aburridos, el grito y el sudor.
+
 **El tablero**, arriba a la izquierda, muestra por jugador el nombre, los juegos y los puntos (0, 15, 30, 40, AD), el cansancio y el medidor de la habilidad. Una pelotica marca quién saca.
 
 ## La música y los sonidos
@@ -243,5 +250,5 @@ Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ga
 
 ## Lo que falta
 
-- **El dibujo que falta:** las caras de cerca para los diálogos, un público que se mueva más y el que abandona saliendo de la cancha (hoy desaparece cuando él toma la raqueta).
+- **El dibujo que falta:** un público que se mueva más y el que abandona saliendo de la cancha (hoy desaparece cuando él toma la raqueta).
 - **Los diálogos:** en una tabla de datos.

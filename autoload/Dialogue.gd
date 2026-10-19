@@ -71,6 +71,13 @@ const SPEAKERS := {
 	"EL DE LOS PERROS": ["perros", "perros calientes"], "CELADOR DEL BAÑO": ["celador", "el baño"],
 	"CELADOR DEL COLEGIO": ["celador", "el colegio"], "PARAMÉDICO": ["paramedico", ""], "LADRÓN": ["ladron", ""],
 	"WILMER": ["martin", ""], "AMIGO DE ZAIDA": ["desconocido", ""], "RAPIDITO": ["conductor", ""],
+	# El torneo de tenis (scripts/tenis/TenisHistoria.gd): los diez, con su apodo, el organizador y el juez.
+	"BUBLIKOV": ["bublikov", "el agente del caos"], "SABALENKOVA": ["sabalenkova", "la artillería"],
+	"MONFIZ": ["monfiz", "el acróbata"], "YOKOVICH": ["yokovich", "el devorador de esperanzas"],
+	"MOUTETTE": ["moutette", "el provocador"], "TIAFUEGO": ["tiafuego", "el showman"],
+	"SHELTRON": ["sheltron", "el lanzacohetes"], "KYRGISTÁN": ["kyrgistan", "el volátil"],
+	"PECADOR": ["pecador", "el compilador"], "FEDORER": ["fedorer", "el artista"],
+	"EL ORGANIZADOR": ["organizador", "Highway to Hell"], "EL JUEZ": ["juez", "juez de silla"],
 }
 ## Los de la ciudad: a esos se les va apagando la cara (todos iguales, GameState.sameness), como a
 ## su muñeco en el mapa. Los de los sueños, no. Retrato -> id de la persona.
@@ -296,7 +303,7 @@ func _show_line() -> void:
 	# El nombre (y lo que es, más apagado), centrado entre dos líneas.
 	_plate.visible = true
 	if _plate.visible:
-		_name.text = who if who != "" else NARRATOR
+		_name.text = _plain_caps(who) if who != "" else NARRATOR
 		_name.add_theme_color_override("font_color", NAME_COLOR if who != "" else SUB_COLOR)
 		_sub.text = ("  " + info[1]) if info.size() > 1 and info[1] != "" else ""
 		var w := (_name.text.length() + _sub.text.length()) * 8
@@ -316,6 +323,14 @@ func _show_line() -> void:
 	_shown = 0.0
 	_text.visible_characters = 0
 	_choice_panel.visible = false
+
+
+## El nombre en la placa, sin tilde en las vocales: la fuente pinta la mayúscula con tilde como si
+## fuera minúscula ("ÉL" salía "éL"). La Ñ sí la pinta bien.
+static func _plain_caps(t: String) -> String:
+	for pair in [["Á", "A"], ["É", "E"], ["Í", "I"], ["Ó", "O"], ["Ú", "U"]]:
+		t = t.replace(pair[0], pair[1])
+	return t
 
 
 ## Cara a cara: los dos de pie, mirándose. El que habla, con luz (y su retrato de la línea, si trae).
