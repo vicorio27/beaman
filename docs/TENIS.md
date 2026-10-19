@@ -106,14 +106,14 @@ Con cualquier número de inscritos, el cuadro es la potencia de 2 más grande qu
 
 `TenisData.TOURNAMENT` lleva:
 - Los inscritos en orden de siembra (el ranking de la parodia): Yokovich, Pecador, Sabalenkova, Fedorer, Sheltron, Tiafuego, Monfiz, Kyrgistán, Bublikov y Moutette.
-- El formato de cada ronda (hoy todas arcade).
+- El formato de cada ronda: la previa y los cuartos en formato corto (a 2 juegos, con punto de oro: unos 2 minutos entre máquinas) y la semifinal y la final en arcade (unos 5 minutos).
 - Las rondas por día.
 - La bolsa de los profesionales: de $2.000.000 por llegar a la previa a $50.000.000 el campeón. Es plata de ellos, no del protagonista; lo de él se define con la historia.
 
 `scenes/tenis/TenisTorneo.tscn` (F6 en el editor) es el torneo de principio a fin:
 1. Se escoge con quién jugar (`TenisPicker`, el mismo selector del partido suelto).
 2. Sale el cuadro. El tuyo va en dorado, el que perdió queda apagado y el próximo partido titila.
-3. Si el próximo partido es el tuyo, se juega (E). Si no, se ve entre máquinas (E) o se simula al instante (X).
+3. Si el próximo partido es el tuyo, se juega (E). Si no, se ve entre máquinas (E) o se simula al instante (X). La X simula todo lo de los demás hasta tu próximo partido, o hasta el final si ya te sacaron (`simulate_until`).
 4. Al final de cada partido sale el resumen (ganadores, aces, errores, dobles faltas, habilidad, puntos, el peloteo más largo) y se vuelve al cuadro con el resultado anotado.
 5. Al final, el campeón, su bolsa y hasta dónde llegaste tú.
 
@@ -160,7 +160,7 @@ Todas corren sin ventana:
 
 `TENIS_ONLY=unit|sim|counter` corre solo una parte y `TENIS_N` pone los partidos por cruce.
 
-**`tenis_tests.gd`** (42 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5).
+**`tenis_tests.gd`** (45 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista).
 
 **`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.

@@ -3,7 +3,8 @@ extends Node2D
 ## juegan los partidos propios, los de los demás se ven o se simulan, y al final el campeón.
 ## (Así se prueba el torneo solo; cómo entra él en la historia está por definir: ver docs/TENIS.md.)
 ## El cuadro es TenisBracket; los partidos, TenisMatch. Se guarda en TenisTorneo.saved (to_dict).
-## Controles en el cuadro: E jugar o ver el próximo partido; X simularlo; en el final, E otra vez.
+## Controles en el cuadro: E jugar o ver el próximo partido; X simular todo hasta el próximo partido
+## propio (o hasta el final, si ya lo sacaron); en el final, E otra vez.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const BG := preload("res://assets/tenis/coliseo.png")
@@ -142,8 +143,10 @@ func _show_bracket() -> void:
 	var a: Dictionary = TenisData.player(m["a"])
 	var b: Dictionary = TenisData.player(m["b"])
 	_label(Vector2(0, 156), "%s  VS  %s" % [a["name"].to_upper(), b["name"].to_upper()], Color(1, 0.95, 0.8), true)
-	var mine2: bool = you in [m["a"], m["b"]]
-	_label(Vector2(0, 168), "E: JUGAR" if mine2 else "E: VER   X: SIMULAR", Color(0.85, 0.9, 1.0), true)
+	var hint := "E: JUGAR"
+	if not you in [m["a"], m["b"]]:
+		hint = "E: VER   X: HASTA TU PARTIDO" if bracket.alive(you) else "E: VER   X: HASTA EL FINAL"
+	_label(Vector2(0, 168), hint, Color(0.85, 0.9, 1.0), true)
 
 
 func _name_color(id: String, m: Dictionary) -> Color:
@@ -176,9 +179,10 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		_play(m, not you in [m["a"], m["b"]])
 	elif Input.is_action_just_pressed("drop") and not you in [m["a"], m["b"]]:
-		bracket.simulate(m, _seed + bracket.current_round() * 10 + int(m["slot"]))
+		bracket.simulate_until(you, _seed)
 		_save()
 		_show_bracket()
+
 
 
 ## Un partido en la cancha: el propio (uno abajo, contra la máquina) o el de otros (máquina contra
@@ -190,7 +194,7 @@ func _play(m: Dictionary, watch: bool) -> void:
 	var p1: String = m["b"] if p0 == m["a"] else m["a"]
 	var TM = load("res://scripts/tenis/TenisMatch.gd")
 	TM.setup = {"p0": p0, "p1": p1, "format": TenisData.TOURNAMENT["format"].get(rname, "arcade"),
-		"difficulty": "dificil" if watch else "normal", "seed": _seed + m["round"] * 10 + int(m["slot"]),
+		"difficulty": "dificil" if watch else "normal", "seed": TenisBracket.match_seed(m, _seed),
 		"ai0": watch, "auto_close": 5.0 if watch else 0.0}
 	_clear()
 	_match = MATCH.instantiate()

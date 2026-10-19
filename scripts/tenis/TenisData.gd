@@ -132,7 +132,7 @@ const TOURNAMENT := {
 	"name": "Highway to Hell",
 	"entrants": ["yokovich", "pecador", "sabalenkova", "fedorer", "sheltron", "tiafuego", "monfiz", "kyrgistan",
 		"bublikov", "moutette"],
-	"format": {"Previa": "arcade", "Cuartos": "arcade", "Semifinal": "arcade", "Final": "arcade"},
+	"format": {"Previa": "corto", "Cuartos": "corto", "Semifinal": "arcade", "Final": "arcade"},  # las primeras, cortas
 	"rounds_per_day": 1,
 	"prize": {"Previa": 2000000, "Cuartos": 5000000, "Semifinal": 12000000, "Final": 25000000,
 		"Campeón": 50000000},

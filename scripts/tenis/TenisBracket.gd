@@ -186,6 +186,25 @@ func simulate(m: Dictionary, seed_: int, difficulty := "dificil") -> TenisSim:
 	return sim
 
 
+## Simula los partidos de los demás hasta que le toque a id (o hasta el final, si ya lo sacaron).
+## Devuelve cuántos simuló.
+func simulate_until(id: String, seed_: int) -> int:
+	var n := 0
+	var m := next_match()
+	while not m.is_empty() and not id in [m["a"], m["b"]]:
+		simulate(m, match_seed(m, seed_))
+		if rounds[m["round"]]["matches"][m["slot"]]["winner"] == "":
+			break  # no quedó anotado: para no dar vueltas
+		n += 1
+		m = next_match()
+	return n
+
+
+## La semilla de un partido: la del torneo más la ronda y el puesto (el mismo partido, el mismo juego).
+static func match_seed(m: Dictionary, seed_: int) -> int:
+	return seed_ + int(m["round"]) * 10 + int(m["slot"])
+
+
 ## El marcador como se anota en el cuadro, desde el ganador: "4-2" o "4-3(7-5)".
 static func score_text(s: TenisScore, winner: int) -> String:
 	var parts := []

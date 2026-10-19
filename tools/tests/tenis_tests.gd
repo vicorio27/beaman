@@ -206,6 +206,19 @@ func _bracket() -> void:
 			alive += int(full.alive(id))
 		ok = ok and alive == 1 and full.reached(full.champion()) == "Campeón"
 	check("el torneo entero: 9 partidos, un campeón, nadie más vivo", ok, "campeones: %s (%d ms)" % [champs.keys(), Time.get_ticks_msec() - t0])
+	# X en el cuadro: simula lo de los demás y para justo en el partido de uno.
+	var sk := TenisBracket.new(ids)
+	var n4 := sk.simulate_until(ids[3], 77)   # el 4 juega cuartos: antes, la previa y el del 1
+	var m4 := sk.next_match()
+	check("hasta tu partido: lo de antes y para en el tuyo", n4 == 3 and ids[3] in [m4["a"], m4["b"]], "simuló %d" % n4)
+	sk.report(m4, m4["b"] if m4["a"] == ids[3] else m4["a"])
+	var rest := sk.simulate_until(ids[3], 77)  # ya lo sacaron: hasta el final
+	check("si ya lo sacaron, hasta el final", sk.champion() != "" and rest == 5, "simuló %d" % rest)
+	var fm: Dictionary = TenisData.TOURNAMENT["format"]
+	var known := true
+	for rd in TenisBracket.new(ids).rounds:
+		known = known and TenisData.FORMATS.has(fm.get(rd["name"], ""))
+	check("cada ronda tiene un formato que existe", known)
 	var prize: Dictionary = TenisData.TOURNAMENT["prize"]
 	var r := TenisBracket.new(ids)
 	r.report(r.next_match(), ids[9])
