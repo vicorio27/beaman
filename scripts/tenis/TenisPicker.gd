@@ -11,7 +11,7 @@ extends Node2D
 signal picked(ids: Array)
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
-const CELL := Vector2(32, 42)
+const CELL := Vector2(50, 48)   # (las celdas de assets/tenis/<id>.png)
 
 var titles: Array = ["ESCOGE TU TENISTA"]
 var roster: Array = TenisData.ROSTER
@@ -91,4 +91,4 @@ func _draw() -> void:
 	if tex != null:  # el marcado, grande y de frente
 		var t := Time.get_ticks_msec() / 1000.0
 		var col := 0 if fmod(t, 0.8) < 0.4 else 1   # "listo" / "listo2"
-		draw_texture_rect_region(tex, Rect2(Vector2(216 if Controls.touch() else 240, 40), CELL * 2), Rect2(Vector2(col * CELL.x, CELL.y), CELL))
+		draw_texture_rect_region(tex, Rect2(Vector2(198 if Controls.touch() else 222, 28), CELL * 2), Rect2(Vector2(col * CELL.x, CELL.y), CELL))

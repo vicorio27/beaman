@@ -14,9 +14,10 @@ Todo está en `scripts/tenis/`. La simulación no sabe nada de pantallas.
 | `TenisAbilities.gd` | Un solo marco para todas las habilidades (`DEFS`) y las reglas de sus contras. |
 | `TenisAI.gd` | La máquina. Ve lo mismo que un jugador y usa el mismo error. No lee lo que aprieta el humano. |
 | `TenisPublico.gd` | El fondo del coliseo y la gente de las tribunas, cada uno por su lado: se para, aplaude, se agarra la cabeza y hace la ola. |
+| `TenisAnim.gd` | Qué cuadro del dibujo le toca a cada jugador en cada momento (correr, prepararse, pegar, sacar), sin pantallas. También aguanta el golpe del saque hasta que la raqueta llega a la pelota. |
 | `TenisMatch.gd` | La cancha que se dibuja y se juega (`scenes/tenis/TenisMatch.tscn`). Si se abre sin `setup` (F6), primero se escogen el tenista y el rival. Con `ballboy`, él es el recogebolas; con `abandon_games`, el de abajo abandona y él termina el partido. |
 | `TenisCuadro.gd` | El dibujo del cuadro (lo usan el torneo suelto y la jornada). |
-| `TenisHistoria.gd` | La historia, sin pantallas: la deuda, las fechas, la paga, cómo abandona cada uno y quién abandona cada día. |
+| `TenisHistoria.gd` | La historia, sin pantallas: la deuda, las fechas, la paga, cómo abandona cada uno y quién abandona cada día. Y todo lo que se dice en el torneo, en tablas: `ABANDONOS` (por tenista), `ORGANIZADOR_PRIMERA` / `ORGANIZADOR_DIA` y `TEXTOS` (las mañanas, el cobro, la puerta y la jornada). |
 | `TenisJornada.gd` | El día de trabajo en el coliseo (`scenes/tenis/TenisJornada.tscn`). |
 | `scripts/systems/Torneo.gd` | Lo que toca el juego: la deuda, las mañanas, el cobro y la entrada del coliseo. |
 
@@ -27,7 +28,7 @@ Todo está en `scripts/tenis/`. La simulación no sabe nada de pantallas.
 - X: globo.
 - F: la habilidad.
 
-**En el celular** (los controles en pantalla, `TouchControls`, en su modo de minijuego): la palanca aparece donde se ponga el dedo en la mitad izquierda, y a la derecha A (plano), B (cortado; con la palanca arriba, dejada), X (globo) y la huellita (la habilidad). Los avisos del tenis nombran esos botones (`Controls.keys_in`: "A: SEGUIR", "PALANCA: CAMBIAR"), y nada se dibuja debajo de la franja de los botones (x > 286): el resumen del partido se corre a la izquierda y esconde el tablero, la copa del cuadro va encima del puesto del campeón y el tenista del selector se corre.
+**En el celular** (los controles en pantalla, `TouchControls`, en su modo de minijuego): la palanca aparece donde se ponga el dedo en la mitad izquierda, y a la derecha A (plano), B (cortado; con la palanca arriba, dejada), X (globo) y la huellita (la habilidad). Los avisos del tenis nombran esos botones (`Controls.keys_in`: "A: SEGUIR", y en todo el juego "las flechas" pasa a ser "la palanca"); los "NOMBRE VS NOMBRE" que no caben quedan con los apellidos (`TenisData.versus`), y nada se dibuja debajo de la franja de los botones (x > 286): el resumen del partido se corre a la izquierda y esconde el tablero, la copa del cuadro va encima del puesto del campeón y el tenista del selector se corre.
 
 **Formato arcade:** un set a 4 juegos, con desempate en 3-3 a 7 puntos.
 
@@ -140,7 +141,7 @@ El torneo se juega igual vaya él o no: un día por ronda.
 
 **La jornada.** De 8 a 6, una por día, en la entrada del coliseo. La primera vez, el organizador lo contrata porque no habla.
 1. El cuadro del día, con su partido titilando.
-2. Es el recogebolas, agachado al lado de la red. Mientras juegan, quieto (si se mueve le gritan, y esa pelota no tiene propina). Cuando se acaba el punto, corre por la pelota con las flechas y la trae: el saque que sigue lo espera. Traerla en menos de 4 segundos da $300; después de 8, le gritan.
+2. Es el recogebolas, agachado al lado de la red. Mientras juegan, quieto (si se mueve le gritan, y esa pelota no tiene propina). Cuando se acaba el punto, corre por la pelota con las flechas (corre como los tenistas: de perfil de lado, de espaldas o de frente) y la trae: el saque que sigue lo espera. Traerla en menos de 4 segundos da $300; después de 8, le gritan.
 3. A la mitad (después del primer juego en el formato corto, del segundo en el arcade), el de abajo abandona a su manera: Kyrgistán rompe raquetas, Monfiz se acalambra, Moutette se hace descalificar, Bublikov se aburre, Sabalenkova revienta las cuerdas, Tiafuego se va con la tribuna, Sheltron contesta una llamada de la mamá, Pecador se cuelga, Yokovich pide el fisio y Fedorer se queda doblado de la espalda. El organizador lo manda a él a terminar el partido con la raqueta del que se fue: juega como ese tenista (sus números y su habilidad), con su dibujo (la corbata, el jean y un zapato de cada color).
    - Antes se ve cómo se va cada uno (`TenisMatch.exit_pro`, `ABANDONOS[id]["salida"]`): Kyrgistán deja dos raquetas rotas en el piso y se va rápido; a Monfiz se lo llevan dos camilleros en camilla, y a Pecador tieso, como una tabla; Bublikov se va a parar al pie de la silla del juez y Yokovich se acuesta en una toalla al lado de la cancha (los dos se quedan mirando el resto del partido); Tiafuego se mete en la tribuna, lo levantan y se pierde entre la gente, y la raqueta baja después, por el aire; Sheltron se va hablando por celular, Fedorer doblado, a pasitos, y Moutette y Sabalenkova caminando. La raqueta queda en el piso.
    - Después de la línea del organizador, él camina hasta la raqueta, se agacha, la coge y juega desde ahí (`walk_in`).
@@ -160,8 +161,16 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 ## El dibujo
 
 **Los tenistas** salen de `tools/art/draw_tenistas.py` y quedan en `assets/tenis/<id>.png`.
-- Celdas de 32x42 con los pies en (16, 40). La fila 0 es de espaldas (el de abajo) y la fila 1 de frente (el de arriba).
-- Hay 32 poses: listo (2), correr (4), drive (preparar, pegar, terminar), revés (lo mismo), saque (lanzar, pegar, terminar), tirada, en el piso, celebra, lamentarse, dejada, las dos del recogebolas (agachado y recogiendo) y las de irse, ya sin raqueta: caminar (2), parado, hablando por celular (2), doblado, acostado y con los brazos arriba. Las dos últimas columnas son solo la raqueta en el piso: entera y rota.
+- Celdas de 50x48 con los pies en (25, 46): cabe el saque estirado y la raqueta con el brazo afuera sin cortarse. La fila 0 es de espaldas (el de abajo) y la fila 1 de frente (el de arriba).
+- `assets/tenis/tenistas.json` trae el orden de las columnas y, por pose, dónde queda la cabeza de la raqueta (y la mano de la pelota en el saque). Con eso, al pegarle, la pelota sale de la raqueta y la del saque va en la mano.
+- Hay 85 poses:
+  - **Correr de perfil** (8 cuadros, para cada lado): un ciclo de carrera de verdad. Las piernas van con ángulos y largos fijos (el pie no se estira ni se encoge), la cadera baja en el apoyo y sube en el vuelo, los brazos van al revés de las piernas. El brazo y la pierna de allá van detrás y más oscuros. La cabeza de lado tiene ojo, nariz, oreja y el pelo de cada uno (la cola de Sabalenkova, la visera de Kyrgistán para atrás, las trencitas...). A él la corbata le vuela por encima del hombro.
+  - **Correr de espaldas y de frente** (8 cuadros): un pie en el piso y el otro con el talón arriba, el cuerpo que sube y baja, los brazos alternados. El brazo que va adelante se tapa con el cuerpo.
+  - **Pasitos de lado** (4 cuadros, para cada lado, sin dar la espalda a la red), **frenar** (para cada lado) y **el saltito** (2).
+  - **El drive y el revés** (8 cada uno): se gira, la raqueta arriba y atrás, baja, le pega bajito, a la cintura o alto, y termina por encima del hombro (en dos cuadros). El **cortado** (3) y la **dejada**.
+  - **El saque** (9): bota la pelota (2), bajan los brazos, la tira, el trofeo (rodillas dobladas, la raqueta arriba), la raqueta detrás de la espalda, le pega estirado y en puntas, y cae hacia adelante (2). El **saque por abajo** (2).
+  - Listo (2), tirada, en el piso, celebra, lamentarse, las del recogebolas, las de irse (caminar, parado, el celular, doblado, acostado, los brazos arriba) y la raqueta en el piso (entera y rota).
+- Los cuadros del medio salen de mezclar dos poses (`mix`), y los de un lado tienen su espejo (`mirror`) que deja la raqueta en la mano derecha. De frente, y en los zurdos, la hoja se arma con el lado cambiado.
 - `camillero.png`: los que se llevan a Monfiz y a Pecador (de blanco, con la cruz roja), con las mismas poses.
 - Cada pose es un esqueleto que se pinta con piezas de 2 px. Después va el contorno del juego y encima, a mano, lo de cada uno:
   - Bublikov: altísimo, despeinado, raya negra.
@@ -173,6 +182,15 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
   - Pecador: pelo zanahoria crespo, menta. Fedorer: todo de blanco, balaca blanca, raqueta roja.
   - Él (`el.png`, sin raqueta, de recogebolas; `el_<id>.png`, con la raqueta de cada uno): la camiseta negra del torneo, y encima lo suyo: la corbata roja (de espaldas, tirada por encima del hombro), el jean, un zapato negro y uno rojo, la barba con canas.
 - Agachado y recogiendo son del recogebolas: esperando el punto y cogiendo la pelota (o la raqueta del que se fue).
+
+**Cómo se mueven en la cancha** (`TenisAnim.gd`):
+- El cuadro de correr sale de lo que lleva corrido, no del tiempo: un cuadro cada 0,27 m de perfil, 0,3 m hacia la red y 0,22 m para atrás (pasos más cortos). Así los pies no patinan.
+- De lado: los primeros 0,18 s son pasitos; si sigue, corre de perfil. Al parar después de correr de lado, frena un momento con el pie de afuera estirado.
+- Cuando el otro le pega, el saltito, si está quieto.
+- La pelota viene: según cuánto le falta (`eta`), se gira, la raqueta atrás y abajo. Si viene corriendo, sigue corriendo hasta el último momento (si no, patina en la pose de pegar).
+- Le pega con el contacto bajito (la pelota por debajo de 0,45 m), a la cintura o alto (por encima de 1,3 m), y la pelota sale de la cabeza de la raqueta: en 0,12 s llega a donde va de verdad.
+- El saque: al apretar arranca el movimiento y el golpe le llega a la simulación a los 0,52 s (0,24 s por abajo), cuando la raqueta encuentra la pelota, con lo que se apretó al empezar. La pelota se ve en la mano, sube y baja hasta la raqueta.
+- La altura en la pantalla (la de la pelota y la de la red) es de 16 px por metro abajo, como los jugadores, y cada vez menos arriba (`TenisMatch.zh`), para que un globo no se salga de la pantalla. La red mide 0,914 m: llega a la cadera.
 
 `TenisMatch._pose()` escoge la pose según la cancha:
 - Un golpe reciente: drive o revés según el lado de la pelota.
@@ -228,7 +246,7 @@ Todas corren sin ventana:
 
 `TENIS_ONLY=unit|sim|counter` corre solo una parte y `TENIS_N` pone los partidos por cruce.
 
-**`tenis_tests.gd`** (55 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar y cómo irse de la cancha, quién abandona, la paga y que alcance para la deuda solo trabajando bien).
+**`tenis_tests.gd`** (64 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar y cómo irse de la cancha, quién abandona, la paga y que alcance para la deuda solo trabajando bien), que cada texto que pide el código esté en `TEXTOS` y que el VS quepa al lado de los botones. Y el dibujo en movimiento: un partido entero mirado cuadro por cuadro (cada pose que pide `TenisAnim` está en las hojas y se ve de todo), que el saque salga cuando llega la raqueta, que corriendo de lado el cuadro cambie con la distancia y el contacto según la altura.
 
 **`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.
@@ -260,4 +278,4 @@ Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ga
 
 ## Lo que falta
 
-- **Los diálogos:** en una tabla de datos.
+Nada de lo que estaba en la lista. Lo que siga sale de jugarlo (en el computador y en el celular).

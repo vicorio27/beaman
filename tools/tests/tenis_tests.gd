@@ -27,8 +27,97 @@ func _run() -> void:
 	_matches()
 	_bracket()
 	_historia()
+	_anim()
 	print("\n%d pasaron, %d fallaron" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
+
+
+# ---------------------------------------------------------------- El dibujo en movimiento (TenisAnim)
+
+func _anim() -> void:
+	var info: Dictionary = (load("res://assets/tenis/tenistas.json") as JSON).data
+	var cols := {}
+	for i in info["poses"].size():
+		cols[info["poses"][i]] = i
+	check("las hojas: celdas de 50x48 con los pies en (25, 46) (TenisMatch.CELL y FEET dicen lo mismo)",
+		Vector2(info["cell"][0], info["cell"][1]) == Vector2(50, 48) and Vector2(info["feet"][0], info["feet"][1]) == Vector2(25, 46),
+		"%s %s" % [info["cell"], info["feet"]])
+	# Un partido entero, cuadro por cuadro como en la pantalla, con el saque aguantado como en TenisMatch.
+	var sim := TenisSim.new("yokovich", "moutette", TenisData.FORMATS["corto"], 5, 0)
+	TenisAI.setup(sim, 0, "normal")
+	TenisAI.setup(sim, 1, "normal")
+	var ta := [TenisAnim.new(0), TenisAnim.new(1)]
+	var on_event := func(kind: String, d: Dictionary) -> void:
+		if kind == "hit":
+			TenisAnim.on_hit(ta, sim, d)
+	sim.event.connect(on_event)
+	var held := {}
+	var seen := {}
+	var missing := {}
+	var serve_wait := []   # cuánto pasó de que apretó a que le pegó, en cada saque
+	var serve_from := -1.0
+	var steps := 0
+	while sim.state != "match_over" and steps < 60 * 60 * 30:
+		var inputs := [TenisAI.think(sim, 0), TenisAI.think(sim, 1)]
+		if sim.state == "serve":
+			var was: float = ta[sim.score.server].serve_t
+			TenisAnim.hold_serve(ta, sim, inputs, held)
+			if was < 0.0 and ta[sim.score.server].serve_t >= 0.0:
+				serve_from = sim.t
+		var before := sim.state
+		sim.step(inputs)
+		if before == "serve" and sim.state != "serve" and serve_from >= 0.0:
+			serve_wait.append(sim.t - serve_from)
+			serve_from = -1.0
+		for i in 2:
+			ta[i].update(TenisSim.DT, sim.players[i], sim)
+			seen[ta[i].pose] = seen.get(ta[i].pose, 0) + 1
+			if not cols.has(ta[i].pose):
+				missing[ta[i].pose] = true
+		steps += 1
+	sim.event.disconnect(on_event)  # (si no, la simulación y la función se tienen agarradas y no se liberan)
+	check("el partido mirado cuadro por cuadro termina", sim.state == "match_over", "%.0f s" % sim.t)
+	check("cada cuadro que pide TenisAnim está en las hojas", missing.is_empty(), str(missing.keys()))
+	var want := ["lado1_d", "lado5_i", "paso2_d", "corre3", "split2", "drive_atras", "drive_fin", "reves",
+		"saque_bota1", "saque_trofeo", "saque", "saque_fin"]
+	var lacks := []
+	for w in want:
+		if not seen.has(w):
+			lacks.append(w)
+	check("en un partido se ve de todo: correr de lado y de frente, pasitos, saltito, golpes y el saque entero", lacks.is_empty(), str(lacks))
+	serve_wait.sort()
+	var med: float = serve_wait[serve_wait.size() / 2] if not serve_wait.is_empty() else -1.0
+	check("el saque sale cuando la raqueta llega (unos %.2f s después de apretar)" % TenisAnim.CONTACT,
+		absf(med - TenisAnim.CONTACT) < 0.05, "%d saques, mediana %.2f s" % [serve_wait.size(), med])
+	# Que los pies no patinen: corriendo de lado, el cuadro cambia cada LADO_M metros (no cada tanto tiempo).
+	var s2 := TenisSim.new("yokovich", "moutette", TenisData.FORMATS["corto"], 1, 0)
+	s2.state = "rally"
+	var a := TenisAnim.new(0)
+	var p = s2.players[0]
+	p.vel = Vector2(5.0, 0.0)
+	var changes := 0
+	var last := ""
+	var dist := 0.0
+	var kinds := {}
+	for k in 120:
+		a.update(0.01, p, s2)
+		dist += 0.05
+		if a.pose != last:
+			changes += 1
+			last = a.pose
+		kinds[a.pose.substr(0, 4)] = true
+	var expect := (dist - 5.0 * TenisAnim.PASOS_T) / TenisAnim.LADO_M + 5.0 * TenisAnim.PASOS_T / TenisAnim.PASO_M
+	check("corriendo de lado: primero pasitos, después de perfil, un cuadro cada %.2f m" % TenisAnim.LADO_M,
+		kinds.has("paso") and kinds.has("lado") and absf(changes - expect) <= 3.0, "%d cambios (esperados ~%.0f)" % [changes, expect])
+	# El contacto según la altura de la pelota.
+	var b := TenisAnim.new(0)
+	b.hit("drive", true, 0.2, false)
+	var low := b.contact_pose()
+	b.hit("drive", false, 1.6, false)
+	var high := b.contact_pose()
+	b.hit("drive", true, 0.8, false)
+	check("le pega bajito, a la cintura o alto según la pelota", low == "drive_bajo" and high == "reves_alto" and b.contact_pose() == "drive",
+		"%s %s %s" % [low, high, b.contact_pose()])
 
 
 # ---------------------------------------------------------------- El conteo
@@ -247,6 +336,20 @@ func _historia() -> void:
 		if not str(H.ABANDONOS[id].get("salida", "")) in salidas:
 			mudas.append(id)
 	check("cada abandono dice cómo se va de la cancha", mudas.is_empty(), str(mudas))
+	# Los textos del torneo (TenisHistoria.TEXTOS): que exista cada uno que se pide en el código.
+	var re := RegEx.new()
+	re.compile("TEXTOS\\[\"(\\w+)\"\\]")
+	var pedidos := []
+	var n_pedidos := 0
+	for path in ["res://scripts/systems/Torneo.gd", "res://scripts/tenis/TenisJornada.gd"]:
+		for m in re.search_all(FileAccess.get_file_as_string(path)):
+			n_pedidos += 1
+			if not H.TEXTOS.has(m.get_string(1)):
+				pedidos.append(m.get_string(1))
+	check("cada texto del torneo que se pide está en la tabla", pedidos.is_empty() and n_pedidos >= 15, "%d pedidos, faltan %s" % [n_pedidos, pedidos])
+	var largo := TenisData.versus("Nick Kyrgistán", "Alexander Bublikov", 286.0)
+	check("el VS cabe al lado de los botones del celular (si no, solo apellidos)",
+		largo.length() * 8 <= 286 and TenisData.versus("Gaël Monfiz", "Ben Sheltron", 320.0) == "GAËL MONFIZ  VS  BEN SHELTRON", largo)
 	var b := TenisBracket.new(TenisData.TOURNAMENT["entrants"])
 	var a1 := H.quien_abandona(b, 0, [], 5)
 	var a2 := H.quien_abandona(b, 0, [], 5)

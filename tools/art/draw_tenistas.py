@@ -23,25 +23,24 @@ cada uno (el pelo, la cara, las rayas, el tatuaje). Las proporciones son las de 
                jean, un zapato negro y uno rojo, la barba tupida con canas y el mechón parado. Sin
                raqueta (el.png); con la de cada uno cuando termina un partido (el_<id>.png).
 
-Hoja: celdas de 32x42 (los pies en y = 40). Fila 0: de espaldas; fila 1: de frente. Columnas = POSES (ver abajo).
+Hoja: celdas de 50x48 (los pies en (25, 46)). Fila 0: de espaldas; fila 1: de frente. Columnas = POSES (ver abajo).
 Salida: assets/tenis/<id>.png. Uso: python tools/art/draw_tenistas.py  (desde la carpeta del proyecto)
 Con --preview guarda además una lámina ampliada en la carpeta temporal."""
+import json
 import math
 import sys
 from pathlib import Path
 from PIL import Image
 
-CW, CH = 32, 42
-DY = 6  # todo baja 6 px: arriba queda lugar para la raqueta del saque
+CW, CH = 50, 48
+CX = CW // 2  # el centro de la celda (los números de las poses son relativos a él)
+DY = 12  # todo baja 12 px: arriba queda lugar para la raqueta del saque, estirado
 OUT = Path("assets/tenis")
 OUTLINE = (40, 32, 44)
 EYE = (30, 28, 36)
 
-# Las poses, en orden (es el orden de las columnas de la hoja; TenisMatch.gd usa los mismos nombres).
-POSES = ["listo", "listo2", "corre1", "corre2", "corre3", "corre4", "drive_atras", "drive", "drive_fin",
-         "reves_atras", "reves", "reves_fin", "saque_lanza", "saque", "saque_fin", "tirada", "piso",
-         "celebra", "bravo", "dejada", "agachado", "recoge",
-         "camina1", "camina2", "parado", "tel1", "tel2", "doblado", "acostado", "brazos", "suelta", "rota"]
+# Las poses, en orden, son POSES (al final de las poses): el orden de las columnas de la hoja. Va
+# también en assets/tenis/tenistas.json, que es de donde lo lee TenisMatch.gd.
 
 # ---------------------------------------------------------------- Las poses (de espaldas)
 # Coordenadas en la celda, vistas de espaldas: la mano derecha (la de la raqueta) queda a la derecha.
@@ -89,7 +88,7 @@ POSE = {
                rk=(-100, False), lean=-1),
     "saque_fin": P(el=(-5, 15), hl=(-6, 18), er=(1, 16), hr=(-4, 20), kl=(-3, 27), fl=(-4, 33), kr=(4, 26), fr=(6, 31),
                    rk=(130, True), lean=2),
-    "tirada": P(el=(4, 12), hl=(10, 11), er=(8, 13), hr=(13, 12), kl=(-7, 22), fl=(-12, 21), kr=(-6, 25), fr=(-12, 24),
+    "tirada": P(el=(4, 12), hl=(9, 11), er=(7, 13), hr=(11, 12), kl=(-7, 22), fl=(-12, 21), kr=(-6, 25), fr=(-12, 24),
                 rk=(-10, False), dive=True),
     "piso": P(el=(4, 26), hl=(9, 28), er=(5, 29), hr=(10, 31), kl=(-7, 27), fl=(-12, 28), kr=(-6, 30), fr=(-12, 31),
               rk=(10, False), floor=True),
@@ -127,6 +126,190 @@ POSE = {
     "suelta": P(rk=(-12, False), only="suelta"),
     "rota": P(rk=(-12, False), only="rota"),
 }
+
+# ---------------------------------------------------------------- Las poses en movimiento
+# Para que se mueva fluido: más cuadros, y los del medio salen de mezclar dos poses (mix). Las de un lado
+# ("_d": hacia la derecha de la pantalla) tienen su espejo ("_i") con mirror. "fwd": los brazos que van
+# hacia adelante (hacia la red): de espaldas se tapan con el cuerpo; de frente, los que van hacia atrás.
+
+
+def mirror(q):
+    """La misma pose hacia el otro lado (de espaldas): x al revés, y la izquierda pasa a ser la derecha
+    (la raqueta sigue en la mano derecha: toma el lugar que tenía la izquierda)."""
+    out = dict(q)
+    for a, b in (("el", "er"), ("hl", "hr"), ("kl", "kr"), ("fl", "fr")):
+        if a in q and b in q:
+            out[b] = (-q[a][0], q[a][1])
+            out[a] = (-q[b][0], q[b][1])
+    if q.get("rk") is not None:
+        out["rk"] = (180 - q["rk"][0], q["rk"][1])
+    out["tilt"] = -q["tilt"]
+    out["head_dx"] = -q["head_dx"]
+    out["fwd"] = tuple({"l": "r", "r": "l"}[k] for k in q.get("fwd", ()))
+    out["bwd"] = tuple({"l": "r", "r": "l"}[k] for k in q.get("bwd", ()))
+    return out
+
+
+def mix(a, b, t):
+    """Un cuadro intermedio: las articulaciones en línea recta de una pose a la otra; la raqueta, por el
+    camino corto del ángulo."""
+    out = dict(a if t < 0.5 else b)
+    for k, va in a.items():
+        vb = b.get(k)
+        if k == "rk":
+            if va is not None and vb is not None:
+                d = (vb[0] - va[0] + 180) % 360 - 180
+                out[k] = (va[0] + d * t, va[1] if t < 0.5 else vb[1])
+        elif isinstance(va, tuple) and len(va) == 2 and all(isinstance(c, (int, float)) for c in va) \
+                and isinstance(vb, tuple):
+            out[k] = (va[0] + (vb[0] - va[0]) * t, va[1] + (vb[1] - va[1]) * t)
+        elif isinstance(va, (int, float)) and not isinstance(va, bool) and isinstance(vb, (int, float)):
+            out[k] = va + (vb - va) * t
+    return out
+
+
+GRIP = dict(el=(-5, 15), hl=(-3, 19), er=(4, 16), hr=(-1, 19), two=True)   # las dos manos en el mango
+WIDE = dict(kl=(-4, 27), fl=(-6, 33), kr=(4, 27), fr=(6, 33))               # abierto, firme
+
+# Correr de espaldas (hacia la red; al revés, para atrás): 8 cuadros. Media vuelta con el pie derecho en
+# el piso (el izquierdo, el talón arriba, pasa y baja), y la otra media, igual con el otro pie.
+_LEGS = [  # (rodilla y pie izquierdos, rodilla y pie derechos), con el derecho apoyado; y cuánto se agacha
+    (dict(kl=(-3, 26), fl=(-3, 29), kr=(2, 27), fr=(2, 33)), 0),     # apoya el derecho; el izquierdo, atrás
+    (dict(kl=(-2, 25), fl=(-2, 27), kr=(2, 27), fr=(2, 33)), 1),     # carga: el talón izquierdo arriba
+    (dict(kl=(-2, 26), fl=(-3, 30), kr=(2, 27), fr=(3, 32)), 0),     # empuja; el izquierdo baja
+    (dict(kl=(-2, 27), fl=(-3, 32), kr=(2, 26), fr=(2, 30)), -1),    # en el aire
+]
+# Los brazos: B atrás (se ve el codo y la mano junto a la cadera), M al lado, F adelante (tapado).
+_ARM_R = {"B": ((6, 16), (7, 20), (62, True)), "M": ((6, 16), (7, 18), (-25, False)), "F": ((5, 15), (3, 13), (-82, False))}
+_ARM_L = {"B": ((-6, 16), (-7, 20)), "M": ((-6, 16), (-8, 18)), "F": ((-5, 15), (-3, 13))}
+_ARM_KEYS = [(0, "B"), (2.5, "M"), (4, "F"), (6.5, "M"), (8, "B")]   # el derecho, por cuadro (0..8)
+
+
+def _arm_at(table, f):
+    for (f0, a), (f1, b) in zip(_ARM_KEYS, _ARM_KEYS[1:]):
+        if f0 <= f <= f1:
+            t = (f - f0) / (f1 - f0)
+            A, B = table[a], table[b]
+            return [((A[i][0] + (B[i][0] - A[i][0]) * t, A[i][1] + (B[i][1] - A[i][1]) * t) if i < 2 else
+                     (A[2][0] + ((B[2][0] - A[2][0] + 180) % 360 - 180) * t, A[2][1] if t < 0.5 else B[2][1]))
+                    for i in range(len(A))]
+    return list(table["B"])
+
+
+def _run(i):
+    legs, lean = _LEGS[i % 4]
+    if i >= 4:  # la otra media vuelta: las piernas al espejo
+        legs = dict(kl=(-legs["kr"][0], legs["kr"][1]), fl=(-legs["fr"][0], legs["fr"][1]),
+                    kr=(-legs["kl"][0], legs["kl"][1]), fr=(-legs["fl"][0], legs["fl"][1]))
+    er, hr, rk = _arm_at(_ARM_R, i)
+    el, hl = _arm_at(_ARM_L, (i + 4) % 8)   # el izquierdo, al revés del derecho
+    fwd = tuple(k for k, f in (("r", i), ("l", (i + 4) % 8)) if 3 <= f <= 5)
+    bwd = tuple(k for k, f in (("r", i), ("l", (i + 4) % 8)) if f <= 1 or f >= 7)
+    return P(**legs, er=er, hr=hr, el=el, hl=hl, rk=rk, lean=lean, fwd=fwd, bwd=bwd)
+
+
+for _i in range(8):
+    POSE["corre%d" % (_i + 1)] = _run(_i)
+
+# Los pasitos de lado (sin dar la espalda a la red), hacia la derecha: abre, sale el pie de adelante,
+# se juntan en el aire, cae. Con la raqueta lista, en las dos manos.
+POSE["paso1_d"] = P(**GRIP, **WIDE, rk=(-150, False), lean=2)
+POSE["paso2_d"] = P(**GRIP, kl=(-3, 27), fl=(-5, 33), kr=(6, 27), fr=(9, 32), rk=(-145, False), lean=2, tilt=1, head_dx=1)
+POSE["paso3_d"] = P(**GRIP, kl=(-1, 26), fl=(-1, 31), kr=(4, 26), fr=(5, 31), rk=(-145, False), lean=0, tilt=1, head_dx=1)
+POSE["paso4_d"] = P(**GRIP, kl=(-3, 27), fl=(-4, 33), kr=(4, 27), fr=(6, 33), rk=(-148, False), lean=1, tilt=1)
+# Frenar después de correr hacia la derecha: el pie de afuera estirado, el cuerpo echado para atrás.
+POSE["frena_d"] = P(el=(-6, 14), hl=(-9, 15), er=(5, 16), hr=(7, 19), kl=(-3, 27), fl=(-4, 33), kr=(6, 28), fr=(10, 33),
+                    rk=(-60, False), lean=3, tilt=-2, head_dx=-1)
+# El saltito de cuando el otro le pega (split step): arriba, y cae abierto y agachado.
+POSE["split1"] = P(**GRIP, kl=(-2, 26), fl=(-3, 31), kr=(2, 26), fr=(3, 31), rk=(-150, False), lean=-1)
+POSE["split2"] = P(**GRIP, kl=(-5, 27), fl=(-7, 33), kr=(5, 27), fr=(7, 33), rk=(-152, False), lean=3)
+
+# El drive (derecha): se gira, la raqueta arriba y atrás, baja (el "loop"), le pega (bajita, a la cintura
+# o alta) y termina por encima del hombro izquierdo.
+POSE["drive_prep"] = P(**WIDE, el=(-2, 15), hl=(2, 16), er=(7, 14), hr=(9, 16), rk=(-95, False), tilt=2, lean=2, fwd=("l",))
+POSE["drive_atras"] = P(**WIDE, el=(-3, 15), hl=(3, 15), er=(8, 12), hr=(11, 13), rk=(-55, False), tilt=3, lean=2, fwd=("l",))
+POSE["drive_baja"] = P(**WIDE, el=(-4, 15), hl=(1, 16), er=(8, 15), hr=(10, 19), rk=(100, True), tilt=2, lean=2, fwd=("l",))
+POSE["drive"] = P(kl=(-4, 27), fl=(-6, 33), kr=(4, 27), fr=(5, 33), el=(-6, 15), hl=(-8, 17), er=(6, 16), hr=(9, 18),
+                  rk=(-8, False), lean=2)
+POSE["drive_bajo"] = P(kl=(-5, 28), fl=(-7, 33), kr=(5, 28), fr=(7, 33), el=(-6, 17), hl=(-9, 19), er=(6, 18), hr=(9, 21),
+                       rk=(6, False), lean=4)
+POSE["drive_alto"] = P(kl=(-3, 27), fl=(-5, 33), kr=(3, 27), fr=(5, 33), el=(-6, 13), hl=(-8, 15), er=(6, 13), hr=(9, 14),
+                       rk=(-26, False), lean=0)
+POSE["drive_fin"] = P(kl=(-4, 27), fl=(-6, 33), kr=(3, 27), fr=(4, 32), el=(-6, 15), hl=(-4, 13), er=(-1, 12), hr=(-5, 10),
+                      rk=(172, False), tilt=-3, lean=1)
+POSE["drive_fin1"] = mix(POSE["drive"], POSE["drive_fin"], 0.5)
+POSE["drive_fin1"].update(er=(3, 13), hr=(1, 11), rk=(-118, False))
+
+# El revés a dos manos: lo mismo hacia la izquierda, y termina por encima del hombro derecho.
+POSE["reves_prep"] = P(**WIDE, el=(-6, 16), hl=(-7, 19), er=(0, 16), hr=(-6, 18), rk=(-110, False), two=True, tilt=-2, lean=2)
+POSE["reves_atras"] = P(**WIDE, el=(-7, 14), hl=(-9, 16), er=(-1, 14), hr=(-8, 15), rk=(-128, True), two=True, tilt=-3, lean=2)
+POSE["reves_baja"] = P(**WIDE, el=(-7, 16), hl=(-9, 19), er=(-1, 17), hr=(-8, 19), rk=(95, True), two=True, tilt=-2, lean=2)
+POSE["reves"] = P(kl=(-4, 27), fl=(-5, 33), kr=(4, 27), fr=(6, 33), el=(-5, 16), hl=(-7, 18), er=(1, 16), hr=(-6, 18),
+                  rk=(188, False), two=True, lean=2)
+POSE["reves_bajo"] = P(kl=(-5, 28), fl=(-7, 33), kr=(5, 28), fr=(7, 33), el=(-5, 18), hl=(-7, 21), er=(1, 18), hr=(-6, 21),
+                       rk=(176, False), two=True, lean=4)
+POSE["reves_alto"] = P(kl=(-3, 27), fl=(-5, 33), kr=(3, 27), fr=(5, 33), el=(-5, 13), hl=(-7, 15), er=(1, 13), hr=(-6, 14),
+                       rk=(205, False), two=True, lean=0)
+POSE["reves_fin"] = P(kl=(-3, 27), fl=(-4, 32), kr=(4, 27), fr=(6, 33), el=(1, 12), hl=(5, 10), er=(6, 12), hr=(6, 10),
+                      rk=(8, False), two=True, tilt=3, lean=1)
+POSE["reves_fin1"] = mix(POSE["reves"], POSE["reves_fin"], 0.5)
+POSE["reves_fin1"].update(er=(3, 13), hr=(1, 12), rk=(-62, False))
+
+# El cortado (revés a una mano): arriba, atrás de la cabeza; baja abriendo la cara, y sigue estirado.
+POSE["cortado_atras"] = P(**WIDE, el=(-7, 15), hl=(-5, 18), er=(-1, 12), hr=(-5, 10), rk=(-140, True), tilt=-3, lean=2)
+POSE["cortado"] = P(**WIDE, el=(-6, 15), hl=(-9, 16), er=(0, 15), hr=(-6, 17), rk=(165, False), tilt=-1, lean=3)
+POSE["cortado_fin"] = P(**WIDE, el=(-6, 14), hl=(-9, 14), er=(4, 15), hr=(8, 17), rk=(-15, False), tilt=1, lean=2)
+
+# El saque: bota la pelota, bajan los brazos, la tira, el trofeo (rodillas dobladas, la raqueta arriba),
+# la raqueta cae detrás de la espalda, le pega estirado (en puntas), y cae hacia adelante.
+_SV = dict(kl=(-3, 27), fl=(-4, 33), kr=(2, 27), fr=(4, 33))
+POSE["saque_bota1"] = P(**_SV, el=(-5, 16), hl=(-4, 20), er=(5, 16), hr=(5, 20), rk=(-140, False), lean=2)
+POSE["saque_bota2"] = P(**_SV, el=(-5, 17), hl=(-4, 22), er=(5, 16), hr=(5, 20), rk=(-140, False), lean=3)
+POSE["saque_baja"] = P(**_SV, el=(-5, 16), hl=(-3, 21), er=(5, 16), hr=(4, 21), rk=(120, True), lean=1)
+POSE["saque_lanza"] = P(**_SV, el=(-5, 10), hl=(-5, 6), er=(7, 15), hr=(9, 18), rk=(130, True), lean=1)
+POSE["saque_trofeo"] = P(kl=(-3, 27), fl=(-4, 33), kr=(3, 27), fr=(4, 33), el=(-5, 7), hl=(-5, 2), er=(9, 9), hr=(8, 6),
+                         rk=(-75, False), lean=3)
+POSE["saque_rasca"] = P(**_SV, el=(-4, 10), hl=(-3, 8), er=(8, 8), hr=(5, 7), rk=(95, False), lean=1)
+POSE["saque"] = P(kl=(-2, 26), fl=(-3, 32), kr=(3, 26), fr=(4, 32), el=(-4, 14), hl=(-2, 16), er=(5, 9), hr=(4, 5),
+                  rk=(-95, False), lean=-1)
+POSE["saque_fin1"] = P(kl=(-2, 27), fl=(-3, 33), kr=(3, 26), fr=(4, 31), el=(-5, 15), hl=(-6, 17), er=(5, 12), hr=(3, 15),
+                       rk=(130, False), lean=1)
+POSE["saque_fin"] = P(kl=(-3, 27), fl=(-4, 33), kr=(2, 26), fr=(3, 29), el=(-5, 16), hl=(-3, 19), er=(1, 16), hr=(-4, 21),
+                      rk=(110, False), lean=3)
+# El saque por abajo (Bublikov): la raqueta atrás, bajita, y la barre hacia adelante.
+POSE["abajo_atras"] = P(**WIDE, el=(-5, 16), hl=(-3, 17), er=(6, 18), hr=(8, 22), rk=(60, True), lean=3)
+POSE["abajo"] = P(**WIDE, el=(-5, 16), hl=(-6, 18), er=(4, 18), hr=(3, 21), rk=(-80, False), lean=2)
+
+# De perfil, corriendo de lado (lo que más se corre en el tenis): 8 cuadros de una carrera de verdad.
+# Por pierna: el muslo (grados desde la vertical, + hacia adelante) y cuánto se dobla la rodilla. La de
+# allá va media vuelta corrida. Los brazos, al revés de la pierna de su lado.
+SIDE_RUN = [(25, 15), (8, 38), (-16, 24), (-34, 30), (-26, 88), (-2, 112), (30, 96), (42, 46)]
+
+
+def side_run(i):
+    tn, kn = SIDE_RUN[i]
+    tf, kf = SIDE_RUN[(i + 4) % 8]
+    an, af = -tn * 1.1, -tf * 1.1
+    return {"side": True, "tn": tn, "kn": kn, "tf": tf, "kf": kf, "an": an, "af": af,
+            "en": 100 if an > 0 else 70, "ef": 100 if af > 0 else 70, "lean": 12, "air": i in (3, 7)}
+
+
+for _i in range(8):
+    POSE["lado%d" % (_i + 1)] = side_run(_i)
+
+POSES = (["listo", "listo2"] + ["corre%d" % i for i in range(1, 9)]
+         + ["lado%d_d" % i for i in range(1, 9)] + ["lado%d_i" % i for i in range(1, 9)]
+         + ["paso%d_d" % i for i in range(1, 5)] + ["paso%d_i" % i for i in range(1, 5)]
+         + ["frena_d", "frena_i", "split1", "split2",
+            "drive_prep", "drive_atras", "drive_baja", "drive_bajo", "drive", "drive_alto", "drive_fin1", "drive_fin",
+            "reves_prep", "reves_atras", "reves_baja", "reves_bajo", "reves", "reves_alto", "reves_fin1", "reves_fin",
+            "cortado_atras", "cortado", "cortado_fin", "dejada",
+            "saque_bota1", "saque_bota2", "saque_baja", "saque_lanza", "saque_trofeo", "saque_rasca", "saque",
+            "saque_fin1", "saque_fin", "abajo_atras", "abajo",
+            "tirada", "piso", "celebra", "bravo", "agachado", "recoge",
+            "camina1", "camina2", "parado", "tel1", "tel2", "doblado", "acostado", "brazos", "suelta", "rota"])
+for _k in ("drive_atras", "reves_atras", "saque_lanza", "corre1", "corre2", "corre3", "corre4"):
+    assert _k in POSE
 
 # ---------------------------------------------------------------- Los tenistas
 # h: cuánto más alto (piernas y tronco). sh: medio ancho de los hombros. Los colores: s/S piel, h/H pelo,
@@ -289,37 +472,42 @@ def racket(cv, hand, ang, col, strings=(220, 224, 214)):
             y = cy + dx * ux + dy * uy
             if cv.get(int(round(x)), int(round(y)))[3] == 0:
                 cv.dot(x, y, strings)
+    return cx, cy
 
 
 def floor_racket(cv, col, broken):
     """La raqueta acostada en el piso, un poco en diagonal. Rota: el mango por un lado, la cabeza
     torcida por otro y dos cuerdas colgando."""
+    o = CX - 16                                            # (dibujada para una celda de 32)
     if not broken:
-        racket(cv, (9, 30), -12, col)
+        racket(cv, (9 + o, 30), -12, col)
         return
-    cv.line((5, 32), (9, 31), (70, 54, 46), 1)            # el mango, solo
-    cv.dot(10, 31, col)                                    # con el pedacito del cuello
-    racket(cv, (14, 33), -40, col, strings=(150, 152, 146))
+    cv.line((5 + o, 32), (9 + o, 31), (70, 54, 46), 1)    # el mango, solo
+    cv.dot(10 + o, 31, col)                                # con el pedacito del cuello
+    racket(cv, (14 + o, 33), -40, col, strings=(150, 152, 146))
     for k in range(3):                                     # las cuerdas reventadas, colgando
-        cv.dot(23 + k, 25 + k, (220, 224, 214))
-    cv.dot(22, 33, (220, 224, 214))
+        cv.dot(23 + o + k, 25 + k, (220, 224, 214))
+    cv.dot(22 + o, 33, (220, 224, 214))
 
 
-def draw(pid: str, pose: str, front: bool) -> Image.Image:
+def draw(pid: str, pose: str, front: bool, q=None):
+    """Una celda de espaldas (o de frente: el espejo). Devuelve la imagen y {"rk": la cabeza de la
+    raqueta, "hl": la mano izquierda} en coordenadas de la celda."""
     d = PLAYERS[pid]
-    q = POSE[pose]
+    q = q if q is not None else POSE[pose]
     cv = Canvas()
+    meta = {"rk": None, "hl": None}
     if q.get("only"):  # la raqueta sola, en el piso
         if d["r"] is not None:
             floor_racket(cv, d["r"], q["only"] == "rota")
             cv.outline()
-        return cv.im
+        return cv.im, meta
     h = d["h"]
     lean = q["lean"] + d.get("slouch", 0) * (pose in ("listo", "listo2"))
     mx = -1 if front else 1                 # de frente, la derecha queda a la izquierda de la pantalla
 
     def X(v):
-        return 16 + v * mx
+        return CX + v * mx
 
     def Y(v, part="body"):
         # Más alto: estira hacia arriba (los pies quedan en su sitio). El agachado baja el tronco.
@@ -328,6 +516,13 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
         if v >= 27:   # de la rodilla para abajo, no cambia
             return v
         return v - h + lean * (1 if v < 24 else 0.5)
+
+    def YL(v):
+        # Rodillas y pies: lo que está en el piso no se mueve; lo levantado sube con la cadera, de a
+        # poquito (si no, un pie levantado salta de un cuadro al otro en los más altos).
+        if q.get("dive") or q.get("floor") or v >= 27:
+            return v
+        return v - (h - lean * 0.5) * min(1.0, (27 - v) / 3.0)
 
     sh = d["sh"]
     hip_y, sho_y = 22, 12
@@ -351,7 +546,7 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
 
     def j(name):
         x, y = q[name]
-        return (X(x), Y(y))
+        return (X(x), YL(y) if name[0] in "kf" else Y(y))
 
     shoulder_l = (torso[0][0], torso[0][1] + 1)
     shoulder_r = (torso[1][0], torso[1][1] + 1)
@@ -367,7 +562,23 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
 
     # 1) Lo que va detrás del cuerpo.
     if has_rk and not rk_front:
-        racket(cv, hand_r, rk_ang, d["r"])
+        meta["rk"] = racket(cv, hand_r, rk_ang, d["r"])
+
+    def arm(side, sho):  # (manga corta: el primer pedazo, color camiseta)
+        el, hand = j("e" + side), j("h" + side)
+        if side == "l" and q["two"]:
+            hand = (hand_r[0] - mx, hand_r[1] + 1)
+        if side == "l":
+            meta["hl"] = hand
+        cv.line(sho, el, d["s"])
+        cv.line(el, hand, d["s"])
+        cv.line(sho, ((sho[0] * 2 + el[0]) / 3, (sho[1] * 2 + el[1]) / 3), d["t"])
+
+    # Los brazos que quedan detrás del cuerpo: de espaldas, los que van hacia adelante; de frente, los de atrás.
+    hidden = q.get("bwd", ()) if front else q.get("fwd", ())
+    for side, sho in (("l", shoulder_l), ("r", shoulder_r)):
+        if side in hidden:
+            arm(side, sho)
 
     # 2) Las piernas (piel; medias y zapatos abajo).
     for side in ("l", "r"):
@@ -389,18 +600,14 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
             cv.poly([(X(-4), y0), (X(4), y0), (X(6), y0 + 5), (X(-6), y0 + 5)], d["p"])
         else:
             cv.rect(X(-4) if mx > 0 else X(4), y0, X(4) if mx > 0 else X(-4), y0 + 4, d["p"])
-            cv.dot(16, y0 + 4, None)
+            cv.dot(CX, y0 + 4, None)
     else:
         cv.line((torso[3][0], torso[3][1]), hips, d["p"], 3)
 
-    # 4) Los brazos (manga corta: el primer pedazo, color camiseta).
+    # 4) Los brazos que se ven.
     for side, sho in (("l", shoulder_l), ("r", shoulder_r)):
-        el, hand = j("e" + side), j("h" + side)
-        if side == "l" and q["two"]:
-            hand = (hand_r[0] - mx, hand_r[1] + 1)
-        cv.line(sho, el, d["s"])
-        cv.line(el, hand, d["s"])
-        cv.line(sho, ((sho[0] * 2 + el[0]) / 3, (sho[1] * 2 + el[1]) / 3), d["t"])
+        if side not in hidden:
+            arm(side, sho)
 
     # 5) La cabeza (de espaldas: el pelo; de frente: la cara).
     hx, hy = int(round(head_at[0])) - 4, int(round(head_at[1])) - 4
@@ -409,13 +616,203 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
 
     # 6) Lo que va delante.
     if has_rk and rk_front:
-        racket(cv, hand_r, rk_ang, d["r"])
+        meta["rk"] = racket(cv, hand_r, rk_ang, d["r"])
     if q.get("phone"):
         cv.rect(hand_r[0], hand_r[1] - 2, hand_r[0] + 1, hand_r[1], (34, 34, 40))
 
     cv.outline()
     details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q)
-    return cv.im
+    return cv.im, meta
+
+
+# ---------------------------------------------------------------- De perfil
+
+def draw_side(pid: str, q: dict, face: int):
+    """De perfil, mirando hacia `face` (+1: a la derecha de la pantalla). Las piernas y los brazos van
+    con ángulos y largos fijos (el pie no se estira ni se encoge de un cuadro al otro); la cadera baja
+    hasta que el pie de abajo toca el piso (en el aire, un pixel más arriba). El brazo y la pierna de allá
+    van detrás del cuerpo y más oscuros. La mano derecha es la de acá si mira a la derecha."""
+    d = PLAYERS[pid]
+    cv = Canvas()
+    meta = {"rk": None, "hl": None}
+    h = d["h"]
+    thigh = shin = (9.5 + h) / 2 + 0.3
+    upper = fore = 4.0 + 0.3 * h
+
+    def dark(c, k=0.8):
+        return tuple(int(v * k) for v in c)
+
+    def vec(a_deg, length):  # a: grados desde la vertical hacia abajo, + hacia adelante
+        a = math.radians(a_deg)
+        return (face * math.sin(a) * length, math.cos(a) * length)
+
+    def leg(t, k):
+        kx, ky = vec(t, thigh)
+        fx, fy = vec(t - k, shin)
+        return (kx, ky), (kx + fx, ky + fy)
+
+    kn, fn = leg(q["tn"], q["kn"])
+    kf, ff = leg(q["tf"], q["kf"])
+    hip = (CX - face, 33 - max(fn[1], ff[1]) - (1 if q.get("air") else 0))
+    lean = math.radians(q["lean"])
+    waist = (hip[0], hip[1] - 1)
+    sho = (waist[0] + face * math.sin(lean) * 9.0, waist[1] - math.cos(lean) * 9.0)
+    ahead = (face * math.cos(lean), math.sin(lean))   # hacia adelante, perpendicular a la espalda
+
+    def off(pt, k):
+        return (pt[0] + ahead[0] * k, pt[1] + ahead[1] * k)
+
+    torso = [off(sho, -2), off(sho, 2.5), off(waist, 2), off(waist, -2)]
+    shoulder = (sho[0] - face * 0.5, sho[1] + 1)
+
+    def arm(a, e):
+        u = vec(a, upper)
+        el = (shoulder[0] + u[0], shoulder[1] + u[1])
+        f = vec(a + e, fore)
+        return el, (el[0] + f[0], el[1] + f[1])
+
+    near_arm, far_arm = arm(q["an"], q["en"]), arm(q["af"], q["ef"])
+    right_near = face > 0
+    r_arm, r_a, r_e = (near_arm, q["an"], q["en"]) if right_near else (far_arm, q["af"], q["ef"])
+    has_rk = d["r"] is not None
+    r_pol = math.radians(105 + r_a * 0.9)   # la raqueta: adelante, subiendo y bajando con el brazo
+    rk_ang = math.degrees(math.atan2(math.cos(r_pol), face * math.sin(r_pol)))
+    meta["hl"] = far_arm[1] if right_near else near_arm[1]
+
+    def draw_arm(a, skin, sleeve):
+        el, hand = a
+        cv.line(shoulder, el, skin)
+        cv.line(el, hand, skin)
+        cv.line(shoulder, ((shoulder[0] * 2 + el[0]) / 3, (shoulder[1] * 2 + el[1]) / 3), sleeve)
+
+    def draw_leg(kv, fv, skin, sock, shoe, pants):
+        knee, foot = (hip[0] + kv[0], hip[1] + kv[1]), (hip[0] + fv[0], hip[1] + fv[1])
+        legc = pants if d.get("long") else skin
+        cv.line(hip, knee, legc)
+        cv.line(knee, foot, legc)
+        dx, dy = foot[0] - knee[0], foot[1] - knee[1]
+        n = max(0.001, math.hypot(dx, dy))
+        cv.line((foot[0] - dx / n * 2, foot[1] - dy / n * 2), foot, sock)
+        x0, x1 = sorted((foot[0], foot[0] + 2 * face))       # el zapato, con la punta hacia adelante
+        cv.rect(x0, foot[1], x1, foot[1] + 1, shoe)
+        cv.dot(foot[0] - face, foot[1] + 1, shoe)             # el talón
+        top = (hip[0] + kv[0] * 0.35, hip[1] + kv[1] * 0.35)  # la pantaloneta le tapa el muslo de arriba
+        cv.line(hip, top, pants, 3)
+
+    shoe_r, shoe_l = d.get("k2", d["k"]), d["k"]
+    near_shoe, far_shoe = (shoe_r, shoe_l) if right_near else (shoe_l, shoe_r)
+
+    # 1) Lo de allá: la raqueta (si va en esa mano), el brazo y la pierna.
+    if has_rk and not right_near:
+        meta["rk"] = racket(cv, r_arm[1], rk_ang, d["r"])
+    draw_arm(far_arm, d["S"], d["T"])
+    draw_leg(kf, ff, d["S"], dark(d["w"]), dark(far_shoe), d["P"])
+    # 2) El tronco y la cadera (o la falda).
+    cv.poly(torso, d["t"])
+    if d["skirt"]:
+        cv.poly([(hip[0] - 3, hip[1] - 2), (hip[0] + 3, hip[1] - 2), (hip[0] + 4.5, hip[1] + 3),
+                 (hip[0] - 4.5, hip[1] + 3)], d["p"])
+    else:
+        cv.poly([off((hip[0], hip[1] - 2.5), -2.5), off((hip[0], hip[1] - 2.5), 2.5),
+                 off((hip[0], hip[1] + 1.5), 2.5), off((hip[0], hip[1] + 1.5), -2.5)], d["p"])
+    # 3) La pierna de acá.
+    draw_leg(kn, fn, d["s"], d["w"], near_shoe, d["p"])
+    # 4) La cabeza: el cuello y la cara de lado.
+    hx, hy = int(round(sho[0] + face * 0.5)) - 4, int(round(sho[1])) - 9
+    cv.line((sho[0], sho[1]), (sho[0], sho[1] - 1), d["s"])
+    head_side(cv, d, hx, hy, face)
+    # 5) El brazo de acá, y la raqueta encima si va en esa mano.
+    draw_arm(near_arm, d["s"], d["t"])
+    if has_rk and right_near:
+        meta["rk"] = racket(cv, r_arm[1], rk_ang, d["r"])
+    cv.outline()
+
+    joints = {"er": (near_arm if right_near else far_arm)[0], "hr": r_arm[1],
+              "el": (far_arm if right_near else near_arm)[0], "hl": meta["hl"]}
+    details(cv, pid, d, "lado", False, torso, lambda name: joints[name], face, hx, hy, q, side=True)
+    return cv.im, meta
+
+
+def head_side(cv, d, x, y, face):
+    """La cabeza de perfil (8x8): la cara hacia `face`; el pelo arriba y en la nuca; el ojo, la nariz
+    (un pixel afuera), la oreja."""
+    s, S, h1, h2 = d["s"], d["S"], d["h1"], d["h2"]
+
+    def dot(xx, yy, c):  # xx: 0 es la nuca, 7 la cara
+        cv.dot(x + (xx if face > 0 else 7 - xx), y + yy, c)
+
+    for yy in range(8):
+        for xx in range(8):
+            if not (xx in (0, 7) and yy in (0, 7)):
+                dot(xx, yy, s)
+    for yy in range(3):
+        for xx in range(8):
+            if not (xx in (0, 7) and yy == 0):
+                dot(xx, yy, h1)
+    for yy in range(3, 6):
+        for xx in range(3):
+            dot(xx, yy, h1)
+    dot(1, 6, h1)
+    style = d["hair"]
+    if style == "despeinado":
+        for px_, py_ in ((1, -1), (3, -2), (4, -1), (6, -1), (-1, 1), (-1, 3)):
+            dot(px_, py_, h1)
+        dot(3, 0, h2)
+        dot(5, 1, h2)
+    elif style == "cola":  # la cola de caballo, para atrás (con el caucho)
+        for k in range(6):
+            dot(-1 - (k > 2), 2 + k, h1 if k % 2 == 0 else h2)
+        dot(-1, 2, d["a"])
+        dot(2, 1, h2)
+    elif style == "rapado":
+        for xx in range(1, 7):
+            dot(xx, 0, h2)
+        dot(0, 4, h2)
+        dot(1, 5, h2)
+    elif style == "corto":
+        dot(3, 1, h2)
+        dot(5, 1, h2)
+    elif style == "rizado":
+        for px_, py_ in ((0, -1), (2, -1), (4, -1), (6, -1), (-1, 1), (-1, 3), (-1, 5), (1, -2), (5, -2)):
+            dot(px_, py_, h1)
+        for px_, py_ in ((1, 0), (3, 1), (5, 0), (1, 4)):
+            dot(px_, py_, h2)
+    elif style == "trenzas":
+        for xx in range(0, 8, 2):
+            dot(xx, -1, h1)
+            dot(xx + 1, 0, h2)
+        for k in range(5):
+            dot(-1, 2 + k, h1 if k % 2 == 0 else h2)
+    elif style == "el":
+        dot(2, 1, h2)
+        dot(5, 0, h2)
+        dot(1, 4, h2)
+        dot(4, -1, h1)
+        dot(5, -2, h1)
+    elif style == "gorra":  # la gorra al revés: la visera sale por la nuca
+        cap, cap_d = d["a"], (140, 30, 40)
+        for yy in range(3):
+            for xx in range(8):
+                if not (xx in (0, 7) and yy == 0):
+                    dot(xx, yy, cap)
+        for xx in range(1, 8):
+            dot(xx, 2, cap_d)
+        for k in range(1, 4):
+            dot(-k, 3, cap_d)
+        dot(-1, 2, cap)
+    dot(5, 4, EYE)
+    dot(8, 4, s)          # la nariz
+    dot(3, 4, S)          # la oreja
+    dot(3, 5, S)
+    if d.get("beard"):
+        for yy in range(5, 8):
+            for xx in range(3, 8):
+                if not (xx == 7 and yy == 7):
+                    dot(xx, yy, d["beard"])
+        dot(4, 6, h2)
+    else:
+        dot(7, 6, S)      # la boca
+        dot(6, 7, S)      # la quijada
 
 
 def head(cv, d, x, y, front):
@@ -514,7 +911,7 @@ def head(cv, d, x, y, front):
         cv.dot(x + 7, y + 4, s)
 
 
-def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q):
+def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q, side=False):
     """Lo que hace a cada uno: encima del contorno, a mano."""
     px = cv.px
 
@@ -534,16 +931,16 @@ def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q):
         if row:
             paint(min(row), y, d["P"], True)
     ty0 = int(min(p[1] for p in torso))
-    if pid == "bublikov" and standing:  # la raya negra del pecho a la cintura
+    if pid == "bublikov" and standing and not side:  # la raya negra del pecho a la cintura
         for y in range(ty0 + 1, ty0 + 9):
-            paint(16 + mx, y, d["a"])
+            paint(CX + mx, y, d["a"])
     if pid == "monfiz":  # la balaca amarilla, y la camiseta con el costado negro
         for xx in range(-1, 9):
             paint(hx + xx, hy + 2, d["a"])
-        if standing:
+        if standing and not side:
             for y in range(ty0 + 2, ty0 + 9):
                 for x in range(CW):
-                    if px[x, y + DY][:3] in (d["t"], d["T"]) and (x - 16) * mx > 2:
+                    if px[x, y + DY][:3] in (d["t"], d["T"]) and (x - CX) * mx > 2:
                         paint(x, y, (40, 40, 46))
     if pid == "yokovich" and standing:  # el cuello blanco y la franja azul
         for x in range(CW):
@@ -566,14 +963,30 @@ def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q):
     if pid == "fedorer":  # la balaca blanca sobre el pelo café
         for xx in range(0, 8):
             paint(hx + xx, hy + 2, (250, 250, 248))
-        if not front:  # las puntas del nudo, atrás
+        if side:  # de perfil: las puntas del nudo, colgando de la nuca
+            for k, (bx, by) in enumerate(((-1, 3), (-2, 4))):
+                xx = hx + (bx if mx > 0 else 7 - bx)
+                if 0 <= xx < CW:
+                    px[xx, hy + by + DY] = (250, 250, 248, 255)
+        elif not front:  # las puntas del nudo, atrás
             paint(hx + 3, hy + 6, (250, 250, 248))
             paint(hx + 4, hy + 7, (250, 250, 248))
     if pid == "kyrgistan":  # los tatuajes del brazo derecho
         er, hr = j("er"), j("hr")
         for t in (0.25, 0.55, 0.8):
             paint(er[0] + (hr[0] - er[0]) * t, er[1] + (hr[1] - er[1]) * t, (52, 64, 110))
-    if pid == "el" or pid.startswith("el_"):
+    if (pid == "el" or pid.startswith("el_")) and side:
+        cx = sum(p[0] for p in torso) / 4
+        for x in range(CW):  # la franja, solo en la mitad de la espalda
+            if px[x, ty0 + 4 + DY][:3] in (d["t"], d["T"]) and (x - cx) * mx < 0:
+                paint(x, ty0 + 4, (150, 36, 40))
+        fx = max(p[0] for p in torso) if mx > 0 else min(p[0] for p in torso)
+        for k in range(6):  # la corbata, volando para atrás por encima del hombro
+            xx = int(round(fx - mx * (k - 0.5)))
+            yy = ty0 + 1 - (1 if 1 <= k <= 3 else 0) + (1 if k == 5 else 0) + DY
+            if 0 <= xx < CW and 0 <= yy < CH:
+                px[xx, yy] = (d["a"] if k < 5 else (140, 30, 38)) + (255,)
+    elif pid == "el" or pid.startswith("el_"):
         if standing and not front:  # la franja roja del torneo, en la espalda
             for x in range(CW):
                 if px[x, ty0 + 4 + DY][:3] in (d["t"], d["T"]):
@@ -599,30 +1012,75 @@ def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q):
                 paint(x, ty0, (240, 240, 236))
 
 
-def sheet(pid: str) -> Image.Image:
+def resolve(pose, front, lefty):
+    """Qué pose se dibuja en una columna: (nombre, lado "d"/"i"/"", de perfil). Las de un lado cambian de
+    lado de frente (el dibujo de frente es el de espaldas al espejo; las de perfil no) y en los zurdos (la
+    hoja entera va al espejo)."""
+    base, dr = pose, ""
+    if pose.endswith(("_d", "_i")):
+        base, dr = pose[:-2], pose[-1]
+    side = POSE.get(base, POSE.get(base + "_d", {})).get("side", False)
+    if dr and ((front and not side) != bool(lefty)):
+        dr = "i" if dr == "d" else "d"
+    return base, dr, side
+
+
+def cell(pid: str, pose: str, front: bool):
+    lefty = PLAYERS[pid].get("lefty")
+    base, dr, side = resolve(pose, front, lefty)
+    if side:
+        im, meta = draw_side(pid, POSE[base], 1 if dr == "d" else -1)
+    else:
+        q = POSE[base] if not dr else (POSE[base + "_d"] if dr == "d" else mirror(POSE[base + "_d"]))
+        im, meta = draw(pid, base, front, q)
+    meta = {k: (None if v is None else [v[0], v[1] + DY]) for k, v in meta.items()}
+    if lefty:  # zurdo: la raqueta en la otra mano
+        im = im.transpose(Image.FLIP_LEFT_RIGHT)
+        meta = {k: (None if v is None else [CW - 1 - v[0], v[1]]) for k, v in meta.items()}
+    return im, meta
+
+
+def sheet(pid: str):
+    """La hoja de un tenista y, por pose, [fila de espaldas, fila de frente] con {"rk", "hl"}."""
     out = Image.new("RGBA", (CW * len(POSES), CH * 2), (0, 0, 0, 0))
+    metas = {}
     for row, front in enumerate((False, True)):
         for col, pose in enumerate(POSES):
-            im = draw(pid, pose, front)
-            if PLAYERS[pid].get("lefty"):  # zurdo: la raqueta en la otra mano
-                im = im.transpose(Image.FLIP_LEFT_RIGHT)
+            im, meta = cell(pid, pose, front)
             out.paste(im, (col * CW, row * CH))
-    return out
+            metas.setdefault(pose, []).append(meta)
+    return out, metas
+
+
+def meta_json(metas):
+    """Lo que va al .json: la cabeza de la raqueta de cada pose (de espaldas y de frente) y la mano de
+    la pelota en las del saque."""
+    rk, hl = {}, {}
+    for pose, (m0, m1) in metas.items():
+        if m0["rk"] is not None and m1["rk"] is not None:
+            rk[pose] = [round(v, 1) for v in m0["rk"] + m1["rk"]]
+        if pose.startswith(("saque", "abajo")) and m0["hl"] is not None:
+            hl[pose] = [round(v, 1) for v in m0["hl"] + m1["hl"]]
+    return {"rk": rk, "hl": hl}
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    sheets = {}
+    sheets, info = {}, {}
     for pid in list(PLAYERS):
-        sheets[pid] = sheet(pid)
+        sheets[pid], metas = sheet(pid)
         sheets[pid].save(OUT / f"{pid}.png")
+        info[pid] = meta_json(metas)
     # Él con la raqueta de cada uno (cuando termina el partido del que abandonó).
     for pid in [k for k in PLAYERS if k not in ("el", "camillero")]:
         PLAYERS["el_" + pid] = dict(PLAYERS["el"], r=PLAYERS[pid]["r"])
-        im = sheet("el_" + pid)
+        im, metas = sheet("el_" + pid)
         im.save(OUT / f"el_{pid}.png")
+        info["el_" + pid] = meta_json(metas)
         if pid == "fedorer":
             sheets["el_fedorer"] = im
+    (OUT / "tenistas.json").write_text(json.dumps({"poses": POSES, "cell": [CW, CH], "feet": [CX, 34 + DY], "sheets": info}),
+                                       encoding="utf-8")
     if "--preview" in sys.argv:
         tmp = Path(sys.argv[sys.argv.index("--preview") + 1])
         lam = Image.new("RGBA", (CW * len(POSES), CH * 2 * len(sheets)), (70, 120, 96, 255))
