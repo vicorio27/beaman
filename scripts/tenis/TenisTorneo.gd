@@ -26,7 +26,7 @@ func _ready() -> void:
 	_hud = CanvasLayer.new()
 	_hud.layer = 5
 	add_child(_hud)
-	MusicDirector.force("")
+	MusicDirector.force("tenis_cuadro")
 	if not saved.is_empty():
 		you = saved["you"]
 		_seed = int(saved.get("seed", 1))
@@ -146,4 +146,5 @@ func _play(m: Dictionary, watch: bool) -> void:
 		_save()
 		_match.queue_free()
 		_match = null
+		MusicDirector.force("tenis_cuadro")
 		_show_bracket())

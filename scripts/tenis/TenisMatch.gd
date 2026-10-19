@@ -72,13 +72,19 @@ var _bb_scold := false     # ya le gritaron "¡quieto!" en este punto
 var _bb_d := 0.0           # lo que lleva corrido (para el paso)
 var _abandon := 0          # 0: no; 1: ya toca (cuando traiga la pelota); 2: esperando take_over; 3: ya juega él
 
+# Los sonidos (tools/audio/tenis_audio.py): la raqueta, el bote, la red y el público.
+const SFX := ["golpe", "golpe_duro", "bote", "red", "aplauso", "ovacion", "uy"]
+const SFX_DB := {"golpe": -4.0, "golpe_duro": -2.0, "bote": -12.0, "red": -6.0, "aplauso": -10.0, "ovacion": -7.0, "uy": -8.0}
+var _sfx := {}
+
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_hud = CanvasLayer.new()
 	_hud.layer = 5
 	add_child(_hud)
-	MusicDirector.force("")
+	MusicDirector.force("tenis_partido")
+	_load_sfx()
 	if setup.is_empty():
 		var picker := TenisPicker.new()
 		picker.titles = ["ESCOGE TU TENISTA", "ESCOGE EL RIVAL"]
@@ -166,6 +172,7 @@ func take_over() -> void:
 		_sheets[pid] = load(path)
 	_anim[0] = {}
 	_buffer = ""
+	MusicDirector.force("tenis_el")  # él con la raqueta: el mismo tema, más rápido y un tono arriba
 
 
 ## Juega él (el de abajo) desde que tomó la raqueta.
@@ -248,9 +255,30 @@ func _human_input() -> Dictionary:
 	return inp
 
 
+func _load_sfx() -> void:
+	for n in SFX:
+		var a := AudioStreamPlayer.new()
+		a.stream = load("res://assets/audio/tenis/%s.wav" % n)
+		a.volume_db = SFX_DB[n]
+		a.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
+		add_child(a)
+		_sfx[n] = a
+
+
+func _sound(n: String, pitch := 1.0) -> void:
+	var a: AudioStreamPlayer = _sfx.get(n)
+	if a != null:
+		a.pitch_scale = pitch
+		a.play()
+
+
 func _on_event(kind: String, d: Dictionary) -> void:
 	match kind:
+		"bounce":
+			_sound("bote", randf_range(0.92, 1.08))
 		"hit":
+			var hard: bool = float(d["speed"]) >= 22.0 or str(d.get("ability", "")) != ""
+			_sound("golpe_duro" if hard else "golpe", randf_range(0.94, 1.06))
 			var p = sim.players[d["player"]]
 			var k: String = d["kind"]
 			if sim.last_shot.get("serve", false):
@@ -278,11 +306,22 @@ func _on_event(kind: String, d: Dictionary) -> void:
 				_cheer = 1.3  # la gente se para
 			if d["kind"] in ["unforced", "double_fault"]:
 				_anim[1 - w] = {"seq": ["bravo"], "cuts": [], "t": 0.0, "len": 1.2}
+			# El público: el "uuuy" con el error fácil, el estadio de pie con el ganador bueno, aplausos con el resto.
+			if d.get("how", "") == "net":
+				_sound("red")
+			if d["kind"] in ["unforced", "double_fault"]:
+				_sound("uy", randf_range(0.95, 1.05))
+			elif d["kind"] == "ace" or (d["kind"] == "winner" and int(d["rally"]) >= 8) or d.get("closed", "") != "":
+				_sound("ovacion")
+			else:
+				_sound("aplauso", randf_range(0.95, 1.05))
 			var names := {"ace": "¡ACE!", "winner": "GANADOR", "unforced": "ERROR", "forced": "ERROR FORZADO",
 				"forced_missed": "NO ALCANZÓ", "double_fault": "DOBLE FALTA"}
 			_pop(names.get(d["kind"], ""))
 		"fault":
 			_pop("FALTA")
+			if d.get("how", "") == "net":
+				_sound("red")
 		"countered":
 			_pop("¡LE LEYERON LA JUGADA!")
 		"ability_fail":

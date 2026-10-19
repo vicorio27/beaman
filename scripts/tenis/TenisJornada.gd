@@ -35,7 +35,7 @@ func _ready() -> void:
 	_hud = CanvasLayer.new()
 	_hud.layer = 5
 	add_child(_hud)
-	MusicDirector.force("")
+	MusicDirector.force("tenis_cuadro")
 	st = GameState.flags.get("torneo", {})
 	r = TenisHistoria.dia_torneo(GameState.day)
 	if st.is_empty() or r < 0:
@@ -179,6 +179,7 @@ func _on_closed(w: int) -> void:
 		_paga["total"] = int(_paga["sueldo"]) + int(_paga["bolas"])
 	_match.queue_free()
 	_match = null
+	MusicDirector.force("tenis_cuadro")
 	_show_pago(fast, played)
 
 

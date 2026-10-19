@@ -184,6 +184,22 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 
 **El tablero**, arriba a la izquierda, muestra por jugador el nombre, los juegos y los puntos (0, 15, 30, 40, AD), el cansancio y el medidor de la habilidad. Una pelotica marca quién saca.
 
+## La música y los sonidos
+
+Salen de `tools/audio/tenis_audio.py`, que usa los instrumentos de `compose.py`. Es rock de estadio original, en la mayor, y no copia a AC/DC: guitarra rítmica saturada con acordes de quinta y aire entre los golpes (La-Do-Re / La-Sol-Mi), bajo en corcheas, batería recta, las palmas del público en el coro y una guitarra que canta arriba.
+
+| Tema | Dónde suena |
+|---|---|
+| `tenis_partido` (128) | En la cancha, mientras juegan los profesionales (y el recogebolas). |
+| `tenis_el` (142, un tono arriba) | Desde que él toma la raqueta (`TenisMatch.take_over`): más rápido, con doble bombo en el coro y la guitarra cantando todo el tiempo. |
+| `tenis_cuadro` (112) | El cuadro y la paga: el mismo riff con la mano apagada. |
+| `tenis_afuera` | En el barrio, cerca del coliseo, de 8 a 6: el partido a través de la tribuna (sin agudos) y el murmullo del público. Va por el bus de la música (se apaga con la misma opción). |
+
+Los sonidos de la cancha (`assets/audio/tenis/`):
+- La raqueta: `golpe`, o `golpe_duro` si la pelota sale a 22 m/s o más, o con habilidad.
+- El bote y la red.
+- El público: el "uuuy" con el error no forzado y la doble falta; el estadio de pie (`ovacion`) con el ace, el ganador después de un peloteo largo o el juego que se cierra; aplausos con el resto.
+
 ## Las pruebas
 
 Todas corren sin ventana:
@@ -228,5 +244,4 @@ Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ga
 ## Lo que falta
 
 - **El dibujo que falta:** las caras de cerca para los diálogos, un público que se mueva más y el que abandona saliendo de la cancha (hoy desaparece cuando él toma la raqueta).
-- **La música:** rock original.
 - **Los diálogos:** en una tabla de datos.

@@ -12,7 +12,8 @@ extends Node
 ##     la locura se le van borrando las caras a los demás (Conversations._buhonero).
 ##   - El coliseo del torneo de tenis (días 32 a 35), en el potrero de arriba: por fuera, el andamio de
 ##     la tribuna, el pasacalle, la entrada (Torneo.puerta) y la última fila del público, que se para
-##     cuando hay un punto bueno (scripts/systems/Torneo.gd, tools/art/draw_tenis_afuera.py).
+##     cuando hay un punto bueno (scripts/systems/Torneo.gd, tools/art/draw_tenis_afuera.py). De 8 a 6,
+##     cerca, se oye el partido desde la calle (assets/music/tenis_afuera.wav).
 ##   - Los otros perros. Cuando Lukas pasa cerca de un perro de la calle, se encuentran: si Lukas no
 ##     ha comido hoy, casi siempre pelean; si ya comió, casi siempre juegan. A veces es al revés,
 ##     porque sí. Una vez al día por perro.
@@ -440,6 +441,31 @@ func _add_coliseo() -> void:
 	redraw.autostart = true
 	redraw.timeout.connect(func() -> void: top.queue_redraw())
 	add_child(redraw)
+	# El partido, como se oye desde la calle (sin agudos, con el público): solo cerca, y solo cuando juegan.
+	var rock := AudioStreamPlayer2D.new()
+	var stream: AudioStreamWAV = load("res://assets/music/tenis_afuera.wav")
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_end = int(stream.get_length() * stream.mix_rate)
+	rock.stream = stream
+	rock.bus = MusicDirector.BUS
+	rock.volume_db = -4.0
+	rock.max_distance = 260.0
+	rock.attenuation = 1.6
+	rock.position = COLISEO_AT + Vector2(140, 60)
+	_world.add_child(rock)
+	var on_air := func() -> void:
+		var h := TimeManager.hour()
+		var want := h >= TenisHistoria.ABRE and h < TenisHistoria.CIERRA
+		if want and not rock.playing:
+			rock.play()
+		elif not want and rock.playing:
+			rock.stop()
+	on_air.call()
+	var air := Timer.new()
+	air.wait_time = 2.0
+	air.autostart = true
+	air.timeout.connect(on_air)
+	add_child(air)
 
 
 func _draw_coliseo(n: Node2D, info: Dictionary) -> void:
