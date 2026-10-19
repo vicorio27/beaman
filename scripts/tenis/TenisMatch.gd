@@ -135,6 +135,7 @@ func _start() -> void:
 		if ResourceLoader.exists(path):
 			_sheets[p.id] = load(path)
 			_key[p.id] = p.id
+		_ta[p.idx].persona = p.id
 	for i in 2:  # el de abajo (el que maneja uno) arriba en el tablero
 		_rows.append(_label(Vector2(8, 6 + i * 19), Color(1, 0.95, 0.75)))
 	_pop_l = _label(Vector2(0, 171), Color(1, 0.9, 0.4))
@@ -368,6 +369,7 @@ func take_over() -> void:
 		_sheets[pid] = load(path)
 		_key[pid] = "el_" + pid
 	_ta[0] = TenisAnim.new(0)
+	_ta[0].persona = "el"   # con la raqueta de otro, pero los gestos son los de él
 	_buffer = ""
 	MusicDirector.force("tenis_el")  # él con la raqueta: el mismo tema, más rápido y un tono arriba
 	_crowd.ola()                     # y el público, que no sabe quién es, le hace la ola

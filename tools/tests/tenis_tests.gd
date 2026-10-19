@@ -118,6 +118,25 @@ func _anim() -> void:
 	b.hit("drive", true, 0.8, false)
 	check("le pega bajito, a la cintura o alto según la pelota", low == "drive_bajo" and high == "reves_alto" and b.contact_pose() == "drive",
 		"%s %s %s" % [low, high, b.contact_pose()])
+	# Los gestos de cada uno (TenisAnim.PERSONA): que existan en las hojas, y que cada uno haga lo suyo.
+	var lost := []
+	for who in TenisAnim.PERSONA:
+		for kind in TenisAnim.PERSONA[who]:
+			for st in TenisAnim.PERSONA[who][kind]:
+				if not cols.has(st[0]):
+					lost.append(st[0])
+	check("los gestos de cada uno están en las hojas", lost.is_empty(), str(lost))
+	var ky := TenisAnim.new(1)
+	ky.persona = "kyrgistan"
+	ky.lament()
+	var anyone := TenisAnim.new(1)
+	anyone.lament()
+	var him := TenisAnim.new(0)
+	him.persona = "el"
+	him.celebrate()
+	check("Kyrgistán estrella la raqueta, los demás se agarran la cabeza, y él se queda mirando la raqueta",
+		ky.act["seq"][0] == "rompe1" and anyone.act["seq"][0] == "agarra" and him.act["seq"][0] == "mira",
+		"%s / %s / %s" % [ky.act["seq"], anyone.act["seq"], him.act["seq"]])
 
 
 # ---------------------------------------------------------------- El conteo

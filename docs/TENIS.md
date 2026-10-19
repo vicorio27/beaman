@@ -163,16 +163,18 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 **Los tenistas** salen de `tools/art/draw_tenistas.py` y quedan en `assets/tenis/<id>.png`.
 - Celdas de 50x48 con los pies en (25, 46): cabe el saque estirado y la raqueta con el brazo afuera sin cortarse. La fila 0 es de espaldas (el de abajo) y la fila 1 de frente (el de arriba).
 - `assets/tenis/tenistas.json` trae el orden de las columnas y, por pose, dónde queda la cabeza de la raqueta (y la mano de la pelota en el saque). Con eso, al pegarle, la pelota sale de la raqueta y la del saque va en la mano.
-- Hay 110 poses:
+- Hay 124 poses:
   - **Correr de perfil** (8 cuadros, para cada lado): un ciclo de carrera de verdad. Las piernas van con ángulos y largos fijos (el pie no se estira ni se encoge), la cadera baja en el apoyo y sube en el vuelo, los brazos van al revés de las piernas. El brazo y la pierna de allá van detrás y más oscuros. La cabeza de lado tiene ojo, nariz, oreja y el pelo de cada uno (la cola de Sabalenkova, la visera de Kyrgistán para atrás, las trencitas...). A él la corbata le vuela por encima del hombro.
   - **Correr de espaldas y de frente** (8 cuadros): un pie en el piso y el otro con el talón arriba, el cuerpo que sube y baja, los brazos alternados. El brazo que va adelante se tapa con el cuerpo.
   - **Pasitos de lado** (4 cuadros, para cada lado, sin dar la espalda a la red), **frenar** (para cada lado) y **el saltito** (2).
   - **El drive y el revés** (8 cada uno): se gira, la raqueta arriba y atrás, baja, le pega bajito, a la cintura o alto, y termina por encima del hombro (en dos cuadros). El **cortado** (3) y la **dejada**.
   - **El saque** (9): bota la pelota (2), bajan los brazos, la tira, el trofeo (rodillas dobladas, la raqueta arriba), la raqueta detrás de la espalda, le pega estirado y en puntas, y cae hacia adelante (2). El **saque por abajo** (2).
   - **La espera** (3): rebota en las puntas. **Celebrar** (3): el puño dos veces, "¡vamos!", y los brazos arriba. **Lamentarse** (2): las manos en la cabeza y la cabeza agachada.
+  - **Lo de cada uno** (14, `TenisAnim.PERSONA`): Bublikov se encoge de hombros (gane o pierda); Sabalenkova grita con los puños abajo; Monfiz baila; Yokovich, las manos al pecho y los brazos abiertos al público; Moutette le reclama al juez; Tiafuego, la mano en la oreja (más duro); Sheltron, el teléfono y cuelga; Kyrgistán abre los brazos al ganar y, al perder, levanta la raqueta y la estrella contra el piso; Fedorer saluda con la raqueta. Él, cuando gana un punto, se queda mirando la raqueta.
   - **Tirarse** (2: el impulso y el vuelo), en el piso, y **levantarse** (2: de rodillas, agachado).
   - **Caminar** de espaldas o de frente (4) y de perfil (8, para cada lado), sin raqueta: los que se van de la cancha y los camilleros.
   - Las del recogebolas, las de irse (parado, el celular, doblado, acostado, los brazos arriba) y la raqueta en el piso (entera y rota).
+- Fedorer tiene el revés a una mano (`ONE_HAND`): la izquierda acompaña la raqueta y, al pegarle, se va para atrás. Él, con la raqueta de Fedorer, sigue con su revés a dos manos.
 - Los cuadros del medio salen de mezclar dos poses (`mix`), y los de un lado tienen su espejo (`mirror`) que deja la raqueta en la mano derecha. De frente, y en los zurdos, la hoja se arma con el lado cambiado.
 - `camillero.png`: los que se llevan a Monfiz y a Pecador (de blanco, con la cruz roja), con las mismas poses.
 - Cada pose es un esqueleto que se pinta con piezas de 2 px. Después va el contorno del juego y encima, a mano, lo de cada uno:
@@ -250,7 +252,7 @@ Todas corren sin ventana:
 
 `TENIS_ONLY=unit|sim|counter` corre solo una parte y `TENIS_N` pone los partidos por cruce.
 
-**`tenis_tests.gd`** (64 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar y cómo irse de la cancha, quién abandona, la paga y que alcance para la deuda solo trabajando bien), que cada texto que pide el código esté en `TEXTOS` y que el VS quepa al lado de los botones. Y el dibujo en movimiento: un partido entero mirado cuadro por cuadro (cada pose que pide `TenisAnim` está en las hojas y se ve de todo), que el saque salga cuando llega la raqueta, que corriendo de lado el cuadro cambie con la distancia y el contacto según la altura.
+**`tenis_tests.gd`** (66 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar y cómo irse de la cancha, quién abandona, la paga y que alcance para la deuda solo trabajando bien), que cada texto que pide el código esté en `TEXTOS` y que el VS quepa al lado de los botones. Y el dibujo en movimiento: un partido entero mirado cuadro por cuadro (cada pose que pide `TenisAnim` está en las hojas y se ve de todo), que el saque salga cuando llega la raqueta, que corriendo de lado el cuadro cambie con la distancia, el contacto según la altura y los gestos de cada uno.
 
 **`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.

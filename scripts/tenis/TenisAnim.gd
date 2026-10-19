@@ -26,8 +26,23 @@ const CONTACT := 0.52      # el saque: de que arranca el movimiento a que le peg
 const CONTACT_ABAJO := 0.24
 const TOSS := 0.15         # cuándo suelta la pelota (la tira para arriba)
 const SERVE_KEYS := [[0.0, "saque_baja"], [0.1, "saque_lanza"], [0.24, "saque_trofeo"], [0.42, "saque_rasca"]]
+## Lo de cada uno al ganar ("gana") o perder ("pierde") un punto: [pose, segundos]. Los que no están aquí
+## (o lo que no dicen) hacen lo de todos: el puño, y las manos en la cabeza. "el" es él, cuando juega.
+const PERSONA := {
+	"bublikov": {"gana": [["encoge", 1.0]], "pierde": [["encoge", 0.6], ["bravo", 0.6]]},
+	"sabalenkova": {"gana": [["grita", 0.6], ["puno2", 0.15], ["grita", 0.35]]},
+	"monfiz": {"gana": [["baila1", 0.16], ["baila2", 0.16], ["baila1", 0.16], ["baila2", 0.16], ["celebra", 0.46]]},
+	"yokovich": {"gana": [["pecho", 0.45], ["abre", 0.75]]},
+	"moutette": {"pierde": [["reclama", 1.2]]},
+	"tiafuego": {"gana": [["oreja", 0.6], ["celebra", 0.5]]},
+	"sheltron": {"gana": [["llama", 0.65], ["cuelga", 0.45]]},
+	"kyrgistan": {"gana": [["abre", 1.0]], "pierde": [["rompe1", 0.35], ["rompe2", 0.55], ["bravo", 0.3]]},
+	"fedorer": {"gana": [["saluda", 1.0]]},
+	"el": {"gana": [["mira", 1.1]]},
+}
 
 var idx := 0
+var persona := ""          # de quién son los gestos (PERSONA): el id del tenista, o "el"
 var pose := "listo"
 var t := 0.0               # el reloj propio (respirar, botar la pelota)
 var act := {}              # lo que está haciendo: {"seq", "cuts", "t", "len", "keep" (hasta ahí no lo corta correr)}
@@ -91,14 +106,27 @@ func opponent_hit(speed: float) -> void:
 		act = {"seq": ["split1", "split2"], "cuts": [0.1], "t": 0.0, "len": 0.24, "keep": 0.0}
 
 
-## El puño dos veces ("¡vamos!") y los brazos arriba.
+## Ganó un punto bueno: lo suyo (PERSONA) o el puño dos veces ("¡vamos!") y los brazos arriba.
 func celebrate() -> void:
-	act = {"seq": ["puno1", "puno2", "puno1", "puno2", "celebra"], "cuts": [0.12, 0.3, 0.42, 0.6], "t": 0.0, "len": 1.1}
+	_gesture("gana", [["puno1", 0.12], ["puno2", 0.18], ["puno1", 0.12], ["puno2", 0.18], ["celebra", 0.5]])
 
 
-## Las manos en la cabeza y después la cabeza agachada.
+## Perdió un punto fácil: lo suyo o las manos en la cabeza y después la cabeza agachada.
 func lament() -> void:
-	act = {"seq": ["agarra", "bravo"], "cuts": [0.55], "t": 0.0, "len": 1.2}
+	_gesture("pierde", [["agarra", 0.55], ["bravo", 0.65]])
+
+
+func _gesture(kind: String, default: Array) -> void:
+	var steps: Array = PERSONA.get(persona, {}).get(kind, default)
+	var seq := []
+	var cuts := []
+	var at := 0.0
+	for s in steps:
+		if not seq.is_empty():
+			cuts.append(at)
+		seq.append(s[0])
+		at += float(s[1])
+	act = {"seq": seq, "cuts": cuts, "t": 0.0, "len": at}
 
 
 ## El primer cuadro de lo que está haciendo (el del contacto, justo después de hit).

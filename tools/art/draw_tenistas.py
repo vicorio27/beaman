@@ -348,6 +348,38 @@ POSE["levanta1"] = P(kl=(-3, 31), fl=(-4, 33), kr=(3, 31), fr=(4, 33), el=(-6, 2
                      rk=(-120, False), lean=7)
 POSE["levanta2"] = P(**WIDE, el=(-6, 17), hl=(-4, 21), er=(6, 17), hr=(6, 21), rk=(-130, False), lean=4)
 
+# Lo de cada uno, al ganar o perder un punto (TenisAnim.PERSONA dice quién hace qué).
+_STAND = dict(kl=(-3, 27), fl=(-4, 33), kr=(3, 27), fr=(4, 33))
+POSE["encoge"] = P(**_STAND, el=(-8, 16), hl=(-10, 14), er=(8, 16), hr=(10, 14), rk=(-35, False), lean=-1)  # Bublikov: y qué
+POSE["grita"] = P(**WIDE, el=(-6, 17), hl=(-4, 21), er=(6, 17), hr=(4, 21), rk=(65, False), lean=3, yell=True)  # Sabalenkova
+POSE["baila1"] = P(kl=(-3, 27), fl=(-4, 33), kr=(4, 26), fr=(5, 30), el=(-7, 12), hl=(-9, 9), er=(7, 17), hr=(9, 19),
+                   rk=(-60, False), lean=1, tilt=2)                                                      # Monfiz
+POSE["baila2"] = P(kl=(-4, 26), fl=(-5, 30), kr=(3, 27), fr=(4, 33), el=(-7, 17), hl=(-9, 19), er=(7, 12), hr=(9, 9),
+                   rk=(-80, False), lean=1, tilt=-2)
+POSE["pecho"] = P(**_STAND, el=(-6, 16), hl=(-2, 15), er=(6, 16), hr=(2, 15), rk=(-60, False), lean=1, fwd=("l", "r"))  # Yokovich
+POSE["abre"] = P(**_STAND, el=(-8, 13), hl=(-11, 11), er=(8, 13), hr=(11, 11), rk=(-40, False), lean=-1)
+POSE["reclama"] = P(**_STAND, el=(-7, 16), hl=(-9, 15), er=(7, 16), hr=(10, 15), rk=(10, False), tilt=2, head_dx=1, lean=1)  # Moutette
+POSE["oreja"] = P(**_STAND, el=(-7, 10), hl=(-5, 8), er=(7, 12), hr=(9, 8), rk=(-80, False), tilt=1)  # Tiafuego: más duro
+POSE["llama"] = P(**_STAND, el=(-7, 11), hl=(-4, 7), er=(6, 16), hr=(7, 20), rk=(-100, False))  # Sheltron: el teléfono
+POSE["cuelga"] = P(**_STAND, el=(-7, 14), hl=(-10, 17), er=(6, 16), hr=(7, 20), rk=(-100, False), lean=1)
+POSE["rompe1"] = P(**_STAND, el=(-5, 9), hl=(-1, 4), er=(5, 9), hr=(1, 4), rk=(-90, False), two=True, lean=-1)  # Kyrgistán
+POSE["rompe2"] = P(**WIDE, el=(-5, 18), hl=(-1, 23), er=(5, 18), hr=(1, 23), rk=(90, True), two=True, lean=4, down=True)
+POSE["saluda"] = P(**_STAND, el=(-6, 16), hl=(-6, 20), er=(7, 10), hr=(9, 6), rk=(-75, False))  # Fedorer: con clase
+POSE["mira"] = P(**_STAND, el=(-6, 16), hl=(-6, 20), er=(4, 14), hr=(2, 11), rk=(-95, False))  # él: mira la raqueta
+
+# El revés a una mano (Fedorer): la izquierda acompaña la raqueta hasta atrás y, al pegarle, se va para
+# atrás (el equilibrio); al final, los dos brazos abiertos.
+ONE_HAND = {
+    "reves_prep": dict(two=False, el=(-3, 16), hl=(-4, 17)),
+    "reves_atras": dict(two=False, el=(-3, 14), hl=(-6, 14)),
+    "reves_baja": dict(two=False, el=(-3, 17), hl=(-6, 18)),
+    "reves": dict(two=False, el=(-7, 15), hl=(-10, 16)),
+    "reves_bajo": dict(two=False, el=(-7, 17), hl=(-10, 18)),
+    "reves_alto": dict(two=False, el=(-7, 13), hl=(-10, 13)),
+    "reves_fin1": dict(two=False, el=(-7, 14), hl=(-10, 14)),
+    "reves_fin": dict(two=False, el=(-7, 14), hl=(-10, 13)),
+}
+
 POSES = (["listo", "listo2", "listo3"] + ["corre%d" % i for i in range(1, 9)]
          + ["lado%d_d" % i for i in range(1, 9)] + ["lado%d_i" % i for i in range(1, 9)]
          + ["paso%d_d" % i for i in range(1, 5)] + ["paso%d_i" % i for i in range(1, 5)]
@@ -358,6 +390,8 @@ POSES = (["listo", "listo2", "listo3"] + ["corre%d" % i for i in range(1, 9)]
             "saque_bota1", "saque_bota2", "saque_baja", "saque_lanza", "saque_trofeo", "saque_rasca", "saque",
             "saque_fin1", "saque_fin", "abajo_atras", "abajo",
             "tirada1", "tirada", "piso", "levanta1", "levanta2", "puno1", "puno2", "celebra", "agarra", "bravo",
+            "encoge", "grita", "baila1", "baila2", "pecho", "abre", "reclama", "oreja", "llama", "cuelga",
+            "rompe1", "rompe2", "saluda", "mira",
             "agachado", "recoge", "camina1", "camina2", "camina3", "camina4"]
          + ["caminal%d_d" % i for i in range(1, 9)] + ["caminal%d_i" % i for i in range(1, 9)]
          + ["parado", "tel1", "tel2", "doblado", "acostado", "brazos", "suelta", "rota"])
@@ -427,7 +461,7 @@ PLAYERS = {
         "s": (232, 180, 150), "S": (202, 140, 118), "h1": (108, 78, 58), "h2": (82, 58, 44),
         "t": (244, 244, 240), "T": (200, 202, 208), "p": (244, 244, 240), "P": (196, 198, 204),
         "w": (240, 240, 236), "k": (240, 240, 236), "K": (196, 198, 204), "a": (244, 244, 240),
-        "r": (190, 40, 44), "hair": "corto"},
+        "r": (190, 40, 44), "hair": "corto", "one_hand": True},
     "camillero": {
         "h": 1, "sh": 5, "slouch": 0, "skirt": False, "long": True,
         "s": (200, 146, 112), "S": (166, 112, 88), "h1": (38, 32, 34), "h2": (60, 50, 50),
@@ -548,6 +582,8 @@ def draw(pid: str, pose: str, front: bool, q=None):
     raqueta, "hl": la mano izquierda} en coordenadas de la celda."""
     d = PLAYERS[pid]
     q = q if q is not None else POSE[pose]
+    if d.get("one_hand") and pose in ONE_HAND:  # (Fedorer: el revés a una mano)
+        q = dict(q, **ONE_HAND[pose])
     cv = Canvas()
     meta = {"rk": None, "hl": None}
     if q.get("only"):  # la raqueta sola, en el piso
@@ -666,6 +702,8 @@ def draw(pid: str, pose: str, front: bool, q=None):
     hx, hy = int(round(head_at[0])) - 4, int(round(head_at[1])) - 4
     cv.line(neck, (neck[0], neck[1] - 1), d["s"])
     head(cv, d, hx, hy, front)
+    if q.get("yell") and front:  # gritando: la boca abierta
+        cv.rect(hx + 3, hy + 6, hx + 4, hy + 7, (60, 20, 30))
 
     # 6) Lo que va delante.
     if has_rk and rk_front:
@@ -1126,7 +1164,7 @@ def main():
         info[pid] = meta_json(metas)
     # Él con la raqueta de cada uno (cuando termina el partido del que abandonó).
     for pid in [k for k in PLAYERS if k not in ("el", "camillero")]:
-        PLAYERS["el_" + pid] = dict(PLAYERS["el"], r=PLAYERS[pid]["r"])
+        PLAYERS["el_" + pid] = dict(PLAYERS["el"], r=PLAYERS[pid]["r"])  # (con su revés de siempre)
         im, metas = sheet("el_" + pid)
         im.save(OUT / f"el_{pid}.png")
         info["el_" + pid] = meta_json(metas)
