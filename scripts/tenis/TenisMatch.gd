@@ -114,6 +114,11 @@ const SFX_DB := {"golpe": -4.0, "golpe_duro": -2.0, "bote": -12.0, "red": -6.0, 
 const SWING_START := ["drive_baja", "reves_baja", "saque_rasca", "abajo_atras"]
 const CONTACTS := ["drive", "drive_bajo", "drive_alto", "reves", "reves_bajo", "reves_alto", "cortado", "dejada"]
 var _last_pose := ["", ""]
+# Lo que le da peso: el anillo donde pica la pelota, el polvito en los pies (al frenar, al caer del
+# saltito, al levantarse, al estrellar la raqueta) y un temblor de un pixel con los cañonazos y los aces.
+const DUST_AT := ["frena_d", "frena_i", "split2", "levanta1", "rompe2", "tirada1"]
+var _fx := []              # {"kind": "bote" / "polvo", "at": punto en la pantalla, "t", "life", "dir"}
+var _shake := 0.0
 var _sfx := {}
 
 
@@ -412,6 +417,7 @@ func _process(delta: float) -> void:
 	if sim == null:
 		return
 	if _summary_t >= 0.0:
+		position = Vector2.ZERO  # (si quedó temblando)
 		_summary_t += delta
 		var auto: float = setup.get("auto_close", 0.0)
 		if (_summary_t > 0.6 and Input.is_action_just_pressed("interact")) or (auto > 0.0 and _summary_t > auto):
@@ -448,6 +454,11 @@ func _process(delta: float) -> void:
 		_ta[i].update(delta, sim.players[i], sim)
 		_pose_sounds(i)
 		_track_swing(i, delta)
+	for f in _fx:
+		f["t"] = float(f["t"]) + delta
+	_fx = _fx.filter(func(f) -> bool: return float(f["t"]) < float(f["life"]))
+	_shake = maxf(0.0, _shake - delta)
+	position = Vector2(randi_range(-1, 1), randi_range(-1, 1)) if _shake > 0.0 else Vector2.ZERO
 	_track_ball()
 	if not _snap.is_empty():
 		_snap["t"] = float(_snap["t"]) + delta
@@ -502,10 +513,13 @@ func _sound(n: String, pitch := 1.0) -> void:
 func _on_event(kind: String, d: Dictionary) -> void:
 	match kind:
 		"bounce":
+			_fx.append({"kind": "bote", "at": w2s(Vector2(d["pos"])), "t": 0.0, "life": 0.3, "dir": 0.0})
 			_sound("bote", randf_range(0.92, 1.08))
 		"hit":
 			var hard: bool = float(d["speed"]) >= 22.0 or str(d.get("ability", "")) != ""
 			_sound("golpe_duro" if hard else "golpe", randf_range(0.94, 1.06))
+			if hard:
+				_shake = 0.08
 			var p = sim.players[d["player"]]
 			TenisAnim.on_hit(_ta, sim, d)
 			if _ta[p.idx].persona == "sabalenkova":  # ella grita en cada golpe
@@ -527,6 +541,8 @@ func _on_event(kind: String, d: Dictionary) -> void:
 				_abandon = 1
 			if d["kind"] in ["winner", "ace"]:
 				_ta[w].celebrate()
+			if d["kind"] == "ace":
+				_shake = 0.15
 			if d["kind"] in ["unforced", "double_fault"]:
 				_ta[1 - w].lament()
 			# El público: el "uuuy" con el error fácil, el estadio de pie con el ganador bueno, aplausos con el resto.
@@ -670,6 +686,11 @@ func _draw() -> void:
 	for y in [-TenisData.SERVICE_L, TenisData.SERVICE_L]:
 		draw_line(w2s(Vector2(-hw, y)), w2s(Vector2(hw, y)), line, 1.0)
 	draw_line(w2s(Vector2(0, -TenisData.SERVICE_L)), w2s(Vector2(0, TenisData.SERVICE_L)), line, 1.0)
+	for f in _fx:
+		if f["kind"] == "bote":  # un anillo que se abre y se apaga (achatado, como la cancha)
+			var u := float(f["t"]) / float(f["life"])
+			var r := 2.0 + u * 5.0
+			_ellipse(f["at"], r, r * 0.45, Color(1, 1, 0.9, 0.55 * (1.0 - u)))
 	# De atrás para adelante: los jugadores, la red, la pelota y el recogebolas, cada uno en su fondo.
 	var things := [[sim.players[1].pos.y, func() -> void: _draw_player(sim.players[1])],
 		[sim.players[1].pos.y + 0.001, func() -> void: _draw_trail(1)],
@@ -679,6 +700,9 @@ func _draw() -> void:
 	if not _gone:
 		things.append([sim.players[0].pos.y, func() -> void: _draw_player(sim.players[0])])
 	_exit_things(things)
+	for f in _fx:
+		if f["kind"] == "polvo":
+			things.append([(Vector2(f["at"]).y - CENTER.y) / SY + 0.002, func() -> void: _draw_dust(f)])
 	if setup.get("ballboy", false):
 		things.append([_bb_pos.y, func() -> void: _draw_ballboy()])
 		if _bb_ball != null:
@@ -842,7 +866,8 @@ func _draw_ball() -> void:
 		return
 	if not sim.live:
 		return
-	draw_circle(w2s(Vector2(sim.ball.x, sim.ball.y)), 1.6, Color(0, 0, 0, 0.35))  # la sombra: dónde está de verdad
+	var hi := clampf(sim.ball.z / 6.0, 0.0, 0.55)   # la sombra: dónde está de verdad (más chica si va alta)
+	draw_circle(w2s(Vector2(sim.ball.x, sim.ball.y)), 1.7 * (1.0 - hi), Color(0, 0, 0, 0.36 * (1.0 - hi * 0.8)))
 	var up := _ball_screen()
 	if not _snap.is_empty():
 		up += Vector2(_snap["off"]) * clampf(1.0 - float(_snap["t"]) / SNAP_T, 0.0, 1.0)
@@ -859,6 +884,10 @@ func _pose_sounds(i: int) -> void:
 	if now == was:
 		return
 	_last_pose[i] = now
+	if now in DUST_AT:  # el polvito, a los dos lados de los pies
+		var feet := w2s(sim.players[i].pos).round()
+		for side in [-1.0, 1.0]:
+			_fx.append({"kind": "polvo", "at": feet + Vector2(side * 4.0, 0), "t": 0.0, "life": 0.35, "dir": side})
 	if now.begins_with("frena"):
 		if randf() < 0.55:  # (no en todas: cansa)
 			_sound("chillido" if randf() < 0.5 else "chillido2", randf_range(0.9, 1.1))
@@ -919,6 +948,23 @@ func _track_ball() -> void:
 	_ball_trail.push_front(up)
 	if _ball_trail.size() > 4:
 		_ball_trail.pop_back()
+
+
+func _ellipse(c: Vector2, rx: float, ry: float, col: Color) -> void:
+	var pts := PackedVector2Array()
+	for k in 17:
+		var a := TAU * k / 16.0
+		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
+	draw_polyline(pts, col, 1.0)
+
+
+## Un poquito de polvo que sale de los pies hacia el lado y sube, y se deshace.
+func _draw_dust(f: Dictionary) -> void:
+	var u := float(f["t"]) / float(f["life"])
+	var at: Vector2 = Vector2(f["at"]) + Vector2(float(f["dir"]) * u * 5.0, -u * 3.0)
+	var col := Color(0.88, 0.88, 0.82, 0.62 * (1.0 - u))
+	draw_circle(at.round(), 1.5 + u * 1.2, col)
+	draw_circle((at + Vector2(float(f["dir"]) * 2.0, 1.0)).round(), 1.0 + u, col)
 
 
 func _ball_at(at: Vector2) -> void:
