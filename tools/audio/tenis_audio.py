@@ -22,6 +22,8 @@ menor de blues. Usa los instrumentos de compose.py.
   assets/audio/tenis/zas.wav        la raqueta cortando el aire, justo antes de pegarle
   assets/audio/tenis/rompe.wav      la raqueta contra el piso (Kyrgistán)
   assets/audio/tenis/grito.wav      el "¡ah!" de Sabalenkova al pegarle
+  assets/audio/tenis/super.wav      el supertiro: el cañonazo y el aire que se rasga
+  assets/audio/tenis/carga.wav      la barra llena: tres notas que suben y brillan
 """
 import os
 import sys
@@ -309,6 +311,36 @@ def grito():
     return np.tanh((voice + breath) * env * 0.9)
 
 
+def super_tiro():
+    """El supertiro: un cañonazo grave, el chasquido, y el aire que se rasga bajando de tono."""
+    dur = 0.9
+    t = C._t(dur)
+    boom = np.sin(2 * np.pi * np.cumsum(55 + 90 * np.exp(-t / 0.05)) / SR) * np.exp(-t / 0.25)
+    crack = C.fft_filter(rng.uniform(-1, 1, len(t)), lo=1500, hi=8000) * np.exp(-t / 0.015)
+    noise = rng.uniform(-1, 1, len(t))
+    bands = 6
+    whoosh = np.zeros(len(t))
+    for k in range(bands):
+        lo = 3200 / (1.35 ** k)
+        w = np.clip(1 - np.abs(np.clip(t / 0.7, 0, 1) * (bands - 1) - k), 0, 1)
+        whoosh += C.fft_filter(noise, lo=lo, hi=lo * 1.8) * w
+    whoosh *= np.clip(t / 0.05, 0, 1) * np.exp(-np.clip(t - 0.2, 0, None) / 0.3)
+    return np.tanh((boom * 1.2 + crack * 0.7 + whoosh * 0.6) * 1.5)
+
+
+def carga():
+    """La barra llena: tres notas que suben (la, do#, mi) y un brillo arriba."""
+    x = np.zeros(int(0.55 * SR))
+    for i, f in enumerate((880.0, 1108.7, 1318.5)):
+        t = C._t(0.3)
+        n = (np.sin(2 * np.pi * f * t) + 0.3 * np.sin(4 * np.pi * f * t)) * np.exp(-t / 0.09)
+        at = int(i * 0.07 * SR)
+        x[at:at + len(n)] += n
+    t = C._t(len(x) / SR)
+    shimmer = C.fft_filter(rng.uniform(-1, 1, len(t)), lo=5000, hi=9000) * np.exp(-np.abs(t - 0.2) / 0.08) * 0.25
+    return x + shimmer
+
+
 if __name__ == "__main__":
     partido = song(128, 0, "partido")
     C.save("tenis_partido", partido)
@@ -328,4 +360,6 @@ if __name__ == "__main__":
     save_sfx("zas", zas())
     save_sfx("rompe", rompe())
     save_sfx("grito", grito())
+    save_sfx("super", super_tiro())
+    save_sfx("carga", carga())
     print("sonidos listos en", SFX)

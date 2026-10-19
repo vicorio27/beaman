@@ -49,6 +49,8 @@ La máquina estima su riesgo con la misma física y el mismo σ, sobre 16 muestr
 
 La dificultad de la máquina cambia la reacción, el ruido al decidir, la limpieza al ejecutar y qué tan seguido le juega la contra al otro. Nunca le cambia los atributos.
 
+**La cinta** (`TenisSim.NETCORD`): la pelota que pasa rozando la red (menos de 3,5 cm por encima) salta y cae donde quiera: casi siempre del otro lado, cortica, y a veces de vuelta (y es error del que pegó). Sale una cada ~120 golpes; suena la red, el público hace "uuuy" y sale "¡LA CINTA!".
+
 ## Los tenistas
 
 Los atributos van de 1 a 10 y pueden llevar cuartos (5.75): un punto entero de precisión mueve demasiado el equilibrio.
@@ -196,6 +198,7 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 - La pelota viene: según cuánto le falta (`eta`), se gira, la raqueta atrás y abajo. Si viene corriendo, sigue corriendo hasta el último momento (si no, patina en la pose de pegar).
 - Le pega con el contacto bajito (la pelota por debajo de 0,45 m), a la cintura o alto (por encima de 1,3 m), y la pelota sale de la cabeza de la raqueta: en 0,12 s llega a donde va de verdad.
 - El saque: al apretar arranca el movimiento y el golpe le llega a la simulación a los 0,52 s (0,24 s por abajo), cuando la raqueta encuentra la pelota, con lo que se apretó al empezar. La pelota se ve en la mano, sube y baja hasta la raqueta.
+- **Los supertiros** (las habilidades, cuando se llena la barra): el primer golpe con la habilidad congela el juego un instante, la pantalla destella y tiembla, suena el cañonazo (`super`), el público se para y arriba sale una franja con el nombre (en dos renglones si no cabe). Mientras dure, la pelota sale encendida del color del tenista, con estela de fuego, y al picar suelta chispas. Cuando la barra se llena, suena (`carga`); la primera vez, si es la de uno, sale "F: ¡SUPERTIRO!".
 - Lo que le da peso: donde pica la pelota queda un anillo que se abre y se apaga; la sombra de la pelota se achica y se aclara mientras más alto va; sale polvito de los pies al frenar, al caer del saltito, al tirarse, al levantarse y al estrellar la raqueta; y la pantalla tiembla un pixel con los cañonazos (0,08 s) y los aces (0,15 s).
 - La estela: en el golpe, la cabeza de la raqueta deja un arco claro (una curva suave por donde pasó, cuadro a cuadro) que se apaga en 0,13 s; y la pelota, cuando va a más de 17 m/s, deja tres pelotas apagadas atrás.
 - La altura en la pantalla (la de la pelota y la de la red) es de 16 px por metro abajo, como los jugadores, y cada vez menos arriba (`TenisMatch.zh`), para que un globo no se salga de la pantalla. La red mide 0,914 m: llega a la cadera.

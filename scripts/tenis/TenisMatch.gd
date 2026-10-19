@@ -106,9 +106,10 @@ var _walking := false      # él, yendo por la raqueta
 var _pro_tex: Texture2D    # el dibujo del que se fue (después de take_over, su hoja es la de él)
 
 # Los sonidos (tools/audio/tenis_audio.py): la raqueta, el bote, la red y el público.
-const SFX := ["golpe", "golpe_duro", "bote", "red", "aplauso", "ovacion", "uy", "chillido", "chillido2", "zas", "rompe", "grito"]
+const SFX := ["golpe", "golpe_duro", "bote", "red", "aplauso", "ovacion", "uy", "chillido", "chillido2", "zas", "rompe", "grito",
+	"super", "carga"]
 const SFX_DB := {"golpe": -4.0, "golpe_duro": -2.0, "bote": -12.0, "red": -6.0, "aplauso": -10.0, "ovacion": -7.0, "uy": -8.0,
-	"chillido": -15.0, "chillido2": -15.0, "zas": -15.0, "rompe": -5.0, "grito": -9.0}
+	"chillido": -15.0, "chillido2": -15.0, "zas": -15.0, "rompe": -5.0, "grito": -9.0, "super": -3.0, "carga": -10.0}
 # Lo que suena con el dibujo (_pose_sounds): las zapatillas al frenar, la raqueta que corta el aire
 # antes de pegarle, la raqueta contra el piso.
 const SWING_START := ["drive_baja", "reves_baja", "saque_rasca", "abajo_atras"]
@@ -117,8 +118,23 @@ var _last_pose := ["", ""]
 # Lo que le da peso: el anillo donde pica la pelota, el polvito en los pies (al frenar, al caer del
 # saltito, al levantarse, al estrellar la raqueta) y un temblor de un pixel con los cañonazos y los aces.
 const DUST_AT := ["frena_d", "frena_i", "split2", "levanta1", "rompe2", "tirada1"]
-var _fx := []              # {"kind": "bote" / "polvo", "at": punto en la pantalla, "t", "life", "dir"}
+var _fx := []              # {"kind": "bote" / "polvo" / "chispa", "at": punto en la pantalla, "t", "life", ...}
 var _shake := 0.0
+# Los supertiros (las habilidades, cuando se llena la barra): que se note. En el primer golpe con la
+# habilidad, el juego se congela un instante (hit-stop), la pantalla destella, y arriba sale la franja
+# con el nombre. Mientras dure, la pelota sale encendida del color del tenista, con estela de fuego, y
+# al picar suelta chispas. Cuando la barra se llena, suena; la primera vez, si es la de uno, dice la tecla.
+var _hitstop := 0.0
+var _white := 0.0
+var _super := {}           # la pelota encendida: {"color"} (hasta el golpe que sigue o el fin del punto)
+var _fire := []            # por dónde pasó la pelota encendida
+var _announce := [false, false]  # la habilidad recién armada: el primer golpe con ella va con todo
+var _banner: Label
+var _banner_t := 0.0
+var _banner_col := Color.WHITE
+const BANNER_T := 1.3
+var _was_ready := [false, false]
+var _told_key := false
 var _sfx := {}
 
 
@@ -162,6 +178,11 @@ func _start() -> void:
 	_pop_l = _label(Vector2(0, 171), Color(1, 0.9, 0.4))
 	_pop_l.size = Vector2(Controls.right_edge(), 10)
 	_pop_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# La franja del supertiro: arriba, a la derecha del tablero (si el nombre no cabe, en dos renglones).
+	_banner = _label(Vector2(86, 9), Color.WHITE)
+	_banner.size = Vector2(Controls.right_edge() - 90, 10)
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.autowrap_mode = TextServer.AUTOWRAP_WORD
 
 
 # ---------------------------------------------------------------- El recogebolas
@@ -434,7 +455,11 @@ func _process(delta: float) -> void:
 		_walk_step(delta)
 	elif setup.get("ballboy", false):
 		_ballboy(delta)
-	_acc += minf(delta, 0.1)
+	var frozen := _hitstop > 0.0   # el golpe del supertiro: todo quieto un instante
+	_hitstop = maxf(0.0, _hitstop - delta)
+	_white = maxf(0.0, _white - delta)
+	_banner_t = maxf(0.0, _banner_t - delta)
+	_acc = 0.0 if frozen else _acc + minf(delta, 0.1)
 	while _acc >= TenisSim.DT:
 		_acc -= TenisSim.DT
 		if _abandon == 2 or (_bb_ball != null or _bb_has) and sim.state == "point_over" and sim.wait < 0.1:
@@ -451,9 +476,11 @@ func _process(delta: float) -> void:
 	for k in _flash.keys():
 		_flash[k] -= delta
 	for i in 2:
-		_ta[i].update(delta, sim.players[i], sim)
+		if not frozen:
+			_ta[i].update(delta, sim.players[i], sim)
 		_pose_sounds(i)
 		_track_swing(i, delta)
+	_check_ready()
 	for f in _fx:
 		f["t"] = float(f["t"]) + delta
 	_fx = _fx.filter(func(f) -> bool: return float(f["t"]) < float(f["life"]))
@@ -464,6 +491,7 @@ func _process(delta: float) -> void:
 		_snap["t"] = float(_snap["t"]) + delta
 		if float(_snap["t"]) > SNAP_T:
 			_snap = {}
+	_update_banner()
 	_update_hud()
 	queue_redraw()
 
@@ -514,6 +542,17 @@ func _on_event(kind: String, d: Dictionary) -> void:
 	match kind:
 		"bounce":
 			_fx.append({"kind": "bote", "at": w2s(Vector2(d["pos"])), "t": 0.0, "life": 0.3, "dir": 0.0})
+			if not _super.is_empty():  # la encendida: el anillo grande y las chispas
+				var at := w2s(Vector2(d["pos"]))
+				_fx.append({"kind": "bote", "at": at, "t": 0.0, "life": 0.45, "dir": 1.0})
+				for k in 8:
+					var a := TAU * k / 8.0 + randf() * 0.4
+					_fx.append({"kind": "chispa", "at": at, "t": 0.0, "life": randf_range(0.3, 0.5), "dir": 0.0,
+						"v": Vector2(cos(a), sin(a) * 0.5 - 0.9) * randf_range(40.0, 75.0), "col": _super["color"]})
+		"netcord":  # la cinta: la roza y salta
+			_sound("red", 1.25)
+			_crowd.uy(0.25)
+			_pop("¡LA CINTA!")
 			_sound("bote", randf_range(0.92, 1.08))
 		"hit":
 			var hard: bool = float(d["speed"]) >= 22.0 or str(d.get("ability", "")) != ""
@@ -522,6 +561,11 @@ func _on_event(kind: String, d: Dictionary) -> void:
 				_shake = 0.08
 			var p = sim.players[d["player"]]
 			TenisAnim.on_hit(_ta, sim, d)
+			if str(d.get("ability", "")) != "":
+				_supershot(p)
+			else:
+				_super = {}
+				_fire.clear()
 			if _ta[p.idx].persona == "sabalenkova":  # ella grita en cada golpe
 				_sound("grito", randf_range(0.95, 1.08))
 			# La pelota sale de la cabeza de la raqueta (donde quedó en el cuadro del contacto).
@@ -530,6 +574,9 @@ func _on_event(kind: String, d: Dictionary) -> void:
 				_snap = {"off": rk - _ball_screen(), "t": 0.0}
 		"point":
 			var w: int = d["winner"]
+			_super = {}
+			_fire.clear()
+			_announce = [false, false]
 			if setup.get("ballboy", false):  # la pelota quedó tirada: a traerla
 				var hl := TenisData.HALF_L
 				var hw := TenisData.HALF_W
@@ -575,9 +622,10 @@ func _on_event(kind: String, d: Dictionary) -> void:
 			_pop("¡LE LEYERON LA JUGADA!")
 		"ability_fail":
 			_pop("SE TIRÓ Y NO LLEGÓ")
-		"ability":
+		"ability":  # la armó: el primer golpe con ella va con todo (_supershot)
 			_flash[d["player"]] = 1.0
-			_pop(str(d.get("name", "")).to_upper())
+			_announce[int(d["player"])] = true
+			_sound("carga", 1.3)
 		"match":
 			_pop("")
 			_show_summary(d["winner"])
@@ -710,6 +758,21 @@ func _draw() -> void:
 	things.sort_custom(func(a, b): return a[0] < b[0])
 	for th in things:
 		th[1].call()
+	for f in _fx:
+		if f["kind"] == "chispa":
+			var u := float(f["t"]) / float(f["life"])
+			var v: Vector2 = f["v"]
+			var at: Vector2 = Vector2(f["at"]) + v * float(f["t"]) + Vector2(0, 90.0) * float(f["t"]) * float(f["t"])
+			draw_rect(Rect2(at.round(), Vector2(1, 1)), Color(Color(f["col"]).lightened(0.4), 1.0 - u))
+	if _banner_t > 0.0:  # la franja del supertiro: entra rápido, se queda, se va
+		var lines := 2 if _banner.get_line_count() > 1 else 1
+		var band := Rect2(_banner.position.x - 4, 6, _banner.size.x + 8, 6 + 10 * lines)
+		var a := clampf(minf((BANNER_T - _banner_t) / 0.1, _banner_t / 0.25), 0.0, 1.0)
+		draw_rect(band, Color(0.05, 0.04, 0.08, 0.86 * a))
+		draw_rect(Rect2(band.position, Vector2(band.size.x, 1)), Color(_banner_col, a))
+		draw_rect(Rect2(band.position + Vector2(0, band.size.y - 1), Vector2(band.size.x, 1)), Color(_banner_col, a))
+	if _white > 0.0:
+		draw_rect(Rect2(-4, -4, 328, 188), Color(1, 1, 0.95, 0.45 * _white / 0.08))
 	# El tablero (arriba a la izquierda): el recuadro; los nombres y puntos son Labels encima. Debajo de
 	# cada nombre, el cansancio (verde) y el medidor de la habilidad (naranja).
 	if _summary_t != -1.0 and Controls.touch():
@@ -871,10 +934,57 @@ func _draw_ball() -> void:
 	var up := _ball_screen()
 	if not _snap.is_empty():
 		up += Vector2(_snap["off"]) * clampf(1.0 - float(_snap["t"]) / SNAP_T, 0.0, 1.0)
-	if Vector2(sim.bvel.x, sim.bvel.y).length() > FAST:  # rápida: deja estela
+	if not _super.is_empty():  # encendida: estela de fuego del color del tenista y un halo
+		var col: Color = _super["color"]
+		var n := _fire.size()
+		for k in range(n - 1, 0, -1):
+			var u := float(k) / n
+			draw_circle(_fire[k], 2.6 * (1.0 - u) + 0.5, Color(col.lerp(Color(1.0, 0.55, 0.15), u), 0.85 * (1.0 - u)))
+		draw_circle(up, 3.4, Color(col, 0.35))
+	elif Vector2(sim.bvel.x, sim.bvel.y).length() > FAST:  # rápida: deja estela
 		for k in range(_ball_trail.size() - 1, 0, -1):
 			draw_circle(_ball_trail[k], 1.5 - k * 0.2, Color(BALL, 0.36 - k * 0.09))
 	_ball_at(up)
+
+
+## Un golpe con la habilidad. El primero después de armarla va con todo: el juego se congela un
+## instante, destella, tiembla, suena el cañonazo, el público se para y sale la franja con el nombre.
+## Los que siguen (las que duran varios golpes), solo la pelota encendida.
+func _supershot(p) -> void:
+	var col: Color = TenisData.player(p.id)["color"]
+	_super = {"color": col.lightened(0.15)}
+	_fire.clear()
+	if not _announce[p.idx]:
+		_sound("golpe_duro", 0.85)
+		return
+	_announce[p.idx] = false
+	_hitstop = 0.09
+	_white = 0.08
+	_shake = 0.2
+	_sound("super")
+	_crowd.cheer(0.6, w2s(p.pos).x)
+	_banner_col = col.lightened(0.2)
+	_banner.text = TenisData.caps(str(TenisAbilities.def(p).get("name", "")))
+	_banner_t = BANNER_T
+
+
+func _update_banner() -> void:
+	var a := clampf(minf((BANNER_T - _banner_t) / 0.1, _banner_t / 0.25), 0.0, 1.0) if _banner_t > 0.0 else 0.0
+	_banner.modulate = Color(1, 1, 1, a)
+	_banner.add_theme_color_override("font_color", Color.WHITE.lerp(_banner_col, 0.35))
+
+
+## La barra llena (la habilidad lista): suena; la primera vez, si es la de uno, dice con qué tecla.
+func _check_ready() -> void:
+	for p in sim.players:
+		var ab := TenisAbilities.def(p)
+		var ready: bool = not ab.is_empty() and p.meter >= float(ab["cost"]) and p.cooldown == 0 and p.active.is_empty()
+		if ready and not _was_ready[p.idx]:
+			_sound("carga", 1.0 if p.idx == 0 else 0.8)
+			if p.idx == 0 and not setup.get("ai0", false) and not _told_key:
+				_told_key = true
+				_pop(Controls.keys_in("F: ¡SUPERTIRO!"))
+		_was_ready[p.idx] = ready
 
 
 ## Lo que suena cuando cambia el dibujo de un jugador.
@@ -948,6 +1058,10 @@ func _track_ball() -> void:
 	_ball_trail.push_front(up)
 	if _ball_trail.size() > 4:
 		_ball_trail.pop_back()
+	if not _super.is_empty():
+		_fire.push_front(up)
+		if _fire.size() > 10:
+			_fire.pop_back()
 
 
 func _ellipse(c: Vector2, rx: float, ry: float, col: Color) -> void:

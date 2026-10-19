@@ -61,6 +61,7 @@ class P:
 		return 0.9 + 0.04 * a("defense")
 
 
+const NETCORD := 0.035    # m por encima de la red: lo que la roza (la cinta; una cada ~120 golpes)
 var players: Array = []
 var score: TenisScore
 var rng := RandomNumberGenerator.new()
@@ -528,6 +529,12 @@ func _ball_step() -> void:
 		if zn < TenisData.NET_H:
 			_end_by_error(last_hitter, "net")
 			return
+		if zn < TenisData.NET_H + NETCORD:  # la cinta: la roza, salta y cae donde quiera (a veces de vuelta)
+			var s := signf(ball.y)
+			var dir := -s if rng.randf() < 0.4 else s
+			ball = Vector3(lerpf(before.x, ball.x, k), 0.05 * dir, TenisData.NET_H + 0.04)
+			bvel = Vector3(bvel.x * 0.3, dir * absf(bvel.y) * 0.2, absf(bvel.z) * 0.15 + 1.7)
+			event.emit("netcord", {"pos": Vector2(ball.x, 0.0)})
 	# El bote.
 	if ball.z <= 0.0 and bvel.z < 0.0:
 		ball.z = 0.0
