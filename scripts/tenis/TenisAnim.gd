@@ -38,6 +38,8 @@ var dist := 0.0
 var stop_t := 0.0          # frenando (después de correr de lado)
 var stop_dir := 1.0
 var serve_t := -1.0        # el saque en curso: cuánto lleva (-1: no hay)
+var dive_t := 0.0          # tirándose: cuánto lleva (el primer momento es el impulso)
+var was_stuck := false     # estaba en el piso (al levantarse: de rodillas, agachado)
 var underarm := false
 
 
@@ -89,12 +91,14 @@ func opponent_hit(speed: float) -> void:
 		act = {"seq": ["split1", "split2"], "cuts": [0.1], "t": 0.0, "len": 0.24, "keep": 0.0}
 
 
+## El puño dos veces ("¡vamos!") y los brazos arriba.
 func celebrate() -> void:
-	act = {"seq": ["celebra"], "cuts": [], "t": 0.0, "len": 1.1}
+	act = {"seq": ["puno1", "puno2", "puno1", "puno2", "celebra"], "cuts": [0.12, 0.3, 0.42, 0.6], "t": 0.0, "len": 1.1}
 
 
+## Las manos en la cabeza y después la cabeza agachada.
 func lament() -> void:
-	act = {"seq": ["bravo"], "cuts": [], "t": 0.0, "len": 1.2}
+	act = {"seq": ["agarra", "bravo"], "cuts": [0.55], "t": 0.0, "len": 1.2}
 
 
 ## El primer cuadro de lo que está haciendo (el del contacto, justo después de hit).
@@ -128,6 +132,10 @@ func update(delta: float, p, sim: TenisSim) -> void:
 		stop_t = maxf(0.0, stop_t - delta)
 	if serve_t >= 0.0 and sim.state != "serve":
 		serve_t = -1.0
+	dive_t = dive_t + delta if not p.active.is_empty() and float(p.active.get("window", 0.0)) > 0.0 else 0.0
+	if was_stuck and p.stuck <= 0.0:  # se levanta
+		act = {"seq": ["levanta1", "levanta2"], "cuts": [0.14], "t": 0.0, "len": 0.28, "keep": 0.0}
+	was_stuck = p.stuck > 0.0
 	if not act.is_empty():
 		act["t"] = float(act["t"]) + delta
 		# Si arranca a correr, el final del golpe (o el saltito) se corta: si no, patina en esa pose.
@@ -139,8 +147,8 @@ func update(delta: float, p, sim: TenisSim) -> void:
 func _pick(p, sim: TenisSim) -> String:
 	if p.stuck > 0.0:
 		return "piso"
-	if not p.active.is_empty() and float(p.active.get("window", 0.0)) > 0.0:
-		return "tirada"
+	if dive_t > 0.0:
+		return "tirada1" if dive_t < 0.08 else "tirada"
 	if serve_t >= 0.0:
 		if underarm:
 			return "abajo_atras"
@@ -180,7 +188,11 @@ func _pick(p, sim: TenisSim) -> String:
 			return "corre%d" % (8 - int(dist / ATRAS_M) % 8)
 	if stop_t > 0.0:
 		return "frena_d" if stop_dir > 0.0 else "frena_i"
-	return "listo" if fmod(t, 0.8) < 0.4 else "listo2"
+	# La espera: rebota en las puntas (abajo, al medio, arriba, al medio).
+	var u := fmod(t, 0.9)
+	if u < 0.3 or (u >= 0.45 and u < 0.75):
+		return "listo"
+	return "listo2" if u < 0.45 else "listo3"
 
 
 ## Botando la pelota antes de sacar: 0 y 1 en la mano, 0.5 en el piso.

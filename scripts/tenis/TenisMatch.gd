@@ -194,7 +194,7 @@ func exit_pro(how: String) -> void:
 	_racket = p0
 	_pro_tex = _sheets.get(sim.players[0].id)
 	_exit = {"how": how, "pos": p0, "path": [p0 + Vector2(0.6, 2.0), Vector2(p0.x * 0.4 + 1.5, OFF_Y)],
-		"i": 0, "speed": 1.8, "walk": ["camina1", "camina2"], "d": 0.0, "vel": Vector2.ZERO,
+		"i": 0, "speed": 1.8, "walk": ["camina1", "camina2", "camina3", "camina4"], "d": 0.0, "vel": Vector2.ZERO,
 		"phase": "va", "t": 0.0, "lift": 0.0, "fade": 1.0, "pose": "parado"}
 	match how:
 		"furia":  # las dos rotas, tiradas; la tercera, entera. Y se va rápido.
@@ -732,7 +732,7 @@ func _draw_stay(tex: Texture2D) -> void:
 func _draw_carrier(k: int) -> void:
 	var e := _exit
 	var phase := str(e["phase"])
-	var pose := "parado" if phase == "alza" else "camina%d" % (1 + (int(float(e["cd"]) / 0.45) + k) % 2)
+	var pose := "parado" if phase == "alza" else "camina%d" % (1 + (int(float(e["cd"]) / 0.3) + 2 * k) % 4)
 	_cell(CAMILLERO, e["c"][k], pose, 0 if phase == "vienen" else 1)
 
 
@@ -740,10 +740,13 @@ func _draw_exit(tex: Texture2D) -> void:
 	var e := _exit
 	var pose := str(e["pose"])
 	var moving: bool = Vector2(e["vel"]).length() > 0.1 and str(e["phase"]) == "va"
-	if moving:
+	var v := Vector2(e["vel"])
+	if moving and absf(v.x) > absf(v.y) and e["walk"].size() == 4:  # de lado: caminando de perfil
+		pose = "caminal%d_%s" % [1 + int(float(e["d"]) / 0.18) % 8, "d" if v.x > 0.0 else "i"]
+	elif moving:
 		var walk: Array = e["walk"]
-		pose = walk[int(float(e["d"]) / 0.45) % 2]
-	var row := 0 if moving and Vector2(e["vel"]).y < -0.1 else 1
+		pose = walk[int(float(e["d"]) / (0.3 if walk.size() == 4 else 0.45)) % walk.size()]
+	var row := 0 if moving and v.y < -0.1 else 1
 	var lift := float(e["lift"])
 	if e.has("c") and lift > 0.0 and str(e["how"]) == "camilla":  # la camilla: los palos y la lona
 		var g := w2s(e["pos"]).round()

@@ -163,13 +163,16 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 **Los tenistas** salen de `tools/art/draw_tenistas.py` y quedan en `assets/tenis/<id>.png`.
 - Celdas de 50x48 con los pies en (25, 46): cabe el saque estirado y la raqueta con el brazo afuera sin cortarse. La fila 0 es de espaldas (el de abajo) y la fila 1 de frente (el de arriba).
 - `assets/tenis/tenistas.json` trae el orden de las columnas y, por pose, dónde queda la cabeza de la raqueta (y la mano de la pelota en el saque). Con eso, al pegarle, la pelota sale de la raqueta y la del saque va en la mano.
-- Hay 85 poses:
+- Hay 110 poses:
   - **Correr de perfil** (8 cuadros, para cada lado): un ciclo de carrera de verdad. Las piernas van con ángulos y largos fijos (el pie no se estira ni se encoge), la cadera baja en el apoyo y sube en el vuelo, los brazos van al revés de las piernas. El brazo y la pierna de allá van detrás y más oscuros. La cabeza de lado tiene ojo, nariz, oreja y el pelo de cada uno (la cola de Sabalenkova, la visera de Kyrgistán para atrás, las trencitas...). A él la corbata le vuela por encima del hombro.
   - **Correr de espaldas y de frente** (8 cuadros): un pie en el piso y el otro con el talón arriba, el cuerpo que sube y baja, los brazos alternados. El brazo que va adelante se tapa con el cuerpo.
   - **Pasitos de lado** (4 cuadros, para cada lado, sin dar la espalda a la red), **frenar** (para cada lado) y **el saltito** (2).
   - **El drive y el revés** (8 cada uno): se gira, la raqueta arriba y atrás, baja, le pega bajito, a la cintura o alto, y termina por encima del hombro (en dos cuadros). El **cortado** (3) y la **dejada**.
   - **El saque** (9): bota la pelota (2), bajan los brazos, la tira, el trofeo (rodillas dobladas, la raqueta arriba), la raqueta detrás de la espalda, le pega estirado y en puntas, y cae hacia adelante (2). El **saque por abajo** (2).
-  - Listo (2), tirada, en el piso, celebra, lamentarse, las del recogebolas, las de irse (caminar, parado, el celular, doblado, acostado, los brazos arriba) y la raqueta en el piso (entera y rota).
+  - **La espera** (3): rebota en las puntas. **Celebrar** (3): el puño dos veces, "¡vamos!", y los brazos arriba. **Lamentarse** (2): las manos en la cabeza y la cabeza agachada.
+  - **Tirarse** (2: el impulso y el vuelo), en el piso, y **levantarse** (2: de rodillas, agachado).
+  - **Caminar** de espaldas o de frente (4) y de perfil (8, para cada lado), sin raqueta: los que se van de la cancha y los camilleros.
+  - Las del recogebolas, las de irse (parado, el celular, doblado, acostado, los brazos arriba) y la raqueta en el piso (entera y rota).
 - Los cuadros del medio salen de mezclar dos poses (`mix`), y los de un lado tienen su espejo (`mirror`) que deja la raqueta en la mano derecha. De frente, y en los zurdos, la hoja se arma con el lado cambiado.
 - `camillero.png`: los que se llevan a Monfiz y a Pecador (de blanco, con la cruz roja), con las mismas poses.
 - Cada pose es un esqueleto que se pinta con piezas de 2 px. Después va el contorno del juego y encima, a mano, lo de cada uno:
@@ -186,7 +189,8 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 **Cómo se mueven en la cancha** (`TenisAnim.gd`):
 - El cuadro de correr sale de lo que lleva corrido, no del tiempo: un cuadro cada 0,27 m de perfil, 0,3 m hacia la red y 0,22 m para atrás (pasos más cortos). Así los pies no patinan.
 - De lado: los primeros 0,18 s son pasitos; si sigue, corre de perfil. Al parar después de correr de lado, frena un momento con el pie de afuera estirado.
-- Cuando el otro le pega, el saltito, si está quieto.
+- Cuando el otro le pega, el saltito, si está quieto. Esperando, rebota en las puntas.
+- Después de tirarse, se levanta: de rodillas y agachado. Al ganar un punto bueno, el puño; con un error fácil, las manos en la cabeza.
 - La pelota viene: según cuánto le falta (`eta`), se gira, la raqueta atrás y abajo. Si viene corriendo, sigue corriendo hasta el último momento (si no, patina en la pose de pegar).
 - Le pega con el contacto bajito (la pelota por debajo de 0,45 m), a la cintura o alto (por encima de 1,3 m), y la pelota sale de la cabeza de la raqueta: en 0,12 s llega a donde va de verdad.
 - El saque: al apretar arranca el movimiento y el golpe le llega a la simulación a los 0,52 s (0,24 s por abajo), cuando la raqueta encuentra la pelota, con lo que se apretó al empezar. La pelota se ve en la mano, sube y baja hasta la raqueta.

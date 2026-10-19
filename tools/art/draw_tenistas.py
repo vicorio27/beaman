@@ -297,7 +297,58 @@ def side_run(i):
 for _i in range(8):
     POSE["lado%d" % (_i + 1)] = side_run(_i)
 
-POSES = (["listo", "listo2"] + ["corre%d" % i for i in range(1, 9)]
+# Caminando de perfil (los que se van de la cancha, los camilleros): pasos cortos, sin vuelo, los brazos
+# sueltos. Sin raqueta ("nork").
+SIDE_WALK = [(20, 4), (12, 10), (2, 14), (-10, 8), (-20, 6), (-22, 30), (-6, 48), (12, 22)]
+
+
+def side_walk(i):
+    tn, kn = SIDE_WALK[i]
+    tf, kf = SIDE_WALK[(i + 4) % 8]
+    return {"side": True, "tn": tn, "kn": kn, "tf": tf, "kf": kf, "an": -tn * 0.9, "af": -tf * 0.9,
+            "en": 15, "ef": 15, "lean": 3, "air": False, "nork": True}
+
+
+for _i in range(8):
+    POSE["caminal%d" % (_i + 1)] = side_walk(_i)
+
+
+# Caminando de espaldas / de frente (4 cuadros): apoya, pasa, apoya el otro, pasa. Sin raqueta.
+def _walk(i):
+    legs = [dict(kl=(-2, 27), fl=(-3, 31), kr=(2, 27), fr=(2, 33)),
+            dict(kl=(-2, 26), fl=(-2, 30), kr=(2, 27), fr=(2, 33))][i % 2]
+    if i >= 2:
+        legs = dict(kl=(-legs["kr"][0], legs["kr"][1]), fl=(-legs["fr"][0], legs["fr"][1]),
+                    kr=(-legs["kl"][0], legs["kl"][1]), fr=(-legs["fl"][0], legs["fl"][1]))
+    arms = [dict(el=(-6, 16), hl=(-4, 20), er=(6, 16), hr=(7, 21)),
+            dict(el=(-6, 16), hl=(-6, 21), er=(6, 16), hr=(6, 21)),
+            dict(el=(-6, 16), hl=(-7, 21), er=(6, 16), hr=(4, 20)),
+            dict(el=(-6, 16), hl=(-6, 21), er=(6, 16), hr=(6, 21))][i]
+    return P(**legs, **arms, rk=None, lean=1 if i % 2 == 0 else 0)
+
+
+for _i in range(4):
+    POSE["camina%d" % (_i + 1)] = _walk(_i)
+
+# La espera: rebota en las puntas (listo, listo2 abajo, listo3 arriba).
+POSE["listo3"] = P(**GRIP, kl=(-3, 26), fl=(-4, 32), kr=(3, 26), fr=(4, 32), rk=(-152, False), lean=0)
+# Celebrar: el puño izquierdo (la raqueta va en la otra mano) arriba y abajo, "¡vamos!", y los brazos arriba.
+POSE["puno1"] = P(kl=(-3, 27), fl=(-4, 33), kr=(3, 27), fr=(4, 33), el=(-7, 13), hl=(-5, 9), er=(6, 16), hr=(7, 20),
+                  rk=(-100, False), lean=1)
+POSE["puno2"] = P(kl=(-4, 28), fl=(-6, 33), kr=(4, 28), fr=(5, 33), el=(-7, 18), hl=(-4, 21), er=(6, 16), hr=(7, 20),
+                  rk=(-100, False), lean=3)
+# Lamentarse: las manos en la cabeza (y después, la cabeza agachada: "bravo").
+POSE["agarra"] = P(kl=(-3, 27), fl=(-4, 33), kr=(3, 27), fr=(4, 33), el=(-8, 10), hl=(-3, 6), er=(8, 10), hr=(3, 6),
+                   rk=(-55, False), lean=1)
+# Tirarse: el impulso (estirado hacia la pelota, el pie de afuera empujando) antes de volar ("tirada").
+POSE["tirada1"] = P(kl=(-4, 27), fl=(-8, 32), kr=(5, 28), fr=(8, 33), el=(1, 13), hl=(5, 13), er=(8, 14), hr=(12, 14),
+                    rk=(-15, False), lean=4, tilt=3, head_dx=2)
+# Levantarse del piso: de rodillas y agachado.
+POSE["levanta1"] = P(kl=(-3, 31), fl=(-4, 33), kr=(3, 31), fr=(4, 33), el=(-6, 20), hl=(-4, 24), er=(6, 20), hr=(6, 24),
+                     rk=(-120, False), lean=7)
+POSE["levanta2"] = P(**WIDE, el=(-6, 17), hl=(-4, 21), er=(6, 17), hr=(6, 21), rk=(-130, False), lean=4)
+
+POSES = (["listo", "listo2", "listo3"] + ["corre%d" % i for i in range(1, 9)]
          + ["lado%d_d" % i for i in range(1, 9)] + ["lado%d_i" % i for i in range(1, 9)]
          + ["paso%d_d" % i for i in range(1, 5)] + ["paso%d_i" % i for i in range(1, 5)]
          + ["frena_d", "frena_i", "split1", "split2",
@@ -306,8 +357,10 @@ POSES = (["listo", "listo2"] + ["corre%d" % i for i in range(1, 9)]
             "cortado_atras", "cortado", "cortado_fin", "dejada",
             "saque_bota1", "saque_bota2", "saque_baja", "saque_lanza", "saque_trofeo", "saque_rasca", "saque",
             "saque_fin1", "saque_fin", "abajo_atras", "abajo",
-            "tirada", "piso", "celebra", "bravo", "agachado", "recoge",
-            "camina1", "camina2", "parado", "tel1", "tel2", "doblado", "acostado", "brazos", "suelta", "rota"])
+            "tirada1", "tirada", "piso", "levanta1", "levanta2", "puno1", "puno2", "celebra", "agarra", "bravo",
+            "agachado", "recoge", "camina1", "camina2", "camina3", "camina4"]
+         + ["caminal%d_d" % i for i in range(1, 9)] + ["caminal%d_i" % i for i in range(1, 9)]
+         + ["parado", "tel1", "tel2", "doblado", "acostado", "brazos", "suelta", "rota"])
 for _k in ("drive_atras", "reves_atras", "saque_lanza", "corre1", "corre2", "corre3", "corre4"):
     assert _k in POSE
 
@@ -674,7 +727,7 @@ def draw_side(pid: str, q: dict, face: int):
     near_arm, far_arm = arm(q["an"], q["en"]), arm(q["af"], q["ef"])
     right_near = face > 0
     r_arm, r_a, r_e = (near_arm, q["an"], q["en"]) if right_near else (far_arm, q["af"], q["ef"])
-    has_rk = d["r"] is not None
+    has_rk = d["r"] is not None and not q.get("nork")
     r_pol = math.radians(105 + r_a * 0.9)   # la raqueta: adelante, subiendo y bajando con el brazo
     rk_ang = math.degrees(math.atan2(math.cos(r_pol), face * math.sin(r_pol)))
     meta["hl"] = far_arm[1] if right_near else near_arm[1]
