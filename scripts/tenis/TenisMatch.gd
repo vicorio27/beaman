@@ -60,6 +60,16 @@ var _key := {}      # id -> la hoja que tiene puesta ("monfiz"; después de take
 var _ta := [TenisAnim.new(0), TenisAnim.new(1)]
 var _serve_held := {}      # lo que apretó el que saca al empezar el movimiento (TenisAnim.hold_serve)
 var _snap := {}            # la pelota recién golpeada: {"off": de dónde sale (la raqueta), "t"}
+# La estela del raquetazo: por dónde pasó la cabeza de la raqueta en el golpe (un arco claro que se
+# apaga en TRAIL_T), y la de la pelota cuando va muy rápido.
+const SWING := ["drive_baja", "drive_bajo", "drive", "drive_alto", "drive_fin1", "drive_fin",
+	"reves_baja", "reves_bajo", "reves", "reves_alto", "reves_fin1", "reves_fin", "cortado", "cortado_fin",
+	"saque_rasca", "saque", "saque_fin1", "saque_fin", "abajo", "dejada"]
+const TRAIL_T := 0.13
+const FAST := 17.0         # m/s: de ahí para arriba, la pelota deja estela
+var _trail := [[], []]     # por jugador: [punto en la pantalla, edad] de la cabeza de la raqueta
+var _trail_pose := ["", ""]  # (un punto por cuadro del golpe: si corre en la misma pose, no deja estela)
+var _ball_trail := []      # dónde se vio la pelota los últimos cuadros
 var _summary_t := -1.0  # desde cuándo se ve el resumen del final (-1: no hay)
 
 # El recogebolas (setup["ballboy"]).
@@ -430,6 +440,8 @@ func _process(delta: float) -> void:
 		_flash[k] -= delta
 	for i in 2:
 		_ta[i].update(delta, sim.players[i], sim)
+		_track_swing(i, delta)
+	_track_ball()
 	if not _snap.is_empty():
 		_snap["t"] = float(_snap["t"]) + delta
 		if float(_snap["t"]) > SNAP_T:
@@ -651,6 +663,8 @@ func _draw() -> void:
 	draw_line(w2s(Vector2(0, -TenisData.SERVICE_L)), w2s(Vector2(0, TenisData.SERVICE_L)), line, 1.0)
 	# De atrás para adelante: los jugadores, la red, la pelota y el recogebolas, cada uno en su fondo.
 	var things := [[sim.players[1].pos.y, func() -> void: _draw_player(sim.players[1])],
+		[sim.players[1].pos.y + 0.001, func() -> void: _draw_trail(1)],
+		[sim.players[0].pos.y + 0.001, func() -> void: _draw_trail(0)],
 		[minf(sim.players[0].pos.y - 0.01, 0.0), func() -> void: _draw_net()],
 		[sim.ball.y, func() -> void: _draw_ball()]]
 	if not _gone:
@@ -823,7 +837,63 @@ func _draw_ball() -> void:
 	var up := _ball_screen()
 	if not _snap.is_empty():
 		up += Vector2(_snap["off"]) * clampf(1.0 - float(_snap["t"]) / SNAP_T, 0.0, 1.0)
+	if Vector2(sim.bvel.x, sim.bvel.y).length() > FAST:  # rápida: deja estela
+		for k in range(_ball_trail.size() - 1, 0, -1):
+			draw_circle(_ball_trail[k], 1.5 - k * 0.2, Color(BALL, 0.36 - k * 0.09))
 	_ball_at(up)
+
+
+## La cabeza de la raqueta mientras pega (de que baja a que termina): se guarda por dónde va pasando.
+func _track_swing(i: int, delta: float) -> void:
+	var tr: Array = _trail[i]
+	for e in tr:
+		e[1] = float(e[1]) + delta
+	while not tr.is_empty() and float(tr[0][1]) > TRAIL_T:
+		tr.pop_front()
+	var a: TenisAnim = _ta[i]
+	if a.pose == _trail_pose[i]:
+		return
+	_trail_pose[i] = a.pose
+	if not a.pose in SWING:
+		return
+	var at = _meta_at(sim.players[i], "rk", a.pose)
+	if at != null:
+		tr.append([at, 0.0])
+
+
+## El arco: una curva suave (Catmull-Rom) por los puntos, más clara hacia la raqueta, que se apaga.
+func _draw_trail(i: int) -> void:
+	var tr: Array = _trail[i]
+	if tr.size() < 2:
+		return
+	var n := tr.size()
+	var prev: Vector2 = tr[0][0]
+	for k in n - 1:
+		var p0: Vector2 = tr[maxi(k - 1, 0)][0]
+		var p1: Vector2 = tr[k][0]
+		var p2: Vector2 = tr[k + 1][0]
+		var p3: Vector2 = tr[mini(k + 2, n - 1)][0]
+		var fade := 1.0 - float(tr[k + 1][1]) / TRAIL_T
+		for s in range(1, 5):
+			var u := s / 4.0
+			var q := 0.5 * (2.0 * p1 + (p2 - p0) * u + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * u * u
+				+ (3.0 * p1 - p0 - 3.0 * p2 + p3) * u * u * u)
+			var along := (k + u) / float(n - 1)
+			draw_line(prev, q, Color(1, 1, 0.9, 0.5 * fade * along), 2.0 if along > 0.5 else 1.0)
+			prev = q
+
+
+## Dónde se vio la pelota (para la estela, si va rápido).
+func _track_ball() -> void:
+	if not sim.live or sim.state != "rally" or _gone:
+		_ball_trail.clear()
+		return
+	var up := _ball_screen()
+	if not _snap.is_empty():
+		up += Vector2(_snap["off"]) * clampf(1.0 - float(_snap["t"]) / SNAP_T, 0.0, 1.0)
+	_ball_trail.push_front(up)
+	if _ball_trail.size() > 4:
+		_ball_trail.pop_back()
 
 
 func _ball_at(at: Vector2) -> void:
