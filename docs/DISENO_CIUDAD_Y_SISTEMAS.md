@@ -2000,7 +2000,7 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 
 ## Lukas y la gente
 - **Lukas huele a la gente:** cuando él le habla a alguien, Lukas va y lo huele. Según quién (`Lukas.GREET`), se queda a que lo consientan (corazoncitos) o se devuelve bravo (resopla) y se le sienta de espaldas.
-- **La pelota de los pelados** (`scripts/ui/PelotaLukas.gd`): después de los penaltis, Lukas se roba la pelota y hay que ir tras él por todo el lote; los tres pelados corren también. Lukas hace el quiebre cuando lo tienen cerca y se cansa con los segundos. Al final se tiran todos al pasto.
+- **La pelota de los pelados** (`scripts/ui/PelotaLukas.gd`): después de los penaltis, Lukas se roba la pelota y se la lleva por el lote conduciéndola con el hocico (la pelota tiene su física: rueda, brinca, el pasto la frena, rebota en el muro, en las orillas y en los morrales). Hay que quitársela y meterla entre los dos morrales: tocarla es pegarle, hacia donde va corriendo (o al arco, si está quieto). Lukas hace el quiebre cuando lo tienen cerca y se cansa con los segundos; los tres pelados corren detrás de la pelota y le pegan para cualquier lado. La barra del pique se llena con el tiempo y con cada patadón; llena, con F, sale como un rayo un momento y el patadón sale con fuego. 25 segundos; si Lukas se la mete solo, cuenta igual. Al final se tiran todos al pasto.
 - **Las peleas de Lukas se sienten otro juego** (`PeleaPerros.gd`): entran con tres destellos y barras negras, suena su propio tema ("perros", `compose.py perros`), los perros entran cada uno por su lado y el fondo es de juego de bolsillo (cielo, nubes, pasto).
 
 ## Lo interactivo

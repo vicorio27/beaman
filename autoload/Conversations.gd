@@ -2104,8 +2104,8 @@ func _pelaos() -> void:
 	await Dialogue.talk(end)
 	if GameState.lukas_alive():  # a correr detrás de Lukas, con los tres pelados (PelotaLukas)
 		var caught: bool = await PelotaLukas.play(self)
-		await Dialogue.talk([["", "(La recupera. Bueno: se tiran encima los cuatro y Lukas encima de todos. Nadie se acuerda de quién ganó los penaltis.)"
-			if caught else "(No lo alcanza nadie. Lukas la trae solo, cuando se cansa, y la suelta a los pies de la Flaca. Ella le da el bombón. A Lukas.)"]])
+		await Dialogue.talk([["", "(Gol entre los morrales. Se tiran encima los cuatro y Lukas encima de todos. Nadie se acuerda de quién ganó los penaltis.)"
+			if caught else "(No se la quita nadie. Lukas la trae solo, cuando se cansa, y la suelta a los pies de la Flaca. Ella le da el bombón. A Lukas.)"]])
 	TimeManager.skip(1.0)
 	GameState.change_mood(6.0)
 	GameState.company(25.0)
