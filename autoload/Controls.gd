@@ -83,6 +83,8 @@ static func keys_in(text: String) -> String:
 	if not touch():
 		return text
 	var out := text
+	for pair in [["las flechas", "la palanca"], ["Flechas", "Palanca"], ["flechas", "palanca"], ["FLECHAS", "PALANCA"]]:
+		out = out.replace(pair[0], pair[1])
 	for pair in [["E", "A"], ["Q", "B"], ["F", "huella"], ["Tab", "I"]]:
 		var re := RegEx.new()
 		re.compile("(?<![\\wÁÉÍÓÚáéíóúñÑ'])%s(?![\\wÁÉÍÓÚáéíóúñÑ'])" % pair[0])

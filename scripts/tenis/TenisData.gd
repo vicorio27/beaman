@@ -151,6 +151,15 @@ const DIFFICULTY := {
 }
 
 
+## "NOMBRE  VS  NOMBRE", que quepa en `width` px (la letra es de 8): si no cabe, solo los apellidos
+## (en el celular, la franja de los botones le quita espacio).
+static func versus(a: String, b: String, width: float) -> String:
+	var full := "%s  VS  %s" % [a.to_upper(), b.to_upper()]
+	if full.length() * 8 <= width:
+		return full
+	return "%s  VS  %s" % [a.split(" ")[-1].to_upper(), b.split(" ")[-1].to_upper()]
+
+
 ## La plata con puntos de mil: 50.000.000.
 static func money(n: int) -> String:
 	var s := str(absi(n))

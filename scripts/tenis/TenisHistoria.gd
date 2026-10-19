@@ -102,6 +102,35 @@ const ABANDONOS := {
 		"vuelve": "Fedorer volvió, derechito. Dice que fue \"un momento de reflexión\"."},
 }
 
+## Todo lo demás que se dice en el torneo, en un solo lugar (lo usan Torneo.gd y TenisJornada.gd).
+## Los %s se llenan con nombres y plata.
+const TEXTOS := {
+	# Las mañanas (Torneo.manana).
+	"llega": "En el potrero de arriba, donde ayer había una llanta y un perro, amaneció un coliseo. Dice HIGHWAY TO HELL. Nadie lo vio llegar.",
+	"no_fue": "Ayer no fue al coliseo. Se jugó igual. El organizador consiguió otro recogebolas: uno que habla.",
+	"campeon": "Anoche ganó %s el torneo. El coliseo se fue como llegó: de noche, sin avisar. Quedó el pasto pisado y un vaso de cerveza en cada hueco.",
+	"raqueta_queda": "Nadie le pidió de vuelta la raqueta de %s. Él tampoco la ofreció.",
+	"gota_ultimo": "El gota a gota: hoy es el último día. ",
+	"gota_faltan": "El gota a gota: faltan %d días. ",
+	"gota_tiene": "Ya tiene los ochenta mil. Que no se los roben.",
+	"gota_falta": "Le faltan $%s.",
+	# El cobro (Torneo._cobro).
+	"cobro_paga": "El cobrador lo estaba esperando cuando abrió los ojos. Ochenta mil. Los contó dos veces, mojándose el dedo. Se fue sin decir nada. Él tampoco dijo nada. Por una vez, empataron.",
+	"cobro_lleva": "El cobrador lo estaba esperando cuando abrió los ojos. No contó nada: se llevó los $%s que tenía y la mochila. Con todo lo de adentro. Le dejó lo de los bolsillos, \"por la buena fe\".",
+	"cobro_nada": "El cobrador lo estaba esperando cuando abrió los ojos. Le buscó plata. Le buscó la mochila. No había nada que llevarse. Se fue con cara de haber perdido él.",
+	# La entrada (Torneo.puerta).
+	"ya_trabajo": ["—Ya trabajó hoy. Vaya descanse. Mañana a las ocho. ... Y no se le ocurra hablar con nadie. Bueno.",
+		"—Mañana. Hoy ya no hay partidos para usted. Hoy usted es público, y el público paga."],
+	"cerrado": "(El coliseo, cerrado. Los reflectores apagados. Un celador duerme en la taquilla, abrazado a una raqueta como a un peluche. Los partidos son de 8 a 6.)",
+	"a_la_cancha": ["A la cancha", "Ahora no"],
+	# La jornada (TenisJornada).
+	"recoger": "(Agachado al lado de la red. Quieto mientras juegan. Cuando se acaba el punto, con las flechas, por la pelota, y de vuelta al puesto. Rápido, hay propina.)",
+	"coja_raqueta": "—¡Recogebolas! ¡Usted, el mudo! Coja esa raqueta y termine el partido. El canal no espera, y yo no devuelvo boletas.",
+	"controles": "(E: plano. Q: cortado; con arriba, dejada. X: globo. F: lo de él, cuando titile la barra.)",
+	"propina_gana": "(%s le da los $%s en billetes doblados en cuatro. Le da la mano. Después se mira la mano, por si acaso.)",
+	"propina_consuelo": "(%s le da $%s \"por la molestia\". La molestia fue de él.)",
+}
+
 ## El organizador: la primera vez lo contrata; después, cada mañana, una línea.
 const ORGANIZADOR_PRIMERA := [
 	["EL ORGANIZADOR", "—¿Usted es el de la fila? ¿Busca trabajo? Necesito recogebolas. Se me fueron tres: uno a la feria y dos con la feria."],

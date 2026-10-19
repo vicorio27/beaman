@@ -104,7 +104,7 @@ func _show_cuadro() -> void:
 	var a: Dictionary = TenisData.player(m["a"])
 	var b: Dictionary = TenisData.player(m["b"])
 	_label(Vector2(0, 150), "HOY RECOGE BOLAS EN:", Color(0.75, 0.78, 0.86), true)
-	_label(Vector2(0, 160), "%s  VS  %s" % [a["name"].to_upper(), b["name"].to_upper()], Color(1, 0.95, 0.8), true)
+	_label(Vector2(0, 160), TenisData.versus(a["name"], b["name"], Controls.right_edge()), Color(1, 0.95, 0.8), true)
 	_label(Vector2(0, 170), "E: A LA CANCHA", Color(0.85, 0.9, 1.0), true)
 
 
@@ -135,7 +135,7 @@ func _play() -> void:
 	_match.closed.connect(_on_closed)
 	if not st.get("visto_recoger", false):
 		st["visto_recoger"] = true
-		await Dialogue.talk([["", "(Agachado al lado de la red. Quieto mientras juegan. Cuando se acaba el punto, con las flechas, por la pelota, y de vuelta al puesto. Rápido, hay propina.)"]])
+		await Dialogue.talk([["", TenisHistoria.TEXTOS["recoger"]]])
 
 
 func _on_abandon() -> void:
@@ -145,13 +145,13 @@ func _on_abandon() -> void:
 	# Que se vea cómo se va (TenisMatch.exit_pro), y después él, por la raqueta.
 	_match.exit_pro(str(ab.get("salida", "camina")))
 	await _match.exit_done
-	var lines: Array = [["EL ORGANIZADOR", "—¡Recogebolas! ¡Usted, el mudo! Coja esa raqueta y termine el partido. El canal no espera, y yo no devuelvo boletas."]]
+	var lines: Array = [["EL ORGANIZADOR", TenisHistoria.TEXTOS["coja_raqueta"]]]
 	lines.append(["", str(ab.get("raqueta", ""))])
 	await Dialogue.talk(lines)
 	_match.walk_in()
 	await _match.exit_done
 	if st.get("por", []).is_empty():
-		await Dialogue.talk([["", "(E: plano. Q: cortado; con arriba, dejada. X: globo. F: lo de él, cuando titile la barra.)"]])
+		await Dialogue.talk([["", TenisHistoria.TEXTOS["controles"]]])
 	var usados: Array = st.get("usados", [])
 	usados.append(id)
 	st["usados"] = usados
@@ -232,9 +232,9 @@ func _cobrar() -> void:
 	var name: String = TenisData.player(aband["id"])["name"]
 	var lines := []
 	if _gano:
-		lines.append(["", "(%s le da los $%s en billetes doblados en cuatro. Le da la mano. Después se mira la mano, por si acaso.)" % [name, TenisData.money(int(_paga["pro"]))]])
+		lines.append(["", TenisHistoria.TEXTOS["propina_gana"] % [name, TenisData.money(int(_paga["pro"]))]])
 	elif int(_paga["pro"]) > 0:
-		lines.append(["", "(%s le da $%s \"por la molestia\". La molestia fue de él.)" % [name, TenisData.money(int(_paga["pro"]))]])
+		lines.append(["", TenisHistoria.TEXTOS["propina_consuelo"] % [name, TenisData.money(int(_paga["pro"]))]])
 	if not lines.is_empty():
 		await Dialogue.talk(lines)
 	var g := GameState

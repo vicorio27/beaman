@@ -101,7 +101,7 @@ func _show_bracket() -> void:
 		return
 	var a: Dictionary = TenisData.player(m["a"])
 	var b: Dictionary = TenisData.player(m["b"])
-	_label(Vector2(0, 156), "%s  VS  %s" % [a["name"].to_upper(), b["name"].to_upper()], Color(1, 0.95, 0.8), true)
+	_label(Vector2(0, 156), TenisData.versus(a["name"], b["name"], Controls.right_edge()), Color(1, 0.95, 0.8), true)
 	var hint := "E: JUGAR"
 	if not you in [m["a"], m["b"]]:
 		hint = "E: VER   X: HASTA TU PARTIDO" if bracket.alive(you) else "E: VER   X: HASTA EL FINAL"

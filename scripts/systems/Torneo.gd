@@ -60,7 +60,7 @@ static func manana() -> Array:
 		var seed_ := randi() % 100000
 		f["torneo"] = {"bracket": TenisBracket.new(TenisData.TOURNAMENT["entrants"]).to_dict(), "seed": seed_,
 			"usados": [], "trabajo": -1, "contratado": false, "ganado": 0, "por": [], "salvados": [], "ultimo": ""}
-		lines.append("En el potrero de arriba, donde ayer había una llanta y un perro, amaneció un coliseo. Dice HIGHWAY TO HELL. Nadie lo vio llegar.")
+		lines.append(TenisHistoria.TEXTOS["llega"])
 		g.start_quest("torneo_trabajo")
 	elif not state().is_empty() and (d > 0 or g.day == TenisHistoria.DIA_LLEGA + 4):
 		lines.append_array(_ayer(d - 1 if d > 0 else 3))
@@ -73,8 +73,8 @@ static func manana() -> Array:
 		else:
 			var left := vence - g.day
 			var falta := maxi(0, debe() - g.money)
-			lines.append(("El gota a gota: hoy es el último día. " if left == 0 else "El gota a gota: faltan %d días. " % (left + 1))
-				+ ("Ya tiene los ochenta mil. Que no se los roben." if falta == 0 else "Le faltan $%s." % TenisData.money(falta)))
+			lines.append((TenisHistoria.TEXTOS["gota_ultimo"] if left == 0 else TenisHistoria.TEXTOS["gota_faltan"] % (left + 1))
+				+ (TenisHistoria.TEXTOS["gota_tiene"] if falta == 0 else TenisHistoria.TEXTOS["gota_falta"] % TenisData.money(falta)))
 	return lines
 
 
@@ -92,7 +92,7 @@ static func _ayer(r: int) -> Array:
 		m = b.next_match()
 	st["bracket"] = b.to_dict()
 	if not worked:
-		lines.append("Ayer no fue al coliseo. Se jugó igual. El organizador consiguió otro recogebolas: uno que habla.")
+		lines.append(TenisHistoria.TEXTOS["no_fue"])
 	var ultimo: String = st.get("ultimo", "")
 	if worked and ultimo != "" and ultimo in st.get("salvados", []) and b.alive(ultimo) and r + 1 < b.rounds.size():
 		lines.append(str(TenisHistoria.ABANDONOS.get(ultimo, {}).get("vuelve", "")))
@@ -108,11 +108,11 @@ static func _fin() -> Array:
 	var champ := b.champion()
 	var lines := []
 	if champ != "":
-		lines.append("Anoche ganó %s el torneo. El coliseo se fue como llegó: de noche, sin avisar. Quedó el pasto pisado y un vaso de cerveza en cada hueco." % TenisData.player(champ)["name"])
+		lines.append(TenisHistoria.TEXTOS["campeon"] % TenisData.player(champ)["name"])
 	g.complete_quest("torneo_trabajo")
 	var ultimo: String = st.get("ultimo", "")
 	if ultimo != "" and g.count("raqueta") == 0 and g.add_item("raqueta") > 0:
-		lines.append("Nadie le pidió de vuelta la raqueta de %s. Él tampoco la ofreció." % TenisData.player(ultimo)["name"])
+		lines.append(TenisHistoria.TEXTOS["raqueta_queda"] % TenisData.player(ultimo)["name"])
 	return lines
 
 
@@ -129,7 +129,7 @@ static func _cobro() -> Array:
 		g.raise_bond("marta")
 		g.change_mood(10.0)
 		f["gota_pagada"] = true
-		lines.append("El cobrador lo estaba esperando cuando abrió los ojos. Ochenta mil. Los contó dos veces, mojándose el dedo. Se fue sin decir nada. Él tampoco dijo nada. Por una vez, empataron.")
+		lines.append(TenisHistoria.TEXTOS["cobro_paga"])
 	else:
 		var had := g.money
 		g.add_money(-had)
@@ -142,8 +142,7 @@ static func _cobro() -> Array:
 		g.inventory_changed.emit()
 		g.change_mood(-15.0)
 		f["gota_mochila"] = true
-		lines.append("El cobrador lo estaba esperando cuando abrió los ojos. No contó nada: se llevó los $%s que tenía y la mochila. Con todo lo de adentro. Le dejó lo de los bolsillos, \"por la buena fe\"." % TenisData.money(had)
-			if lost > 0 or had > 0 else "El cobrador lo estaba esperando cuando abrió los ojos. Le buscó plata. Le buscó la mochila. No había nada que llevarse. Se fue con cara de haber perdido él.")
+		lines.append(TenisHistoria.TEXTOS["cobro_lleva"] % TenisData.money(had) if lost > 0 or had > 0 else TenisHistoria.TEXTOS["cobro_nada"])
 	return lines
 
 
@@ -155,17 +154,16 @@ static func puerta(spot: Node) -> void:
 	if not visible():
 		return
 	if trabajo_hoy():
-		await Dialogue.talk([["EL ORGANIZADOR", ["—Ya trabajó hoy. Vaya descanse. Mañana a las ocho. ... Y no se le ocurra hablar con nadie. Bueno.",
-			"—Mañana. Hoy ya no hay partidos para usted. Hoy usted es público, y el público paga."][GameState.day % 2]]])
+		await Dialogue.talk([["EL ORGANIZADOR", TenisHistoria.TEXTOS["ya_trabajo"][GameState.day % 2]]])
 		return
 	if not abierto():
-		await Dialogue.talk([["", "(El coliseo, cerrado. Los reflectores apagados. Un celador duerme en la taquilla, abrazado a una raqueta como a un peluche. Los partidos son de 8 a 6.)"]])
+		await Dialogue.talk([["", TenisHistoria.TEXTOS["cerrado"]]])
 		return
 	if not st.get("contratado", false):
 		await Dialogue.talk(TenisHistoria.ORGANIZADOR_PRIMERA)
 		st["contratado"] = true
 	var d := TenisHistoria.dia_torneo(GameState.day)
-	var i := await Dialogue.talk([["EL ORGANIZADOR", TenisHistoria.ORGANIZADOR_DIA[clampi(d, 0, 3)]]], ["A la cancha", "Ahora no"])
+	var i := await Dialogue.talk([["EL ORGANIZADOR", TenisHistoria.ORGANIZADOR_DIA[clampi(d, 0, 3)]]], TenisHistoria.TEXTOS["a_la_cancha"])
 	if i != 0:
 		return
 	var scene := spot.get_tree().current_scene
