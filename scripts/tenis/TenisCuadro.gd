@@ -9,7 +9,6 @@ extends Node2D
 ##   var c := TenisCuadro.new(); c.bracket = b; c.you = "fedorer"; add_child(c); c.refresh()
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
-const BG := preload("res://assets/tenis/coliseo.png")
 const BOX := Vector2(48, 11)
 const COL_X := {"Previa": 4, "Cuartos": 66, "Semifinal": 128, "Final": 190}
 const CHAMP_X := 254
@@ -25,6 +24,7 @@ var _blink := 0.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(TenisPublico.new())  # el coliseo de fondo, con su gente (detrás)
 
 
 func _process(delta: float) -> void:
@@ -111,7 +111,6 @@ func box_at(r: int, slot: int, side: int) -> Vector2:
 func _draw() -> void:
 	if bracket == null:
 		return
-	draw_texture(BG, Vector2.ZERO)
 	draw_rect(Rect2(0, 0, 320, 180), Color(0.04, 0.04, 0.08, 0.8))
 	var nxt := mark if not mark.is_empty() else bracket.next_match()
 	var line := Color(0.5, 0.48, 0.56)
@@ -150,9 +149,12 @@ func _draw() -> void:
 			draw_line(Vector2(target.x - 4, target.y), Vector2(target.x, target.y), line, 1.0)
 	# El puesto del campeón: la copa.
 	var cy := slot_y(bracket.rounds.size() - 1, 0, 0) + ROW * 0.5 - BOX.y * 0.5
-	draw_rect(Rect2(Vector2(CHAMP_X, cy), Vector2(40, BOX.y)), Color(0.22, 0.18, 0.08, 0.95))
-	draw_rect(Rect2(Vector2(CHAMP_X, cy), Vector2(40, BOX.y)), Color(1, 0.85, 0.3), false, 1.0)
-	_cup(Vector2(CHAMP_X + 46, cy - 4))
+	# En el celular, la franja de la derecha (x > 286) es de los botones: el puesto se angosta y la copa
+	# va encima, no al lado.
+	var w := 32.0 if Controls.touch() else 40.0
+	draw_rect(Rect2(Vector2(CHAMP_X, cy), Vector2(w, BOX.y)), Color(0.22, 0.18, 0.08, 0.95))
+	draw_rect(Rect2(Vector2(CHAMP_X, cy), Vector2(w, BOX.y)), Color(1, 0.85, 0.3), false, 1.0)
+	_cup(Vector2(CHAMP_X + 10, cy - 16) if Controls.touch() else Vector2(CHAMP_X + 46, cy - 4))
 
 
 ## La copita del campeón, a mano.

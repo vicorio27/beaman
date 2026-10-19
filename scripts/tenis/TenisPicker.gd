@@ -11,7 +11,6 @@ extends Node2D
 signal picked(ids: Array)
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
-const BG := preload("res://assets/tenis/coliseo.png")
 const CELL := Vector2(32, 42)
 
 var titles: Array = ["ESCOGE TU TENISTA"]
@@ -28,6 +27,7 @@ var _sheets := {}
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(TenisPublico.new())  # el coliseo de fondo, con su gente (detrás)
 	_hud = CanvasLayer.new()
 	_hud.layer = 6
 	add_child(_hud)
@@ -41,7 +41,7 @@ func _ready() -> void:
 		_label(Vector2(30, 28 + i * 12), d["color"]).text = d["name"]
 		_arrows.append(_label(Vector2(18, 28 + i * 12), Color(1, 0.95, 0.75)))
 	_title = _label(Vector2(0, 154), Color(0.75, 0.78, 0.86), true)
-	_label(Vector2(0, 168), Color(0.85, 0.9, 1.0), true).text = "FLECHAS: CAMBIAR   E: ESCOGER"
+	_label(Vector2(0, 168), Color(0.85, 0.9, 1.0), true).text = "PALANCA: CAMBIAR   A: ESCOGER" if Controls.touch() else "FLECHAS: CAMBIAR   E: ESCOGER"
 	_refresh()
 
 
@@ -86,10 +86,9 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_texture(BG, Vector2.ZERO)
 	draw_rect(Rect2(0, 0, 320, 180), Color(0.04, 0.04, 0.08, 0.72))  # el coliseo, apagado
 	var tex: Texture2D = _sheets.get(roster[_cursor])
 	if tex != null:  # el marcado, grande y de frente
 		var t := Time.get_ticks_msec() / 1000.0
 		var col := 0 if fmod(t, 0.8) < 0.4 else 1   # "listo" / "listo2"
-		draw_texture_rect_region(tex, Rect2(Vector2(240, 40), CELL * 2), Rect2(Vector2(col * CELL.x, CELL.y), CELL))
+		draw_texture_rect_region(tex, Rect2(Vector2(216 if Controls.touch() else 240, 40), CELL * 2), Rect2(Vector2(col * CELL.x, CELL.y), CELL))

@@ -52,7 +52,7 @@ func _save() -> void:
 func _label(at: Vector2, text: String, col: Color, centered := false) -> Label:
 	var l := Label.new()
 	l.position = at
-	l.text = TenisData.caps(text)
+	l.text = TenisData.caps(Controls.keys_in(text))  # en el celular, "E" es "A"
 	l.add_theme_font_override("font", FONT)
 	l.add_theme_font_size_override("font_size", 8)
 	l.add_theme_color_override("font_color", col)

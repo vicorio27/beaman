@@ -27,6 +27,8 @@ Todo está en `scripts/tenis/`. La simulación no sabe nada de pantallas.
 - X: globo.
 - F: la habilidad.
 
+**En el celular** (los controles en pantalla, `TouchControls`, en su modo de minijuego): la palanca aparece donde se ponga el dedo en la mitad izquierda, y a la derecha A (plano), B (cortado; con la palanca arriba, dejada), X (globo) y la huellita (la habilidad). Los avisos del tenis nombran esos botones (`Controls.keys_in`: "A: SEGUIR", "PALANCA: CAMBIAR"), y nada se dibuja debajo de la franja de los botones (x > 286): el resumen del partido se corre a la izquierda y esconde el tablero, la copa del cuadro va encima del puesto del campeón y el tenista del selector se corre.
+
 **Formato arcade:** un set a 4 juegos, con desempate en 3-3 a 7 puntos.
 
 ## El error de un golpe

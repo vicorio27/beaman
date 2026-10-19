@@ -545,6 +545,7 @@ func _on_event(kind: String, d: Dictionary) -> void:
 ## Lo que pasó en el partido, lado a lado: quién ganó, el marcador y los números de cada uno.
 func _show_summary(w: int) -> void:
 	_summary_t = 0.0
+	var first := _hud.get_child_count()
 	var a = sim.players[0]
 	var b = sim.players[1]
 	var longest := 0
@@ -568,7 +569,18 @@ func _show_summary(w: int) -> void:
 	var foot := _label(Vector2(88, 162), Color(0.85, 0.9, 1.0))
 	foot.size = Vector2(224, 10)
 	foot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	foot.text = "E: SEGUIR"
+	foot.text = Controls.keys_in("E: SEGUIR")
+	# En el celular, la franja de la derecha es de los botones: el resumen se corre a la izquierda,
+	# encima de donde estaba el tablero (que se esconde: el marcador ya va en el título).
+	for i in range(first, _hud.get_child_count()):
+		(_hud.get_child(i) as Control).position.x += _summary_dx()
+	if Controls.touch():
+		for r in _rows:
+			r.visible = false
+
+
+func _summary_dx() -> float:
+	return -26.0 if Controls.touch() else 0.0
 
 
 func _pop(t: String) -> void:
@@ -646,6 +658,9 @@ func _draw() -> void:
 		th[1].call()
 	# El tablero (arriba a la izquierda): el recuadro; los nombres y puntos son Labels encima. Debajo de
 	# cada nombre, el cansancio (verde) y el medidor de la habilidad (naranja).
+	if _summary_t != -1.0 and Controls.touch():
+		_draw_summary_box()
+		return
 	draw_rect(Rect2(3, 3, 78, 40), Color(0.06, 0.06, 0.1, 0.92))
 	draw_rect(Rect2(3, 3, 78, 40), Color(0.5, 0.42, 0.3), false, 1.0)
 	var srv := Vector2(5, 9 + sim.score.server * 19)
@@ -663,9 +678,15 @@ func _draw() -> void:
 		draw_rect(Rect2(at + Vector2(0, 4), Vector2(64 * p.meter / 100.0, 3)), mcol)
 		if not ab.is_empty():  # la marca de cuánto cuesta
 			draw_rect(Rect2(at + Vector2(64 * float(ab["cost"]) / 100.0, 3), Vector2(1, 5)), Color(1, 1, 1, 0.7))
-	if _summary_t != -1.0:  # el resumen: un recuadro oscuro en el centro (los textos son Labels)
-		draw_rect(Rect2(88, 34, 224, 140), Color(0.05, 0.05, 0.09, 0.93))  # a la derecha del tablero
-		draw_rect(Rect2(88, 34, 224, 140), Color(0.5, 0.42, 0.3), false, 1.0)
+	if _summary_t != -1.0:
+		_draw_summary_box()
+
+
+## El resumen: un recuadro oscuro a la derecha del tablero (los textos son Labels).
+func _draw_summary_box() -> void:
+	var box := Rect2(88 + _summary_dx(), 34, 224, 140)
+	draw_rect(box, Color(0.05, 0.05, 0.09, 0.93))
+	draw_rect(box, Color(0.5, 0.42, 0.3), false, 1.0)
 
 
 ## Lo de la salida, en el orden de fondo: el que se va, los camilleros, el que se quedó y las raquetas.
