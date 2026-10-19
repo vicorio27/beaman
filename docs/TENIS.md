@@ -139,6 +139,8 @@ El torneo se juega igual vaya él o no: un día por ronda.
 1. El cuadro del día, con su partido titilando.
 2. Es el recogebolas, agachado al lado de la red. Mientras juegan, quieto (si se mueve le gritan, y esa pelota no tiene propina). Cuando se acaba el punto, corre por la pelota con las flechas y la trae: el saque que sigue lo espera. Traerla en menos de 4 segundos da $300; después de 8, le gritan.
 3. A la mitad (después del primer juego en el formato corto, del segundo en el arcade), el de abajo abandona a su manera: Kyrgistán rompe raquetas, Monfiz se acalambra, Moutette se hace descalificar, Bublikov se aburre, Sabalenkova revienta las cuerdas, Tiafuego se va con la tribuna, Sheltron contesta una llamada de la mamá, Pecador se cuelga, Yokovich pide el fisio y Fedorer se queda doblado de la espalda. El organizador lo manda a él a terminar el partido con la raqueta del que se fue: juega como ese tenista (sus números y su habilidad), con su dibujo (la corbata, el jean y un zapato de cada color).
+   - Antes se ve cómo se va cada uno (`TenisMatch.exit_pro`, `ABANDONOS[id]["salida"]`): Kyrgistán deja dos raquetas rotas en el piso y se va rápido; a Monfiz se lo llevan dos camilleros en camilla, y a Pecador tieso, como una tabla; Bublikov se va a parar al pie de la silla del juez y Yokovich se acuesta en una toalla al lado de la cancha (los dos se quedan mirando el resto del partido); Tiafuego se mete en la tribuna, lo levantan y se pierde entre la gente, y la raqueta baja después, por el aire; Sheltron se va hablando por celular, Fedorer doblado, a pasitos, y Moutette y Sabalenkova caminando. La raqueta queda en el piso.
+   - Después de la línea del organizador, él camina hasta la raqueta, se agacha, la coge y juega desde ahí (`walk_in`).
 4. La paga: $12.000 de sueldo, las propinas de las pelotas y lo del profesional: si le ganó el partido, de $10.000 (previa) a $40.000 (final); si lo perdió, $3.000 "por la molestia". Cuatro horas de reloj.
 
 Cada día abandona uno distinto, si se puede (`TenisHistoria.quien_abandona`). Si él ganó, ese tenista vuelve al día siguiente con su línea.
@@ -156,7 +158,8 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 
 **Los tenistas** salen de `tools/art/draw_tenistas.py` y quedan en `assets/tenis/<id>.png`.
 - Celdas de 32x42 con los pies en (16, 40). La fila 0 es de espaldas (el de abajo) y la fila 1 de frente (el de arriba).
-- Hay 22 poses: listo (2), correr (4), drive (preparar, pegar, terminar), revés (lo mismo), saque (lanzar, pegar, terminar), tirada, en el piso, celebra, lamentarse, dejada, y las dos del recogebolas (agachado y recogiendo).
+- Hay 32 poses: listo (2), correr (4), drive (preparar, pegar, terminar), revés (lo mismo), saque (lanzar, pegar, terminar), tirada, en el piso, celebra, lamentarse, dejada, las dos del recogebolas (agachado y recogiendo) y las de irse, ya sin raqueta: caminar (2), parado, hablando por celular (2), doblado, acostado y con los brazos arriba. Las dos últimas columnas son solo la raqueta en el piso: entera y rota.
+- `camillero.png`: los que se llevan a Monfiz y a Pecador (de blanco, con la cruz roja), con las mismas poses.
 - Cada pose es un esqueleto que se pinta con piezas de 2 px. Después va el contorno del juego y encima, a mano, lo de cada uno:
   - Bublikov: altísimo, despeinado, raya negra.
   - Sabalenkova: cola mona, falda y el tigre en el antebrazo.
@@ -166,7 +169,7 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
   - Tiafuego: trencitas, verde limón y morado. Kyrgistán: gorra roja al revés, de negro, tatuajes.
   - Pecador: pelo zanahoria crespo, menta. Fedorer: todo de blanco, balaca blanca, raqueta roja.
   - Él (`el.png`, sin raqueta, de recogebolas; `el_<id>.png`, con la raqueta de cada uno): la camiseta negra del torneo, y encima lo suyo: la corbata roja (de espaldas, tirada por encima del hombro), el jean, un zapato negro y uno rojo, la barba con canas.
-- Las dos últimas poses son del recogebolas: agachado esperando el punto y recogiendo la pelota.
+- Agachado y recogiendo son del recogebolas: esperando el punto y cogiendo la pelota (o la raqueta del que se fue).
 
 `TenisMatch._pose()` escoge la pose según la cancha:
 - Un golpe reciente: drive o revés según el lado de la pelota.
@@ -218,7 +221,7 @@ Todas corren sin ventana:
 
 `TENIS_ONLY=unit|sim|counter` corre solo una parte y `TENIS_N` pone los partidos por cruce.
 
-**`tenis_tests.gd`** (54 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar, quién abandona, la paga y que alcance para la deuda solo trabajando bien).
+**`tenis_tests.gd`** (55 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar y cómo irse de la cancha, quién abandona, la paga y que alcance para la deuda solo trabajando bien).
 
 **`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.
@@ -250,5 +253,5 @@ Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ga
 
 ## Lo que falta
 
-- **El dibujo que falta:** un público que se mueva más y el que abandona saliendo de la cancha (hoy desaparece cuando él toma la raqueta).
+- **El dibujo que falta:** un público que se mueva más.
 - **Los diálogos:** en una tabla de datos.

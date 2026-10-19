@@ -141,12 +141,17 @@ func _play() -> void:
 func _on_abandon() -> void:
 	var id: String = aband["id"]
 	var ab: Dictionary = TenisHistoria.ABANDONOS.get(id, {})
-	var lines: Array = ab.get("lines", []).duplicate()
-	lines.append(["EL ORGANIZADOR", "—¡Recogebolas! ¡Usted, el mudo! Coja esa raqueta y termine el partido. El canal no espera, y yo no devuelvo boletas."])
+	await Dialogue.talk(ab.get("lines", []))
+	# Que se vea cómo se va (TenisMatch.exit_pro), y después él, por la raqueta.
+	_match.exit_pro(str(ab.get("salida", "camina")))
+	await _match.exit_done
+	var lines: Array = [["EL ORGANIZADOR", "—¡Recogebolas! ¡Usted, el mudo! Coja esa raqueta y termine el partido. El canal no espera, y yo no devuelvo boletas."]]
 	lines.append(["", str(ab.get("raqueta", ""))])
-	if st.get("por", []).is_empty():
-		lines.append(["", "(E: plano. Q: cortado; con arriba, dejada. X: globo. F: lo de él, cuando titile la barra.)"])
 	await Dialogue.talk(lines)
+	_match.walk_in()
+	await _match.exit_done
+	if st.get("por", []).is_empty():
+		await Dialogue.talk([["", "(E: plano. Q: cortado; con arriba, dejada. X: globo. F: lo de él, cuando titile la barra.)"]])
 	var usados: Array = st.get("usados", [])
 	usados.append(id)
 	st["usados"] = usados

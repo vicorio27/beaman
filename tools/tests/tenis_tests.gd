@@ -241,6 +241,12 @@ func _historia() -> void:
 		if not H.ABANDONOS.has(id) or not ResourceLoader.exists("res://assets/tenis/el_%s.png" % id):
 			falta.append(id)
 	check("cada inscrito tiene cómo abandonar y él tiene su raqueta", falta.is_empty(), str(falta))
+	var salidas := ["camina", "furia", "tel", "doblado", "silla", "toalla", "tribuna", "camilla", "tabla"]
+	var mudas := []
+	for id in H.ABANDONOS:
+		if not str(H.ABANDONOS[id].get("salida", "")) in salidas:
+			mudas.append(id)
+	check("cada abandono dice cómo se va de la cancha", mudas.is_empty(), str(mudas))
 	var b := TenisBracket.new(TenisData.TOURNAMENT["entrants"])
 	var a1 := H.quien_abandona(b, 0, [], 5)
 	var a2 := H.quien_abandona(b, 0, [], 5)

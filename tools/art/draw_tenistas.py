@@ -40,7 +40,8 @@ EYE = (30, 28, 36)
 # Las poses, en orden (es el orden de las columnas de la hoja; TenisMatch.gd usa los mismos nombres).
 POSES = ["listo", "listo2", "corre1", "corre2", "corre3", "corre4", "drive_atras", "drive", "drive_fin",
          "reves_atras", "reves", "reves_fin", "saque_lanza", "saque", "saque_fin", "tirada", "piso",
-         "celebra", "bravo", "dejada", "agachado", "recoge"]
+         "celebra", "bravo", "dejada", "agachado", "recoge",
+         "camina1", "camina2", "parado", "tel1", "tel2", "doblado", "acostado", "brazos", "suelta", "rota"]
 
 # ---------------------------------------------------------------- Las poses (de espaldas)
 # Coordenadas en la celda, vistas de espaldas: la mano derecha (la de la raqueta) queda a la derecha.
@@ -104,6 +105,27 @@ POSE = {
     # Recogiendo la pelota del piso: una mano abajo, la otra en la rodilla.
     "recoge": P(el=(-5, 18), hl=(-4, 23), er=(6, 21), hr=(7, 30), kl=(-4, 27), fl=(-6, 33), kr=(4, 28), fr=(5, 33),
                 rk=None, lean=5, tilt=1, down=True),
+    # El que abandona, ya sin la raqueta: caminando (los brazos sueltos), parado, hablando por celular,
+    # doblado de la espalda, acostado (en la camilla, en la toalla) y con los brazos arriba (la tribuna).
+    "camina1": P(el=(-6, 16), hl=(-4, 20), er=(6, 16), hr=(7, 21), kl=(-3, 27), fl=(-4, 32), kr=(2, 27), fr=(3, 33),
+                 rk=None),
+    "camina2": P(el=(-6, 16), hl=(-7, 21), er=(6, 16), hr=(4, 20), kl=(-2, 27), fl=(-3, 33), kr=(3, 27), fr=(4, 32),
+                 rk=None),
+    "parado": P(el=(-6, 16), hl=(-6, 21), er=(6, 16), hr=(6, 21), kl=(-2, 27), fl=(-3, 33), kr=(2, 27), fr=(3, 33),
+                rk=None),
+    "tel1": P(el=(-6, 16), hl=(-4, 20), er=(7, 11), hr=(4, 7), kl=(-3, 27), fl=(-4, 32), kr=(2, 27), fr=(3, 33),
+              rk=None, phone=True),
+    "tel2": P(el=(-6, 16), hl=(-7, 21), er=(7, 11), hr=(4, 7), kl=(-2, 27), fl=(-3, 33), kr=(3, 27), fr=(4, 32),
+              rk=None, phone=True),
+    "doblado": P(el=(-7, 19), hl=(-3, 22), er=(7, 19), hr=(3, 22), kl=(-2, 27), fl=(-3, 33), kr=(2, 27), fr=(3, 33),
+                 rk=None, lean=6, down=True),
+    "acostado": P(el=(0, 27), hl=(-4, 28), er=(0, 30), hr=(-4, 31), kl=(-7, 27), fl=(-12, 28), kr=(-6, 30), fr=(-12, 31),
+                  rk=None, floor=True),
+    "brazos": P(el=(-6, 8), hl=(-7, 3), er=(6, 8), hr=(7, 3), kl=(-3, 27), fl=(-4, 33), kr=(3, 27), fr=(4, 33),
+                rk=None, lean=-1),
+    # Solo la raqueta, tirada en el piso (la que deja el que se va), y rota (la de Kyrgistán).
+    "suelta": P(rk=(-12, False), only="suelta"),
+    "rota": P(rk=(-12, False), only="rota"),
 }
 
 # ---------------------------------------------------------------- Los tenistas
@@ -170,6 +192,12 @@ PLAYERS = {
         "t": (244, 244, 240), "T": (200, 202, 208), "p": (244, 244, 240), "P": (196, 198, 204),
         "w": (240, 240, 236), "k": (240, 240, 236), "K": (196, 198, 204), "a": (244, 244, 240),
         "r": (190, 40, 44), "hair": "corto"},
+    "camillero": {
+        "h": 1, "sh": 5, "slouch": 0, "skirt": False, "long": True,
+        "s": (200, 146, 112), "S": (166, 112, 88), "h1": (38, 32, 34), "h2": (60, 50, 50),
+        "t": (238, 238, 234), "T": (194, 198, 204), "p": (226, 228, 230), "P": (186, 190, 198),
+        "w": (226, 228, 230), "k": (40, 40, 46), "K": (40, 40, 46), "a": (204, 40, 48),
+        "r": None, "hair": "corto"},
     "el": {
         "h": 1, "sh": 5, "slouch": 0, "skirt": False, "long": True,
         "s": (214, 150, 120), "S": (172, 110, 90), "h1": (72, 66, 74), "h2": (150, 148, 152),
@@ -263,10 +291,29 @@ def racket(cv, hand, ang, col, strings=(220, 224, 214)):
                 cv.dot(x, y, strings)
 
 
+def floor_racket(cv, col, broken):
+    """La raqueta acostada en el piso, un poco en diagonal. Rota: el mango por un lado, la cabeza
+    torcida por otro y dos cuerdas colgando."""
+    if not broken:
+        racket(cv, (9, 30), -12, col)
+        return
+    cv.line((5, 32), (9, 31), (70, 54, 46), 1)            # el mango, solo
+    cv.dot(10, 31, col)                                    # con el pedacito del cuello
+    racket(cv, (14, 33), -40, col, strings=(150, 152, 146))
+    for k in range(3):                                     # las cuerdas reventadas, colgando
+        cv.dot(23 + k, 25 + k, (220, 224, 214))
+    cv.dot(22, 33, (220, 224, 214))
+
+
 def draw(pid: str, pose: str, front: bool) -> Image.Image:
     d = PLAYERS[pid]
     q = POSE[pose]
     cv = Canvas()
+    if q.get("only"):  # la raqueta sola, en el piso
+        if d["r"] is not None:
+            floor_racket(cv, d["r"], q["only"] == "rota")
+            cv.outline()
+        return cv.im
     h = d["h"]
     lean = q["lean"] + d.get("slouch", 0) * (pose in ("listo", "listo2"))
     mx = -1 if front else 1                 # de frente, la derecha queda a la izquierda de la pantalla
@@ -363,6 +410,8 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
     # 6) Lo que va delante.
     if has_rk and rk_front:
         racket(cv, hand_r, rk_ang, d["r"])
+    if q.get("phone"):
+        cv.rect(hand_r[0], hand_r[1] - 2, hand_r[0] + 1, hand_r[1], (34, 34, 40))
 
     cv.outline()
     details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q)
@@ -539,6 +588,11 @@ def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q):
             sx = torso[1][0] - 2 * mx
             for k in range(5):
                 paint(sx - k * mx * 0.3, ty0 + k, d["a"] if k < 4 else (140, 30, 38))
+    if pid == "camillero" and standing:  # la cruz roja en el pecho (y en la espalda)
+        cx = int(round(sum(p[0] for p in torso) / 4))
+        for k in range(-1, 2):
+            paint(cx, ty0 + 3 + k, d["a"])
+            paint(cx + k, ty0 + 3, d["a"])
     if pid == "pecador" and standing:  # el cuello blanco
         for x in range(CW):
             if px[x, ty0 + DY][:3] in (d["t"], d["T"]):
@@ -563,7 +617,7 @@ def main():
         sheets[pid] = sheet(pid)
         sheets[pid].save(OUT / f"{pid}.png")
     # Él con la raqueta de cada uno (cuando termina el partido del que abandonó).
-    for pid in [k for k in PLAYERS if k != "el"]:
+    for pid in [k for k in PLAYERS if k not in ("el", "camillero")]:
         PLAYERS["el_" + pid] = dict(PLAYERS["el"], r=PLAYERS[pid]["r"])
         im = sheet("el_" + pid)
         im.save(OUT / f"el_{pid}.png")

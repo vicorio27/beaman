@@ -15,11 +15,14 @@ extends Node2D
 ## punto, corre por la pelota (flechas) y la trae: el saque que sigue espera a que vuelva. Traerla
 ## rápido da propina (bb_fast). Con setup["abandon_games"] = n, después de n juegos el de abajo
 ## abandona: se emite abandon_now() y todo se queda quieto hasta take_over(), que le pasa a él la
-## raqueta (lo maneja el humano, con el dibujo de él: assets/tenis/el_<id>.png).
+## raqueta (lo maneja el humano, con el dibujo de él: assets/tenis/el_<id>.png). Antes, exit_pro(how)
+## muestra cómo se va (y deja la raqueta en el piso) y walk_in() lo lleva a él a recogerla; los dos
+## avisan con exit_done().
 
 signal finished(winner: int)
 signal closed(winner: int)
 signal abandon_now()
+signal exit_done()
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 ## La cancha en perspectiva (la misma cuenta que tools/art/draw_tenis_coliseo.py, que pinta el fondo):
@@ -48,7 +51,8 @@ var _flash := {}  # golpes que brillan un momento (habilidad): player -> tiempo
 ## fila 0 de espaldas (el de abajo), fila 1 de frente (el de arriba). Las columnas, en este orden:
 const POSES := ["listo", "listo2", "corre1", "corre2", "corre3", "corre4", "drive_atras", "drive", "drive_fin",
 	"reves_atras", "reves", "reves_fin", "saque_lanza", "saque", "saque_fin", "tirada", "piso",
-	"celebra", "bravo", "dejada", "agachado", "recoge"]
+	"celebra", "bravo", "dejada", "agachado", "recoge",
+	"camina1", "camina2", "parado", "tel1", "tel2", "doblado", "acostado", "brazos", "suelta", "rota"]
 const CELL := Vector2(32, 42)
 const FEET := Vector2(16, 40)
 var _sheets := {}   # id -> Texture2D (los que no tienen dibujo, como "base", van con el muñeco)
@@ -71,6 +75,23 @@ var _bb_pick := 0.0        # agachándose a recogerla
 var _bb_scold := false     # ya le gritaron "¡quieto!" en este punto
 var _bb_d := 0.0           # lo que lleva corrido (para el paso)
 var _abandon := 0          # 0: no; 1: ya toca (cuando traiga la pelota); 2: esperando take_over; 3: ya juega él
+
+# El que se va (exit_pro). Cómo, según TenisHistoria.ABANDONOS[id]["salida"]:
+#   camina, furia, tel, doblado: se va caminando hacia abajo (hacia nosotros), cada uno a su manera;
+#   silla: se queda parado al lado de la silla del juez; toalla: se acuesta en una toalla, afuera;
+#   tribuna: se mete en la tribuna, y la raqueta baja después; camilla / tabla: entran dos camilleros
+#   y se lo llevan (en la camilla, o tieso como una tabla).
+const CAMILLERO := preload("res://assets/tenis/camillero.png")
+const OFF_Y := 26.0                                  # ya fuera de la pantalla, por abajo
+const CHAIR := Vector2(TenisData.HALF_W + 3.2, -1.2)  # al pie de la silla del juez
+var _exit := {}            # el que se va: {"how", "pos", "path", "i", "speed", "walk", "phase"...}
+var _gone := false         # ya no se dibuja el de abajo (se fue y él no ha cogido la raqueta)
+var _stay := {}            # el que se quedó mirando (Bublikov, Yokovich): {"pos", "pose", "towel"}
+var _racket = null         # Vector2: la raqueta en el piso
+var _broken := []          # las rotas de Kyrgistán
+var _fly := {}             # la raqueta que baja de la tribuna: {"from", "to", "t"}
+var _walking := false      # él, yendo por la raqueta
+var _pro_tex: Texture2D    # el dibujo del que se fue (después de take_over, su hoja es la de él)
 
 # Los sonidos (tools/audio/tenis_audio.py): la raqueta, el bote, la red y el público.
 const SFX := ["golpe", "golpe_duro", "bote", "red", "aplauso", "ovacion", "uy"]
@@ -159,8 +180,178 @@ func _ballboy(delta: float) -> void:
 		_bb_scold = false
 
 
+## Que se vea cómo se va el de abajo (ver _exit). Cuando ya no está (y la raqueta quedó en el piso),
+## emite exit_done().
+func exit_pro(how: String) -> void:
+	var p0: Vector2 = sim.players[0].pos
+	var dw := TenisData.HALF_W + 1.37
+	_gone = true
+	_racket = p0
+	_pro_tex = _sheets.get(sim.players[0].id)
+	_exit = {"how": how, "pos": p0, "path": [p0 + Vector2(0.6, 2.0), Vector2(p0.x * 0.4 + 1.5, OFF_Y)],
+		"i": 0, "speed": 1.8, "walk": ["camina1", "camina2"], "d": 0.0, "vel": Vector2.ZERO,
+		"phase": "va", "t": 0.0, "lift": 0.0, "fade": 1.0, "pose": "parado"}
+	match how:
+		"furia":  # las dos rotas, tiradas; la tercera, entera. Y se va rápido.
+			_broken = [p0 + Vector2(-1.0, 0.5), p0 + Vector2(0.9, -0.6)]
+			_exit["speed"] = 3.4
+		"tel":
+			_exit["walk"] = ["tel1", "tel2"]
+			_exit["speed"] = 1.5
+		"doblado":
+			_exit["walk"] = ["doblado", "doblado"]
+			_exit["speed"] = 1.1
+		"silla":
+			_exit["path"] = [Vector2(p0.x * 0.5 + 3.0, 6.0), CHAIR]
+			_exit["speed"] = 2.0
+		"toalla":
+			_exit["path"] = [Vector2(-dw - 1.1, 7.5)]
+			_exit["speed"] = 1.3
+		"tribuna":
+			_exit["path"] = [Vector2(-dw - 4.2, p0.y - 4.5)]
+			_exit["speed"] = 3.2
+			_racket = null
+		"camilla", "tabla":  # entran los dos camilleros por abajo
+			_exit["phase"] = "vienen"
+			_exit["pose"] = "acostado" if how == "camilla" else "parado"
+			_exit["c"] = [Vector2(p0.x - 1.2, OFF_Y), Vector2(p0.x + 1.2, OFF_Y + 0.8)]
+			_exit["speed"] = 2.6
+			_exit["cd"] = 0.0
+			_racket = p0 + Vector2(0.4, 1.4)
+
+
+func _exit_step(delta: float) -> void:
+	var e := _exit
+	e["t"] = float(e["t"]) + delta
+	match str(e["phase"]):
+		"va":
+			if _follow(e, delta):
+				_exit_arrived()
+		"vienen":  # los camilleros, hasta la cabeza y los pies
+			var p0: Vector2 = e["pos"]
+			var home := [p0 + Vector2(-1.2, 0.1), p0 + Vector2(1.2, 0.1)]
+			var ok := true
+			for k in 2:
+				var c: Vector2 = e["c"][k]
+				e["c"][k] = c.move_toward(home[k], 3.2 * delta)
+				ok = ok and c.distance_to(home[k]) < 0.05
+			e["cd"] = float(e["cd"]) + 3.2 * delta
+			if ok:
+				e["phase"] = "alza"
+				e["t"] = 0.0
+		"alza":  # lo acuestan (Pecador: tieso) y lo levantan
+			e["pose"] = "acostado"
+			e["lift"] = minf(11.0, float(e["t"]) * 22.0)
+			if float(e["t"]) > 0.8:
+				var p0: Vector2 = e["pos"]
+				e["path"] = [Vector2(p0.x, OFF_Y)]
+				e["i"] = 0
+				e["phase"] = "llevan"
+		"llevan":
+			var done := _follow(e, delta)
+			var at: Vector2 = e["pos"]
+			e["c"] = [at + Vector2(-1.2, 0.1), at + Vector2(1.2, 0.1)]
+			e["cd"] = float(e["d"])
+			if done:
+				_exit_finish()
+		"sube":  # Tiafuego, cargado por la tribuna: sube y se pierde entre la gente
+			e["pose"] = "brazos"
+			e["lift"] = float(e["t"]) * 16.0
+			e["fade"] = clampf(1.0 - (float(e["t"]) - 0.6) / 1.2, 0.0, 1.0)
+			if float(e["fade"]) <= 0.0:
+				_fly = {"from": e["pos"], "to": sim.players[0].pos, "t": 0.0}
+				_exit = {}
+
+
+func _exit_arrived() -> void:
+	var e := _exit
+	match str(e["how"]):
+		"silla":
+			_stay = {"pos": e["pos"], "pose": "parado", "towel": false}
+			_exit_finish()
+		"toalla":
+			_stay = {"pos": e["pos"], "pose": "acostado", "towel": true}
+			_exit_finish()
+		"tribuna":
+			e["phase"] = "sube"
+			e["t"] = 0.0
+		_:
+			_exit_finish()
+
+
+func _exit_finish() -> void:
+	_exit = {}
+	exit_done.emit()
+
+
+## Sigue el camino de `e` (e["path"] desde e["i"]); true cuando llegó al final.
+func _follow(e: Dictionary, delta: float) -> bool:
+	var path: Array = e["path"]
+	var i: int = e["i"]
+	if i >= path.size():
+		e["vel"] = Vector2.ZERO
+		return true
+	var pos: Vector2 = e["pos"]
+	var tgt: Vector2 = path[i]
+	var step := float(e["speed"]) * delta
+	e["vel"] = (tgt - pos).normalized() * float(e["speed"])
+	if pos.distance_to(tgt) <= step:
+		e["pos"] = tgt
+		e["i"] = i + 1
+	else:
+		e["pos"] = pos + (tgt - pos).normalized() * step
+	e["d"] = float(e["d"]) + step
+	return false
+
+
+## La raqueta que baja de la tribuna, de mano en mano (un arco), hasta el puesto del que se fue.
+func _fly_step(delta: float) -> void:
+	_fly["t"] = float(_fly["t"]) + delta / 1.3
+	if float(_fly["t"]) >= 1.0:
+		_racket = _fly["to"]
+		_fly = {}
+		exit_done.emit()
+
+
+## Él va por la raqueta (desde donde esté), se agacha, la coge y queda en ese puesto. Emite exit_done().
+func walk_in() -> void:
+	_walking = true
+	_bb_ball = null
+	_bb_has = false
+	_bb_pick = 0.0
+	if _racket == null:
+		_racket = sim.players[0].pos
+
+
+func _walk_step(delta: float) -> void:
+	var tgt: Vector2 = _racket if _racket != null else _bb_pos
+	if _bb_pick > 0.0:
+		_bb_pick -= delta
+		_bb_vel = Vector2.ZERO
+		if _bb_pick <= 0.25:
+			_racket = null
+		if _bb_pick <= 0.0:
+			_bb_pick = 0.0
+			_walking = false
+			sim.players[0].pos = _bb_pos   # juega desde ahí
+			exit_done.emit()
+		return
+	var to := tgt + Vector2(-0.35, -0.15) - _bb_pos  # se para al lado, no encima
+	var step := BB_SPEED * 0.55 * delta
+	if to.length() <= step:
+		_bb_pos += to
+		_bb_vel = Vector2.ZERO
+		_bb_pick = 0.6
+	else:
+		_bb_vel = to.normalized() * BB_SPEED * 0.55
+		_bb_pos += _bb_vel * delta
+		_bb_d += step
+
+
 ## Le pasa la raqueta: desde ahora lo maneja el humano, con el dibujo de él.
 func take_over() -> void:
+	_gone = false
+	_racket = null
 	setup["ai0"] = false
 	setup["ballboy"] = false
 	_bb_ball = null
@@ -204,7 +395,13 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 	_read_human(delta)
-	if setup.get("ballboy", false):
+	if not _exit.is_empty():
+		_exit_step(delta)
+	if not _fly.is_empty():
+		_fly_step(delta)
+	if _walking:
+		_walk_step(delta)
+	elif setup.get("ballboy", false):
 		_ballboy(delta)
 	_acc += minf(delta, 0.1)
 	while _acc >= TenisSim.DT:
@@ -428,8 +625,10 @@ func _draw() -> void:
 	# De atrás para adelante: los jugadores, la red, la pelota y el recogebolas, cada uno en su fondo.
 	var things := [[sim.players[1].pos.y, func() -> void: _draw_player(sim.players[1])],
 		[minf(sim.players[0].pos.y - 0.01, 0.0), func() -> void: _draw_net()],
-		[sim.players[0].pos.y, func() -> void: _draw_player(sim.players[0])],
 		[sim.ball.y, func() -> void: _draw_ball()]]
+	if not _gone:
+		things.append([sim.players[0].pos.y, func() -> void: _draw_player(sim.players[0])])
+	_exit_things(things)
 	if setup.get("ballboy", false):
 		things.append([_bb_pos.y, func() -> void: _draw_ballboy()])
 		if _bb_ball != null:
@@ -459,6 +658,76 @@ func _draw() -> void:
 	if _summary_t != -1.0:  # el resumen: un recuadro oscuro en el centro (los textos son Labels)
 		draw_rect(Rect2(88, 34, 224, 140), Color(0.05, 0.05, 0.09, 0.93))  # a la derecha del tablero
 		draw_rect(Rect2(88, 34, 224, 140), Color(0.5, 0.42, 0.3), false, 1.0)
+
+
+## Lo de la salida, en el orden de fondo: el que se va, los camilleros, el que se quedó y las raquetas.
+func _exit_things(things: Array) -> void:
+	var tex := _pro_tex
+	if tex == null:
+		return
+	if _racket != null:
+		things.append([float(_racket.y) - 0.02, func() -> void: _cell(tex, _racket, "suelta", 1)])
+	for b in _broken:
+		things.append([float(b.y) - 0.02, func() -> void: _cell(tex, b, "rota", 1)])
+	if not _fly.is_empty():
+		var f := float(_fly["t"])
+		var at: Vector2 = Vector2(_fly["from"]).lerp(_fly["to"], f)
+		things.append([99.0, func() -> void: _cell(tex, at, "suelta", 1, sin(f * PI) * 26.0, 1.0, false)])
+	if not _stay.is_empty():
+		things.append([float(_stay["pos"].y), func() -> void: _draw_stay(tex)])
+	if _exit.is_empty():
+		return
+	var pos: Vector2 = _exit["pos"]
+	things.append([pos.y, func() -> void: _draw_exit(tex)])
+	if _exit.has("c"):
+		for k in 2:
+			var c: Vector2 = _exit["c"][k]
+			things.append([c.y + 0.01 * k, func() -> void: _draw_carrier(k)])
+
+
+func _draw_stay(tex: Texture2D) -> void:
+	if _stay["towel"]:  # la toalla blanca, con la raya del torneo
+		var g := w2s(_stay["pos"]).round()
+		draw_rect(Rect2(g + Vector2(-15, -6), Vector2(30, 7)), Color(0.94, 0.94, 0.9))
+		draw_rect(Rect2(g + Vector2(-15, -2), Vector2(30, 1)), Color(0.6, 0.15, 0.17))
+		draw_rect(Rect2(g + Vector2(-15, -6), Vector2(30, 7)), Color(0.16, 0.13, 0.17), false, 1.0)
+	_cell(tex, _stay["pos"], _stay["pose"], 1, 0.0, 1.0, not _stay["towel"])
+
+
+## Un camillero (k = 0: el de la cabeza; 1: el de los pies). De espaldas mientras entra.
+func _draw_carrier(k: int) -> void:
+	var e := _exit
+	var phase := str(e["phase"])
+	var pose := "parado" if phase == "alza" else "camina%d" % (1 + (int(float(e["cd"]) / 0.45) + k) % 2)
+	_cell(CAMILLERO, e["c"][k], pose, 0 if phase == "vienen" else 1)
+
+
+func _draw_exit(tex: Texture2D) -> void:
+	var e := _exit
+	var pose := str(e["pose"])
+	var moving: bool = Vector2(e["vel"]).length() > 0.1 and str(e["phase"]) == "va"
+	if moving:
+		var walk: Array = e["walk"]
+		pose = walk[int(float(e["d"]) / 0.45) % 2]
+	var row := 0 if moving and Vector2(e["vel"]).y < -0.1 else 1
+	var lift := float(e["lift"])
+	if e.has("c") and lift > 0.0 and str(e["how"]) == "camilla":  # la camilla: los palos y la lona
+		var g := w2s(e["pos"]).round()
+		draw_line(g + Vector2(-17, -13), g + Vector2(17, -13), Color(0.55, 0.42, 0.3), 1.0)
+		draw_rect(Rect2(g + Vector2(-12, -15), Vector2(24, 3)), Color(0.86, 0.88, 0.9))
+		draw_rect(Rect2(g + Vector2(-12, -15), Vector2(24, 3)), Color(0.16, 0.13, 0.17), false, 1.0)
+	if str(e["how"]) == "doblado":  # Fedorer: cada paso, un quejidito (se sacude un pixel)
+		lift += 1.0 if int(float(e["d"]) / 0.3) % 2 == 0 else 0.0
+	_cell(tex, e["pos"], pose, row, lift, float(e["fade"]), lift == 0.0)
+
+
+## Una celda de una hoja (pose y fila) con los pies en `at` (metros), `lift` px más arriba.
+func _cell(tex: Texture2D, at: Vector2, pose: String, row: int, lift := 0.0, alpha := 1.0, shadow := true) -> void:
+	var feet := w2s(at).round()
+	if shadow:
+		draw_circle(feet + Vector2(0, 0.5), 3.5, Color(0, 0, 0, 0.28 * alpha))
+	var src := Rect2(Vector2(POSES.find(pose) * CELL.x, row * CELL.y), CELL)
+	draw_texture_rect_region(tex, Rect2(feet - FEET - Vector2(0, roundf(lift)), CELL), src, Color(1, 1, 1, alpha))
 
 
 func _draw_net() -> void:
@@ -498,7 +767,7 @@ func _draw_dead_ball() -> void:
 
 
 func _draw_ball() -> void:
-	if not sim.live and sim.state != "serve":
+	if not sim.live and sim.state != "serve" or _gone:
 		return
 	var g := w2s(Vector2(sim.ball.x, sim.ball.y))
 	draw_circle(g, 1.6, Color(0, 0, 0, 0.35))                            # la sombra: dónde está de verdad
