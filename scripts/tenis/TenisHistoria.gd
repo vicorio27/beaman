@@ -126,7 +126,7 @@ const TEXTOS := {
 	# La jornada (TenisJornada).
 	"recoger": "(Agachado al lado de la red. Quieto mientras juegan. Cuando se acaba el punto, con las flechas, por la pelota, y de vuelta al puesto. Rápido, hay propina.)",
 	"coja_raqueta": "—¡Recogebolas! ¡Usted, el mudo! Coja esa raqueta y termine el partido. El canal no espera, y yo no devuelvo boletas.",
-	"controles": "(E: plano. Q: cortado; con arriba, dejada. X: globo. F: lo de él, cuando titile la barra.)",
+	"controles": "(E: plano; manteniéndola, cargado. Q: cortado; con arriba, dejada. X: globo. F: lo de él, cuando titile la barra.)",
 	"propina_gana": "(%s le da los $%s en billetes doblados en cuatro. Le da la mano. Después se mira la mano, por si acaso.)",
 	"propina_consuelo": "(%s le da $%s \"por la molestia\". La molestia fue de él.)",
 }

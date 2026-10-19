@@ -2,7 +2,8 @@ extends Node2D
 ## Un partido de tenis jugable: dibuja lo que pasa en TenisSim (que no sabe de pantallas).
 ## La cancha se ve de arriba (un poquito achatada a lo largo); la pelota, con su sombra en el piso, para
 ## que se lea la altura. El jugador 0 (abajo) lo maneja el humano; el 1, la máquina (TenisAI).
-## Controles: flechas: moverse (y, al pegarle, a qué lado va). E: golpe plano. Q: cortado (con arriba,
+## Controles: flechas: moverse (y, al pegarle, a qué lado va). E: golpe plano (manteniéndola, se carga:
+## sale al soltarla, más duro y menos seguro). Q: cortado (con arriba,
 ## dejada). X: globo. F: la habilidad. Se puede apretar un poquito antes: el golpe sale cuando llega.
 ## Configurar antes de entrar: TenisMatch.setup = {"p0": id, "p1": id, "format": "arcade", "difficulty": "normal",
 ## "seed": n, "ai0": false}. Al terminar emite finished(winner) y, si setup["back"] dice, vuelve.
@@ -135,6 +136,15 @@ var _banner_col := Color.WHITE
 const BANNER_T := 1.3
 var _was_ready := [false, false]
 var _told_key := false
+# El golpe cargado (solo el que juega): mantener E en el peloteo carga el plano (de vacío a lleno en
+# CHARGE_T); sale al soltarla, o solo si la pelota ya se le va. Más duro y menos seguro (TenisSim).
+const CHARGE_T := 0.7
+const CHARGE_HOLD := 0.15     # apretarla menos que eso es un toque normal
+var _armed := false           # la apretó de nuevo (sin eso no carga: no vale dejarla apretada siempre)
+var _hold := 0.0
+var _charge := 0.0
+var _last_charge := 0.0       # con cuánta carga salió el último golpe
+var _prev_d := 99.0
 var _sfx := {}
 
 
@@ -503,21 +513,54 @@ func _read_human(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		_buffer = "drive"
 		_buffer_t = BUFFER
+		_armed = true
+		_hold = 0.0
 	elif Input.is_action_just_pressed("cancel"):
 		_buffer = "drop" if Input.is_action_pressed("move_up") else "slice"
 		_buffer_t = BUFFER
 	elif Input.is_action_just_pressed("drop"):
 		_buffer = "lob"
 		_buffer_t = BUFFER
+	# El golpe cargado: apretada más de CHARGE_HOLD en el peloteo, carga (y ya no sale sola: sale al soltar).
+	if _armed and Input.is_action_pressed("interact") and sim.state == "rally":
+		_hold += delta
+		if _hold > CHARGE_HOLD:
+			var was := _charge
+			_charge = minf(1.0, _charge + delta / CHARGE_T)
+			if _buffer == "drive":
+				_buffer = ""
+			if was < 1.0 and _charge >= 1.0:
+				_sound("carga", 1.6)   # lleno
+	elif _charge > 0.0 and not Input.is_action_pressed("interact"):
+		_buffer = "drive"   # la soltó: sale ahora (o apenas llegue la pelota)
+		_buffer_t = BUFFER
+		_armed = false
+	if sim.state != "rally":
+		_charge = 0.0
+		_armed = false
 
 
 func _human_input() -> Dictionary:
 	var mv := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var inp := {"move": mv, "hit": "", "aim": Vector2(mv.x, -mv.y), "ability": Input.is_action_just_pressed("sniff")}
 	var p = sim.players[0]
-	if _buffer != "" and (sim.state == "serve" and sim.score.server == 0 or sim._can_hit(p)):
+	# Cargando, y la pelota ya se le va (estaba a su alcance y se aleja): le pega ahora.
+	if _charge > 0.0 and Input.is_action_pressed("interact") and sim.state == "rally" and sim._can_hit(p):
+		var d := Vector2(sim.ball.x, sim.ball.y).distance_to(p.pos)
+		if d > _prev_d + 0.005:
+			inp["hit"] = "drive"
+		_prev_d = d
+	else:
+		_prev_d = 99.0
+	if inp["hit"] == "" and _buffer != "" and (sim.state == "serve" and sim.score.server == 0 or sim._can_hit(p)):
 		inp["hit"] = _buffer
 		_buffer = ""
+	if inp["hit"] != "":
+		inp["charge"] = _charge if inp["hit"] == "drive" and sim.state == "rally" else 0.0
+		_last_charge = inp["charge"]
+		_charge = 0.0
+		_armed = false
+		_prev_d = 99.0
 	return inp
 
 
@@ -960,10 +1003,17 @@ func _judge_timing(p) -> void:
 	if p.idx != 0 or setup.get("ai0", false) or sim.last_shot.get("serve", false):
 		return
 	var q := sim.timing(p)
+	var charged := _last_charge >= 0.7
+	_last_charge = 0.0
+	if charged:  # el cargado: suena duro y tiembla
+		_sound("golpe_duro", 0.9)
+		_shake = maxf(_shake, 0.08)
 	if q >= PERFECT:
-		_float_text("¡PERFECTO!", p, Color(0.6, 1.0, 0.5))
+		_float_text("¡PERFECTO Y CARGADO!" if charged else "¡PERFECTO!", p, Color(0.6, 1.0, 0.5))
 		p.meter = minf(100.0, p.meter + PERFECT_METER)
 		_sound("golpe", 1.25)
+	elif charged:
+		_float_text("¡CARGADO!", p, Color(1.0, 0.7, 0.3))
 	elif q >= GOOD:
 		_float_text("BIEN", p, Color(0.92, 0.95, 0.85))
 
@@ -972,9 +1022,10 @@ func _judge_timing(p) -> void:
 func _float_text(text: String, p, col: Color) -> void:
 	var l := _label(Vector2.ZERO, col)
 	l.text = TenisData.caps(text)
-	l.size = Vector2(90, 10)
+	l.size = Vector2(170, 10)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var at := (w2s(p.pos) - Vector2(45, 46)).round()
+	var at := (w2s(p.pos) - Vector2(85, 46)).round()
+	at.x = clampf(at.x, 0.0, Controls.right_edge() - 170.0)   # (que no se salga ni quede debajo de los botones)
 	l.position = at
 	var t := create_tween().set_parallel()
 	t.tween_property(l, "position:y", at.y - 10.0, 0.6)
@@ -1185,6 +1236,13 @@ static func col(pose: String) -> int:
 
 func _draw_player(p) -> void:
 	var tex: Texture2D = _sheets.get(p.id)
+	if p.idx == 0 and _charge > 0.05:  # cargando: un anillo que crece; lleno, titila
+		var g := w2s(p.pos)
+		var full := _charge >= 1.0
+		var r := 4.0 + 6.0 * _charge
+		var c := Color(1.0, 0.85 - 0.35 * _charge, 0.3, 0.55 if not full or fmod(sim.t, 0.2) < 0.1 else 0.95)
+		_ellipse(g, r, r * 0.45, c)
+		_ellipse(g, r - 1.5, (r - 1.5) * 0.45, Color(c, c.a * 0.5))
 	if tex != null:
 		var feet := w2s(p.pos).round()
 		if _flash.get(p.idx, 0.0) > 0.0:

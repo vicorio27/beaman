@@ -118,6 +118,20 @@ func _anim() -> void:
 	b.hit("drive", true, 0.8, false)
 	check("le pega bajito, a la cintura o alto según la pelota", low == "drive_bajo" and high == "reves_alto" and b.contact_pose() == "drive",
 		"%s %s %s" % [low, high, b.contact_pose()])
+	# El golpe cargado (el que juega, manteniendo E): con la misma pelota, sale más duro.
+	var speeds := []
+	for c in [0.0, 1.0]:
+		var s3 := TenisSim.new("yokovich", "moutette", TenisData.FORMATS["corto"], 9, 0)
+		s3.state = "rally"
+		s3.live = true
+		s3.last_hitter = 1
+		s3.bounces = 1
+		var p3 = s3.players[0]
+		s3.ball = Vector3(p3.pos.x + 0.5, p3.pos.y, 0.9)
+		s3.bvel = Vector3(0, 10, -1)
+		s3._hit(p3, {"hit": "drive", "aim": Vector2.ZERO, "charge": c})
+		speeds.append(float(s3.last_shot["speed"]))
+	check("el golpe cargado sale más duro", speeds[1] > speeds[0] * 1.08, "%.1f -> %.1f m/s" % speeds)
 	# Los gestos de cada uno (TenisAnim.PERSONA): que existan en las hojas, y que cada uno haga lo suyo.
 	var lost := []
 	for who in TenisAnim.PERSONA:

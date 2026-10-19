@@ -23,7 +23,7 @@ Todo está en `scripts/tenis/`. La simulación no sabe nada de pantallas.
 
 **Controles:**
 - Flechas: moverse y apuntar.
-- E: golpe plano.
+- E: golpe plano. Manteniéndola en el peloteo se carga (un anillo crece bajo los pies; lleno, titila y suena): sale al soltarla, o solo si la pelota ya se le va. Cargado sale hasta un 16% más duro, con más liftado y un 30% más de error (`TenisSim.CHARGE_*`). Solo el que juega: la máquina no carga.
 - Q: cortado. Q con arriba: dejada. En el saque, Q es el saque por abajo.
 - X: globo.
 - F: la habilidad.
@@ -198,7 +198,7 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 - La pelota viene: según cuánto le falta (`eta`), se gira, la raqueta atrás y abajo. Si viene corriendo, sigue corriendo hasta el último momento (si no, patina en la pose de pegar).
 - Le pega con el contacto bajito (la pelota por debajo de 0,45 m), a la cintura o alto (por encima de 1,3 m), y la pelota sale de la cabeza de la raqueta: en 0,12 s llega a donde va de verdad.
 - El saque: al apretar arranca el movimiento y el golpe le llega a la simulación a los 0,52 s (0,24 s por abajo), cuando la raqueta encuentra la pelota, con lo que se apretó al empezar. La pelota se ve en la mano, sube y baja hasta la raqueta.
-- **El golpe justo** (solo el que juega): pegarle en el punto (`TenisSim.timing` de 0,9 o más: ni muy encima ni muy estirado, a buena altura) saca "¡PERFECTO!" sobre la cabeza y le sube 6 a la barra del supertiro; de 0,75, "BIEN".
+- **El golpe justo** (solo el que juega): pegarle en el punto (`TenisSim.timing` de 0,9 o más: ni muy encima ni muy estirado, a buena altura) saca "¡PERFECTO!" sobre la cabeza y le sube 6 a la barra del supertiro; de 0,75, "BIEN". El cargado dice "¡CARGADO!" (o "¡PERFECTO Y CARGADO!"), suena duro y tiembla la pantalla.
 - **Los supertiros** (las habilidades, cuando se llena la barra): el primer golpe con la habilidad congela el juego un instante, la pantalla destella y tiembla, suena el cañonazo (`super`), el público se para y arriba sale una franja con el nombre (en dos renglones si no cabe). Mientras dure, la pelota sale encendida del color del tenista, con estela de fuego, y al picar suelta chispas. Cuando la barra se llena, suena (`carga`); la primera vez, si es la de uno, sale "F: ¡SUPERTIRO!".
 - Lo que le da peso: donde pica la pelota queda un anillo que se abre y se apaga; la sombra de la pelota se achica y se aclara mientras más alto va; sale polvito de los pies al frenar, al caer del saltito, al tirarse, al levantarse y al estrellar la raqueta; y la pantalla tiembla un pixel con los cañonazos (0,08 s) y los aces (0,15 s).
 - La estela: en el golpe, la cabeza de la raqueta deja un arco claro (una curva suave por donde pasó, cuadro a cuadro) que se apaga en 0,13 s; y la pelota, cuando va a más de 17 m/s, deja tres pelotas apagadas atrás.
@@ -260,7 +260,7 @@ Todas corren sin ventana:
 
 `TENIS_ONLY=unit|sim|counter` corre solo una parte y `TENIS_N` pone los partidos por cruce.
 
-**`tenis_tests.gd`** (66 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar y cómo irse de la cancha, quién abandona, la paga y que alcance para la deuda solo trabajando bien), que cada texto que pide el código esté en `TEXTOS` y que el VS quepa al lado de los botones. Y el dibujo en movimiento: un partido entero mirado cuadro por cuadro (cada pose que pide `TenisAnim` está en las hojas y se ve de todo), que el saque salga cuando llega la raqueta, que corriendo de lado el cuadro cambie con la distancia, el contacto según la altura y los gestos de cada uno.
+**`tenis_tests.gd`** (67 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar y cómo irse de la cancha, quién abandona, la paga y que alcance para la deuda solo trabajando bien), que cada texto que pide el código esté en `TEXTOS` y que el VS quepa al lado de los botones. Y el dibujo en movimiento: un partido entero mirado cuadro por cuadro (cada pose que pide `TenisAnim` está en las hojas y se ve de todo), que el saque salga cuando llega la raqueta, que corriendo de lado el cuadro cambie con la distancia, el contacto según la altura, los gestos de cada uno y que el golpe cargado salga más duro.
 
 **`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.

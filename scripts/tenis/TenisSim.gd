@@ -62,6 +62,9 @@ class P:
 
 
 const NETCORD := 0.035    # m por encima de la red: lo que la roza (la cinta; una cada ~120 golpes)
+const CHARGE_POWER := 0.16  # el golpe cargado, lleno: 16% más duro...
+const CHARGE_SIGMA := 0.3   # ...y 30% más error
+const CHARGE_SPIN := 0.6    # (con más liftado, para que baje)
 var players: Array = []
 var score: TenisScore
 var rng := RandomNumberGenerator.new()
@@ -308,6 +311,13 @@ func _hit(p: P, inp: Dictionary) -> void:
 	var ty := -p.sign * clampf(H * depth, 1.5, H - margin * 0.8)
 	var ctx := {"d": d, "q": timing(p), "trick": inp.get("trick", false)}
 	TenisAbilities.on_hit(self, p, o, kind, ctx)
+	# El golpe cargado (solo el que juega: "charge" de 0 a 1): más duro y menos seguro. Con más liftado
+	# (si no, un golpe más duro no baja y no entra: solve lo frena hasta que pase la red).
+	var charge := clampf(float(inp.get("charge", 0.0)), 0.0, 1.0)
+	if charge > 0.0:
+		ctx["power_k"] = float(ctx.get("power_k", 1.0)) * (1.0 + CHARGE_POWER * charge)
+		ctx["sigma_k"] = float(ctx.get("sigma_k", 1.0)) * (1.0 + CHARGE_SIGMA * charge)
+		ctx["spin_add"] = float(ctx.get("spin_add", 0.0)) + CHARGE_SPIN * charge
 	var wf: float = ctx.get("wrong_foot", 0.0)
 	if wf > 0.0:  # a contrapié: al lado contrario de para donde va (o está) el otro
 		var lean := o.pos.x + o.vel.x * 0.35
