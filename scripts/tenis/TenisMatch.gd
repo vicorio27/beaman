@@ -561,6 +561,7 @@ func _on_event(kind: String, d: Dictionary) -> void:
 				_shake = 0.08
 			var p = sim.players[d["player"]]
 			TenisAnim.on_hit(_ta, sim, d)
+			_judge_timing(p)
 			if str(d.get("ability", "")) != "":
 				_supershot(p)
 			else:
@@ -945,6 +946,40 @@ func _draw_ball() -> void:
 		for k in range(_ball_trail.size() - 1, 0, -1):
 			draw_circle(_ball_trail[k], 1.5 - k * 0.2, Color(BALL, 0.36 - k * 0.09))
 	_ball_at(up)
+
+
+## El que juega (el de abajo, si no es la máquina): pegarle en el punto justo (TenisSim.timing: ni muy
+## encima ni muy estirado, a buena altura) se celebra sobre su cabeza ("¡PERFECTO!", y la barra del
+## supertiro sube un poco más), y bien, se dice ("BIEN").
+const PERFECT := 0.9
+const GOOD := 0.75
+const PERFECT_METER := 6.0
+
+
+func _judge_timing(p) -> void:
+	if p.idx != 0 or setup.get("ai0", false) or sim.last_shot.get("serve", false):
+		return
+	var q := sim.timing(p)
+	if q >= PERFECT:
+		_float_text("¡PERFECTO!", p, Color(0.6, 1.0, 0.5))
+		p.meter = minf(100.0, p.meter + PERFECT_METER)
+		_sound("golpe", 1.25)
+	elif q >= GOOD:
+		_float_text("BIEN", p, Color(0.92, 0.95, 0.85))
+
+
+## Un texto que sube desde la cabeza del jugador y se apaga.
+func _float_text(text: String, p, col: Color) -> void:
+	var l := _label(Vector2.ZERO, col)
+	l.text = TenisData.caps(text)
+	l.size = Vector2(90, 10)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var at := (w2s(p.pos) - Vector2(45, 46)).round()
+	l.position = at
+	var t := create_tween().set_parallel()
+	t.tween_property(l, "position:y", at.y - 10.0, 0.6)
+	t.tween_property(l, "modulate:a", 0.0, 0.35).set_delay(0.3)
+	t.chain().tween_callback(l.queue_free)
 
 
 ## Un golpe con la habilidad. El primero después de armarla va con todo: el juego se congela un
