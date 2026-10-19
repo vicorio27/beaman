@@ -39,7 +39,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(__file__))
 from vinetas_motor import (W, H, BAY, Cv, Env, Actor, col, mix, breath, vapor, rain, splashes, stars, ground_shadow,  # noqa: E402
                            man_side, man_back, man_bench, man_sit, man_wake, man_stand,
-                           lukas_curl, lukas_down, lukas_sit, figure, _limb,
+                           lukas_curl, lukas_down, lukas_sit, figure, _limb, _shoe,
                            COAT, PANTS, HAIR, BEARD, SKIN, SHIRT, TIE, SHOE_A, SHOE_B, PACK, TAN, EAR, BLACK, WHITE, CARTON, TARP)
 
 import vinetas_motor  # noqa: E402
@@ -1257,17 +1257,24 @@ def desmayo(solo, f):
     for wx, pants, shoe, sp in walkers:
         x = (wx + sp * f * 2) % (W + 20) - 10
         step = 3 if f % 2 == 0 else -3
-        cv.shape(cv.mask(lambda d: d.cap(x - 3, 0, x - 3 - step, 70, 7)), pants, env, shade=1, emph=0.9)
-        cv.shape(cv.mask(lambda d: d.cap(x - 6 - step, 72, x + 1 - step, 72, 4.5)), shoe, env, shade=1)
-        cv.shape(cv.mask(lambda d: d.cap(x + 4, 0, x + 4 + step, 74, 7.4)), pants, env, shade=1)
-        cv.shape(cv.mask(lambda d: d.cap(x + 1 + step, 76.5, x + 9 + step, 76.5, 4.8)), shoe, env, shade=1)
+        sgn = 1.0 if sp > 0 else -1.0                                                  # hacia dónde caminan
+        for leg, dx, k, emph in ((-1, -5.4, -step, 0.84), (1, 5.4, step, 1.0)):     # la de allá, la de acá
+            hip, knee, ank = (x + dx, -4.0), (x + dx + k * 0.6 + sgn * 1.4, 38.0), (x + dx + k, 69.0 + (leg + 1) * 1.6)
+            cv.shape(cv.mask(lambda d, hip=hip, knee=knee, ank=ank: (_limb(d, hip, 4.4, knee, 3.6), _limb(d, knee, 3.6, ank, 2.6))),
+                     pants, env, shade=1, emph=0.9 * emph)
+            lines(cv, [[(int(knee[0] - sgn * 1.0), int(knee[1]) - 6), (int(knee[0]), int(knee[1]) + 4)]], dk(pants, 0.7))   # el pliegue de la rodilla
+            cv.shape(cv.mask(lambda d, ank=ank: _shoe(d, (0.0, 0.0), (sgn, 0.0)), ank[0], ank[1] + 1.0, k=1.7),
+                     shoe, env, shade=1, emph=emph)
     # Él, en el piso. La mochila, a un lado. Una mano que no es de él.
     ground_shadow(cv, 110, 94, 46, 3, (60, 58, 70), 0.5)
     man_side(Actor(cv, env, 112, 93), 0, reach=True, still=True)
     cv.shape(cv.mask(lambda d: (d.cap(168, 88, 180, 88, 12), d.cap(170, 82, 178, 82, 5))), PACK, env)
     reach = [0, 2, 4, 2][f]
-    cv.shape(cv.mask(lambda d: d.path([(W + 4, 70), (206 - reach, 78), (190 - reach, 83)], 6)), (70, 60, 90), env, shade=1)
-    cv.shape(cv.mask(lambda d: d.ell(188 - reach, 84, 3, 2.6)), SKIN, env, shade=1)
+    cv.shape(cv.mask(lambda d: (_limb(d, (W + 4, 68), 4.2, (206 - reach, 77), 3.4), _limb(d, (206 - reach, 77), 3.4, (192 - reach, 82.6), 2.6))),
+             (70, 60, 90), env, shade=1)                                               # la manga
+    cv.shape(cv.mask(lambda d: (d.ell(189 - reach, 83.4, 3.0, 2.2), _limb(d, (187 - reach, 83.6), 1.0, (183.6 - reach, 85.4), 0.8),
+                                _limb(d, (187.6 - reach, 85.0), 1.0, (184.4 - reach, 87.0), 0.8),
+                                _limb(d, (189.6 - reach, 81.4), 0.9, (186.4 - reach, 80.6), 0.7))), SKIN, env, shade=1)   # la mano, abierta
     if not solo:  # Lukas, al lado, ladrándole a todo
         lukas_sit(Actor(cv, env, 62, 95), f % 2, up=False)
         if f % 2 == 0:
@@ -1338,13 +1345,21 @@ MOMENTOS = [lambda f: intruso(False, f), lambda f: intruso(True, f), lambda f: l
 
 # ---------------------------------------------------------------- Mirar desde el puente; el espejo de Lisandro
 
-def _man_back_seated(cv, env, x, y, coat=COAT):
+def _man_back_seated(cv, env, x, y, coat=COAT, scale=1.0, hair=HAIR, reach=None):
     """Él, sentado de espaldas (mirando lo que mira): la espalda del saco que le queda grande, los brazos
-    a los lados, la nuca, las orejas y el pelo despeinado. Origen: el piso, en la mitad."""
-    a = Actor(cv, env, x, y)
-    a.part(coat, lambda d: (_limb(d, (-6.6, -26.4), 2.5, (-7.4, -15.0), 2.2), _limb(d, (-7.4, -15.0), 2.2, (-5.6, -6.0), 1.8),
-                            _limb(d, (6.6, -26.4), 2.5, (7.4, -15.0), 2.2), _limb(d, (7.4, -15.0), 2.2, (5.6, -6.0), 1.8)),
-           emph=a.emph * 0.9)                                                         # los brazos, a los lados
+    a los lados, la nuca, las orejas y el pelo despeinado. Origen: el piso, en la mitad. scale: de cerca;
+    reach: a dónde va la mano derecha (si no, colgando)."""
+    a = Actor(cv, env, x, y, scale=scale)
+    a.part(coat, lambda d: (_limb(d, (-6.6, -26.4), 2.5, (-7.4, -15.0), 2.2), _limb(d, (-7.4, -15.0), 2.2, (-5.6, -6.0), 1.8)),
+           emph=a.emph * 0.9)                                                         # el brazo de la izquierda, colgando
+    if reach is None:
+        a.part(coat, lambda d: (_limb(d, (6.6, -26.4), 2.5, (7.4, -15.0), 2.2), _limb(d, (7.4, -15.0), 2.2, (5.6, -6.0), 1.8)),
+               emph=a.emph * 0.9)
+    else:
+        el = ((6.6 + reach[0]) / 2 + 2.4, (-26.4 + reach[1]) / 2 + 2.0)
+        a.part(coat, lambda d: (_limb(d, (6.6, -26.4), 2.5, el, 2.2), _limb(d, el, 2.2, reach, 1.8)), emph=a.emph * 0.95)
+        a.part(SKIN, lambda d: (d.ell(reach[0] + 0.8, reach[1] + 0.2, 1.8, 1.4), d.cap(reach[0] + 1.6, reach[1] + 0.6, reach[0] + 3.0, reach[1] + 1.2, 1.0)),
+               shade=1)                                                               # la mano, apoyada
     a.part(coat, lambda d: (d.poly([(-6.8, -27.4), (6.8, -27.4), (5.6, -12.0), (6.8, -2.0), (6.4, -0.4), (-6.4, -0.4),
                                     (-6.8, -2.0), (-5.6, -12.0)]), d.ell(-5.2, -26.2, 2.8, 2.6), d.ell(5.2, -26.2, 2.8, 2.6)), shade=3)
     a.line([(0, -26.6), (0, -9.0)], col(coat, env.amb * 0.55))                       # la costura de la espalda
@@ -1352,7 +1367,7 @@ def _man_back_seated(cv, env, x, y, coat=COAT):
     a.part(SKIN, lambda d: d.rect(-1.6, -30.4, 1.6, -27.4), shade=0)                  # la nuca
     a.part(coat, lambda d: d.rect(-3.2, -28.6, 3.2, -27.0), shade=0)                 # el cuello del saco
     a.part(SKIN, lambda d: (d.ell(-3.6, -32.8, 1.0, 1.6), d.ell(3.6, -32.8, 1.0, 1.6)), shade=0, rim=False)   # las orejas
-    a.part(HAIR, lambda d: (d.ell(0, -34.0, 3.6, 4.2), d.ell(-2.2, -37.4, 1.6, 1.3), d.ell(2.0, -37.8, 1.5, 1.2),
+    a.part(hair, lambda d: (d.ell(0, -34.0, 3.6, 4.2), d.ell(-2.2, -37.4, 1.6, 1.3), d.ell(2.0, -37.8, 1.5, 1.2),
                             d.ell(-3.2, -31.6, 1.0, 1.4), d.ell(3.0, -31.4, 1.0, 1.4)), shade=2)
     return a
 
@@ -1447,11 +1462,7 @@ def espejo(cap3, f):
         cv.shape(cv.mask(lambda d: d.poly([(160, 84), (172, 84), (170, 76), (162, 76)])), (240, 240, 244), env, shade=1)
         cv.post.append(lambda d: d.line([(161, 78), (171, 78)], fill=(220, 60, 60)))
     # Él (Lisandro), de espaldas: el saco blanco, la nuca, las manos en el lavamanos.
-    a = Actor(cv, env, 52, 108)
-    a.part((236, 234, 226), lambda d: (d.cap(-14, -10, 14, -10, 34), d.ell(0, -30, 26, 12)), shade=3)
-    a.part((24, 22, 26), lambda d: d.ell(0, -48, 13, 12), shade=2)
-    a.part((236, 234, 226), lambda d: d.path([(18, -32), (34, -26), (48, -22)], 8), shade=2)
-    a.part(SKIN, lambda d: d.ell(51, -22, 4, 3), shade=1)
+    _man_back_seated(cv, env, 58, 114, coat=(236, 234, 226), scale=1.9, hair=(24, 22, 26), reach=(16.4, -14.0))
     return cv
 
 
@@ -1680,12 +1691,21 @@ def p_cucharon(f):
     dk = lambda alb, k=0.55: col(alb, env.amb * k)
     cv.grad((0, 0, W, H), [dk((214, 220, 200), 1.0), dk((214, 220, 200), 0.8)], horizontal=True)
     a = Actor(cv, env, 0, 0)
-    a.part(COAT, lambda d: d.poly([(0, 100), (0, 60), (60, 40), (90, 52), (100, 100)]), shade=3)   # el brazo, en primer plano
-    a.part(SKIN, lambda d: (d.ell(112, 46, 18, 14), d.ell(104, 36, 8, 6)), shade=2)               # la mano, apretada
-    for k in range(4):
-        cv.post.append(lambda d, k=k: d.line([(104 + k * 6, 38), (104 + k * 6, 50)], fill=dk(SKIN, 0.75)))
-    a.part((190, 194, 204), lambda d: d.cap(116, 40, 176, 8, 6), shade=1)                         # el cucharón, como un arma
+    a.part(COAT, lambda d: d.poly([(0, 100), (0, 66), (58, 46), (84, 50), (92, 64), (70, 100)]), shade=3)   # el brazo, en primer plano
+    a.line([(30, 70), (52, 62)], col(COAT, env.amb * 0.55))                          # el pliegue de la manga
+    a.part(SHIRT, lambda d: d.poly([(80, 46), (88, 44), (96, 60), (88, 64)]), shade=1)  # el puño de la camisa
+    a.part((190, 194, 204), lambda d: d.cap(98, 52, 176, 8, 5.5), shade=1)           # el cucharón, como un arma
     a.part((190, 194, 204), lambda d: d.ell(186, 6, 16, 12), shade=2)
+    # La mano, apretando el mango: el dorso, los cuatro dedos doblados (los nudillos) y el pulgar encima.
+    a.part(SKIN, lambda d: (_limb(d, (92, 54), 7.6, (112, 44), 8.6), d.ell(106, 47, 9.0, 7.6)), shade=2)
+    for k in range(4):
+        fx, fy = 104 + k * 5.2, 40 + k * 3.4 - 6.0
+        a.part(SKIN, lambda d, fx=fx, fy=fy: (_limb(d, (fx, fy), 2.6, (fx + 4.2, fy + 6.0), 2.4), d.ell(fx + 4.0, fy + 7.6, 2.4, 2.0)),
+               shade=2)                                                               # los dedos, doblados sobre el mango
+    a.part(SKIN, lambda d: _limb(d, (104, 52), 3.2, (120, 42), 2.4), shade=2)        # el pulgar, encima
+    knuckle = dk(SKIN, 0.72)
+    for k in range(4):
+        cv.post.append(lambda d, k=k: d.point((int(105 + k * 5.2), int(37 + k * 3.4)), fill=knuckle))
     for k in range(5):                                                                   # el arroz que se cae
         cv.px(176 + k * 5, 18 + (f * 4 + k * 7) % 60, (250, 250, 240))
     cv.post.append(lambda d: d.text((150, 74), "¿ARMA?", font=FONT, fill=(210, 50, 50)))
