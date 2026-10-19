@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c03xm7mqteee"
-path="res://.godot/imported/coliseo_grita.png-2793310c41fecbbf7ed9d5328036e037.ctex"
+uid="uid://3ky0ags5m0se"
+path="res://.godot/imported/publico.png-b00a29f02f9f16dc394994b534533564.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tenis/coliseo_grita.png"
-dest_files=["res://.godot/imported/coliseo_grita.png-2793310c41fecbbf7ed9d5328036e037.ctex"]
+source_file="res://assets/tenis/publico.png"
+dest_files=["res://.godot/imported/publico.png-b00a29f02f9f16dc394994b534533564.ctex"]
 
 [params]
 

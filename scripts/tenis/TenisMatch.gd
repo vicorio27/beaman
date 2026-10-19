@@ -31,8 +31,6 @@ const KX_FAR := 10.5
 const KX_NEAR := 13.5
 const SY := 4.6
 const CENTER := Vector2(160, 104)
-const BG := preload("res://assets/tenis/coliseo.png")
-const BG_GRITA := preload("res://assets/tenis/coliseo_grita.png")
 const BUFFER := 0.2
 
 static var setup := {}
@@ -43,7 +41,7 @@ var _buffer := ""
 var _buffer_t := 0.0
 var _hud: CanvasLayer
 var _rows: Array = []      # el tablero: una fila por jugador (nombre, juegos, puntos)
-var _cheer := 0.0          # la gente de pie (después de un punto bueno)
+var _crowd: TenisPublico   # el fondo y la gente de las tribunas (se para, aplaude, hace la ola)
 var _pop_l: Label
 var _pop_t := 0.0
 var _flash := {}  # golpes que brillan un momento (habilidad): player -> tiempo
@@ -101,6 +99,8 @@ var _sfx := {}
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_crowd = TenisPublico.new()
+	add_child(_crowd)
 	_hud = CanvasLayer.new()
 	_hud.layer = 5
 	add_child(_hud)
@@ -364,6 +364,7 @@ func take_over() -> void:
 	_anim[0] = {}
 	_buffer = ""
 	MusicDirector.force("tenis_el")  # él con la raqueta: el mismo tema, más rápido y un tono arriba
+	_crowd.ola()                     # y el público, que no sabe quién es, le hace la ola
 
 
 ## Juega él (el de abajo) desde que tomó la raqueta.
@@ -412,7 +413,6 @@ func _process(delta: float) -> void:
 		var i0: Dictionary = TenisAI.think(sim, 0) if setup.get("ai0", false) else _human_input()
 		sim.step([i0, TenisAI.think(sim, 1)])
 	_pop_t -= delta
-	_cheer -= delta
 	if _pop_t <= 0.0:
 		_pop_l.text = ""
 	for k in _flash.keys():
@@ -499,19 +499,27 @@ func _on_event(kind: String, d: Dictionary) -> void:
 				_abandon = 1
 			if d["kind"] in ["winner", "ace"]:
 				_anim[w] = {"seq": ["celebra"], "cuts": [], "t": 0.0, "len": 1.1}
-			if d["kind"] in ["winner", "ace"] or int(d["rally"]) >= 12 or d.get("closed", "") != "":
-				_cheer = 1.3  # la gente se para
 			if d["kind"] in ["unforced", "double_fault"]:
 				_anim[1 - w] = {"seq": ["bravo"], "cuts": [], "t": 0.0, "len": 1.2}
 			# El público: el "uuuy" con el error fácil, el estadio de pie con el ganador bueno, aplausos con el resto.
 			if d.get("how", "") == "net":
 				_sound("red")
+			# Y la gente: los que estaban cerca del punto se paran primero.
+			var at := w2s(Vector2(sim.ball.x, sim.ball.y)).x
 			if d["kind"] in ["unforced", "double_fault"]:
 				_sound("uy", randf_range(0.95, 1.05))
+				_crowd.uy()
 			elif d["kind"] == "ace" or (d["kind"] == "winner" and int(d["rally"]) >= 8) or d.get("closed", "") != "":
 				_sound("ovacion")
+				_crowd.cheer(0.9, at)
 			else:
 				_sound("aplauso", randf_range(0.95, 1.05))
+				if d["kind"] == "winner" or int(d["rally"]) >= 12:
+					_crowd.cheer(0.45, at)
+				else:
+					_crowd.clap()
+			if d.get("closed", "") in ["set", "match"]:
+				_crowd.ola()
 			var names := {"ace": "¡ACE!", "winner": "GANADOR", "unforced": "ERROR", "forced": "ERROR FORZADO",
 				"forced_missed": "NO ALCANZÓ", "double_fault": "DOBLE FALTA"}
 			_pop(names.get(d["kind"], ""))
@@ -613,7 +621,7 @@ func _draw() -> void:
 	var hw := TenisData.HALF_W
 	var hl := TenisData.HALF_L
 	var dw := hw + 1.37                                                  # los pasillos de dobles
-	draw_texture(BG_GRITA if _cheer > 0.0 else BG, Vector2.ZERO)
+	# (El fondo y la gente los pinta _crowd, detrás.)
 	var line := Color(0.95, 0.95, 0.92)
 	for x in [-dw, -hw, hw, dw]:
 		draw_line(w2s(Vector2(x, -hl)), w2s(Vector2(x, hl)), line, 1.0)

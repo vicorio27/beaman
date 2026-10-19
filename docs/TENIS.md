@@ -13,6 +13,7 @@ Todo está en `scripts/tenis/`. La simulación no sabe nada de pantallas.
 | `TenisSim.gd` | El partido en pasos fijos de 1/60 s: la pelota (altura, efecto, bote, curva), los golpes, el error, los puntos y el ánimo. La misma semilla da el mismo partido. |
 | `TenisAbilities.gd` | Un solo marco para todas las habilidades (`DEFS`) y las reglas de sus contras. |
 | `TenisAI.gd` | La máquina. Ve lo mismo que un jugador y usa el mismo error. No lee lo que aprieta el humano. |
+| `TenisPublico.gd` | El fondo del coliseo y la gente de las tribunas, cada uno por su lado: se para, aplaude, se agarra la cabeza y hace la ola. |
 | `TenisMatch.gd` | La cancha que se dibuja y se juega (`scenes/tenis/TenisMatch.tscn`). Si se abre sin `setup` (F6), primero se escogen el tenista y el rival. Con `ballboy`, él es el recogebolas; con `abandon_games`, el de abajo abandona y él termina el partido. |
 | `TenisCuadro.gd` | El dibujo del cuadro (lo usan el torneo suelto y la jornada). |
 | `TenisHistoria.gd` | La historia, sin pantallas: la deuda, las fechas, la paga, cómo abandona cada uno y quién abandona cada día. |
@@ -180,10 +181,14 @@ Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y per
 
 **El coliseo por fuera** (en el barrio) sale de `tools/art/draw_tenis_afuera.py` (`assets/barrio/coliseo_afuera.png` y su `.json`, más el ícono de la raqueta).
 
-**El coliseo** sale de `tools/art/draw_tenis_coliseo.py` y queda en `assets/tenis/coliseo.png`, más `coliseo_grita.png` con el público de pie.
+**El coliseo** sale de `tools/art/draw_tenis_coliseo.py`: `assets/tenis/coliseo.png` (las tribunas vacías) y la gente aparte, para que se mueva: `publico.png` (una fila por persona, ya oscurecida según la grada) y `publico.json` (dónde va cada una, si trae bandera, si es perezosa y en qué punto de la ola está).
 - La cancha va en perspectiva: de 10.5 px por metro en el fondo a 13.5 en el frente, y 4.6 a lo largo. Es la misma cuenta de `TenisMatch.w2s`; si se cambia en un lado, se cambia en el otro.
 - Tiene tribunas con gradas, pasillos y puestos vacíos, la tribuna del fondo, las vallas con los patrocinadores del barrio (la Caverna del Gamer, la panadería de Don Germán), los reflectores y la silla del juez.
-- La gente se para después de un ganador, de un peloteo largo o cuando se cierra un juego.
+- **El público** (`TenisPublico.gd`, 526 personas) tiene nueve cuadros por persona: sentada, aplaudiendo (2), de pie con los brazos arriba (2), con las manos en la cabeza, con la bandera ondeando (2) y volteando a mirar.
+  - Con un ace, un ganador de peloteo largo o un juego que se cierra, se para casi todo el estadio, primero los que estaban cerca del punto. Con un ganador corto o un peloteo de 12, la mitad. Con el resto de puntos, aplauden unos cuantos.
+  - Con un error fácil o una doble falta, unos cuantos se agarran la cabeza (con el "uuuy").
+  - La ola da la vuelta al estadio (sube por la izquierda, cruza el fondo y baja por la derecha) cuando se cierra un set y cuando él toma la raqueta: el público no sabe quién es, pero le hace la ola.
+  - Sola, todo el tiempo: alguno aplaude, alguno se para a estirarse y alguno voltea a mirar. Los perezosos (uno de cada ocho) no se paran por nada, ni por la ola.
 
 **Las caras para los diálogos** salen de `tools/art/draw_retratos.py` (`assets/portraits/<id>.png`), con los colores de su dibujo de la cancha. En `Dialogue.SPEAKERS`, cada uno lleva su apodo en la placa.
 - Los diez: Bublikov despeinado y aburrido, Sabalenkova gritando (la cola rubia, el sudor), Monfiz con la balaca amarilla, Yokovich con la franja azul, Moutette crespo y sudando, Tiafuego con trencitas, Sheltron rapado, Kyrgistán con la gorra roja al revés, la chivera y la cadena, Pecador pelirrojo con pecas, y Fedorer con la balaca blanca anudada atrás.
@@ -253,5 +258,4 @@ Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ga
 
 ## Lo que falta
 
-- **El dibujo que falta:** un público que se mueva más.
 - **Los diálogos:** en una tabla de datos.

@@ -8,9 +8,12 @@ Aquí va lo quieto: el piso del coliseo, el azul de afuera, el verde de adentro,
 patrocinadores (los del barrio), las tribunas con la gente, los reflectores y la silla del juez. Las
 rayas, la red, los jugadores y la pelota los pinta el juego encima.
 
-Salida: assets/tenis/coliseo.png (el público sentado) y coliseo_grita.png (el mismo público de pie,
-con los brazos arriba: para cuando hay un punto bueno).
+Salida: assets/tenis/coliseo.png (las tribunas vacías) y el público aparte, para que se mueva
+(TenisPublico.gd): assets/tenis/publico.png, una fila de cuadritos por persona (FRAMES, de CELL_W x
+CELL_H; la persona en (0, ORIGIN_Y) del cuadrito), y publico.json: por persona [x, y, bandera, perezoso,
+ola] en el orden en que se pintan (de atrás para adelante).
 Uso: python tools/art/draw_tenis_coliseo.py  (desde la carpeta del proyecto)"""
+import json
 import random
 from pathlib import Path
 from PIL import Image
@@ -41,14 +44,16 @@ def w2s(x, y):
 
 
 class Img:
-    def __init__(self):
-        self.im = Image.new("RGB", (W, H), FLOOR)
+    def __init__(self, w=W, h=H, bg=FLOOR):
+        self.w, self.h = w, h
+        self.alpha = len(bg) == 4
+        self.im = Image.new("RGBA" if self.alpha else "RGB", (w, h), bg)
         self.px = self.im.load()
 
     def dot(self, x, y, c):
         x, y = int(x), int(y)
-        if 0 <= x < W and 0 <= y < H:
-            self.px[x, y] = c
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.px[x, y] = c + (255,) if self.alpha and len(c) == 3 else c
 
     def rect(self, x0, y0, x1, y1, c):
         for y in range(int(y0), int(y1) + 1):
@@ -102,36 +107,96 @@ SHIRTS = [(206, 52, 56), (246, 210, 64), (40, 52, 104), (238, 238, 232), (90, 16
           (120, 80, 150), (240, 150, 60), (60, 140, 190), (50, 50, 60)]
 
 
-def person(img, x, y, rng, standing, back=False):
-    """Una persona de la tribuna (5x6): cabeza 3x3 con pelo, hombros de su camiseta. De pie, más alta y
-    con los brazos arriba (o una bandera)."""
+# Lo que puede hacer cada persona (las columnas de publico.png, en este orden; TenisPublico.gd igual).
+FRAMES = ["sentado", "aplaude1", "aplaude2", "arriba1", "arriba2", "uy", "bandera1", "bandera2", "mira"]
+CELL_W, CELL_H, ORIGIN_Y = 8, 11, 5
+
+
+def person_kind(rng):
+    """Cómo es (y queda siendo) una persona: piel, pelo, camiseta, pelo largo, si trae bandera."""
     skin, hair, shirt = rng.choice(SKINS), rng.choice(HAIRS), rng.choice(SHIRTS)
     shirt = tuple(int(c * 0.8 + 50 * 0.2) for c in shirt)    # en la penumbra de la tribuna
-    up = 1 if standing else 0
-    y -= up
+    return {"skin": skin, "hair": hair, "shirt": shirt, "long": rng.random() < 0.15, "flag": rng.random() < 0.12,
+            "lazy": rng.random() < 0.13}
+
+
+def person(img, x, y, k, frame, back=False):
+    """Una persona de la tribuna (5x6): cabeza 3x3 con pelo, hombros de su camiseta. Sentada (y
+    aplaudiendo, o con las manos en la cabeza: "uy"), o de pie (un pixel más arriba) con los brazos
+    arriba o la bandera de Colombia. "mira": voltea la cabeza (el pelo de un lado)."""
+    skin, hair, shirt = k["skin"], k["hair"], k["shirt"]
+    standing = frame.startswith("arriba") or frame.startswith("bandera")
+    if standing:
+        y -= 1
     img.rect(x, y + 3, x + 4, y + 5, shirt)                 # los hombros
     img.dot(x, y + 5, tuple(max(0, c - 30) for c in shirt))
     img.rect(x + 1, y, x + 3, y + 2, skin)                  # la cabeza
     img.rect(x + 1, y, x + 3, y, hair)
     if back:
         img.rect(x + 1, y, x + 3, y + 1, hair)
-    elif rng.random() < 0.15:
+    elif frame == "mira":
+        img.dot(x + 1, y + 1, hair)
+        img.dot(x + 1, y + 2, hair)
+    elif k["long"]:
         img.dot(x + 1, y + 1, hair)                          # pelo largo, de lado
-    if standing:
-        kind = rng.random()
-        if kind < 0.55:                                      # los brazos arriba
-            img.dot(x, y + 1, skin)
-            img.dot(x, y + 2, shirt)
-            img.dot(x + 4, y + 1, skin)
-            img.dot(x + 4, y + 2, shirt)
-        elif kind < 0.65:                                    # la bandera de Colombia
-            img.rect(x + 4, y - 3, x + 6, y - 3, (246, 210, 64))
-            img.rect(x + 4, y - 2, x + 6, y - 2, (40, 60, 150))
-            img.dot(x + 4, y - 1, (206, 52, 56))
-            img.dot(x + 5, y - 1, (206, 52, 56))
-            img.dot(x + 6, y - 1, (206, 52, 56))
-            img.dot(x + 4, y, (90, 80, 70))
-            img.dot(x + 4, y + 1, (90, 80, 70))
+    if frame in ("aplaude1", "aplaude2"):                    # las manos al frente: juntas, separadas
+        if frame == "aplaude1":
+            img.dot(x + 2, y + 3, skin)
+        else:
+            img.dot(x + 1, y + 3, skin)
+            img.dot(x + 3, y + 3, skin)
+    elif frame == "uy":                                      # las manos en la cabeza
+        img.dot(x, y, skin)
+        img.dot(x, y + 1, shirt)
+        img.dot(x + 4, y, skin)
+        img.dot(x + 4, y + 1, shirt)
+    elif frame.startswith("arriba"):                         # los brazos arriba (y más arriba)
+        hy = y + (1 if frame == "arriba1" else -1)
+        img.dot(x, hy, skin)
+        img.dot(x + 4, hy, skin)
+        for yy in range(hy + 1, y + 3):
+            img.dot(x, yy, shirt)
+            img.dot(x + 4, yy, shirt)
+    elif frame.startswith("bandera"):                        # la bandera, ondeando
+        w = 1 if frame == "bandera2" else 0
+        img.rect(x + 4, y - 3 + w, x + 6, y - 3 + w, (246, 210, 64))
+        img.rect(x + 4, y - 2 + w, x + 6, y - 2 + w, (40, 60, 150))
+        for xx in range(4, 7):
+            img.dot(x + xx, y - 1 + (w if xx > 4 else 0), (206, 52, 56))
+        img.dot(x + 6 - w, y - 3, (246, 210, 64))
+        img.dot(x + 4, y, (90, 80, 70))
+        img.dot(x + 4, y + 1, (90, 80, 70))
+        img.dot(x, y + 1, skin)
+        img.dot(x, y + 2, shirt)
+
+
+class Crowd:
+    """El público, aparte del fondo: cada persona con su cuadrito por FRAMES (ya oscurecida según la
+    grada) y lo que el juego necesita saber de ella."""
+    def __init__(self):
+        self.people = []   # (x, y, kind, shade, back, ola)
+
+    def add(self, x, y, kind, shade, back, ola):
+        self.people.append((x, y, kind, shade, back, ola))
+
+    def sheet(self):
+        out = Image.new("RGBA", (CELL_W * len(FRAMES), CELL_H * len(self.people)), (0, 0, 0, 0))
+        data = []
+        for i, (x, y, k, shade, back, ola) in enumerate(self.people):
+            for f, frame in enumerate(FRAMES):
+                tile = Img(CELL_W, CELL_H, (0, 0, 0, 0))
+                person(tile, 0, ORIGIN_Y, k, frame, back)
+                im = tile.im
+                if shade < 1.0:
+                    px = im.load()
+                    for yy in range(CELL_H):
+                        for xx in range(CELL_W):
+                            c = px[xx, yy]
+                            if c[3]:
+                                px[xx, yy] = tuple(int(v * shade) for v in c[:3]) + (255,)
+                out.alpha_composite(im, (f * CELL_W, i * CELL_H))
+            data.append([int(x), int(y), int(k["flag"]), int(k["lazy"]), round(ola, 3)])
+        return out, data
 
 
 STEP = (52, 54, 70)
@@ -139,7 +204,7 @@ STEP_D = (44, 46, 60)
 AISLE = (70, 72, 88)
 
 
-def stands_side(img, side, standing, seed):
+def stands_side(img, side, crowd, seed):
     """Una tribuna de costado: gradas paralelas a la valla, escalonadas hacia afuera (más arriba, más
     lejos), con pasillos de escalera cada tanto. Cada grada, un poco más oscura."""
     # Primero el cemento: la grada (clara) y su borde (oscuro), y los pasillos.
@@ -170,21 +235,12 @@ def stands_side(img, side, standing, seed):
             r = random.Random(seed * 1000 + row * 50 + k)
             if r.random() < 0.18:
                 continue                                     # un puesto vacío
-            before = img.im.copy()
-            person(img, x, sy, r, standing and r.random() < 0.85)
-            if shade < 1.0:
-                _dim_region(img, before, int(x) - 1, sy - 5, int(x) + 7, sy + 6, shade)
+            # La ola da la vuelta: sube por la izquierda, cruza el fondo y baja por la derecha.
+            ola = (176 - sy) / 143 * 0.35 if side < 0 else 0.65 + (sy - 33) / 143 * 0.35
+            crowd.add(x, sy, person_kind(r), shade, False, ola)
 
 
-def _dim_region(img, before, x0, y0, x1, y1, k):
-    b = before.load()
-    for y in range(max(0, y0), min(H, y1 + 1)):
-        for x in range(max(0, x0), min(W, x1 + 1)):
-            if img.px[x, y] != b[x, y]:
-                img.px[x, y] = tuple(int(c * k) for c in img.px[x, y])
-
-
-def stands_back(img, standing, seed):
+def stands_back(img, crowd, seed):
     """La tribuna del fondo, detrás del de arriba: de espaldas a la pared, mirando la cancha."""
     for row in range(3):
         img.rect(0, row * 5 + 5, W - 1, row * 5 + 5, STEP_D)
@@ -196,7 +252,7 @@ def stands_back(img, standing, seed):
             r = random.Random(seed * 77 + row * 100 + k)
             if r.random() < 0.12:
                 continue
-            person(img, x, y, r, standing and r.random() < 0.8)
+            crowd.add(x, y, person_kind(r), 1.0, False, 0.35 + x / W * 0.3)
 
 
 def boards(img):
@@ -278,25 +334,33 @@ def floor(img):
                 img.dot(x, y, FLOOR_D)
 
 
-def build(standing):
+def build():
     img = Img()
+    crowd = Crowd()
     floor(img)
     court(img)
     outline_trap(img)
-    stands_back(img, standing, 3)
+    stands_back(img, crowd, 3)
     boards(img)
-    stands_side(img, -1, standing, 11)
-    stands_side(img, 1, standing, 23)
+    stands_side(img, -1, crowd, 11)
+    stands_side(img, 1, crowd, 23)
     umpire(img)
     lights(img)
-    return img.im
+    return img.im, crowd
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    build(False).save(OUT / "coliseo.png")
-    build(True).save(OUT / "coliseo_grita.png")
-    print("ok")
+    bg, crowd = build()
+    bg.save(OUT / "coliseo.png")
+    sheet, data = crowd.sheet()
+    sheet.save(OUT / "publico.png")
+    (OUT / "publico.json").write_text(json.dumps({"cell": [CELL_W, CELL_H], "origin_y": ORIGIN_Y,
+                                                  "frames": FRAMES, "people": data}), encoding="utf-8")
+    old = OUT / "coliseo_grita.png"   # (antes: el público de pie, en otra foto)
+    if old.exists():
+        old.unlink()
+    print("ok:", len(data), "personas")
 
 
 if __name__ == "__main__":
