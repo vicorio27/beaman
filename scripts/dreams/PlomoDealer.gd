@@ -214,9 +214,9 @@ func setup() -> void:
 		"mini_die": "EL CORONEL: —Tome la llave... de todos modos ya era suya. Todo es suyo.",
 		"boss_wake": "Al fondo hay alguien. Grande. Verde. No se mueve. Me está esperando.",
 		"boss_p1": "LISANDRO: —¡Usted debería estar muerto! ¡Yo pagué para eso! ¡Tombos!",
-		"boss_p2": "EL QUE NO SE MUERE: —... Usted pagó. Yo no cobré.",
+		"boss_p2": "El que no se muere no dice nada. Lisandro pagó. Él no cobró.",
 		"boss_die": "LISANDRO: —Yo tenía todo... todo...",
-		"boss_reply": "Tenía todo menos lo que importa. Eso no se vende. Ni en su esquina. Lo averigüé.",
+		"boss_reply": "Tenía todo menos lo que importa. Eso no se vende. Ni en su esquina. Él lo averiguó.",
 		"key_use": "La llave del Coronel abre la casa. El Estado al servicio del barrio.",
 		"locked": "Cerrada. El Coronel tiene la llave. Siempre hay un uniforme con la llave.",
 		"exit_wait": "SALIDA. Todavía no: él sigue ahí.",
@@ -605,8 +605,8 @@ func _slayer_plasma(delta: float) -> void:
 
 func _shake_say() -> void:
 	if randf() < 0.2:
-		_say(["EL QUE NO SE MUERE: —...", "Plasma. Verde. Como en las películas que él veía de chiquito.",
-			"EL QUE NO SE MUERE: —Usted pagó por esto, Lisandro."].pick_random(), 0)
+		_say(["El que no se muere no dice nada. Lo mira.", "Plasma. Verde. Como en las películas que él veía de chiquito.",
+			"Lisandro pagó por esto. Se le nota en la cara que se acuerda."].pick_random(), 0)
 
 
 ## Al que no se muere le queda un cuarto de vida: el sueño se da vuelta.
@@ -618,8 +618,8 @@ func _role_swap(slayer: Ent) -> void:
 	MusicDirector.cut()
 	await Dialogue.talk([
 		["LISANDRO", "—¿Por qué no se muere? ¡Yo pagué para que lo mataran!"],
-		["EL QUE NO SE MUERE", "—Ya sé. Y aquí sigo. Uno se acostumbra a no morirse."],
-		["EL QUE NO SE MUERE", "—¿Sabe qué es lo peor de jugar con usted? Que se siente bien. Por eso nadie lo deja."],
+		["", "El que no se muere no contesta. Sigue ahí. Uno se acostumbra a no morirse."],
+		["", "Lo peor de jugar con Lisandro es que se siente bien. Por eso nadie lo deja."],
 		["", "Algo se da vuelta. El arma pesa distinto. Las manos ya no tienen anillos."],
 		["", "El del otro lado ahora es Lisandro. Y el que tiene la escopeta..."],
 		["", "... es él. El que duerme debajo del puente."],

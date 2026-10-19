@@ -2965,23 +2965,23 @@ func _sin_trabajo(lines: Array) -> bool:
 
 
 # ---------------------------------------------------------------- Tom Queen, el padrino: el que solo ve él
-## Su padrino. Alto, bigote blanco, sombrero negro, todo de negro. "Algunos me dicen el Lobo. Yo no
-## vendo: yo soluciono." Es el buhonero de esta historia. Sale algunos días, parado donde no hay nadie
-## (scripts/systems/Vecindario.gd). Nadie más lo ve. Arregla lo que haga falta (hambre, plata, la noche,
-## la fiebre de Lukas) y no recibe plata: cobra en locura. Verlo ya cuesta (+1); un trato cuesta más (+3).
-## Con la locura se le borran las caras a los demás (GameState.sameness): entre más lo busca, más solo.
-## Lo de Lukas viejo no lo arregla: "eso no es un problema, eso es el tiempo".
+## Su padrino: pelo y bigote blancos, siempre de vestido y sombrero negros. Es el buhonero de esta
+## historia. Sale algunos días, parado donde no hay nadie (scripts/systems/Vecindario.gd). Nadie más lo ve.
+## No habla (hasta que el usuario diga): todo lo cuenta el narrador, con los dos frente a frente.
+## Arregla lo que haga falta (hambre, plata, la noche, la fiebre de Lukas) y no recibe plata: cobra en
+## locura. Verlo ya cuesta (+1); un trato cuesta más (+3). Con la locura se le borran las caras a los
+## demás (GameState.sameness): entre más lo busca, más solo. Lo de Lukas viejo no lo arregla: eso es el tiempo.
 ## Los favores van entre comillas: como nadie más lo ve, después de cada uno queda una pista de quién lo
 ## hizo de verdad (BUHONERO_QUEDA): el almuerzo era de alguien, la caja de Germán no cuadra, amanece
 ## con los nudillos pelados. Nunca se dice: se deja ver.
 ## Flags: buhonero_n (veces que lo vio), buhonero_tratos, buhonero_dia, buhonero_noche (la noche arreglada).
-const BUHONERO := "TOM QUEEN"
+const TQ := "tomqueen"
 const BUHONERO_HOLA := [
-	[[BUHONERO, "—Ahijado. Otra vez. Me alegra. Bueno: a usted no debería alegrarle."]],
-	[[BUHONERO, "—¿Qué va a llevar, forastero? ... Perdón. Eso es de otro trabajo que tuve."]],
-	[[BUHONERO, "—Tengo media hora. Diez minutos para llegar, nueve para arreglar, y el resto para que usted se pregunte si pasó."]],
-	[[BUHONERO, "—Cada vez que me ve, los demás se le borran un poquito. No es nada personal: es el arriendo del local."]],
-	[[BUHONERO, "—¿Ha notado que la señora de las empanadas ya no tiene cejas? Yo no fui. Bueno. Fuimos."]],
+	[["", "(Tom Queen otra vez. Se toca el ala del sombrero. Se le ve contento de verlo. Eso nunca es buena señal.)", TQ]],
+	[["", "(Tom Queen está parado exactamente donde hace un minuto no había nadie. Se sacude el vestido. No tiene polvo.)", TQ]],
+	[["", "(Tom Queen mira el reloj, después lo mira a él, y le muestra cinco dedos. Nadie sabe de qué. Él asiente igual.)", TQ]],
+	[["", "(Tom Queen señala con el mentón a la señora de las empanadas. Se le ve la cara un poquito más borrosa que ayer. El padrino se encoge de hombros: es el arriendo del local.)", TQ]],
+	[["", "(Tom Queen le hace la venia con el sombrero. Una paloma que pasaba se devuelve.)", TQ]],
 ]
 ## Lo que queda después de cada "favor".
 const BUHONERO_QUEDA := {
@@ -2995,11 +2995,17 @@ const BUHONERO_QUEDA := {
 		["", "(Él no sabe poner inyecciones. Las manos, por lo visto, sí.)"]],
 }
 const BUHONERO_MIRAN := [
-	[["SEÑORA", "—Mijo, ¿ese señor le está hablando al poste?"], ["MAMÁ", "—No lo mire. Camine."]],
+	[["SEÑORA", "—Mijo, ¿por qué ese señor le hace venias al poste?"], ["MAMÁ", "—No lo mire. Camine."]],
 	[["", "(Cuando voltea, no hay nadie. En el piso quedan dos huellas mojadas. No ha llovido.)"]],
 	[["SEÑOR", "—Oiga, ¿todo bien? Lleva diez minutos asintiéndole a una pared. La pared no ha dicho nada. Yo la conozco."]],
 	[["", "(Un perro le ladra al sitio donde estaba el padrino. Después le ladra a él. Los perros no escogen bando.)"]],
 ]
+
+
+## Con Tom Queen, los dos frente a frente: él a la izquierda, el padrino a la derecha. Ninguno habla.
+func _tq(lines: Array, opts := []) -> int:
+	Dialogue.face_off = ["el", TQ]
+	return await Dialogue.talk(lines, opts)
 
 
 func _buhonero(npc: Node) -> void:
@@ -3008,14 +3014,13 @@ func _buhonero(npc: Node) -> void:
 	f["buhonero_n"] = n + 1
 	f["buhonero_dia"] = GameState.day
 	if n == 0:
-		await Dialogue.talk([
-			["", "(Un hombre alto, todo de negro, parado donde no hay nada. Sombrero negro, bigote blanco. Tiene el saco abierto: por dentro, colgadas, cosas. Nadie más lo voltea a mirar.)"],
-			[BUHONERO, "—Ahijado. Tom Queen. Su padrino. No ponga esa cara: los padrinos aparecen cuando hay problemas. Para eso es uno padrino."],
-			[BUHONERO, "—Algunos me dicen el Lobo. Yo no vendo: yo soluciono. ¿Qué problema trae?"],
-			[BUHONERO, "—No conteste. Ya sé que no habla. Desde el bautizo: ni lloró. El cura pensó que estaba dañado."],
-			[BUHONERO, "—Plata no recibo. La plata es para la gente que se ve. Usted paga con otra cosa. No duele. Se nota después."]])
+		await _tq([
+			["", "(Un hombre alto parado donde no hay nada. Vestido negro, sombrero negro, el pelo y el bigote blancos. Nadie más lo voltea a mirar.)", TQ],
+			["", "(Es Tom Queen. Su padrino. Se quita el sombrero, le hace la venia y se lo vuelve a poner.)", TQ],
+			["", "(Se quedan los dos callados. Es la conversación más larga que han tenido.)", "el"],
+			["", "(Busca la billetera. El padrino niega con el dedo, le señala la sien y sonríe: la plata es para la gente que se ve.)", TQ]])
 	else:
-		await Dialogue.talk(BUHONERO_HOLA[(n - 1) % BUHONERO_HOLA.size()])
+		await _tq(BUHONERO_HOLA[(n - 1) % BUHONERO_HOLA.size()])
 	var opts := []
 	if GameState.hunger < 75.0:
 		opts.append("El hambre")
@@ -3024,35 +3029,34 @@ func _buhonero(npc: Node) -> void:
 	if GameState.lukas_alive() and (GameState.lukas_sick() or GameState.lukas_stage() >= 1):
 		opts.append("Lukas")
 	opts.append("Nada")
-	var i := await Dialogue.talk([[BUHONERO, "—A ver. ¿Qué le arreglo?"]], opts)
+	var i := await _tq([["", "(Tom Queen se abre el saco: por dentro, colgadas como en una vitrina, cosas. Levanta las cejas y espera.)", TQ]], opts)
 	var trato := true
 	match opts[i]:
 		"El hambre":
 			GameState.set_hunger(100.0)
-			await Dialogue.talk([["", "(De la gabardina sale un almuerzo completo, con jugo. Caliente. Tiene recibo. El recibo dice: \"pagado\". No dice por quién.)"],
-				[BUHONERO, "—Coma despacio. Es de un restaurante que cerró en el 98. Les quedaba muy bueno."]])
+			await _tq([["", "(Del saco sale un almuerzo completo, con jugo. Caliente. Tiene recibo. El recibo dice: \"pagado\". No dice por quién.)", TQ],
+				["", "(El padrino le hace con la mano que coma despacio. Los cubiertos son de un restaurante que cerró en el 98.)", TQ]])
 		"La plata":
 			GameState.add_money(15000)
-			await Dialogue.talk([["", "(Le cuenta quince billetes de mil, uno por uno. Están tibios. Tienen todos el mismo número de serie.)"],
-				[BUHONERO, "—Gástelos rápido. No porque sean falsos: porque a usted le dura poco todo."]])
+			await _tq([["", "(Le cuenta quince billetes de mil, uno por uno, mojándose el dedo. Están tibios. Tienen todos el mismo número de serie.)", TQ],
+				["", "(Le cierra la mano sobre los billetes y le da dos palmaditas: gástelos rápido.)", TQ]])
 		"Que esta noche no lo toquen":
 			f["buhonero_noche"] = GameState.day
-			await Dialogue.talk([[BUHONERO, "—Hecho. Esta noche nadie se le acerca. Ni los que roban ni los otros."],
-				["", "(No dice cuáles otros. Él tampoco pregunta. Nunca ha sido de preguntar.)"]])
+			await _tq([["", "(Tom Queen asiente una vez. Mira para el lado del billar, después para el lado del río, y se truena los dedos de las dos manos.)", TQ],
+				["", "(No dice qué va a hacer. Él tampoco pregunta. Nunca ha sido de preguntar.)", "el"]])
 		"Lukas":
 			if GameState.lukas_stage() >= 1:
 				trato = false
-				await Dialogue.talk([[BUHONERO, "—Eso no."],
-					[BUHONERO, "—Eso no es un problema. Eso es el tiempo. Yo arreglo problemas. Con el tiempo no tengo cuenta: me debe a mí también."],
+				await _tq([["", "(Tom Queen mira a Lukas un rato largo. Después niega con la cabeza, despacio. Eso no es un problema: es el tiempo. Con el tiempo, el padrino no tiene cuenta.)", TQ],
 					["", "(Lukas le gruñe al aire, más o menos a la altura de una rodilla. Es el único que casi le atina.)"]])
 			else:
 				f.erase("lukas_enfermo")
 				f["lukas_curado"] = GameState.day
-				await Dialogue.talk([["", "(El padrino se agacha. Le pone a Lukas dos dedos en la frente. Lukas estornuda, se sacude y le muerde la gabardina. No agarra nada.)"],
-					[BUHONERO, "—La fiebre, lista. Lo otro que tiene es que es perro: eso no se quita."]])
+				await _tq([["", "(El padrino se agacha. Le pone a Lukas dos dedos en la frente. Lukas estornuda, se sacude y le muerde el vestido. No agarra nada.)", TQ],
+					["", "(La fiebre, lista. Lo otro que tiene Lukas es que es perro: eso no se quita.)"]])
 		_:
 			trato = false
-			await Dialogue.talk([[BUHONERO, "—Nada. Perfecto. Mirar también se cobra, pero menos."]])
+			await _tq([["", "(Tom Queen se encoge de hombros y se toca el sombrero. Mirar también se cobra, pero menos.)", TQ]])
 	GameState.add_locura(3 if trato else 1)
 	if trato:
 		f["buhonero_tratos"] = int(f.get("buhonero_tratos", 0)) + 1
@@ -4047,6 +4051,9 @@ func _cumpleanos(in_person: bool) -> void:
 		("una caja de colores de cuarenta y ocho" if saved >= 40000 else "un clavel y un dibujo de él mismo, de palitos, con Lukas")
 	MusicDirector.force("")
 	if in_person:
+		# Los dos frente a frente. Es la única vez en todo el juego que él habla (lo pidió el usuario: su voz
+		# es para Victoria). Una sola palabra, y la placa, por única vez, dice "PAPÁ".
+		Dialogue.face_off = ["el", "victoria"]
 		await Dialogue.talk([
 			["", "(El Parque de San Judas. Una torta chiquita en la banca verde. Doce velas. Doña Fabiola la hizo. No quiso cobrar.)"],
 			["VICTORIA", "—¡Vino Lukas!" if GameState.lukas_alive() else "—¿Y Lukas?"],
@@ -4057,8 +4064,8 @@ func _cumpleanos(in_person: bool) -> void:
 			["", "(Asiente. Le tiemblan las manos.)"],
 			["", "(Germán, Rosa, Samuel, Marta, el Mono con la guitarra. Llegaron sin que nadie los invitara. Cantan mal. Cantan.)"],
 			["VICTORIA", "—Papá. ... ¿Puedo decirle papá?"],
-			["", "(Abre la boca. Esta vez casi sale algo.)"],
-			["", "(Asiente.)"],
+			["", "(Abre la boca. Esta vez sí sale.)", "el"],
+			["PAPÁ", "—Sí."],
 		])
 	else:
 		await Dialogue.talk([

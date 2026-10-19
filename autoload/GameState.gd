@@ -320,7 +320,7 @@ func has_space_for(id: String) -> bool:
 ## flags["iguales"]: "gradual" (el juego), "siempre" o "no" (para probar; se cambia con F4).
 ## Devuelve 0 (como es) a 1 (igual a todos).
 func sameness(id := "", stranger := true) -> float:
-	if id in ["victoria", "lukas"]:
+	if id in ["victoria", "lukas", "buhonero"]:  # (Tom Queen no: él es el que se lleva las caras)
 		return 0.0
 	match str(flags.get("iguales", "gradual")):
 		"siempre":

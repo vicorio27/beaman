@@ -47,9 +47,11 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
 
 ## Reglas de diseño (no se negocian sin el usuario)
 
-- **Él es mudo del todo.** No tiene diálogos, ni siquiera para sí mismo. Nada en primera persona (ni
-  textos de la interfaz). Lo que hace o siente lo cuenta un **narrador** en tercera persona (las líneas
-  sin hablante salen con la placa NARRADOR). Solo habla en los momentos que el usuario indique.
+- **Él es mudo del todo.** No tiene diálogos, ni siquiera para sí mismo, ni en los sueños. Nada en
+  primera persona (ni textos de la interfaz). Lo que hace o siente lo cuenta un **narrador** en tercera
+  persona (las líneas sin hablante salen con la placa NARRADOR). **Habla una sola vez en todo el juego, y
+  es para Victoria**: en su cumpleaños, cuando ella pregunta "¿Puedo decirle papá?", dice "—Sí." No
+  propongas otras líneas para él.
 - **Humor de libreto, nunca lástima directa.** Nada de frases que expliquen el dolor ("nadie lo quiere",
   "ya no le duele"). Personajes cancheros, rápidos, con remate; lo triste va en un detalle concreto y
   seco, para que la lástima la ponga el jugador.
@@ -71,8 +73,9 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
   deben ser lo más chistoso del juego.
 - **Alejandro**, el niño de la calle, es el reflejo del protagonista de niño: el texto nunca lo dice, solo
   deja pistas.
-- **Tom Queen**, el que solo él ve (alto, bigote blanco, sombrero y ropa negra, le dice "ahijado"):
-  "hace" favores y cobra en locura.
+- **Tom Queen**, el padrino, el que solo él ve (pelo y bigote blancos, siempre de vestido y sombrero
+  negros): "hace" favores y cobra en locura. **Tampoco habla** hasta que el usuario lo diga: lo que hace
+  lo cuenta el narrador.
 - **"Todos iguales"**: la gente se va volviendo maniquíes grises a medida que suben los días, la locura y
   el duelo (los desconocidos primero, los queridos al final; Victoria y Lukas nunca).
 

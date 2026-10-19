@@ -85,7 +85,7 @@ const BEFORE := [
 	[["MAURICIO", "—Suerte de principiante. Raúl ya estaba prendido. Raúl siempre está prendido. Es su estado natural."],
 		["ALVARITO", "—Hola, mijo. Usted no se acuerda de mí. Yo lo cargué cuando nació. En la clínica. Usted me orinó la camisa. La guardé."],
 		["ALVARITO", "—Hoy lo voy a cargar otra vez. Para un suplex. Pero con cariño."],
-		["EL PELADO", "—No me acuerdo de usted."],
+		["", "Lo mira de arriba abajo. No se acuerda de Alvarito. Alvarito se da cuenta."],
 		["ALVARITO", "—Nadie se acuerda de mí, mijo. Es mi encanto."]],
 	[["EL PECAS", "—¡A donde vaya don Mauricio, voy yo! ¡En moto, a pie, al ring! ¡Al baño no, pero lo espero afuera!"],
 		["", "Mauricio se para en el delantal del ring, del lado del Pecas. Ese no es su lugar. Nunca supo cuál era su lugar."],
@@ -93,17 +93,17 @@ const BEFORE := [
 		["LA MONA", "—Todos los días, Tito. Se llama divorcio."]],
 	[["", "Se apagan las luces del coliseo."], ["", "GONG."], ["", "Humo. Pasos lentos. Una moto suena en algún lado, aunque no hay moto."],
 		["DON TITO", "—¡Señoras y señores! ¡El hombre que se fue por cigarrillos en el 2009 y volvió con un chaleco! ¡EL ENTERRADOR DE DOMINGOS!"],
-		["MAURICIO", "—Bueno, mijo. Aquí estamos. Como los domingos."], ["EL PELADO", "—Nunca estuvimos así. Ni un domingo."],
-		["MAURICIO", "—Una vez fuimos a Melgar."], ["EL PELADO", "—Ese fue el Pecas, pa."]],
+		["MAURICIO", "—Bueno, mijo. Aquí estamos. Como los domingos."], ["", "Nunca estuvieron así. Ni un domingo."],
+		["MAURICIO", "—Una vez fuimos a Melgar."], ["", "A Melgar fue con el Pecas. Mauricio se acuerda un segundo después. Hace como que no."]],
 ]
 const AFTER := [
 	[["RAUL", "—Uy... el pelado. Ya me bajó la borrachera. Y eso me cuesta plata. Una borrachera mía vale como cien mil."],
 		["MAURICIO", "—Raúl ya está viejo. No cuenta."]],
 	[["ALVARITO", "—Me ganó limpio. Así me gusta. Bueno, no me gusta. Pero me gusta que haya sido usted."],
 		["ALVARITO", "—Mijo... su papá los quería. A su manera. Una manera muy mala, pero los quería."],
-		["EL PELADO", "—Gracias, Alvarito. Usted sí vino a verme. Hoy."], ["ALVARITO", "—Yo vine por la cerveza gratis, mijo. Pero me quedé por usted."]],
-	[["EL PECAS", "—... Usted pega como él."], ["EL PELADO", "—No. Yo pego como yo. Él pega como se va."],
-		["EL PECAS", "—... Él me prestó la chaqueta. Dijo que me quedaba mejor que a usted."], ["EL PELADO", "—Nunca me la ofreció."]],
+		["", "Le da la mano a Alvarito. De todos, fue el único que vino a verlo. Hoy."], ["ALVARITO", "—Yo vine por la cerveza gratis, mijo. Pero me quedé por usted."]],
+	[["EL PECAS", "—... Usted pega como él."], ["", "Niega con la cabeza. Mauricio pega y se va. Él se queda."],
+		["EL PECAS", "—... Él me prestó la chaqueta. Dijo que me quedaba mejor que a usted."], ["", "A él nunca se la ofreció."]],
 ]
 const TEASE := [
 	[["", "Mauricio levanta la cerveza hacia el ring. Es la primera vez que lo mira en quince años."],
@@ -1040,7 +1040,7 @@ func _final() -> void:
 	await Dialogue.talk([
 		["", "Mauricio queda en la lona, mirando las luces. Lukas cuenta hasta tres. Despacio. Nadie lo apura."],
 		["MAURICIO", "—Yo... los veía. Desde lejos. Desde la moto, con el Pecas. Los domingos."],
-		["EL PELADO", "—Ya sé, pa. Desde lejos."],
+		["", "Asiente. Ya sabía. Desde lejos también se ve."],
 		["", "Raúl pide otra ronda. El Pecas mira para otro lado. Alvarito es el único que aplaude, despacio."],
 		["", "Él se baja del ring solo. Camina derecho. Por primera vez, sin mirar atrás."],
 	])

@@ -36,6 +36,7 @@ const PAGE_CHARS_WIDE := 96
 ## Los retratos salen de tools/art/draw_retratos.py.
 const SPEAKERS := {
 	"ÉL": ["el", "por dentro"], "YO": ["el", ""], "EL PELADO": ["el", ""],
+	"PAPÁ": ["el", ""],  # (la única vez que él habla: el "sí" del cumpleaños de Victoria)
 	"DON GERMAN": ["german", "la panadería"], "MARTA": ["marta", "el café"], "SAMUEL": ["samuel", "bajo el puente"],
 	"WILSON": ["wilson", "reciclador"], "DOÑA ROSA": ["rosa", "tintos y arepas"], "VICTORIA": ["victoria", "su hija"],
 	"ZAIDA": ["zaida", ""], "DRA. PILAR": ["pilar", "veterinaria"], "DEFENSORA": ["defensora", "Defensoría"],
@@ -226,7 +227,7 @@ func _narrated(text: String) -> String:
 ## Si alguien le habla (no él por dentro, no la narración), baja la soledad. Una vez cada 20 minutos.
 func _keep_company(lines: Array) -> void:
 	for line in lines:
-		if line is Array and line[0] != null and not str(line[0]) in ["", INNER, "YO", "EL PELADO"]:
+		if line is Array and line[0] != null and not str(line[0]) in ["", INNER, "YO", "EL PELADO", "PAPÁ"]:
 			var f := GameState.flags
 			if TimeManager.minutes - float(f.get("company_at", -999.0)) > 20.0:
 				f["company_at"] = TimeManager.minutes
@@ -338,7 +339,7 @@ func _show_face_off(line, info: Array) -> void:
 	var speaker: String = info[0] if not info.is_empty() else ""
 	var right: bool = speaker == face_off[1]
 	var faces := [face_off[0], face_off[1]]
-	if line is Array and line.size() > 2 and str(line[2]) != "":
+	if line is Array and line.size() > 2 and str(line[2]) != "" and not face_off.has(str(line[2])):
 		faces[1 if right else 0] = line[2]
 	_portrait.material = null
 	_portrait.texture = load("res://assets/portraits/%s.png" % faces[0])
@@ -354,6 +355,8 @@ func _show_face_off(line, info: Array) -> void:
 	_portrait2.modulate = lit if right else dim
 	if line is Array and str(line[0]) == "" and line.size() > 2 and str(line[2]) == face_off[0]:
 		_portrait.modulate = lit  # narración sobre él, en el cara a cara: su retrato prendido (él no habla)
+	elif line is Array and str(line[0]) == "" and line.size() > 2 and str(line[2]) == face_off[1]:
+		_portrait2.modulate = lit  # o sobre el otro, si tampoco habla (Tom Queen)
 	if talking and speaker == face_off[0] and line[0] == INNER:
 		_portrait.modulate = Color(0.8, 0.88, 1.0)
 	if line is Array and line.size() > 3 and line[3] == "sacude":

@@ -293,6 +293,19 @@ PEOPLE.update({
 })
 
 
+# Tom Queen, el padrino (el que solo ve él): pelo y bigote blancos, siempre de vestido y sombrero negros.
+# Alto: el sombrero le suma dos filas por encima de la cabeza.
+_TQ_HAT = ["...oooo...", "..oKKKKo..", "..oKKKKo..", "..owwwwo..", "oKKKKKKKKo"]
+PEOPLE["tomqueen"] = person(
+    (_TQ_HAT + ["..ohssho..", "..oesseo..", "..obbbbo..", "...osso...", "...oSSo..."],
+     _TQ_HAT + ["..ohhhho..", "..ohhhho..", "..ohhhho..", "...oSSo...", "...oSSo..."],
+     _TQ_HAT[:4] + [".oKKKKKKKo", "..ohhssso.", "..ohhseso.", "...osbbo..", "....osso..", "....oSo..."]),
+    body("saco"),
+    {**SKIN, "h": (226, 224, 220), "b": (246, 244, 238), "K": (30, 28, 34), "w": (64, 60, 72),
+     "j": (34, 32, 40), "J": (60, 58, 70), "i": (54, 52, 62), "t": (14, 12, 18), "T": (14, 12, 18),
+     "p": (32, 30, 38), "q": (24, 22, 28), "k": (12, 10, 14)}, 5)   # (25 filas: al caminar sube una y no se corta)
+
+
 def main():
     for pid, p in PEOPLE.items():
         path = Path("assets/characters") / (pid + ".png")
