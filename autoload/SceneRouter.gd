@@ -155,7 +155,7 @@ func _debug_menu() -> void:
 	var opts := ["Dormir ya (pasar la noche)", "+$50.000", "Día +1 (sin dormir)", "Día +5 (sin dormir)",
 		"Hechos: cédula, obra, centro", "Hechos: llamada a mamá", "Hechos: papá en la plaza",
 		"Victoria: vínculo 3 + visitas", "Misterios: todas las pistas", "Soñar ya el próximo sueño",
-		"Todos iguales: %s" % str(g.flags.get("iguales", "gradual")), "Locura +5 (ahora %d)" % int(g.flags.get("locura", 0)), "Nada"]
+		"Todos iguales: %s" % str(g.flags.get("iguales", "gradual")), "Locura +5 (ahora %d)" % int(g.flags.get("locura", 0)), "Torneo: la deuda y a dormir (día 32)", "Nada"]
 	var i := await Dialogue.talk([["PRUEBA", "Día %d, %s. $%d. Sueños vistos: %d." % [g.day, TimeManager.clock_text(), g.money,
 		g.flags.get("dreams_seen", []).size()]]], opts)
 	var f := g.flags
@@ -205,6 +205,13 @@ func _debug_menu() -> void:
 			g.add_locura(5)
 			Narrator.say("Locura: %d." % int(f["locura"]))
 			go(get_tree().current_scene.scene_file_path)
+		12:
+			# El torneo de tenis: el día del cobrador ya pasó (la deuda es de él) y mañana amanece el coliseo.
+			g.day = TenisHistoria.DIA_COBRADOR
+			Torneo.deuda()
+			if not f.has("sleep_spot"):
+				f["sleep_spot"] = "banco"
+			go(NIGHT)
 		9:
 			# Que esta noche toque sueño: se olvida del "una noche libre" y se duerme.
 			f["last_dream_day"] = -99

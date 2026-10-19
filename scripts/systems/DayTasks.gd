@@ -287,19 +287,29 @@ static func _marta() -> void:
 		["COBRADOR", "—La señora debe el veinte por ciento diario. Hoy, o le quitamos la nevera."],
 		["MARTA", "(bajito) —No se meta. Por favor."],
 	], ["Hacerme el loco", "Pagarle $10.000 de lo de ella"])
+	# Se meta como se meta, el cobrador le pasa la deuda: "el que se mete, responde" (el torneo de
+	# tenis llega mañana: scripts/systems/Torneo.gd).
 	if i == 1 and GameState.money >= 10000:
 		GameState.add_money(-10000)
-		await Dialogue.talk([["COBRADOR", "—Abono. Volvemos el lunes."], ["MARTA", "—Usted es un idiota. ... Gracias, idiota. Pero idiota."]])
+		await Dialogue.talk([
+			["COBRADOR", "—Abono. (Se guarda la plata. Abre la libreta. Tacha a Marta. Escribe otra cosa.)"],
+			["COBRADOR", "—El que abona, responde. Así es la cosa. La deuda de la señora ahora es suya: ochenta mil, en cuatro días."],
+			["COBRADOR", "—Y si no, la mochila. Con lo que tenga adentro. (Mira la mochila. No le impresiona.) Bueno. La mochila."],
+			["MARTA", "—Usted es un idiota. ... Me la quitó a mí y se la echó encima. Idiota. ... Gracias, idiota. Pero idiota."],
+		])
 	else:
 		await Dialogue.talk([
 			["", "(Se le acerca mucho. Demasiado. No dice nada. Lo mira sin parpadear.)"],
 			["COBRADOR", "—¿Qué? ¿Qué me mira? ... Diga algo. ... DIGA ALGO."],
 			["", "(Nada. Ni un parpadeo.)"],
 			["COBRADOR", "—... Volvemos otro día. (Se va. Rápido.)"],
-			["MARTA", "—Eso fue muy raro. Y muy útil. ¿Usted está bien?"],
+			["", "(Vuelve. Asoma la cabeza por la reja, sin entrar.)"],
+			["COBRADOR", "—Y como usted se metió, la deuda de la señora ahora es suya. Ochenta mil. Cuatro días. O la mochila. (Se va otra vez. Más rápido.)"],
+			["MARTA", "—Eso fue muy raro. Y muy útil. Y muy caro. ¿Usted está bien?"],
 			["", "(...)"], ["MARTA", "—No me contestés. Mejor no me contestés."],
 		])
 		GameState.add_locura(1)
+	Torneo.deuda()
 	GameState.change_mood(6.0)
 
 

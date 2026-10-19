@@ -137,6 +137,8 @@ func run(id: String, npc: Node) -> void:
 			await _caneca(npc)
 		"feria":
 			await _feria_entrada(npc)
+		"torneo":
+			await Torneo.puerta(npc)
 		"feria_carrusel", "feria_chocones", "feria_montana", "feria_dardos", "feria_garra", "feria_rueda":
 			await _feria(id.substr(6))
 		"caverna_cerrada":

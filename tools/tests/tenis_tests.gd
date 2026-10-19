@@ -26,6 +26,7 @@ func _run() -> void:
 	_error_bounds()
 	_matches()
 	_bracket()
+	_historia()
 	print("\n%d pasaron, %d fallaron" % [_passes, _fails])
 	quit(1 if _fails > 0 else 0)
 
@@ -228,6 +229,44 @@ func _bracket() -> void:
 	check("con 4: semifinal y final, sin previa", four.rounds.size() == 2 and not four.has_playins())
 	var five := TenisBracket.new(["a", "b", "c", "d", "e"])
 	check("con 5: una previa (4 contra 5)", five.has_playins() and five.rounds[0]["matches"].size() == 1 and five.rounds[0]["matches"][0]["a"] == "d")
+
+
+# ---------------------------------------------------------------- La historia (TenisHistoria)
+
+func _historia() -> void:
+	var H := TenisHistoria
+	check("los días del torneo: del 32 al 35", H.dia_torneo(31) == -1 and H.dia_torneo(32) == 0 and H.dia_torneo(35) == 3 and H.dia_torneo(36) == -1)
+	var falta := []
+	for id in TenisData.TOURNAMENT["entrants"]:
+		if not H.ABANDONOS.has(id) or not ResourceLoader.exists("res://assets/tenis/el_%s.png" % id):
+			falta.append(id)
+	check("cada inscrito tiene cómo abandonar y él tiene su raqueta", falta.is_empty(), str(falta))
+	var b := TenisBracket.new(TenisData.TOURNAMENT["entrants"])
+	var a1 := H.quien_abandona(b, 0, [], 5)
+	var a2 := H.quien_abandona(b, 0, [], 5)
+	var pre := []
+	for m in b.pending(0):
+		pre.append_array([m["a"], m["b"]])
+	check("el que abandona juega hoy, y la misma semilla da el mismo", a1["id"] in pre and str(a1) == str(a2))
+	var usados := pre.duplicate()
+	usados.erase(pre[3])
+	check("prefiere a uno que no haya abandonado", H.quien_abandona(b, 0, usados, 5)["id"] == pre[3])
+	check("si ya abandonaron todos, igual abandona uno", not H.quien_abandona(b, 0, pre, 5).is_empty())
+	check("sin partidos ese día, nadie", H.quien_abandona(b, 2, [], 5).is_empty())
+	var p := H.paga("Final", true, 10)
+	check("la paga: sueldo, pelotas y lo del profesional", int(p["total"]) == H.SUELDO + 10 * H.PROPINA_BOLA + H.PROPINA_GANA["Final"]
+		and int(H.paga("Previa", false, 0)["total"]) == H.SUELDO + H.CONSUELO)
+	var ok := true
+	for f in TenisData.FORMATS:  # que abandone antes de que se pueda acabar el partido
+		var fmt: Dictionary = TenisData.FORMATS[f]
+		ok = ok and H.juegos_para_abandonar(f) < int(fmt["games_per_set"]) * int(fmt["sets_to_win"])
+	check("abandona antes de que el partido se pueda acabar", ok)
+	# Cuatro jornadas ganando todo, contra la deuda: alcanza, pero no sobra una fortuna.
+	var best := 0
+	for rn in ["Previa", "Cuartos", "Semifinal", "Final"]:
+		best += int(H.paga(rn, true, 8)["total"])
+	var worst := 4 * int(H.paga("Previa", false, 0)["total"])
+	check("ganando todo, paga la deuda; perdiendo todo, no", best >= H.DEUDA and best < 3 * H.DEUDA and worst < H.DEUDA, "mejor $%d, peor $%d" % [best, worst])
 
 
 # ---------------------------------------------------------------- Partidos enteros

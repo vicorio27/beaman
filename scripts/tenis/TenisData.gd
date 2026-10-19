@@ -151,6 +151,16 @@ const DIFFICULTY := {
 }
 
 
+## La plata con puntos de mil: 50.000.000.
+static func money(n: int) -> String:
+	var s := str(absi(n))
+	var out := ""
+	while s.length() > 3:
+		out = "." + s.substr(s.length() - 3) + out
+		s = s.substr(0, s.length() - 3)
+	return ("-" if n < 0 else "") + s + out
+
+
 ## En mayúsculas para la pantalla, sin tildes en las vocales (la fuente pone la mayúscula con tilde
 ## como si fuera minúscula: "DíA").
 static func caps(s: String) -> String:

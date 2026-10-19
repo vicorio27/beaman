@@ -136,6 +136,11 @@ const DEFS := {
 		"detail": "Hoy cumple años Don Germán (no le gusta que se sepa). Doña Leonor vende flores en el Parque: llevarle una a la panadería."},
 	"hoy_mono": {"title": "Hoy: el show del Mono (Parque)", "kind": "side",
 		"detail": "El Mono tiene \"un show\" en la glorieta del Parque. Necesita público."},
+	# El torneo de tenis (scripts/systems/Torneo.gd).
+	"gota_deuda": {"title": "El gota a gota: $80.000", "kind": "side",
+		"detail": "El cobrador le pasó la deuda de Marta: ochenta mil en cuatro días, o se lleva la mochila con todo. Viene en la mañana, después del cuarto día."},
+	"torneo_trabajo": {"title": "Recogebolas en el coliseo", "kind": "side",
+		"detail": "En el potrero de arriba (entre la Caverna del Gamer y la feria) armaron un coliseo: un torneo de tenis de cuatro días. Buscan recogebolas, de 8 a 6, una jornada por día: $12.000 y propinas."},
 	"hoy_marta": {"title": "Hoy: el cobrador, donde Marta", "kind": "side",
 		"detail": "Marta no abrió el café: el cobrador del gota a gota anda por el barrio. Ir al café."},
 	"hoy_efrain": {"title": "Hoy: Don Efraín te busca (Parque)", "kind": "side",

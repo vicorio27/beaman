@@ -18,6 +18,10 @@ cada uno (el pelo, la cara, las rayas, el tatuaje). Las proporciones son las de 
   Kyrgistán    la gorra roja al revés, todo de negro, tatuajes en el brazo de la raqueta.
   Pecador      el pelo zanahoria crespo, muy blanco; camiseta menta con cuello blanco.
   Fedorer      todo de blanco, balaca blanca, pelo café; la raqueta roja.
+  Él           el recogebolas: la camiseta negra del torneo (con la franja roja) que le prestaron, y
+               encima lo suyo: la corbata roja floja (de espaldas, tirada por encima del hombro), el
+               jean, un zapato negro y uno rojo, la barba tupida con canas y el mechón parado. Sin
+               raqueta (el.png); con la de cada uno cuando termina un partido (el_<id>.png).
 
 Hoja: celdas de 32x42 (los pies en y = 40). Fila 0: de espaldas; fila 1: de frente. Columnas = POSES (ver abajo).
 Salida: assets/tenis/<id>.png. Uso: python tools/art/draw_tenistas.py  (desde la carpeta del proyecto)
@@ -36,7 +40,7 @@ EYE = (30, 28, 36)
 # Las poses, en orden (es el orden de las columnas de la hoja; TenisMatch.gd usa los mismos nombres).
 POSES = ["listo", "listo2", "corre1", "corre2", "corre3", "corre4", "drive_atras", "drive", "drive_fin",
          "reves_atras", "reves", "reves_fin", "saque_lanza", "saque", "saque_fin", "tirada", "piso",
-         "celebra", "bravo", "dejada"]
+         "celebra", "bravo", "dejada", "agachado", "recoge"]
 
 # ---------------------------------------------------------------- Las poses (de espaldas)
 # Coordenadas en la celda, vistas de espaldas: la mano derecha (la de la raqueta) queda a la derecha.
@@ -94,6 +98,12 @@ POSE = {
                rk=(95, False), lean=2, head_dx=0, down=True),
     "dejada": P(el=(-5, 15), hl=(-6, 18), er=(5, 16), hr=(7, 20), kl=(-4, 28), fl=(-7, 33), kr=(4, 26), fr=(5, 33),
                 rk=(-10, True), lean=3),
+    # El recogebolas: agachado al lado de la red, las manos en las rodillas, esperando el punto.
+    "agachado": P(el=(-6, 18), hl=(-4, 23), er=(6, 18), hr=(4, 23), kl=(-5, 27), fl=(-5, 33), kr=(5, 27), fr=(5, 33),
+                  rk=None, lean=4, down=True),
+    # Recogiendo la pelota del piso: una mano abajo, la otra en la rodilla.
+    "recoge": P(el=(-5, 18), hl=(-4, 23), er=(6, 21), hr=(7, 30), kl=(-4, 27), fl=(-6, 33), kr=(4, 28), fr=(5, 33),
+                rk=None, lean=5, tilt=1, down=True),
 }
 
 # ---------------------------------------------------------------- Los tenistas
@@ -160,6 +170,12 @@ PLAYERS = {
         "t": (244, 244, 240), "T": (200, 202, 208), "p": (244, 244, 240), "P": (196, 198, 204),
         "w": (240, 240, 236), "k": (240, 240, 236), "K": (196, 198, 204), "a": (244, 244, 240),
         "r": (190, 40, 44), "hair": "corto"},
+    "el": {
+        "h": 1, "sh": 5, "slouch": 0, "skirt": False, "long": True,
+        "s": (214, 150, 120), "S": (172, 110, 90), "h1": (72, 66, 74), "h2": (150, 148, 152),
+        "t": (44, 40, 48), "T": (30, 28, 34), "p": (66, 92, 146), "P": (44, 62, 104),
+        "w": (66, 92, 146), "k": (46, 40, 46), "k2": (196, 64, 52), "K": (196, 64, 52), "a": (206, 48, 52),
+        "r": None, "hair": "el", "beard": (112, 98, 90)},
 }
 
 
@@ -295,25 +311,28 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
     if q.get("dive") or q.get("floor"):
         shoulder_l = shoulder_r = (neck[0], neck[1] + 1)
 
-    rk_ang, rk_front = q["rk"]
+    rk_ang, rk_front = q["rk"] if q["rk"] is not None else (0, False)
+    has_rk = q["rk"] is not None and d["r"] is not None
     if front:
         rk_ang = 180 - rk_ang
         rk_front = not rk_front
     hand_r = j("hr")
 
     # 1) Lo que va detrás del cuerpo.
-    if not rk_front:
+    if has_rk and not rk_front:
         racket(cv, hand_r, rk_ang, d["r"])
 
     # 2) Las piernas (piel; medias y zapatos abajo).
     for side in ("l", "r"):
         hip = (hips if hips else (X(-2 if side == "l" else 2), Y(hip_y + 2)))
         knee, foot = j("k" + side), j("f" + side)
-        cv.line(hip, knee, d["s"])
-        cv.line(knee, foot, d["s"])
+        leg = d["p"] if d.get("long") else d["s"]   # él: el jean, hasta el zapato
+        cv.line(hip, knee, leg)
+        cv.line(knee, foot, leg)
         cv.line((foot[0], foot[1] - 2), foot, d["w"])
+        shoe = d.get("k2", d["k"]) if side == "r" else d["k"]   # él: uno negro y uno rojo
         cv.rect(foot[0] - (1 if mx * (1 if side == "r" else -1) < 0 else 0), foot[1],
-                foot[0] + (2 if mx * (1 if side == "r" else -1) > 0 else 1), foot[1] + 1, d["k"])
+                foot[0] + (2 if mx * (1 if side == "r" else -1) > 0 else 1), foot[1] + 1, shoe)
 
     # 3) El tronco, la pantaloneta (o la falda).
     cv.poly(torso, d["t"])
@@ -342,7 +361,7 @@ def draw(pid: str, pose: str, front: bool) -> Image.Image:
     head(cv, d, hx, hy, front)
 
     # 6) Lo que va delante.
-    if rk_front:
+    if has_rk and rk_front:
         racket(cv, hand_r, rk_ang, d["r"])
 
     cv.outline()
@@ -401,6 +420,14 @@ def head(cv, d, x, y, front):
         if not front:
             for xx in range(0, 8, 2):
                 cv.dot(x + xx, y + 6, h1)
+    elif style == "el":  # oscuro con canas, y el mechón parado
+        for px_, py_ in ((1, 1), (4, 0), (6, 2)):
+            cv.dot(x + px_, y + py_, h2)
+        if not front:
+            cv.dot(x + 2, y + 4, h2)
+            cv.dot(x + 5, y + 5, h2)
+        cv.dot(x + 4, y - 1, h1)
+        cv.dot(x + 5, y - 2, h1)
     elif style == "gorra":  # la gorra al revés: la visera atrás
         cap, cap_d = d["a"], (140, 30, 40)
         for yy in range(3):
@@ -416,13 +443,23 @@ def head(cv, d, x, y, front):
         else:  # por delante: el pelo que se sale por debajo y la tira
             cv.dot(x, y + 3, h1)
             cv.dot(x + 7, y + 3, h1)
+    if front and d.get("beard"):  # la barba tupida (con alguna cana) desde debajo de los ojos
+        for yy in range(5, 8):
+            for xx in range(8):
+                if not (xx in (0, 7) and yy == 7):
+                    cv.dot(x + xx, y + yy, d["beard"])
+        cv.dot(x + 2, y + 6, h2)
+        cv.dot(x + 5, y + 7, h2)
+        cv.dot(x + 1, y + 3, d["h1"])
+        cv.dot(x + 6, y + 3, d["h1"])
     if front:  # la cara: ojos, la sombra de un lado, la boca
         cv.dot(x + 2, y + 4, EYE)
         cv.dot(x + 5, y + 4, EYE)
         for yy in range(3, 8):
             cv.dot(x + 7 - (yy in (0, 7)), y + yy, S)
-        cv.dot(x + 3, y + 6, S)
-        cv.dot(x + 4, y + 6, S)
+        if not d.get("beard"):
+            cv.dot(x + 3, y + 6, S)
+            cv.dot(x + 4, y + 6, S)
     else:  # de espaldas: las orejas
         cv.dot(x - 0, y + 4, s)
         cv.dot(x + 7, y + 4, s)
@@ -487,6 +524,21 @@ def details(cv, pid, d, pose, front, torso, j, mx, hx, hy, q):
         er, hr = j("er"), j("hr")
         for t in (0.25, 0.55, 0.8):
             paint(er[0] + (hr[0] - er[0]) * t, er[1] + (hr[1] - er[1]) * t, (52, 64, 110))
+    if pid == "el" or pid.startswith("el_"):
+        if standing and not front:  # la franja roja del torneo, en la espalda
+            for x in range(CW):
+                if px[x, ty0 + 4 + DY][:3] in (d["t"], d["T"]):
+                    paint(x, ty0 + 4, (150, 36, 40))
+        if standing and front:  # la corbata roja, floja, del cuello hasta la cintura
+            cx = int(round(sum(p[0] for p in torso) / 4))
+            paint(cx, ty0, (240, 240, 236))
+            for y in range(ty0, ty0 + 9):
+                paint(cx, y, d["a"] if y < ty0 + 8 else (140, 30, 38))
+            paint(cx + 1, ty0 + 1, d["a"])
+        elif standing:  # de espaldas: la corbata tirada por encima del hombro, colgando atrás
+            sx = torso[1][0] - 2 * mx
+            for k in range(5):
+                paint(sx - k * mx * 0.3, ty0 + k, d["a"] if k < 4 else (140, 30, 38))
     if pid == "pecador" and standing:  # el cuello blanco
         for x in range(CW):
             if px[x, ty0 + DY][:3] in (d["t"], d["T"]):
@@ -507,9 +559,16 @@ def sheet(pid: str) -> Image.Image:
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     sheets = {}
-    for pid in PLAYERS:
+    for pid in list(PLAYERS):
         sheets[pid] = sheet(pid)
         sheets[pid].save(OUT / f"{pid}.png")
+    # Él con la raqueta de cada uno (cuando termina el partido del que abandonó).
+    for pid in [k for k in PLAYERS if k != "el"]:
+        PLAYERS["el_" + pid] = dict(PLAYERS["el"], r=PLAYERS[pid]["r"])
+        im = sheet("el_" + pid)
+        im.save(OUT / f"el_{pid}.png")
+        if pid == "fedorer":
+            sheets["el_fedorer"] = im
     if "--preview" in sys.argv:
         tmp = Path(sys.argv[sys.argv.index("--preview") + 1])
         lam = Image.new("RGBA", (CW * len(POSES), CH * 2 * len(sheets)), (70, 120, 96, 255))

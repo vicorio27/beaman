@@ -9,15 +9,23 @@ extends Node2D
 ## Si se abre sin setup (F6 en el editor), primero se escoge tenista y rival (TenisPicker).
 ## Al final del partido sale el resumen (ganadores, errores, aces...); con E (o solo, si
 ## setup["auto_close"] dice cuántos segundos) se cierra y emite closed(winner).
+##
+## En la historia (TenisJornada): setup["ballboy"] = true: los dos juegan solos y uno es el
+## recogebolas, agachado al lado de la red. No se puede mover mientras juegan; cuando se acaba el
+## punto, corre por la pelota (flechas) y la trae: el saque que sigue espera a que vuelva. Traerla
+## rápido da propina (bb_fast). Con setup["abandon_games"] = n, después de n juegos el de abajo
+## abandona: se emite abandon_now() y todo se queda quieto hasta take_over(), que le pasa a él la
+## raqueta (lo maneja el humano, con el dibujo de él: assets/tenis/el_<id>.png).
 
 signal finished(winner: int)
 signal closed(winner: int)
+signal abandon_now()
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 ## La cancha en perspectiva (la misma cuenta que tools/art/draw_tenis_coliseo.py, que pinta el fondo):
-## a lo ancho, de 6.6 px por metro en el fondo a 8.6 en el frente; a lo largo, 4.6.
-const KX_FAR := 6.6
-const KX_NEAR := 8.6
+## a lo ancho, de 10.5 px por metro en el fondo a 13.5 en el frente; a lo largo, 4.6.
+const KX_FAR := 10.5
+const KX_NEAR := 13.5
 const SY := 4.6
 const CENTER := Vector2(160, 104)
 const BG := preload("res://assets/tenis/coliseo.png")
@@ -40,13 +48,29 @@ var _flash := {}  # golpes que brillan un momento (habilidad): player -> tiempo
 ## fila 0 de espaldas (el de abajo), fila 1 de frente (el de arriba). Las columnas, en este orden:
 const POSES := ["listo", "listo2", "corre1", "corre2", "corre3", "corre4", "drive_atras", "drive", "drive_fin",
 	"reves_atras", "reves", "reves_fin", "saque_lanza", "saque", "saque_fin", "tirada", "piso",
-	"celebra", "bravo", "dejada"]
+	"celebra", "bravo", "dejada", "agachado", "recoge"]
 const CELL := Vector2(32, 42)
 const FEET := Vector2(16, 40)
 var _sheets := {}   # id -> Texture2D (los que no tienen dibujo, como "base", van con el muñeco)
 var _anim := [{}, {}]  # por jugador: {"pose", "t"} lo que está haciendo (un golpe, celebrar...)
 var _run_d := [0.0, 0.0]  # lo que lleva corrido (para el paso)
 var _summary_t := -1.0  # desde cuándo se ve el resumen del final (-1: no hay)
+
+# El recogebolas (setup["ballboy"]).
+const BB_HOME := Vector2(TenisData.HALF_W + 2.1, 0.7)  # agachado al lado del poste de la red (abajo, a la derecha)
+const BB_SPEED := 5.2
+const EL_SHEET := preload("res://assets/tenis/el.png")
+var bb_fast := 0           # pelotas traídas rápido (cada una, propina)
+var bb_slow := 0
+var _bb_pos := BB_HOME
+var _bb_vel := Vector2.ZERO
+var _bb_ball = null        # Vector2: la pelota tirada que falta traer (null: ninguna)
+var _bb_has := false       # ya la recogió: va de vuelta
+var _bb_t := 0.0           # cuánto lleva desde que se acabó el punto
+var _bb_pick := 0.0        # agachándose a recogerla
+var _bb_scold := false     # ya le gritaron "¡quieto!" en este punto
+var _bb_d := 0.0           # lo que lleva corrido (para el paso)
+var _abandon := 0          # 0: no; 1: ya toca (cuando traiga la pelota); 2: esperando take_over; 3: ya juega él
 
 
 func _ready() -> void:
@@ -86,6 +110,69 @@ func _start() -> void:
 	_pop_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
+# ---------------------------------------------------------------- El recogebolas
+
+func _ballboy(delta: float) -> void:
+	_bb_pick = maxf(0.0, _bb_pick - delta)
+	var mv := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if sim.live or (_bb_ball == null and not _bb_has):
+		# Mientras juegan: quieto, agachado. Si se mueve, le gritan (y esa pelota no tiene propina).
+		_bb_vel = Vector2.ZERO
+		_bb_pos = _bb_pos.move_toward(BB_HOME, BB_SPEED * delta)
+		if sim.live and mv.length() > 0.3 and not _bb_scold:
+			_bb_scold = true
+			_pop("¡QUIETO, RECOGEBOLAS!")
+		if _abandon == 1 and not sim.live and _bb_pos.distance_to(BB_HOME) < 0.1:
+			_abandon = 2
+			_pop(TenisHistoria.ABANDONOS.get(sim.players[0].id, {}).get("pop", ""))
+			abandon_now.emit()
+		return
+	_bb_t += delta
+	if _bb_pick > 0.0:
+		_bb_vel = Vector2.ZERO
+		return
+	_bb_vel = Vector2(mv.x, mv.y).limit_length(1.0) * BB_SPEED
+	_bb_pos += _bb_vel * delta
+	_bb_d += _bb_vel.length() * delta
+	var hw := TenisData.HALF_W + 3.5
+	var hl := TenisData.HALF_L + 3.0
+	_bb_pos = Vector2(clampf(_bb_pos.x, -hw, hw), clampf(_bb_pos.y, -hl, hl))
+	if _bb_ball != null and _bb_pos.distance_to(_bb_ball) < 0.8:
+		_bb_ball = null
+		_bb_has = true
+		_bb_pick = 0.3
+	elif _bb_has and _bb_pos.distance_to(BB_HOME) < 0.7:
+		_bb_has = false
+		_bb_pos = BB_HOME
+		if _bb_t < TenisHistoria.RAPIDO and not _bb_scold:
+			bb_fast += 1
+			_pop("+$%d" % TenisHistoria.PROPINA_BOLA)
+		elif _bb_t > TenisHistoria.LENTO:
+			bb_slow += 1
+			_pop("¡LA PELOTA, MUDO!")
+		_bb_scold = false
+
+
+## Le pasa la raqueta: desde ahora lo maneja el humano, con el dibujo de él.
+func take_over() -> void:
+	setup["ai0"] = false
+	setup["ballboy"] = false
+	_bb_ball = null
+	_bb_has = false
+	_abandon = 3
+	var pid: String = sim.players[0].id
+	var path := "res://assets/tenis/el_%s.png" % pid
+	if ResourceLoader.exists(path):
+		_sheets[pid] = load(path)
+	_anim[0] = {}
+	_buffer = ""
+
+
+## Juega él (el de abajo) desde que tomó la raqueta.
+func is_taken_over() -> bool:
+	return _abandon == 3
+
+
 func _label(at: Vector2, col: Color) -> Label:
 	var l := Label.new()
 	l.position = at
@@ -110,9 +197,14 @@ func _process(delta: float) -> void:
 		queue_redraw()
 		return
 	_read_human(delta)
+	if setup.get("ballboy", false):
+		_ballboy(delta)
 	_acc += minf(delta, 0.1)
 	while _acc >= TenisSim.DT:
 		_acc -= TenisSim.DT
+		if _abandon == 2 or (_bb_ball != null or _bb_has) and sim.state == "point_over" and sim.wait < 0.1:
+			_acc = 0.0  # el saque que sigue espera la pelota (o al que va a terminar el partido)
+			break
 		var i0: Dictionary = TenisAI.think(sim, 0) if setup.get("ai0", false) else _human_input()
 		sim.step([i0, TenisAI.think(sim, 1)])
 	_pop_t -= delta
@@ -171,6 +263,15 @@ func _on_event(kind: String, d: Dictionary) -> void:
 				_anim[p.idx] = {"seq": [a, a + "_fin"], "cuts": [0.09], "t": 0.0, "len": 0.38}
 		"point":
 			var w: int = d["winner"]
+			if setup.get("ballboy", false):  # la pelota quedó tirada: a traerla
+				var hl := TenisData.HALF_L
+				var hw := TenisData.HALF_W
+				_bb_ball = Vector2(clampf(sim.ball.x, -hw - 3.0, hw + 3.0), clampf(sim.ball.y, -hl - 1.5, hl + 2.5))
+				_bb_t = 0.0
+				_bb_has = false
+			var ag: int = int(setup.get("abandon_games", 0))
+			if ag > 0 and _abandon == 0 and sim.score.games[0] + sim.score.games[1] >= ag and not sim.score.over():
+				_abandon = 1
 			if d["kind"] in ["winner", "ace"]:
 				_anim[w] = {"seq": ["celebra"], "cuts": [], "t": 0.0, "len": 1.1}
 			if d["kind"] in ["winner", "ace"] or int(d["rally"]) >= 12 or d.get("closed", "") != "":
@@ -241,6 +342,8 @@ func _update_hud() -> void:
 	var sets := ""
 	for h in s.set_history:
 		sets += " %d-%d" % [h[0], h[1]]
+	if _abandon == 3:
+		n0 = "EL"
 	var names := [n0, n1]
 	for i in 2:
 		_rows[i].text = "%s %d %s" % [names[i], s.games[i], _points_text(i)]
@@ -283,19 +386,18 @@ func _draw() -> void:
 	for y in [-TenisData.SERVICE_L, TenisData.SERVICE_L]:
 		draw_line(w2s(Vector2(-hw, y)), w2s(Vector2(hw, y)), line, 1.0)
 	draw_line(w2s(Vector2(0, -TenisData.SERVICE_L)), w2s(Vector2(0, TenisData.SERVICE_L)), line, 1.0)
-	# Los jugadores, de atrás para adelante (el de arriba primero), y la pelota en su lugar.
-	var order := [1, 0]
-	var ball_drawn := false
-	for i in order:
-		var p = sim.players[i]
-		if not ball_drawn and sim.ball.y < p.pos.y:
-			_draw_ball()
-			ball_drawn = true
-		if i == 0:
-			_draw_net()
-		_draw_player(p)
-	if not ball_drawn:
-		_draw_ball()
+	# De atrás para adelante: los jugadores, la red, la pelota y el recogebolas, cada uno en su fondo.
+	var things := [[sim.players[1].pos.y, func() -> void: _draw_player(sim.players[1])],
+		[minf(sim.players[0].pos.y - 0.01, 0.0), func() -> void: _draw_net()],
+		[sim.players[0].pos.y, func() -> void: _draw_player(sim.players[0])],
+		[sim.ball.y, func() -> void: _draw_ball()]]
+	if setup.get("ballboy", false):
+		things.append([_bb_pos.y, func() -> void: _draw_ballboy()])
+		if _bb_ball != null:
+			things.append([_bb_ball.y - 0.01, func() -> void: _draw_dead_ball()])
+	things.sort_custom(func(a, b): return a[0] < b[0])
+	for th in things:
+		th[1].call()
 	# El tablero (arriba a la izquierda): el recuadro; los nombres y puntos son Labels encima. Debajo de
 	# cada nombre, el cansancio (verde) y el medidor de la habilidad (naranja).
 	draw_rect(Rect2(3, 3, 78, 40), Color(0.06, 0.06, 0.1, 0.92))
@@ -329,6 +431,31 @@ func _draw_net() -> void:
 		draw_line(Vector2(x, a.y - 4), Vector2(x, a.y), Color(0.1, 0.1, 0.12, 0.6), 1.0)
 	draw_rect(Rect2(a + Vector2(-1, -6), Vector2(2, 7)), Color(0.4, 0.4, 0.44))
 	draw_rect(Rect2(b + Vector2(-1, -6), Vector2(2, 7)), Color(0.4, 0.4, 0.44))
+
+
+func _draw_ballboy() -> void:
+	var feet := w2s(_bb_pos).round()
+	var pose := "agachado"
+	if _bb_pick > 0.0:
+		pose = "recoge"
+	elif _bb_vel.length() > 0.5:
+		pose = "corre%d" % (1 + int(_bb_d / 0.5) % 4)
+	elif _bb_ball != null or _bb_has:
+		pose = "listo"
+	var row := 0 if _bb_vel.y < -0.1 else 1   # de espaldas si va para arriba
+	draw_circle(feet + Vector2(0, 0.5), 3.0, Color(0, 0, 0, 0.28))
+	var src := Rect2(Vector2(POSES.find(pose) * CELL.x, row * CELL.y), CELL)
+	draw_texture_rect_region(EL_SHEET, Rect2(feet - FEET, CELL), src)
+	if _bb_has and _bb_pick <= 0.0:  # la pelota en la mano
+		draw_circle(feet + Vector2(5, -14), 1.5, Color(0.85, 0.95, 0.25))
+
+
+func _draw_dead_ball() -> void:
+	var g := w2s(_bb_ball)
+	draw_circle(g + Vector2(0.5, 0.5), 1.6, Color(0, 0, 0, 0.3))
+	draw_circle(g, 1.7, Color(0.85, 0.95, 0.25))
+	if fmod(sim.t * 2.0, 1.0) < 0.5:  # titila un poquito: por aquí
+		draw_rect(Rect2(g + Vector2(-0.5, -1.5), Vector2(1, 1)), Color(1, 1, 0.8))
 
 
 func _draw_ball() -> void:

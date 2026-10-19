@@ -10,6 +10,9 @@ extends Node
 ##     bigote blanco, sombrero negro, todo de negro. Sale algunos días (más seguido entre más
 ##     lo busca), parado donde no hay nada. Soluciona problemas y no cobra plata: cobra en locura, y con
 ##     la locura se le van borrando las caras a los demás (Conversations._buhonero).
+##   - El coliseo del torneo de tenis (días 32 a 35), en el potrero de arriba: por fuera, el andamio de
+##     la tribuna, el pasacalle, la entrada (Torneo.puerta) y la última fila del público, que se para
+##     cuando hay un punto bueno (scripts/systems/Torneo.gd, tools/art/draw_tenis_afuera.py).
 ##   - Los otros perros. Cuando Lukas pasa cerca de un perro de la calle, se encuentran: si Lukas no
 ##     ha comido hoy, casi siempre pelean; si ya comió, casi siempre juegan. A veces es al revés,
 ##     porque sí. Una vez al día por perro.
@@ -71,6 +74,8 @@ func _setup() -> void:
 	if _scene.name == "City":
 		_add_shop()
 		_add_feria()
+		if Torneo.visible():
+			_add_coliseo()
 		for pole in ["pole_426_300", "pole_864_300"]:  # (estaban metidos en la avenida)
 			var pn := _world.find_child(pole, false, false)
 			if pn:
@@ -390,6 +395,95 @@ func _draw_rides(n: Node2D, info: Dictionary, cars: Array) -> void:
 			n.draw_rect(Rect2(float(bulbs[i][0]), float(bulbs[i][1]), 1, 1), c)
 			if lit:
 				n.draw_rect(Rect2(float(bulbs[i][0]) - 1, float(bulbs[i][1]) - 1, 3, 3), Color(c.r, c.g, c.b, 0.25))
+
+
+## El coliseo (solo los días del torneo). En el potrero de arriba, entre la Caverna y el billar.
+const COLISEO_AT := Vector2(318, 0)
+const PUBLICO := [Color(0.85, 0.25, 0.3), Color(0.95, 0.85, 0.3), Color(0.3, 0.5, 0.85), Color(0.92, 0.92, 0.88),
+	Color(0.35, 0.7, 0.45), Color(0.95, 0.55, 0.25), Color(0.6, 0.4, 0.75)]
+
+
+func _add_coliseo() -> void:
+	var info: Dictionary = (load("res://assets/barrio/coliseo_afuera.json") as JSON).data
+	var back := Sprite2D.new()
+	back.name = "coliseo_afuera"
+	back.texture = load("res://assets/barrio/coliseo_afuera.png")
+	back.centered = false
+	back.position = COLISEO_AT
+	_world.add_child(back)
+	# Lo que se mueve: el público de la última fila (de espaldas, con las cabezas), los banderines y los
+	# reflectores de noche.
+	var top := Node2D.new()
+	top.name = "coliseo_vivo"
+	top.position = COLISEO_AT
+	top.draw.connect(func() -> void: _draw_coliseo(top, info))
+	_world.add_child(top)
+	var body := StaticBody2D.new()  # se entra por la entrada, no por el andamio
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	var blk: Array = info["block"]
+	rect.size = Vector2(float(blk[2]) - float(blk[0]), float(blk[3]) - float(blk[1]))
+	shape.shape = rect
+	shape.position = COLISEO_AT + Vector2(float(blk[0]), float(blk[1])) + rect.size * 0.5
+	body.add_child(shape)
+	_world.add_child(body)
+	var spot := Area2D.new()
+	spot.set_script(load("res://scripts/world/ServiceSpot.gd"))
+	spot.name = "Servicio_torneo"
+	spot.service_id = "torneo"
+	spot.hint = "COLISEO"
+	spot.area = Vector2(30, 16)
+	spot.position = COLISEO_AT + Vector2(float(info["gate"][0]), float(info["gate"][1]) + 4.0)
+	_world.add_child(spot)
+	var redraw := Timer.new()
+	redraw.wait_time = 0.1
+	redraw.autostart = true
+	redraw.timeout.connect(func() -> void: top.queue_redraw())
+	add_child(redraw)
+
+
+func _draw_coliseo(n: Node2D, info: Dictionary) -> void:
+	var t := Time.get_ticks_msec() / 1000.0
+	var h := TimeManager.hour()
+	var playing := h >= TenisHistoria.ABRE and h < TenisHistoria.CIERRA
+	# El público de la última fila: cabezas de espaldas (pelo), y cada tanto se paran con los brazos arriba.
+	var crowd: Array = info["crowd"]
+	var cheer := playing and fmod(t, 7.0) < 1.2
+	if playing:
+		var x := float(crowd[0])
+		var i := 0
+		while x < float(crowd[2]):
+			if (i * 7) % 11 != 3:  # algún puesto vacío
+				var up := 2.0 if cheer and (i % 3 != 1) else 0.0
+				var bob := 1.0 if fmod(t * 2.0 + i * 0.37, 2.0) < 0.15 else 0.0
+				var y := float(crowd[1]) - up - bob
+				var shirt: Color = PUBLICO[(i * 5) % PUBLICO.size()]
+				n.draw_rect(Rect2(x - 1, y - 2, 3, 2), shirt)                                  # los hombros
+				n.draw_rect(Rect2(x - 0.5, y - 4, 2, 2), [Color(0.2, 0.16, 0.14), Color(0.45, 0.3, 0.2), Color(0.8, 0.7, 0.45)][i % 3])
+				if cheer and i % 3 == 0:  # los brazos arriba
+					n.draw_rect(Rect2(x - 2, y - 6, 1, 3), Color(0.85, 0.62, 0.5))
+					n.draw_rect(Rect2(x + 2, y - 6, 1, 3), Color(0.85, 0.62, 0.5))
+			x += 4.0
+			i += 1
+	# Los banderines: de torre a torre, colgando, moviéndose con el viento.
+	var fl: Array = info["flags"]
+	var a := Vector2(float(fl[0][0]), 3.0)
+	var b := Vector2(float(fl[1][0]), 3.0)
+	var count := 34
+	for k in count:
+		var u := (k + 0.5) / count
+		var p := a.lerp(b, u) + Vector2(0, sin(u * PI) * 5.0)
+		var wave := sin(t * 3.0 + k * 0.8) * 0.8
+		var c: Color = [Color(0.85, 0.2, 0.25), Color(0.98, 0.84, 0.3), Color(0.12, 0.1, 0.14)][k % 3]
+		n.draw_colored_polygon(PackedVector2Array([p + Vector2(-2, 0), p + Vector2(2, 0), p + Vector2(wave, 3.5)]), c)
+	n.draw_polyline(PackedVector2Array([a, a.lerp(b, 0.25) + Vector2(0, sin(0.25 * PI) * 5.0), a.lerp(b, 0.5) + Vector2(0, 5.0),
+		a.lerp(b, 0.75) + Vector2(0, sin(0.75 * PI) * 5.0), b]), Color(0.3, 0.28, 0.32), 1.0)
+	# Los reflectores: prendidos al atardecer y de noche (la feria de al lado también).
+	if h >= 17 or h < 1:
+		for l in info["lamps"]:
+			var c := Vector2(float(l[0]) + 1.0, float(l[1]) + 1.0)
+			n.draw_rect(Rect2(c - Vector2(1, 1), Vector2(2, 2)), Color(1, 0.98, 0.85))
+			n.draw_circle(c, 4.0, Color(1, 0.95, 0.7, 0.18))
 
 
 static func Feria_open() -> bool:

@@ -2,7 +2,7 @@
 
 La cancha se ve desde atrás del de abajo, en perspectiva: el fondo más angosto. La cuenta es la misma
 de TenisMatch.w2s (si se cambia allá, se cambia aquí):
-    pantalla.x = 160 + x * kx(y),   kx = de 6.6 (fondo) a 8.6 (frente) a lo largo de la cancha
+    pantalla.x = 160 + x * kx(y),   kx = de 10.5 (fondo) a 13.5 (frente) a lo largo de la cancha
     pantalla.y = 104 + y * 4.6
 Aquí va lo quieto: el piso del coliseo, el azul de afuera, el verde de adentro, las vallas con los
 patrocinadores (los del barrio), las tribunas con la gente, los reflectores y la silla del juez. Las
@@ -17,9 +17,9 @@ from PIL import Image
 
 W, H = 320, 180
 OUT = Path("assets/tenis")
-CX, CY, SY, KX_FAR, KX_NEAR = 160, 104, 4.6, 6.6, 8.6
+CX, CY, SY, KX_FAR, KX_NEAR = 160, 104, 4.6, 10.5, 13.5   # (ancha: que los tenistas no se vean gigantes)
 HALF_L, HALF_W, DOUBLES = 11.885, 4.115, 4.115 + 1.37
-RUN_X, RUN_Y = DOUBLES + 3.4, HALF_L + 5.0      # hasta dónde llega el azul de afuera
+RUN_X, RUN_Y = DOUBLES + 2.4, HALF_L + 5.0      # hasta dónde llega el azul de afuera
 
 OUTLINE = (40, 32, 44)
 FLOOR = (34, 36, 52)

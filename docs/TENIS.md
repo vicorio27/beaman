@@ -1,6 +1,6 @@
 # El torneo de tenis (Highway to Hell)
 
-Tenis arcade con tenistas caricaturizados. Esta es la referencia del motor, de los tenistas y de cómo se prueba. La parte narrativa todavía no está; ver "Lo que falta".
+Tenis arcade con tenistas caricaturizados. Esta es la referencia del motor, de los tenistas, de cómo entra en la historia y de cómo se prueba.
 
 ## Cómo está armado
 
@@ -13,7 +13,11 @@ Todo está en `scripts/tenis/`. La simulación no sabe nada de pantallas.
 | `TenisSim.gd` | El partido en pasos fijos de 1/60 s: la pelota (altura, efecto, bote, curva), los golpes, el error, los puntos y el ánimo. La misma semilla da el mismo partido. |
 | `TenisAbilities.gd` | Un solo marco para todas las habilidades (`DEFS`) y las reglas de sus contras. |
 | `TenisAI.gd` | La máquina. Ve lo mismo que un jugador y usa el mismo error. No lee lo que aprieta el humano. |
-| `TenisMatch.gd` | La cancha que se dibuja y se juega (`scenes/tenis/TenisMatch.tscn`). Si se abre sin `setup` (F6), primero se escogen el tenista y el rival. |
+| `TenisMatch.gd` | La cancha que se dibuja y se juega (`scenes/tenis/TenisMatch.tscn`). Si se abre sin `setup` (F6), primero se escogen el tenista y el rival. Con `ballboy`, él es el recogebolas; con `abandon_games`, el de abajo abandona y él termina el partido. |
+| `TenisCuadro.gd` | El dibujo del cuadro (lo usan el torneo suelto y la jornada). |
+| `TenisHistoria.gd` | La historia, sin pantallas: la deuda, las fechas, la paga, cómo abandona cada uno y quién abandona cada día. |
+| `TenisJornada.gd` | El día de trabajo en el coliseo (`scenes/tenis/TenisJornada.tscn`). |
+| `scripts/systems/Torneo.gd` | Lo que toca el juego: la deuda, las mañanas, el cobro y la entrada del coliseo. |
 
 **Controles:**
 - Flechas: moverse y apuntar.
@@ -121,11 +125,38 @@ Se guarda en `TenisTorneo.saved` mientras el juego está abierto. Guardarlo en l
 
 Las mayúsculas en pantalla pasan por `TenisData.caps()`, que quita las tildes de las vocales: la fuente dibuja la mayúscula con tilde como si fuera minúscula ("DíA").
 
+## La historia
+
+**La deuda (día 31).** El encargo de Marta: el cobrador del gota a gota en el café. Se meta como se meta, le pasa la deuda: "el que se mete, responde". Si le paga el abono ($10.000), el cobrador tacha a Marta y lo anota a él. Si lo espanta mirándolo sin parpadear, el cobrador se va y vuelve a asomarse para decírselo. Debe $80.000 en cuatro días, o se lleva la mochila.
+
+**El coliseo (días 32 a 35).** En la mañana del 32 amanece un coliseo en el potrero de arriba, entre La Caverna del Gamer y el billar. Por fuera se ven:
+- La tribuna de andamio, el pasacalle, los afiches de los tenistas y la reja con los patrocinadores del barrio.
+- La última fila del público, que se para cada tanto, los banderines y los reflectores de noche.
+
+El torneo se juega igual vaya él o no: un día por ronda.
+
+**La jornada.** De 8 a 6, una por día, en la entrada del coliseo. La primera vez, el organizador lo contrata porque no habla.
+1. El cuadro del día, con su partido titilando.
+2. Es el recogebolas, agachado al lado de la red. Mientras juegan, quieto (si se mueve le gritan, y esa pelota no tiene propina). Cuando se acaba el punto, corre por la pelota con las flechas y la trae: el saque que sigue lo espera. Traerla en menos de 4 segundos da $300; después de 8, le gritan.
+3. A la mitad (después del primer juego en el formato corto, del segundo en el arcade), el de abajo abandona a su manera: Kyrgistán rompe raquetas, Monfiz se acalambra, Moutette se hace descalificar, Bublikov se aburre, Sabalenkova revienta las cuerdas, Tiafuego se va con la tribuna, Sheltron contesta una llamada de la mamá, Pecador se cuelga, Yokovich pide el fisio y Fedorer se queda doblado de la espalda. El organizador lo manda a él a terminar el partido con la raqueta del que se fue: juega como ese tenista (sus números y su habilidad), con su dibujo (la corbata, el jean y un zapato de cada color).
+4. La paga: $12.000 de sueldo, las propinas de las pelotas y lo del profesional: si le ganó el partido, de $10.000 (previa) a $40.000 (final); si lo perdió, $3.000 "por la molestia". Cuatro horas de reloj.
+
+Cada día abandona uno distinto, si se puede (`TenisHistoria.quien_abandona`). Si él ganó, ese tenista vuelve al día siguiente con su línea.
+
+**El final (mañana del día 36).**
+- El campeón y el coliseo que se va.
+- La raqueta del último que le dejó terminar un partido (no se pierde).
+- El cobrador: con los $80.000 se acaba (y Marta lo quiere más). Sin ellos, se lleva la plata que tenga y todo lo de la mochila que no sea fijo.
+
+Ganando las cuatro jornadas se juntan unos $147.000; trabajando las cuatro y perdiendo todo, $60.000. Con lo que ya tenga en el bolsillo, alcanza si trabaja y gana alguna.
+
+**Para probar:** en el menú de prueba (F4), "Torneo: la deuda y a dormir (día 32)".
+
 ## El dibujo
 
 **Los tenistas** salen de `tools/art/draw_tenistas.py` y quedan en `assets/tenis/<id>.png`.
 - Celdas de 32x42 con los pies en (16, 40). La fila 0 es de espaldas (el de abajo) y la fila 1 de frente (el de arriba).
-- Hay 20 poses: listo (2), correr (4), drive (preparar, pegar, terminar), revés (lo mismo), saque (lanzar, pegar, terminar), tirada, en el piso, celebra, lamentarse y dejada.
+- Hay 22 poses: listo (2), correr (4), drive (preparar, pegar, terminar), revés (lo mismo), saque (lanzar, pegar, terminar), tirada, en el piso, celebra, lamentarse, dejada, y las dos del recogebolas (agachado y recogiendo).
 - Cada pose es un esqueleto que se pinta con piezas de 2 px. Después va el contorno del juego y encima, a mano, lo de cada uno:
   - Bublikov: altísimo, despeinado, raya negra.
   - Sabalenkova: cola mona, falda y el tigre en el antebrazo.
@@ -134,6 +165,8 @@ Las mayúsculas en pantalla pasan por `TenisData.caps()`, que quita las tildes d
   - Moutette: bajito, crespo, celeste. Sheltron: alto, rapado, naranja. Los dos zurdos (la hoja se voltea).
   - Tiafuego: trencitas, verde limón y morado. Kyrgistán: gorra roja al revés, de negro, tatuajes.
   - Pecador: pelo zanahoria crespo, menta. Fedorer: todo de blanco, balaca blanca, raqueta roja.
+  - Él (`el.png`, sin raqueta, de recogebolas; `el_<id>.png`, con la raqueta de cada uno): la camiseta negra del torneo, y encima lo suyo: la corbata roja (de espaldas, tirada por encima del hombro), el jean, un zapato negro y uno rojo, la barba con canas.
+- Las dos últimas poses son del recogebolas: agachado esperando el punto y recogiendo la pelota.
 
 `TenisMatch._pose()` escoge la pose según la cancha:
 - Un golpe reciente: drive o revés según el lado de la pelota.
@@ -142,8 +175,10 @@ Las mayúsculas en pantalla pasan por `TenisData.caps()`, que quita las tildes d
 - Correr o estar listo.
 - Después del punto: celebrar (ganador o ace) o lamentarse (error no forzado).
 
+**El coliseo por fuera** (en el barrio) sale de `tools/art/draw_tenis_afuera.py` (`assets/barrio/coliseo_afuera.png` y su `.json`, más el ícono de la raqueta).
+
 **El coliseo** sale de `tools/art/draw_tenis_coliseo.py` y queda en `assets/tenis/coliseo.png`, más `coliseo_grita.png` con el público de pie.
-- La cancha va en perspectiva: de 6.6 px por metro en el fondo a 8.6 en el frente, y 4.6 a lo largo. Es la misma cuenta de `TenisMatch.w2s`; si se cambia en un lado, se cambia en el otro.
+- La cancha va en perspectiva: de 10.5 px por metro en el fondo a 13.5 en el frente, y 4.6 a lo largo. Es la misma cuenta de `TenisMatch.w2s`; si se cambia en un lado, se cambia en el otro.
 - Tiene tribunas con gradas, pasillos y puestos vacíos, la tribuna del fondo, las vallas con los patrocinadores del barrio (la Caverna del Gamer, la panadería de Don Germán), los reflectores y la silla del juez.
 - La gente se para después de un ganador, de un peloteo largo o cuando se cierra un juego.
 
@@ -160,7 +195,7 @@ Todas corren sin ventana:
 
 `TENIS_ONLY=unit|sim|counter` corre solo una parte y `TENIS_N` pone los partidos por cruce.
 
-**`tenis_tests.gd`** (45 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista).
+**`tenis_tests.gd`** (54 pruebas): el conteo; que el error baje con la precisión y quede acotado; la misma semilla da el mismo partido; cómo se reparten los puntos; y el cuadro (la siembra, la previa, avanzar, no anotar dos veces, guardar y cargar, el torneo entero con un solo campeón, la bolsa, cuadros de 4 y de 5, simular hasta tu partido y que cada ronda tenga un formato que exista) y la historia (las fechas, que cada uno tenga cómo abandonar, quién abandona, la paga y que alcance para la deuda solo trabajando bien).
 
 **`tenis_roster.gd`, la parte `unit`** (44 pruebas):
 - Activar, gastar, no activar dos veces, acabarse a los golpes y al final del punto, y la espera.
@@ -192,7 +227,6 @@ Hay piedra, papel o tijera a propósito: los de toque (cortados, dejadas) les ga
 
 ## Lo que falta
 
-- **El dibujo que falta:** los recogebolas (él), las caras de cerca para los diálogos y un público que se mueva más.
+- **El dibujo que falta:** las caras de cerca para los diálogos, un público que se mueva más y el que abandona saliendo de la cancha (hoy desaparece cuando él toma la raqueta).
 - **La música:** rock original.
 - **Los diálogos:** en una tabla de datos.
-- **La historia:** el gota a gota y la llegada del torneo al barrio; él de recogebolas; los tenistas que abandonan y él que termina el partido con la raqueta de ellos; el premio.

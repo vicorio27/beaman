@@ -743,6 +743,7 @@ func new_day(spot: String) -> Array:
 	if not quests.has("regalo_hija"):
 		start_quest("regalo_hija")
 	lines.append_array(DayTasks.open_day())
+	lines.append_array(Torneo.manana())  # el torneo de tenis (días 32 a 36) y el gota a gota
 	cambuche_changed.emit()
 	return lines
 

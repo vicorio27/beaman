@@ -60,6 +60,9 @@ const DB := {
 		"type": "especial", "stack": 1, "fixed": true},
 	"cedula": {"name": "Cédula", "desc": "Duplicado. Su cara, su nombre, su número.",
 		"type": "especial", "stack": 1, "fixed": true},
+	# Del torneo de tenis (scripts/systems/Torneo.gd): la del último que le dejó terminar un partido.
+	"raqueta": {"name": "Raqueta", "desc": "De un profesional que se fue en la mitad de un partido. Nadie se la pidió de vuelta. Él tampoco la ofreció.",
+		"type": "especial", "stack": 1, "fixed": true},
 	# Para ampliar el cambuche (Rancho, Ranchito).
 	"estiba": {"name": "Estiba", "desc": "Madera de bodega. Cuatro hacen paredes.", "type": "material", "stack": 4},
 	"clavos": {"name": "Clavos", "desc": "Una bolsa de clavos. Martillo no hay: hay una piedra.", "type": "material", "stack": 3},
