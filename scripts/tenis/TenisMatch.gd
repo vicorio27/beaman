@@ -106,8 +106,14 @@ var _walking := false      # él, yendo por la raqueta
 var _pro_tex: Texture2D    # el dibujo del que se fue (después de take_over, su hoja es la de él)
 
 # Los sonidos (tools/audio/tenis_audio.py): la raqueta, el bote, la red y el público.
-const SFX := ["golpe", "golpe_duro", "bote", "red", "aplauso", "ovacion", "uy"]
-const SFX_DB := {"golpe": -4.0, "golpe_duro": -2.0, "bote": -12.0, "red": -6.0, "aplauso": -10.0, "ovacion": -7.0, "uy": -8.0}
+const SFX := ["golpe", "golpe_duro", "bote", "red", "aplauso", "ovacion", "uy", "chillido", "chillido2", "zas", "rompe", "grito"]
+const SFX_DB := {"golpe": -4.0, "golpe_duro": -2.0, "bote": -12.0, "red": -6.0, "aplauso": -10.0, "ovacion": -7.0, "uy": -8.0,
+	"chillido": -15.0, "chillido2": -15.0, "zas": -15.0, "rompe": -5.0, "grito": -9.0}
+# Lo que suena con el dibujo (_pose_sounds): las zapatillas al frenar, la raqueta que corta el aire
+# antes de pegarle, la raqueta contra el piso.
+const SWING_START := ["drive_baja", "reves_baja", "saque_rasca", "abajo_atras"]
+const CONTACTS := ["drive", "drive_bajo", "drive_alto", "reves", "reves_bajo", "reves_alto", "cortado", "dejada"]
+var _last_pose := ["", ""]
 var _sfx := {}
 
 
@@ -440,6 +446,7 @@ func _process(delta: float) -> void:
 		_flash[k] -= delta
 	for i in 2:
 		_ta[i].update(delta, sim.players[i], sim)
+		_pose_sounds(i)
 		_track_swing(i, delta)
 	_track_ball()
 	if not _snap.is_empty():
@@ -501,6 +508,8 @@ func _on_event(kind: String, d: Dictionary) -> void:
 			_sound("golpe_duro" if hard else "golpe", randf_range(0.94, 1.06))
 			var p = sim.players[d["player"]]
 			TenisAnim.on_hit(_ta, sim, d)
+			if _ta[p.idx].persona == "sabalenkova":  # ella grita en cada golpe
+				_sound("grito", randf_range(0.95, 1.08))
 			# La pelota sale de la cabeza de la raqueta (donde quedó en el cuadro del contacto).
 			var rk = _meta_at(p, "rk", _ta[p.idx].contact_pose())
 			if rk != null:
@@ -841,6 +850,22 @@ func _draw_ball() -> void:
 		for k in range(_ball_trail.size() - 1, 0, -1):
 			draw_circle(_ball_trail[k], 1.5 - k * 0.2, Color(BALL, 0.36 - k * 0.09))
 	_ball_at(up)
+
+
+## Lo que suena cuando cambia el dibujo de un jugador.
+func _pose_sounds(i: int) -> void:
+	var now: String = _ta[i].pose
+	var was: String = _last_pose[i]
+	if now == was:
+		return
+	_last_pose[i] = now
+	if now.begins_with("frena"):
+		if randf() < 0.55:  # (no en todas: cansa)
+			_sound("chillido" if randf() < 0.5 else "chillido2", randf_range(0.9, 1.1))
+	elif now in SWING_START or (now in CONTACTS and not was in SWING_START):
+		_sound("zas", randf_range(0.9, 1.15))
+	elif now == "rompe2":
+		_sound("rompe", randf_range(0.95, 1.05))
 
 
 ## La cabeza de la raqueta mientras pega (de que baja a que termina): se guarda por dónde va pasando.

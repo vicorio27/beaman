@@ -18,6 +18,10 @@ menor de blues. Usa los instrumentos de compose.py.
   assets/audio/tenis/bote.wav       la pelota en el piso         red.wav         a la red
   assets/audio/tenis/aplauso.wav    aplausos                     ovacion.wav     el estadio de pie
   assets/audio/tenis/uy.wav         el "uuuy" del público cuando alguien falla una fácil
+  assets/audio/tenis/chillido.wav   las zapatillas al frenar     chillido2.wav   (otro, más agudo)
+  assets/audio/tenis/zas.wav        la raqueta cortando el aire, justo antes de pegarle
+  assets/audio/tenis/rompe.wav      la raqueta contra el piso (Kyrgistán)
+  assets/audio/tenis/grito.wav      el "¡ah!" de Sabalenkova al pegarle
 """
 import os
 import sys
@@ -251,6 +255,60 @@ def uy():
     return x * shape
 
 
+def chillido(f0=1900.0):
+    """Las zapatillas en la cancha dura al frenar: un chillido corto que tiembla y baja un poquito."""
+    dur = 0.13
+    t = C._t(dur)
+    f = f0 * (1 + 0.06 * np.sin(2 * np.pi * 55 * t)) * (1 - 0.15 * t / dur)
+    ph = np.cumsum(f) / SR
+    tone = np.sin(2 * np.pi * ph) + 0.35 * np.sin(4 * np.pi * ph) + 0.15 * np.sin(6 * np.pi * ph)
+    rub = C.fft_filter(rng.uniform(-1, 1, len(t)), lo=1500, hi=6000) * 0.25
+    env = np.clip(t / 0.012, 0, 1) * np.exp(-np.clip(t - 0.03, 0, None) / 0.05)
+    return (tone + rub) * env
+
+
+def zas():
+    """La raqueta cortando el aire: ruido que sube de tono, en campana (las bandas se van mezclando)."""
+    dur = 0.16
+    t = C._t(dur)
+    noise = rng.uniform(-1, 1, len(t))
+    bands = 6
+    x = np.zeros(len(t))
+    for k in range(bands):
+        lo = 450 * (1.35 ** k)
+        w = np.clip(1 - np.abs(t / dur * (bands - 1) - k), 0, 1)
+        x += C.fft_filter(noise, lo=lo, hi=lo * 2.0) * w
+    return x * np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 2
+
+
+def rompe():
+    """La raqueta contra el piso: el golpe seco, el marco que cruje (dos veces) y las cuerdas sonando."""
+    t = C._t(0.5)
+    thud = np.sin(2 * np.pi * (90 + 60 * np.exp(-t / 0.01)) * t) * np.exp(-t / 0.05)
+    crack = C.fft_filter(rng.uniform(-1, 1, len(t)), lo=900, hi=6000)
+    x = thud * 0.9 + crack * np.exp(-t / 0.02)
+    late = np.clip(t - 0.06, 0, None)
+    x += crack[::-1] * np.exp(-late / 0.015) * (t > 0.06) * 0.6
+    ring = sum(np.sin(2 * np.pi * f * t) * g for f, g in ((1180, 1.0), (1730, 0.6), (2410, 0.4)))
+    return x + ring * np.exp(-late / 0.12) * (t > 0.06) * 0.22
+
+
+def grito():
+    """El grito de Sabalenkova al pegarle: un "¡ah!" corto, con aire (la voz por formantes de a)."""
+    dur = 0.32
+    t = C._t(dur)
+    f0 = 300 * (1 - 0.25 * t / dur) * (1 + 0.015 * np.sin(2 * np.pi * 7 * t))
+    ph = np.cumsum(f0) / SR
+    saw = 2 * (ph % 1.0) - 1
+    voice = sum(C.fft_filter(saw, lo=f * 0.8, hi=f * 1.25) * g for f, g in ((850, 1.0), (1250, 0.6), (2700, 0.25)))
+    voice += C.fft_filter(saw, lo=250, hi=700) * 0.5                     # el cuerpo de la voz (la fundamental)
+    voice /= np.sqrt(np.mean(voice ** 2)) + 1e-9
+    breath = C.fft_filter(rng.uniform(-1, 1, len(t)), lo=700, hi=3500)
+    breath *= 0.25 / (np.sqrt(np.mean(breath ** 2)) + 1e-9)            # un poquito de aire, no más
+    env = np.clip(t / 0.02, 0, 1) * np.exp(-np.clip(t - 0.08, 0, None) / 0.09)
+    return np.tanh((voice + breath) * env * 0.9)
+
+
 if __name__ == "__main__":
     partido = song(128, 0, "partido")
     C.save("tenis_partido", partido)
@@ -265,4 +323,9 @@ if __name__ == "__main__":
     save_sfx("aplauso", aplauso())
     save_sfx("ovacion", ovacion())
     save_sfx("uy", uy())
+    save_sfx("chillido", chillido(1900))
+    save_sfx("chillido2", chillido(2350))
+    save_sfx("zas", zas())
+    save_sfx("rompe", rompe())
+    save_sfx("grito", grito())
     print("sonidos listos en", SFX)

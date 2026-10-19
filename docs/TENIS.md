@@ -241,6 +241,8 @@ Los sonidos de la cancha (`assets/audio/tenis/`):
 - La raqueta: `golpe`, o `golpe_duro` si la pelota sale a 22 m/s o más, o con habilidad.
 - El bote y la red.
 - El público: el "uuuy" con el error no forzado y la doble falta; el estadio de pie (`ovacion`) con el ace, el ganador después de un peloteo largo o el juego que se cierra; aplausos con el resto.
+- Con el dibujo (`TenisMatch._pose_sounds`): el chillido de las zapatillas al frenar después de correr de lado (`chillido` o `chillido2`, en la mitad de las frenadas: en todas cansa); la raqueta cortando el aire (`zas`) cuando baja para pegarle; y la raqueta contra el piso (`rompe`) cuando Kyrgistán la estrella.
+- Sabalenkova grita en cada golpe (`grito`: un "¡ah!" con voz que baja y un poco de aire).
 
 ## Las pruebas
 
