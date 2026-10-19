@@ -105,6 +105,7 @@ func _ready() -> void:
 	layer = 15
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	GameState.ui_open = true
+	Controls.minigame = true   # en el celular: los botones del minijuego (con la huella)
 	_start = randi() % 2
 	_field = Node2D.new()
 	_field.draw.connect(_draw_field)
@@ -523,6 +524,10 @@ func _close() -> void:
 
 
 # ---------------------------------------------------------------- Dibujar
+
+func _exit_tree() -> void:
+	Controls.minigame = false
+
 
 func _draw_field() -> void:
 	var f := _field

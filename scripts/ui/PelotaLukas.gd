@@ -69,6 +69,7 @@ func _ready() -> void:
 	layer = 15
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	GameState.ui_open = true
+	Controls.minigame = true   # en el celular: los botones del minijuego (con la huella)
 	_field = Node2D.new()
 	_field.draw.connect(_draw_field)
 	add_child(_field)
@@ -108,7 +109,7 @@ func _ready() -> void:
 	_hint.position = Vector2(PANEL.position.x, 37)
 	_hint.size = Vector2(Controls.right_edge(), 10)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.text = "¡Se llevó la pelota! ¡A los morrales!"
+	_hint.text = "¡Quítesela y a los morrales!"
 	add_child(_hint)
 	for n in SFX:
 		var a := AudioStreamPlayer.new()
@@ -335,6 +336,10 @@ func _place() -> void:
 	for kid in _kids:
 		var hop := absf(sin(_t * 9.0 + kid["speed"])) * 2.0 if _state == "chase" else 0.0
 		kid["spr"].position = kid["pos"] + Vector2(0, -12 - hop)
+
+
+func _exit_tree() -> void:
+	Controls.minigame = false
 
 
 func _draw_field() -> void:

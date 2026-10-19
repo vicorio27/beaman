@@ -73,7 +73,11 @@ func _process(_delta: float) -> void:
 func _current_mode() -> String:
 	if not _has_touch():
 		return "off"
-	if GameState.ui_open or Dialogue.active:
+	if Dialogue.active:
+		return "ui"
+	if Controls.minigame:  # (un minijuego encima del mundo: los penaltis, la pelota de Lukas)
+		return "mini"
+	if GameState.ui_open:
 		return "ui"
 	var scene := get_tree().current_scene
 	if scene and scene.get_script() == preload("res://scripts/world/Location.gd"):

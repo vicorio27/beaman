@@ -44,6 +44,9 @@ const PAD_AXES := {
 ## ¿Se juega con los dedos? (la versión web en el celular). Las pantallas dejan libre la franja
 ## derecha (x > 286) para los botones, y los avisos de abajo se angostan entre la palanca y los botones.
 static var force_touch := false  # para probar el diseño del celular en el computador
+## Un minijuego abierto encima del mundo (los penaltis, la pelota de Lukas): aunque tenga
+## GameState.ui_open, los controles en pantalla van como en un minijuego (con la huella: el supertiro).
+static var minigame := false
 ## Controles en pantalla: "auto" (solo si hay pantalla táctil), "si" o "no". Se elige en el título
 ## y se guarda en user://ajustes.cfg.
 static var touch_pref := "auto"
