@@ -15,9 +15,9 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from vinetas_motor import (W, H, Cv, Env, Actor, col, mix, breath, vapor, man_stand, lukas_curl, _head,  # noqa: E402
+from vinetas_motor import (W, H, Cv, Env, Actor, col, mix, breath, vapor, man_stand, lukas_curl, _head, _limb,  # noqa: E402
                            COAT, PANTS, HAIR, SKIN, WHITE, BLACK)
-from draw_vinetas import FONT, frame, small_man, _man_back_seated, _woman  # noqa: E402
+from draw_vinetas import FONT, frame, small_man, _man_back_seated, _woman  # noqa: E402  (prende el acabado)
 
 OUT = "assets/ui/vinetas_tele.png"
 X0, Y0, SW, SH = 64, 9, 112, 62   # la pantalla grande
@@ -382,24 +382,49 @@ def tv_f1e(cv, f):
     cv.post.append(lambda d: d.text((X0 + 4, Y0 + 4), "DRS", font=FONT, fill=(80, 250, 120) if open_ else (90, 90, 90)))
 
 
+def _back(cv, env, x, c, hair, arm_l=None, arm_r=None, top=-27.0):
+    """Un señor de espaldas, de la cintura para arriba (el borde de abajo del cuadro lo corta): la
+    espalda que se angosta, los hombros, la nuca, las orejas y el pelo. arm_l / arm_r: a dónde va cada
+    mano (None: el brazo colgando)."""
+    a = Actor(cv, env, x, 100)
+    for side, hand in ((-1, arm_l), (1, arm_r)):
+        sh = (side * 6.6, top + 0.8)
+        if hand is None:
+            el, hd = (side * 7.6, top + 12.0), (side * 7.0, top + 22.0)
+        else:
+            el = ((sh[0] + hand[0]) / 2 + side * 2.0, (sh[1] + hand[1]) / 2 + 1.0)
+            hd = hand
+        a.part(c, lambda d, sh=sh, el=el, hd=hd: (_limb(d, sh, 2.5, el, 2.2), _limb(d, el, 2.2, hd, 1.8)), emph=a.emph * 0.9)
+        if hand is not None:
+            a.part(SKIN, lambda d, hd=hd: d.ell(hd[0], hd[1] - 1.0, 1.6, 1.5), shade=1)
+    a.part(c, lambda d: (d.poly([(-6.8, top), (6.8, top), (5.6, top + 15.0), (6.2, 0.0), (-6.2, 0.0), (-5.6, top + 15.0)]),
+                         d.ell(-5.2, top + 1.2, 2.8, 2.6), d.ell(5.2, top + 1.2, 2.8, 2.6)), shade=3)
+    a.line([(0, top + 0.6), (0, top + 18.0)], col(c, env.amb * 0.55))            # la costura
+    a.part(SKIN, lambda d: d.rect(-1.6, top - 3.0, 1.6, top), shade=0)            # la nuca
+    a.part(SKIN, lambda d: (d.ell(-3.6, top - 5.4, 1.0, 1.6), d.ell(3.6, top - 5.4, 1.0, 1.6)), shade=0, rim=False)
+    a.part(hair, lambda d: (d.ell(0, top - 6.6, 3.6, 4.2), d.ell(-3.0, top - 4.2, 1.0, 1.4), d.ell(3.0, top - 4.2, 1.0, 1.4)), shade=2)
+    return a
+
+
 def _senores(cv, env, f, x0, arms=0.0, kick=False):
     """Dos señores de la vereda, de espaldas; con los brazos arriba (arms) o uno pateando un poste."""
     for k, c in enumerate([(120, 110, 90), (70, 90, 120)][:1 if kick else 2]):
         x = x0 + k * 26
-        a = Actor(cv, env, x, 100)
-        a.part(c, lambda d: (d.cap(-5, -6, 5, -6, 12), d.cap(0, -10, 0, -26, 14)), shade=2)
-        a.part((60, 50, 44) if k else (150, 150, 150), lambda d: d.ell(0, -33, 5.6, 6), shade=2)
+        hair = (60, 50, 44) if k else (150, 150, 150)
         if arms:
-            up = -44 - (2 if (f + k) % 2 else 0)
-            a.part(c, lambda d, up=up: (d.path([(-6, -24), (-10, up)], 4), d.path([(6, -24), (10, up)], 4)))
+            up = -46 - (2 if (f + k) % 2 else 0)
+            _back(cv, env, x, c, hair, (-10.0, up), (10.0, up))
         elif k == 0 and not kick:
-            a.part(c, lambda d: d.path([(6, -24), (14, -30 - (f % 2) * 3)], 4))  # explicando (con la mano)
+            _back(cv, env, x, c, hair, None, (13.0, -33.0 - (f % 2) * 3))      # explicando (con la mano)
+        else:
+            _back(cv, env, x, c, hair)
     if kick:
         cv.shape(cv.box(x0 + 44, 40, x0 + 47, 100), (110, 112, 120), env, shade=1, half=False)  # el poste
         a = Actor(cv, env, x0 + 32, 100)
-        a.part((160, 60, 50), lambda d: d.cap(0, -10, 0, -28, 13), shade=2)
-        a.part((50, 50, 60), lambda d: d.path([(0, -10), (10 if f % 2 else 4, -12 if f % 2 else -2)], 5))
-        a.part((60, 50, 44), lambda d: d.ell(0, -35, 5.6, 6), shade=2)
+        foot = (11.0, -13.0) if f % 2 else (5.0, -3.0)
+        a.part((50, 50, 60), lambda d: (_limb(d, (0.0, -6.0), 3.0, ((foot[0]) / 2 + 1.0, (foot[1] - 6.0) / 2 - 1.0), 2.4),
+                                        _limb(d, ((foot[0]) / 2 + 1.0, (foot[1] - 6.0) / 2 - 1.0), 2.4, foot, 1.9)))   # la patada
+        _back(cv, env, x0 + 32, (160, 60, 50), (60, 50, 44), top=-29.0)
 
 
 def _cancha(cv):
@@ -425,8 +450,9 @@ def tv_futbol1(cv, f):
 def fg_gol(cv, env, f):
     _senores(cv, env, f, 150, arms=1.0)
     a = Actor(cv, env, 34, 100)  # su brazo, arriba (uno solo)
-    a.part(COAT, lambda d: d.path([(6, -26), (10, -40), (11, -50 - (f % 2) * 2)], 4.2))
-    a.part(SKIN, lambda d: d.ell(11, -52 - (f % 2) * 2, 2, 2.2), shade=0)
+    up = -50.0 - (f % 2) * 2
+    a.part(COAT, lambda d: (_limb(d, (6.6, -26.4), 2.5, (9.6, -38.0), 2.2), _limb(d, (9.6, -38.0), 2.2, (10.6, up), 1.8)))
+    a.part(SKIN, lambda d: d.ell(10.8, up - 1.2, 1.6, 1.6), shade=1)
 
 
 def tv_futbol2(cv, f):

@@ -39,8 +39,11 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(__file__))
 from vinetas_motor import (W, H, BAY, Cv, Env, Actor, col, mix, breath, vapor, rain, splashes, stars, ground_shadow,  # noqa: E402
                            man_side, man_back, man_bench, man_sit, man_wake, man_stand,
-                           lukas_curl, lukas_down, lukas_sit,
+                           lukas_curl, lukas_down, lukas_sit, figure, _limb,
                            COAT, PANTS, HAIR, BEARD, SKIN, SHIRT, TIE, SHOE_A, SHOE_B, PACK, TAN, EAR, BLACK, WHITE, CARTON, TARP)
+
+import vinetas_motor  # noqa: E402
+vinetas_motor.POLISH = True   # el acabado: el contorno de los actores, las manchas, el viñeteado
 
 OUT = "assets/ui/"
 FRAMES = 4
@@ -75,6 +78,13 @@ def sky(cv, time, rain_, y1, x0=0, x1=W):
 
 def ground(cv, y0, alb, env, y1=H, k=(1.0, 0.8, 0.58)):
     cv.grad((0, y0, W, y1), [col(alb, env.amb * q) for q in k])
+    if vinetas_motor.POLISH:  # el piso también tiene manchas (el barro, el aceite, lo que se derramó)
+        cv.grain(cv.box(0, y0, W, y1), 0.8)
+        # Y donde la pared se junta con el piso, la sombrita de contacto (tramada: más arriba, más).
+        for i, k in enumerate((0.6, 0.35, 0.15)[:max(0, min(3, y1 - y0))]):
+            row = cv.a[y0 + i]
+            on = vinetas_motor.BAY[y0 + i] < k
+            row[on] = (row[on] * 0.8).astype(np.uint8)
 
 
 def lines(cv, segs, color, m=None, width=1):
@@ -984,43 +994,19 @@ def lukas_pecho(still, f):
     ys, xs = np.mgrid[0:H, 0:W]
     cv.fill((((xs - 160) / 170.0) ** 2 + ((ys - 80) / 66.0) ** 2 >= 1.0) & (ys < 78), (12, 11, 20) if not still else (24, 24, 34))
     cv.shape(poly(cv, [(6, 87), (232, 87), (238, 96), (0, 96)]), CARTON, env, shade=1)
-    a = Actor(cv, env, 0, 0)
-    a.part(PACK, lambda d: d.cap(14, 82, 40, 82, 14))                                   # la mochila, de almohada
-    a.part(PANTS, lambda d: d.cap(130, 76, 206, 77, 13), emph=0.85)
-    a.part(SHOE_B, lambda d: d.cap(213, 75, 214, 62, 8.5))
-    a.part(PANTS, lambda d: d.cap(128, 80, 214, 81, 15))
-    a.part(SHOE_A, lambda d: d.cap(222, 82, 223, 64, 10))
-    a.part(COAT, lambda d: d.cap(62, 76 - b * 0.5, 126, 77, 25 + b), shade=3)
-    a.part(SHIRT, lambda d: d.poly([(54, 67 - b), (72, 62 - b), (76, 70 - b), (58, 76)]), shade=1)
-    a.part(HAIR, lambda d: d.ell(36, 72, 15, 14.5), shade=3)
-    a.part(SKIN, lambda d: d.ell(40, 64, 8.5, 7.5))
-    a.part(BEARD, lambda d: d.ell(50, 66, 7, 8.5), rim=False)
-    a.line([(57, 68 - b), (70, 64 - b), (75, 69 - b)], a.lit(TIE, 0.6), 2)
-    # Lukas, en el pecho. Nunca hacía eso.
-    y0 = 62 - b
-    wag = 0 if still else (-3 if f == 2 else 0)
-    a.part(TAN, lambda d: d.cap(128, y0 + 1, 147, y0 - 4 + wag, 4.5), shade=1)           # la cola
-    a.part(WHITE, lambda d: d.ell(148, y0 - 4.6 + wag, 2.6, 2.4), shade=0, rim=False)
-    a.part(TAN, lambda d: (d.ell(98, y0 - 9 - lb * 0.5, 30, 13 + lb * 0.5), d.ell(120, y0 - 5, 13, 11.5)), shade=3)
-    body = cv.mask(lambda d: (d.ell(98, y0 - 9 - lb * 0.5, 30, 13 + lb * 0.5), d.ell(120, y0 - 5, 13, 11.5)))
-    saddle = cv.mask(lambda d: d.ell(102, y0 - 21 - lb * 0.5, 25, 13)) & body
-    cv.shape(saddle, BLACK, env, shade=0, half=True)
-    a.part(WHITE, lambda d: d.cap(80, y0 + 1, 64, y0 + 6, 5), shade=1)                   # las patas, hacia el hombro de él
-    a.part(TAN, lambda d: d.ell(66, y0 - 5, 11.5, 10))                                   # la cabeza, en la clavícula
-    a.part(WHITE, lambda d: d.ell(55.5, y0 - 1.5, 7.5, 5.2), shade=1)
-    a.part(WHITE, lambda d: d.poly([(64, y0 - 15), (68, y0 - 15), (63, y0 - 3), (59, y0 - 3)]), shade=0, rim=False)
-    a.part(BLACK, lambda d: d.ell(48.6, y0 - 2.2, 2.2, 2.0), shade=0, rim=False)
-    a.part(EAR, lambda d: d.ell(73, y0 - 1, 5.6, 10), shade=2)
-    eye = dk((20, 16, 20), 0.9)
-    cv.post.append(lambda d: d.line([(60, y0 - 8), (63, y0 - 7)], fill=eye))             # el ojo, cerrado
-    # El brazo de él, la mano en el lomo.
-    a.part(COAT, lambda d: d.path([(66, 84), (86, 80), (108, y0 - 13 - lb)], 9.5), shade=2)   # lo abraza
-    a.part(SKIN, lambda d: d.ell(112, y0 - 15 - lb, 6, 4.6), shade=1)
-    knuckle = a.lit(SKIN, -0.4)
-    for k in range(3):
-        cv.post.append(lambda d, k=k: d.line([(109 + k * 3, y0 - 18 - lb), (109 + k * 3, y0 - 14 - lb)], fill=knuckle))
-    if still:
-        cv.post.append(lambda d: None)
+    Actor(cv, env, 0, 0).part(PACK, lambda d: d.cap(14, 82, 40, 82, 14))             # la mochila, de almohada
+    # Él, boca arriba (de cerca: el mismo cuerpo, a 3x).
+    a = Actor(cv, env, 125, 87, scale=3.0)
+    man_back(a, b, "chest")
+    # Lukas, echado en el pecho, la cabeza en la clavícula de él. Nunca hacía eso.
+    lk = Actor(cv, env, 84, 58 - b, flip=True, scale=2.4)
+    lukas_down(lk, lb, "down", eye=False if still else "closed", tail_up=False)
+    # La mano de él, encima del lomo.
+    s = 3.0
+    en, hn = (125 - 15.0 * s, 87 - 3.6 * s), (125 - 11.6 * s, 87 - (12.0 + b) * s - lb)
+    a2 = Actor(cv, env, 0, 0)
+    a2.part(COAT, lambda d: _limb(d, en, 2.1 * s, hn, 1.7 * s), shade=2)
+    a2.part(SKIN, lambda d: d.ell(hn[0] + 1.0, hn[1] - 1.0, 1.7 * s, 1.4 * s), shade=1)
     return cv
 
 
@@ -1063,8 +1049,8 @@ def entierro(f):
     samuel(cv, env, 50, 93)
     leonor = Actor(cv, env, 74, 92)
     man_stand(leonor, coat=(136, 74, 110), pants=(96, 60, 84), hair=(236, 232, 226), beard=None, tie=False, bulk=1.1)
-    leonor.part((136, 74, 110), lambda d: d.poly([(-7, -27), (7.5, -27), (10, -5), (-9.5, -5)]))            # la falda
-    leonor.part((236, 158, 184), lambda d: d.poly([(-7, -44), (8, -44), (9, -36), (-8, -36)]), shade=1)   # el chal
+    leonor.part((136, 74, 110), lambda d: d.poly([(-5.4, -31.0), (5.8, -31.0), (7.4, -5.0), (-6.8, -5.0)]))   # la falda
+    leonor.part((236, 158, 184), lambda d: d.poly([(-5.2, -47.6), (6.2, -47.6), (7.0, -40.4), (-6.0, -40.4)]), shade=1)   # el chal
     man_sit(Actor(cv, env, 204, 94, flip=True), 0, "alerta")
     return cv
 
@@ -1192,10 +1178,10 @@ def moto(f):
     cv.fill(cv.mask(lambda d: d.ell(144.5, 65, 3.6, 3.6)), (255, 240, 180))
     cv.glow(146, 65, 8, (255, 236, 170), 0.6)
     # Él, de veintitantos, sin barba, con chaqueta. Una mano en el tanque.
-    a = Actor(cv, env, 164, 93, flip=True)
-    man_stand(a, coat=(50, 50, 62), pants=(64, 76, 110), beard=None, tie=False)
-    a.part((50, 50, 62), lambda d: d.path([(2, -40), (14, -34), (24, -28)], 4.6))
-    a.part(SKIN, lambda d: d.ell(25.5, -27.5, 2.2, 2.0), shade=1)
+    a = Actor(cv, env, 156, 93, flip=True)
+    man_stand(a, coat=(50, 50, 62), pants=(64, 76, 110), beard=None, tie=False, near_arm=False)
+    a.part((50, 50, 62), lambda d: (_limb(d, (1.0, -45.6), 2.4, (8.6, -39.4), 2.1), _limb(d, (8.6, -39.4), 2.1, (17.0, -33.4), 1.7)))
+    a.part(SKIN, lambda d: d.ell(17.6, -33.2, 1.6, 1.4), shade=1)                     # la mano, en el manubrio
     for i, (bx, by) in enumerate(((60, 22), (70, 17), (80, 24))):
         cv.post.append(lambda d, bx=bx, by=by: d.line([(bx + f - 1, by - 1), (bx + f, by), (bx + f + 1, by - 1)], fill=(110, 70, 100)))
     return cv
@@ -1240,9 +1226,9 @@ def billar_card(f):
         small_man(cv, sx + [0, 1, 0, -1][(f + i * 2) % 4], 84, 0.4, (70, 20, 60))
     # El guardia: mide lo que mide la puerta. Un poco más.
     g = Actor(cv, env, 121, 95, scale=1.14)
-    man_stand(g, coat=(34, 34, 44), pants=(30, 30, 40), hair=(120, 84, 66), beard=None, tie=False, bulk=1.4)
-    g.part((34, 34, 44), lambda d: d.path([(-8, -38), (2, -31), (9, -35)], 5.2))                 # los brazos, cruzados
-    g.part((34, 34, 44), lambda d: d.path([(9, -39), (-1, -33), (-8, -34)], 5.2))
+    man_stand(g, coat=(34, 34, 44), pants=(30, 30, 40), hair=(120, 84, 66), beard=None, tie=False, bulk=1.4, near_arm=False)
+    g.part((34, 34, 44), lambda d: (_limb(d, (1.0, -45.6), 3.2, (5.2, -38.0), 2.9), _limb(d, (5.2, -38.0), 2.9, (-3.4, -39.6), 2.4)))
+    g.part(SKIN, lambda d: d.ell(-3.8, -39.8, 1.8, 1.6), shade=1)                     # los brazos, cruzados
     glasses = (10, 8, 14)
     cv.post.append(lambda d: d.line([g.at(0, -52), g.at(7, -52)], fill=glasses, width=2))
     # Él y Lukas, esperando a ver.
@@ -1353,24 +1339,35 @@ MOMENTOS = [lambda f: intruso(False, f), lambda f: intruso(True, f), lambda f: l
 # ---------------------------------------------------------------- Mirar desde el puente; el espejo de Lisandro
 
 def _man_back_seated(cv, env, x, y, coat=COAT):
-    """Él, sentado de espaldas (mirando lo que mira). Origen: el piso, en la mitad."""
+    """Él, sentado de espaldas (mirando lo que mira): la espalda del saco que le queda grande, los brazos
+    a los lados, la nuca, las orejas y el pelo despeinado. Origen: el piso, en la mitad."""
     a = Actor(cv, env, x, y)
-    a.part(coat, lambda d: (d.cap(-6, -6, 6, -6, 13), d.cap(-5, -9, -6, -26, 12), d.cap(5, -9, 6, -26, 12)), shade=3)
-    a.part(coat, lambda d: d.ell(0, -27, 10, 4), shade=1)                            # los hombros
-    a.part(HAIR, lambda d: d.ell(0, -35, 6.4, 6.6), shade=2)
-    a.part(SKIN, lambda d: (d.ell(-6.6, -34, 1.6, 2.4), d.ell(6.6, -34, 1.6, 2.4)), shade=0, rim=False)   # las orejas
-    a.part(SKIN, lambda d: d.rect(-3, -29.5, 3, -27.5), shade=0)                     # la nuca
+    a.part(coat, lambda d: (_limb(d, (-6.6, -26.4), 2.5, (-7.4, -15.0), 2.2), _limb(d, (-7.4, -15.0), 2.2, (-5.6, -6.0), 1.8),
+                            _limb(d, (6.6, -26.4), 2.5, (7.4, -15.0), 2.2), _limb(d, (7.4, -15.0), 2.2, (5.6, -6.0), 1.8)),
+           emph=a.emph * 0.9)                                                         # los brazos, a los lados
+    a.part(coat, lambda d: (d.poly([(-6.8, -27.4), (6.8, -27.4), (5.6, -12.0), (6.8, -2.0), (6.4, -0.4), (-6.4, -0.4),
+                                    (-6.8, -2.0), (-5.6, -12.0)]), d.ell(-5.2, -26.2, 2.8, 2.6), d.ell(5.2, -26.2, 2.8, 2.6)), shade=3)
+    a.line([(0, -26.6), (0, -9.0)], col(coat, env.amb * 0.55))                       # la costura de la espalda
+    a.line([(-4.6, -20.0), (-3.4, -14.0)], col(coat, env.amb * 0.6))                 # un pliegue
+    a.part(SKIN, lambda d: d.rect(-1.6, -30.4, 1.6, -27.4), shade=0)                  # la nuca
+    a.part(coat, lambda d: d.rect(-3.2, -28.6, 3.2, -27.0), shade=0)                 # el cuello del saco
+    a.part(SKIN, lambda d: (d.ell(-3.6, -32.8, 1.0, 1.6), d.ell(3.6, -32.8, 1.0, 1.6)), shade=0, rim=False)   # las orejas
+    a.part(HAIR, lambda d: (d.ell(0, -34.0, 3.6, 4.2), d.ell(-2.2, -37.4, 1.6, 1.3), d.ell(2.0, -37.8, 1.5, 1.2),
+                            d.ell(-3.2, -31.6, 1.0, 1.4), d.ell(3.0, -31.4, 1.0, 1.4)), shade=2)
     return a
 
 
 def _lukas_back_seated(cv, env, x, y):
+    """Lukas, sentado de espaldas: el anca ancha abajo, la montura negra, la cabeza con las dos orejas
+    largas colgando, la cola en el piso con la punta blanca."""
     a = Actor(cv, env, x, y)
-    a.part(TAN, lambda d: d.ell(0, -6, 8, 6.5), shade=2)
-    a.part(BLACK, lambda d: d.cap(0, -8, 0, -17, 7), shade=1)
-    a.part(TAN, lambda d: d.ell(0, -21, 5.2, 5), shade=2)
-    a.part(EAR, lambda d: (d.ell(-5.2, -18, 2.4, 5), d.ell(5.2, -18, 2.4, 5)), shade=1)
-    a.part(TAN, lambda d: d.cap(6, -1.5, 13, -2.5, 2.4), shade=1)                   # la cola, en el piso
-    a.dot(14, -3, a.lit(WHITE, 0.6))
+    a.part(TAN, lambda d: (_limb(d, (5.0, -1.4), 1.4, (9.6, -2.0), 1.1), _limb(d, (9.6, -2.0), 1.1, (12.4, -3.0), 0.9)), shade=1)
+    a.dot(12.8, -3.4, a.lit(WHITE, 0.6))                                           # la cola, en el piso
+    a.part(TAN, lambda d: (d.ell(0, -4.6, 5.8, 4.6), _limb(d, (0, -5.0), 4.6, (0, -12.4), 3.4)), shade=2)
+    a.part(BLACK, lambda d: _limb(d, (0, -6.4), 3.0, (0, -12.0), 2.4), shade=1)       # la montura
+    a.part(TAN, lambda d: (d.ell(0, -15.6, 3.4, 3.2), d.ell(0, -17.6, 2.6, 2.0)), shade=2)   # la cabeza (de atrás)
+    a.part(EAR, lambda d: (d.ell(-3.4, -14.0, 1.4, 3.4), d.ell(3.4, -14.0, 1.4, 3.4)), shade=1)
+    a.part(WHITE, lambda d: d.rect(-0.5, -18.6, 0.5, -15.2), shade=0, rim=False)     # la franja, entre las orejas
     return a
 
 
@@ -1460,15 +1457,18 @@ def espejo(cap3, f):
 
 # ---------------------------------------------------------------- EL PROLOGO, con la misma calidad
 
-def _woman(cv, env, x, y, coat, hair, flip=False, skirt=None, scale=1.0, hold=None):
+def _woman(cv, env, x, y, coat, hair, flip=False, skirt=None, scale=1.0, hold=None, near_arm=True):
     """Una mujer de pie (Diana Carolina, Lorena): pelo largo, vestido. Origen: los pies."""
     a = Actor(cv, env, x, y, flip, scale=scale)
-    a.part(hair, lambda d: d.poly([(-6, -56), (6, -56), (8, -34), (-7, -34)]), shade=2)
-    man_stand(a, coat=coat, pants=skirt or coat, hair=hair, beard=None, tie=False, bulk=0.92)
-    a.part(skirt or coat, lambda d: d.poly([(-7, -27), (7.5, -27), (10, -6), (-9.5, -6)]))
+    a.part(hair, lambda d: (d.ell(0.0, -53.6, 4.6, 4.8), d.poly([(-4.8, -53.4), (3.4, -53.4), (3.8, -42.6), (-5.2, -42.6)])),
+           shade=2)                                                                    # el pelo largo, por la espalda
+    man_stand(a, coat=coat, pants=skirt or coat, hair=hair, beard=None, tie=False, bulk=0.9,
+              near_arm=not (hold or not near_arm))
+    a.part(skirt or coat, lambda d: d.poly([(-4.8, -31.0), (5.2, -31.0), (6.8, -12.0), (-6.4, -12.0)]))   # la falda
     if hold:
-        a.part(coat, lambda d: d.path([(2, -40), (10, -33), (14, -38)], 4.2))
-        a.part(hold, lambda d: d.rect(12, -44, 18, -36), shade=0)
+        a.part(coat, lambda d: (_limb(d, (1.0, -45.6), 2.2, (6.6, -38.6), 1.9), _limb(d, (6.6, -38.6), 1.9, (9.8, -41.8), 1.6)))
+        a.part(SKIN, lambda d: d.ell(10.0, -42.0, 1.5, 1.3), shade=1)
+        a.part(hold, lambda d: d.rect(9.0, -47.4, 13.4, -40.8), shade=0)
     return a
 
 
@@ -1476,16 +1476,12 @@ def _man_run(cv, env, x, y, flip=False, clean=False):
     """Corriendo: el cuerpo para adelante, las piernas abiertas. Origen: el piso."""
     a = Actor(cv, env, x, y, flip)
     a.clean = clean
-    a.part(PANTS, lambda d: d.path([(0, -22), (-10, -12), (-16, -4)], 6), emph=0.85)
-    a.part(SHOE_B, lambda d: d.cap(-20, -4, -14, -3, 4))
-    a.part(PANTS, lambda d: d.path([(0, -22), (10, -14), (8, -2)], 6.4))
-    a.part(SHOE_A, lambda d: d.cap(7, -1.5, 14, -1.5, 4))
-    a.part(PACK, lambda d: d.cap(-6, -40, -8, -30, 9))
-    a.part(COAT, lambda d: d.cap(0, -24, 6, -42, 13))
-    a.part(COAT, lambda d: d.path([(4, -38), (14, -32), (20, -36)], 4.4))
-    a.part(SKIN, lambda d: d.ell(21, -37, 2, 2), shade=1)
-    from vinetas_motor import _head
-    _head(a, 9, -50, (0.8, 0.2))
+    a.part(PACK, lambda d: d.cap(-1.6, -43.0, -3.4, -32.0, 8.0))                    # la mochila, rebotando
+    J = {"head": (8.6, -49.6), "neck": (6.4, -45.2), "hip": (0.0, -27.6),
+         "sn": (6.2, -42.4), "sf": (4.2, -42.8), "en": (11.6, -34.4), "ef": (-1.4, -35.0),
+         "hn": (17.0, -38.4), "hf": (-4.0, -28.4), "kn": (8.6, -18.6), "kf": (-6.4, -17.4),
+         "an": (6.4, -4.4), "af": (-13.4, -10.4), "tn": (11.8, -2.4), "tf": (-17.4, -6.8)}
+    figure(a, J, (0.85, 0.2), hem=(-2.0, -21.0))
     return a
 
 
@@ -1586,10 +1582,11 @@ def p_lorena(f):
     cv.shape(cv.box(0, 74, W, H), (210, 140, 170), env, shade=0, half=False)          # la cama
     for k in range(6):
         cv.fill(cv.mask(lambda d, k=k: d.ell(20 + k * 40, 30 + (k % 2) * 10, 6, 6)), dk((250, 230, 240), 1.0))   # corazoncitos de pared
-    a = _woman(cv, env, 92, 100, (246, 140, 176), (112, 70, 40), scale=1.35)
-    a.part((236, 72, 132), lambda d: (d.poly([(-6, -60), (0, -57), (-6, -54)]), d.poly([(6, -60), (0, -57), (6, -54)])))   # el moño
-    a.part((246, 140, 176), lambda d: d.path([(-2, -40), (-6, -48), (-2, -52)], 4.2))   # el teléfono, a la oreja
-    a.part((40, 40, 50), lambda d: d.rect(-4, -56, 0, -48))
+    a = _woman(cv, env, 92, 100, (246, 140, 176), (112, 70, 40), scale=1.35, near_arm=False)
+    a.part((236, 72, 132), lambda d: (d.poly([(-3.6, -60.0), (0.4, -57.8), (-3.6, -55.8)]), d.poly([(4.4, -60.0), (0.4, -57.8), (4.4, -55.8)])))   # el moño
+    a.part((40, 40, 50), lambda d: d.rect(1.0, -56.0, 3.6, -49.6))                  # el teléfono, a la oreja
+    a.part((246, 140, 176), lambda d: (_limb(d, (1.0, -45.6), 2.2, (4.6, -40.4), 1.9), _limb(d, (4.6, -40.4), 1.9, (3.0, -50.8), 1.6)))
+    a.part(SKIN, lambda d: d.ell(3.0, -51.2, 1.5, 1.4), shade=1)
     # Lo que mandó: la foto de él, el pin de la dirección, y un arma que no hay (de su cosecha).
     cv.shape(cv.box(142, 16, 178, 62), (40, 40, 50), env, shade=0, half=False)
     cv.fill(cv.box(145, 20, 175, 58), dk((150, 170, 200), 1.0))
@@ -1707,9 +1704,9 @@ def p_vecino(f):
         cv.post.append(lambda d, dx=dx, num=num: d.text((dx + 18, 14), num, font=FONT, fill=(230, 210, 140)))
     cv.fill(cv.box(76, 10, 82, 90), dk((20, 16, 20), 1.0))                            # el 301, entreabierto
     a = Actor(cv, env, 92, 96)
-    man_stand(a, coat=(120, 100, 130), pants=(80, 70, 90), hair=(200, 196, 190), beard=None, tie=False)   # el vecino, en bata
-    a.part((120, 100, 130), lambda d: d.path([(3, -40), (16, -46), (32, -48 - f % 2)], 4.2))   # señalando
-    a.part(SKIN, lambda d: d.ell(34, -48 - f % 2, 2, 2), shade=1)
+    man_stand(a, coat=(120, 100, 130), pants=(80, 70, 90), hair=(200, 196, 190), beard=None, tie=False, near_arm=False)   # el vecino, en bata
+    a.part((120, 100, 130), lambda d: (_limb(d, (1.0, -45.6), 2.4, (10.2, -46.0), 2.1), _limb(d, (10.2, -46.0), 2.1, (19.2, -47.4 - f % 2), 1.7)))
+    a.part(SKIN, lambda d: (d.ell(20.0, -47.6 - f % 2, 1.6, 1.3), d.cap(21.0, -47.8 - f % 2, 23.4, -48.0 - f % 2, 0.9)), shade=1)   # señalando
     for i, sx in enumerate((206, 222)):
         small_man(cv, sx, 96, 0.62, (40, 50, 70), rim=(255, 90, 90) if (f + i) % 2 else (90, 120, 255))
     return cv
@@ -1754,19 +1751,19 @@ def p_orden(f):
     cv.fill(cv.box(0, 82, W, H), dk((150, 110, 80), 0.8))
     # Él, saliendo: una pierna afuera, la mochila puesta, Lukas debajo del brazo, la foto en la mano.
     a = Actor(cv, env, 132, 84)
-    a.clean = True
-    a.part(PANTS, lambda d: d.path([(0, -8), (16, -20), (34, -24)], 6.4))
-    a.part(SHOE_A, lambda d: d.cap(34, -26, 40, -24, 4))
-    a.part(PANTS, lambda d: d.path([(0, -8), (-6, 0), (-8, 10)], 6), emph=0.85)
-    a.part(PACK, lambda d: d.cap(-10, -34, -12, -22, 10))
-    a.part(COAT, lambda d: d.cap(-2, -12, 2, -36, 13))
-    from vinetas_motor import _head
-    _head(a, 4, -44, (0.8, 0.2))
+    a.clean = True                                                                      # (todavía sin barba)
+    a.part(PACK, lambda d: d.cap(-5.4, -33.0, -6.6, -21.0, 8.0))
+    J = {"head": (3.6, -38.8), "neck": (2.2, -34.2), "hip": (0.0, -12.0),
+         "sn": (2.8, -31.4), "sf": (0.8, -31.8), "en": (11.6, -24.6), "hn": (19.0, -21.6),
+         "ef": (-7.4, -39.6), "hf": (-15.4, -45.6),
+         "kn": (13.8, -20.0), "an": (27.0, -23.0), "tn": (32.6, -25.0),            # una pierna, ya afuera
+         "kf": (-3.6, -1.6), "af": (-5.6, 8.4), "tf": (-0.6, 9.4)}                  # la otra, todavía adentro
+    figure(a, J, (0.8, 0.2), hem=(6.0, -14.0), near_arm=False)
     lk = Actor(cv, env, 144, 62)
-    lukas_curl(lk, 0, eye=True)
-    a.part(COAT, lambda d: d.path([(2, -32), (14, -26), (22, -22)], 4.6))
-    a.part(COAT, lambda d: d.path([(-4, -32), (-14, -40), (-18, -50)], 4.4))             # la otra mano, arriba: la foto
-    cv.shape(cv.box(110, 30, 122, 40), (240, 230, 200), env, shade=0, half=False)
+    lukas_curl(lk, 0, eye=True)                                                         # Lukas, debajo del brazo
+    a.part(COAT, lambda d: (_limb(d, J["sn"], 2.4, J["en"], 2.1), _limb(d, J["en"], 2.1, J["hn"], 1.7)))
+    a.part(SKIN, lambda d: d.ell(J["hn"][0], J["hn"][1], 1.6, 1.4), shade=1)
+    cv.shape(cv.box(110, 30, 122, 40), (240, 230, 200), env, shade=0, half=False)     # la foto, en la otra mano
     n = ["1", "2", "3", "4"]
     cv.post.append(lambda d: [d.text((20 + k * 18, 88), n[k], font=FONT, fill=(250, 214, 110) if k <= f else (90, 80, 70)) for k in range(4)])
     return cv

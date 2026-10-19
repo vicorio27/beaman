@@ -55,14 +55,10 @@ func _ready() -> void:
 	add_child(art)
 	var title := _label("BE A MAN", Vector2(0, 14), 16, Color(0.95, 0.85, 0.6))
 	title.size = Vector2(320, 20)
-	var sub := _label("una historia de calle, con perro", Vector2(0, 34), 8, Color(0.82, 0.8, 0.78))
-	sub.size = Vector2(320, 10)
-	for l in [title, sub]:
-		l.add_theme_constant_override("outline_size", 4)
-		l.add_theme_color_override("font_outline_color", Color(0.03, 0.03, 0.06))
+	title.add_theme_constant_override("outline_size", 4)
+	title.add_theme_color_override("font_outline_color", Color(0.03, 0.03, 0.06))
 	_head.append(art)
 	_head.append(title)
-	_head.append(sub)
 	if GameState.has_save():
 		_main_opts.append("CONTINUAR")
 	_main_opts.append("NUEVA PARTIDA")
