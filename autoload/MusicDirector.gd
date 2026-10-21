@@ -1,6 +1,8 @@
 extends Node
-## La música: elige el tema según la escena (y la hora, en la ciudad), con fundido cruzado.
-## Los temas los genera tools/audio/compose.py en assets/music/.
+## La música: elige el tema según la escena (y la hora, en el barrio), con fundido cruzado.
+## Los temas los generan tools/audio/barrio.py (la vida real) y tools/audio/compose.py (los sueños)
+## en assets/music/. Los del barrio y las radios siguen donde iban: entrar a la panadería y salir no
+## los vuelve a empezar.
 ## Con hambre la música se apaga (filtro) y se desafina un poco, como el filtro de imagen.
 ##   MusicDirector.force("lilato_serpent")  cambia el tema mientras dure la escena actual.
 ##   MusicDirector.cut()                    corta en seco (la memoria).
@@ -27,8 +29,8 @@ const TRACKS := {
 	"MotoLorena": "moto_ride",
 	"Fila": "cafe",
 	"Fuente": "flashback",
-	"Pedir": "city_day",
-	"Puesto": "city_day",
+	"Pedir": "barrio",
+	"Puesto": "barrio",
 	"Title": "night",
 	"Callejon3": "dream_fight",
 	"Carrera1": "",
@@ -49,7 +51,7 @@ const TRACKS := {
 	"FinalOperativo": "",
 	"FinalCallejon": "dream_fight",
 	"FinalSerpiente": "",
-	"Obra": "city_day",
+	"Obra": "barrio",
 	"Reparto": "",
 	"Sigilo1": "",
 	"Sigilo2": "",
@@ -62,6 +64,8 @@ const TRACKS := {
 const VOLUME_DB := -7.0
 const FADE := 1.5
 const BUS := "Music"
+## Los que retoman donde iban (los demás arrancan del principio).
+const RESUME := ["barrio_manana", "barrio_dia", "barrio_tarde", "barrio_noche", "bakery", "cafe"]
 ## Escenas donde el hambre afecta la música.
 const HUNGRY_SCENES := ["City", "Bakery", "Cafe", "Centro", "Fila", "Fuente", "Pedir", "Parque"]
 
@@ -72,6 +76,7 @@ var _forced := ""
 var _forced_scene: Node
 var _check := 0.0
 var _lowpass: AudioEffectLowPassFilter
+var _pos := {}
 var enabled := true
 
 
@@ -123,10 +128,22 @@ func _wanted() -> String:
 	if _forced_scene != null and is_instance_valid(_forced_scene) and scene == _forced_scene:
 		return _forced
 	_forced_scene = null
-	if scene.name in ["City", "Centro", "Parque"]:
-		var h := TimeManager.hour()
-		return "city_day" if h >= 6 and h < 18 else "city_night"
-	return TRACKS.get(scene.name, _current)
+	var track: String = TRACKS.get(scene.name, _current)
+	if scene.name in ["City", "Centro", "Parque"] or track == "barrio":
+		return barrio()
+	return track
+
+
+## El barrio tiene un tema para cada parte del día (así no suena siempre lo mismo).
+func barrio() -> String:
+	var h := TimeManager.hour()
+	if h >= 6 and h < 10:
+		return "barrio_manana"
+	if h >= 10 and h < 14:
+		return "barrio_dia"
+	if h >= 14 and h < 18:
+		return "barrio_tarde"
+	return "barrio_noche"
 
 
 ## Cambia el tema mientras dure la escena actual ("" = silencio).
@@ -152,8 +169,10 @@ func cut() -> void:
 
 
 func _play(track: String) -> void:
-	_current = track
 	var old := _players[_active]
+	if old.playing and _current in RESUME:
+		_pos[_current] = old.get_playback_position()
+	_current = track
 	_active = 1 - _active
 	var new := _players[_active]
 	if old.playing:
@@ -168,7 +187,7 @@ func _play(track: String) -> void:
 	stream.loop_end = int(stream.get_length() * stream.mix_rate)
 	new.stream = stream
 	new.volume_db = -40.0
-	new.play()
+	new.play(_pos.get(track, 0.0))
 	create_tween().tween_property(new, "volume_db", VOLUME_DB, FADE)
 
 

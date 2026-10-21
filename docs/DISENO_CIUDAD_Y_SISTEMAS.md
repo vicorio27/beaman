@@ -331,7 +331,7 @@ La historia es triste, pero él **no da lástima: es gracioso.** Es canchero y r
 
 ## Música
 
-La genera el código (`tools/audio/compose.py` → `assets/music/*.wav`): chiptune, guitarra pulsada, piano y cajita de música. Los loops empalman sin corte. La elige el autoload `MusicDirector` según la escena y la hora, con fundido cruzado.
+La genera el código (→ `assets/music/*.wav`): la de los sueños, `tools/audio/compose.py` (chiptune, guitarra pulsada, cajita de música); la de la vida real, `tools/audio/barrio.py` (marimba, guitarra de nylon, piano eléctrico, vibráfono, piano, contrabajo, tiple y percusión suave, con reverb de sala, en estéreo). Los loops empalman sin corte. La elige el autoload `MusicDirector` según la escena y la hora, con fundido cruzado.
 
 | Escena | Tema |
 |---|---|
@@ -340,14 +340,20 @@ La genera el código (`tools/audio/compose.py` → `assets/music/*.wav`): chiptu
 | Lilato | `lilato`: épica en re menor |
 | La serpiente | `lilato_serpent`: lo de Lilato, desafinado, una octava abajo y con bits de menos |
 | CONTINUE? | silencio |
-| Ciudad de día | `city_day`: cumbia lenta lo-fi de guitarra |
-| Ciudad de noche (18 a 6) | `city_night`: la misma, lenta y oscura, con lluvia y motos lejos |
-| Panadería de Germán | `bakery`: un bolero en una radio AM vieja |
-| Café de Marta | `cafe`: un vals en la radio |
-| La noche | `night`: piano solo |
+| El barrio, 6 a 10 | `barrio_manana`: marimba y guitarra en re mayor, con pájaros lejos |
+| El barrio, 10 a 14 | `barrio_dia`: cumbia suave en sol (requinto, marimba, piano eléctrico, guacharaca) |
+| El barrio, 14 a 18 | `barrio_tarde`: bossa en fa (piano eléctrico, vibráfono, escobillas) |
+| El barrio, 18 a 6 | `barrio_noche`: guitarra en 12/8, piano eléctrico y grillos, en mi |
+| Panadería de Germán, el billar | `bakery`: un bolero de trío (requinto con trémolo) en una radio de mesa |
+| Café de Marta, la fila | `cafe`: un vals con tiple y bandola en la radio |
+| La noche, el título, el final | `night`: el tema del juego, piano solo |
+| La feria | `feria`: la cumbia del mediodía, de fiesta |
+| Los recuerdos con sol, la fuente | `flashback`: la mañana, más rápida y con más sol |
 | La memoria | `memory`: cajita de música desafinada que se corta en seco |
 
 Con hambre (debajo de 40) la música pierde agudos y baja de tono, igual que el filtro de imagen.
+
+**La de la vida real tiene que aguantarse horas (2026-10-20).** La de antes (loops de 27 a 55 s, guitarra de ruido, disco rayado, cinta que se desafina, radio AM chillona) cansaba tanto que daba pereza volver al juego. Ahora: temas de 75 a 110 s con partes A y B y cada vuelta arreglada distinto; acordes con séptima; instrumentos suaves; nada de ruido ni desafinación; el barrio cambia de tema cada cuatro horas del juego, y los del barrio y las radios siguen donde iban al entrar y salir de un lugar (`MusicDirector.RESUME`).
 
 ## Plata: en qué se gasta
 

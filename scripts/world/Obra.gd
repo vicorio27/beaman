@@ -109,7 +109,6 @@ func _ready() -> void:
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_prompt.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	_prompt.add_to_group("under_dialogue")
-	MusicDirector.force("city_day")
 	var n := int(GameState.flags.get("obra_turnos", 0))
 	twist = TWISTS[n] if n < TWISTS.size() else TWISTS[1 + (n - TWISTS.size()) % (TWISTS.size() - 1)]
 	if twist == "cunado":

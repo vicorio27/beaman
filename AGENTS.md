@@ -94,7 +94,8 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
     motor de las viñetas: formas, luz por escena, personajes sobre un esqueleto), `draw_vinetas.py`,
     `draw_vinetas_tele.py`, `draw_retratos.py` (las caras de los diálogos), `draw_tenistas.py` (los
     tenistas, con sus poses y un `.json` de metadatos), `draw_tenis_coliseo.py`.
-  - `tools/audio/*.py`: música y efectos sintetizados (`compose.py`, `tenis_audio.py`,
+  - `tools/audio/*.py`: música y efectos sintetizados (`barrio.py`: la música de la vida real, que
+    tiene que dar gusto oírla horas; `compose.py`: la de los sueños; `tenis_audio.py`,
     `futbol_audio.py`).
   - Si algo de arte o sonido está mal, el arreglo es en el generador y se vuelve a correr.
 - `docs/`: `DISENO_CIUDAD_Y_SISTEMAS.md` es el documento de diseño grande (**cuando dos secciones se

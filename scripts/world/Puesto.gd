@@ -307,7 +307,7 @@ func _man_in_black() -> void:
 	t2.tween_property(m, "position:x", 340.0, 2.0)
 	t2.tween_callback(m.queue_free)
 	await t2.finished
-	MusicDirector.force("city_day")
+	MusicDirector.release()  # vuelve la del barrio
 
 
 func _end() -> void:

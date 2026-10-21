@@ -1,7 +1,9 @@
-"""Música del juego, generada por código (python tools/audio/compose.py).
+"""Música de los sueños (y de la moto, el prólogo y la memoria), generada por código
+(python tools/audio/compose.py). La de la vida real (el barrio, las radios, la noche, la feria) la
+hace tools/audio/barrio.py.
 
 Un mini sintetizador con numpy: ondas cuadradas y triangulares (chiptune), guitarra pulsada
-(Karplus-Strong), piano, cajita de música, batería, lluvia y filtro de radio AM.
+(Karplus-Strong), piano, cajita de música y batería.
 Cada tema es un loop: las colas de las notas que pasan el final vuelven al principio,
 así el loop empalma sin corte. Salida: assets/music/<id>.wav (22050 Hz, mono, 16 bits).
 
@@ -10,11 +12,6 @@ Temas (ver docs/DISENO_CIUDAD_Y_SISTEMAS.md, "Música"):
   truck           el camión: el mismo riff, más rápido y desesperado
   lilato          jefe: épica en re menor
   lilato_serpent  la serpiente: el tema de Lilato que se desafina y se rompe
-  city_day        la ciudad de día: cumbia lenta lo-fi, de guitarra
-  city_night      la ciudad de noche: la misma, lenta y oscura, con lluvia y motos
-  bakery          lo de Germán: un bolero en una radio AM vieja
-  cafe            lo de Marta: un vals en la radio
-  night           antes de dormir: piano solo, con mucho aire
   memory          la memoria: cajita de música desafinada
   moto_ride       la moto: blues-rock de motero (shuffle en mi, guitarra saturada, slide)
   panico          el prólogo, antes de correr: un corazón, un reloj, un tritono y una sirena lejos.
@@ -135,13 +132,6 @@ def hat(dur=0.05, open_=False):
     return n * np.exp(-t / (0.06 if open_ else 0.012))
 
 
-def shaker(dur=0.07):
-    t = _t(dur)
-    n = rng.uniform(-1, 1, len(t))
-    n = n - np.convolve(n, np.ones(3) / 3, "same")
-    return n * np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 2
-
-
 # ------------------------------------------------------------------ mezcla y efectos
 
 class Track:
@@ -206,20 +196,6 @@ def crackle(n, density=6.0, gain=0.25):
     idx = rng.integers(0, n, int(density * n / SR))
     c[idx] = rng.uniform(-1, 1, len(idx))
     return np.convolve(c, np.exp(-np.arange(30) / 6), "same") * gain
-
-
-def radio(x):
-    y = fft_filter(x, lo=320, hi=3000, soft=2.0)
-    y = np.tanh(y * 2.2) / 2.2
-    y = y + fft_filter(rng.uniform(-1, 1, len(y)), lo=2000, hi=6000) * 0.012
-    return warble(y, 0.0025, 0.35) + crackle(len(y), 10, 0.18)
-
-
-def rain(n, gain=0.12):
-    r = fft_filter(rng.uniform(-1, 1, n), lo=500, hi=4500)
-    r /= np.abs(r).max()
-    drops = crackle(n, 40, 0.5)
-    return (r + fft_filter(drops, lo=1500)) * gain
 
 
 def save(name, x, peak=0.85):
@@ -329,131 +305,6 @@ def serpent_song(base):
     return x + fft_filter(rng.uniform(-1, 1, n), lo=50, hi=200) * 0.15
 
 
-CUMBIA_CHORDS = [("A", "m"), ("A", "m"), ("G", ""), ("G", ""), ("F", ""), ("F", ""), ("E", ""), ("E", "")] * 2
-CUMBIA_MEL = [
-    ("E5", 1), ("C5", .5), ("D5", .5), ("E5", 2), (None, 1), ("A4", 1), ("C5", 1), ("E5", 1),
-    ("D5", 1.5), ("B4", .5), ("D5", 2), (None, 1), ("G4", 1), ("B4", 1), ("D5", 1),
-    ("C5", 1), ("A4", .5), ("C5", .5), ("F5", 2), ("E5", 1), ("D5", 1), ("C5", 1), ("A4", 1),
-    ("B4", 2), ("G#4", 1), ("B4", 1), ("E5", 3), (None, 1),
-]
-
-
-def chord_notes(root, q, octave=3):
-    r = midi(root + str(octave))
-    return [r, r + (3 if q == "m" else 4), r + 7]
-
-
-def cumbia(bpm, night):
-    bars = 16
-    tr = Track(bpm, bars * 4)
-    for bar, (r, q) in enumerate(CUMBIA_CHORDS):
-        b = bar * 4
-        root = midi(r + "2")
-        third = 3 if q == "m" else 4
-        bass = [(0, 0, 1), (2, 7, 1), (3, 0, .5), (3.5, third, .5)]
-        for beat, iv, l in bass:
-            tr.add(b + beat, pluck(hz(root + iv), tr.sec(l), bright=0.2, decay=0.998), 0.55)
-        for off in [0.5, 1.5, 2.5, 3.5]:  # guitarra a contratiempo (el rasgueo hacia arriba)
-            for k, m in enumerate(chord_notes(r, q, 4)):
-                tr.add(b + off + k * 0.015, pluck(hz(m), tr.sec(0.35), bright=0.35 if night else 0.5), 0.13)
-        if not night:
-            for k in range(8):  # güira
-                tr.add(b + k * 0.5, shaker(), 0.18 if k % 2 else 0.1)
-            tr.add(b, kick(soft=True), 0.4)
-            tr.add(b + 2, kick(soft=True), 0.3)
-        else:
-            tr.add(b, kick(soft=True), 0.25)
-    mel_gain = 0.5 if not night else 0.42
-    shift = 0 if not night else -12
-    mel = [((midi(n) + shift) if n else None, l) for n, l in CUMBIA_MEL]
-    tr.line(0, mel, pluck, mel_gain, legato=1.0, bright=0.7, decay=0.997)
-    tr.line(32, mel, pluck, mel_gain * 0.9, legato=1.0, bright=0.7, decay=0.997)
-    x = tr.buf
-    x = fft_filter(x, lo=60, hi=1700 if night else 3600)
-    x = warble(x, 0.002 if not night else 0.003, 0.4)
-    x = x / np.abs(x).max()
-    x += crackle(len(x), 8, 0.12)
-    if night:
-        x += rain(len(x), 0.22)
-        n = len(x)
-        for center in (0.3, 0.75):  # una moto que pasa lejos
-            t = (np.arange(n) / n - center) * n / SR
-            amp = np.exp(-(t / 2.0) ** 2)
-            f = 70 + 25 * np.tanh(-t)
-            moto = (np.cumsum(f) / SR % 1.0) * 2 - 1
-            x += fft_filter(moto * amp, hi=400) * 0.35
-        x = echo(x)
-    return x
-
-
-def bolero():
-    bars = 16
-    tr = Track(76, bars * 4)
-    chords = [("C", ""), ("A", "m"), ("D", "m"), ("G", "7")] * 4
-    for bar, (r, q) in enumerate(chords):
-        b = bar * 4
-        root = midi(r + "2")
-        for beat, iv, l in [(0, 0, 1), (1, 7, .5), (1.5, 7, .5), (2, 0, 1), (3, 7, 1)]:
-            tr.add(b + beat, pluck(hz(root + iv), tr.sec(l), bright=0.25, decay=0.998), 0.5)
-        tones = chord_notes(r, "m" if q == "m" else "", 3)
-        if q == "7":
-            tones = tones + [tones[0] + 10]
-        arp = [tones[0], tones[1], tones[2], tones[1] + 12, tones[2], tones[1], tones[0] + 12, tones[2]]
-        for k, m in enumerate(arp):
-            tr.add(b + k * 0.5, pluck(hz(m + 12), tr.sec(0.6), bright=0.45), 0.16)
-    mel = [
-        ("E5", 1.5), ("D5", .5), ("C5", 1), ("E5", 1), ("A5", 2), ("G5", 1), ("E5", 1),
-        ("F5", 1.5), ("E5", .5), ("D5", 1), ("F5", 1), ("G5", 2), ("F5", 1), ("D5", 1),
-        ("E5", 1), ("G5", 1), ("C6", 2), ("B5", 1), ("A5", 1), ("E5", 2),
-        ("F5", 1), ("A5", 1), ("D5", 1), ("F5", 1), ("E5", 1), ("D5", 1), ("B4", 1), ("G4", 1),
-    ]
-    tr.line(0, mel, pluck, 0.5, legato=1.0, bright=0.75, decay=0.998)
-    tr.line(32, mel, pluck, 0.5, legato=1.0, bright=0.75, decay=0.998)
-    for bar in range(bars):  # maracas suaves
-        for k in range(4):
-            tr.add(bar * 4 + k, shaker(0.09), 0.08)
-    return radio(echo(tr.buf))
-
-
-def vals():
-    bars = 16
-    tr = Track(108, bars * 3)
-    chords = [("G", ""), ("E", "m"), ("C", ""), ("D", "")] * 4
-    for bar, (r, q) in enumerate(chords):
-        b = bar * 3
-        tr.add(b, pluck(hz(midi(r + "2")), tr.sec(1), bright=0.25), 0.5)
-        for beat in (1, 2):
-            for k, m in enumerate(chord_notes(r, q, 4)):
-                tr.add(b + beat + k * 0.012, pluck(hz(m), tr.sec(0.5), bright=0.4), 0.14)
-    mel = [
-        ("B4", 1), ("D5", 1), ("G5", 1), ("E5", 2), ("D5", 1), ("C5", 1), ("E5", 1), ("G5", 1), ("F#5", 2), ("A5", 1),
-        ("G5", 1.5), ("F#5", .5), ("E5", 1), ("D5", 2), ("B4", 1), ("C5", 1), ("A4", 1), ("C5", 1), ("D5", 3),
-    ]
-    tr.line(0, mel, pluck, 0.5, legato=1.0, bright=0.8)
-    tr.line(24, mel, pluck, 0.45, legato=1.0, bright=0.8)
-    return radio(echo(tr.buf)) * 0.9
-
-
-def night_piano():
-    bars = 8
-    tr = Track(60, bars * 4)
-    chords = ["A1", "A1", "F1", "F1", "C2", "C2", "E1", "E1"]
-    for bar in range(0, bars, 2):
-        tr.add(bar * 4, piano(hz(chords[bar]), tr.sec(8)), 0.5)
-        tr.add(bar * 4, piano(hz(midi(chords[bar]) + 12), tr.sec(8)), 0.3)
-    notes = [
-        (0.5, "E5", 3), (3.5, "C5", 2), (5.5, "B4", 2.5),
-        (8.5, "A4", 3), (12, "C5", 1.5), (13.5, "F5", 2.5),
-        (16.5, "E5", 2), (19, "G5", 1), (20, "E5", 3.5),
-        (24.5, "D5", 2), (27, "B4", 2), (29, "G#4", 3),
-    ]
-    for beat, n, l in notes:
-        tr.add(beat, piano(hz(n), tr.sec(l + 1.5)), 0.42)
-    x = echo(echo(tr.buf))
-    x = fft_filter(x, hi=5000)
-    return x / np.abs(x).max() + rain(len(x), 0.05)
-
-
 def memory_box():
     bars = 8
     tr = Track(96, bars * 4)
@@ -472,36 +323,6 @@ def memory_box():
         tr.add(bar * 4, musicbox(hz(r), tr.sec(3.5)), 0.3)
     x = warble(echo(tr.buf), 0.004, 0.3)
     return x + crackle(len(x), 5, 0.06)
-
-
-def flashback_song():
-    """El recuerdo de la moto: la cumbia de la ciudad, pero en mayor, más rápida y con sol."""
-    bars = 16
-    tr = Track(100, bars * 4)
-    chords = [("C", ""), ("C", ""), ("A", "m"), ("A", "m"), ("F", ""), ("F", ""), ("G", ""), ("G", "")] * 2
-    for bar, (r, q) in enumerate(chords):
-        b = bar * 4
-        root = midi(r + "2")
-        third = 3 if q == "m" else 4
-        for beat, iv, l in [(0, 0, 1), (2, 7, 1), (3, 0, .5), (3.5, third, .5)]:
-            tr.add(b + beat, pluck(hz(root + iv), tr.sec(l), bright=0.3, decay=0.998), 0.55)
-        for off in [0.5, 1.5, 2.5, 3.5]:
-            for k, m in enumerate(chord_notes(r, q, 4)):
-                tr.add(b + off + k * 0.015, pluck(hz(m), tr.sec(0.3), bright=0.6), 0.13)
-        for k in range(8):
-            tr.add(b + k * 0.5, shaker(), 0.2 if k % 2 else 0.1)
-        tr.add(b, kick(soft=True), 0.45)
-        tr.add(b + 2, kick(soft=True), 0.35)
-    mel = [
-        ("E5", 1), ("G5", .5), ("A5", .5), ("G5", 2), (None, 1), ("C5", 1), ("E5", 1), ("G5", 1),
-        ("A5", 1.5), ("G5", .5), ("E5", 2), (None, 1), ("A4", 1), ("C5", 1), ("E5", 1),
-        ("F5", 1), ("A5", .5), ("G5", .5), ("F5", 2), ("E5", 1), ("D5", 1), ("C5", 1), ("A4", 1),
-        ("B4", 2), ("D5", 1), ("G5", 1), ("G5", 3), (None, 1),
-    ]
-    tr.line(0, mel, pluck, 0.5, legato=1.0, bright=0.8, decay=0.997)
-    tr.line(32, mel, pluck, 0.45, legato=1.0, bright=0.8, decay=0.997)
-    x = fft_filter(tr.buf, lo=60, hi=5000)
-    return warble(x, 0.0015, 0.4)
 
 
 def ride_song():
@@ -738,9 +559,6 @@ if __name__ == "__main__":
     if "perros" in sys.argv:  # Lukas pelea con un perro de la calle
         save("perros", perros_song())
         sys.exit()
-    if "feria" in sys.argv:  # la feria del lote: la cumbia del barrio, pero de fiesta (más rápida)
-        save("feria", cumbia(118, False))
-        sys.exit()
     if "prologo" in sys.argv:
         save("panico", panic_loop(), peak=0.8)
         save("huida", chase_song())
@@ -748,7 +566,6 @@ if __name__ == "__main__":
     save("boxeo", metal(150, ["A", "A", "F", "G"] * 4, BOX_LEAD, False))
     save("plomo", metal(168, ["E", "E", "C", "D"] * 4, PLOMO_LEAD, False))
     save("plomo_boss", metal(132, ["C", "C", "Ab", "G"] * 4, BOSS_LEAD, True))
-    save("flashback", flashback_song())
     save("moto_ride", outlaw_song())
     save("engine", engine(), peak=0.6)
     save("dream_fight", fight_song(140, False))
@@ -756,13 +573,7 @@ if __name__ == "__main__":
     base = lilato_song()
     save("lilato", base)
     save("lilato_serpent", serpent_song(base))
-    save("city_day", cumbia(92, False))
-    save("city_night", cumbia(70, True))
-    save("feria", cumbia(118, False))
     save("perros", perros_song())
-    save("bakery", bolero())
-    save("cafe", vals())
-    save("night", night_piano())
     save("memory", memory_box())
     save("panico", panic_loop(), peak=0.8)
     save("huida", chase_song())
