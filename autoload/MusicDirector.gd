@@ -8,6 +8,8 @@ extends Node
 ##   MusicDirector.cut()                    corta en seco (la memoria).
 ##   MusicDirector.set_enabled(false)       apaga la música (no los sonidos). Se elige en el título o en
 ##                                          la pausa y se guarda en user://ajustes.cfg.
+##   MusicDirector.duck(0.8)                aparta el tema (cerca del coliseo manda el partido); vuelve
+##                                          solo al cambiar de escena.
 
 const TRACKS := {
 	"Huida": "",  # (la pone Huida.gd: "panico" mientras cuenta, "huida" al correr)
@@ -64,6 +66,9 @@ const TRACKS := {
 const VOLUME_DB := -7.0
 const FADE := 1.5
 const BUS := "Music"
+## Los temas van por su propio bus (que sale al de música): así se pueden apartar sin tocar lo demás
+## que suena por el de música (el partido desde la calle).
+const THEME_BUS := "Tema"
 ## Los que retoman donde iban (los demás arrancan del principio).
 const RESUME := ["barrio_manana", "barrio_dia", "barrio_tarde", "barrio_noche", "bakery", "cafe"]
 ## Escenas donde el hambre afecta la música.
@@ -77,6 +82,8 @@ var _forced_scene: Node
 var _check := 0.0
 var _lowpass: AudioEffectLowPassFilter
 var _pos := {}
+var _duck := 0.0
+var _duck_scene: Node
 var enabled := true
 
 
@@ -88,9 +95,13 @@ func _ready() -> void:
 	_lowpass = AudioEffectLowPassFilter.new()
 	_lowpass.cutoff_hz = 20000.0
 	AudioServer.add_bus_effect(idx, _lowpass)
+	AudioServer.add_bus()
+	var theme := AudioServer.bus_count - 1
+	AudioServer.set_bus_name(theme, THEME_BUS)
+	AudioServer.set_bus_send(theme, BUS)
 	for i in 2:
 		var p := AudioStreamPlayer.new()
-		p.bus = BUS
+		p.bus = THEME_BUS
 		p.volume_db = -80.0
 		add_child(p)
 		_players.append(p)
@@ -98,6 +109,12 @@ func _ready() -> void:
 	if cfg.load(Controls.SETTINGS) == OK:
 		enabled = cfg.get_value("sonido", "musica", true)
 	AudioServer.set_bus_mute(idx, not enabled)
+
+
+## Aparta el tema (0 = normal, 1 = casi no se oye) mientras dure la escena.
+func duck(amount: float) -> void:
+	_duck = clampf(amount, 0.0, 1.0)
+	_duck_scene = get_tree().current_scene
 
 
 ## Prende o apaga la música: calla el bus (los temas siguen corriendo por debajo, así al prenderla
@@ -202,3 +219,8 @@ func _adapt(delta: float) -> void:
 	var pitch := 1.0 - 0.06 * k
 	for p in _players:
 		p.pitch_scale = lerpf(p.pitch_scale, pitch, minf(1.0, delta * 2.0))
+	if _duck_scene != scene:
+		_duck = 0.0
+	var bus := AudioServer.get_bus_index(THEME_BUS)
+	var want := linear_to_db(1.0 - 0.88 * _duck)
+	AudioServer.set_bus_volume_db(bus, move_toward(AudioServer.get_bus_volume_db(bus), want, delta * 24.0))

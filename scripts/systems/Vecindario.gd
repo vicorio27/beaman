@@ -465,6 +465,17 @@ func _add_coliseo() -> void:
 	air.autostart = true
 	air.timeout.connect(on_air)
 	add_child(air)
+	# Cerca del coliseo manda el partido: el tema del barrio se va apartando (dos músicas a la vez, no).
+	var near := Timer.new()
+	near.wait_time = 0.25
+	near.autostart = true
+	near.timeout.connect(func() -> void:
+		var player := get_tree().get_first_node_in_group("player") as Node2D
+		var k := 0.0
+		if rock.playing and player:
+			k = clampf(1.0 - player.global_position.distance_to(rock.global_position) / rock.max_distance, 0.0, 1.0)
+		MusicDirector.duck(pow(k, 0.7)))
+	add_child(near)
 
 
 func _draw_coliseo(n: Node2D, info: Dictionary) -> void:

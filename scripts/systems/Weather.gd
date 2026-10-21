@@ -129,7 +129,7 @@ func _process(delta: float) -> void:
 		if _puddles.visible:
 			_puddles.queue_redraw()
 	# El sonido: sube y baja con la lluvia.
-	var want_db := -6.0 if on else -80.0
+	var want_db := -10.0 if on else -80.0  # (de fondo: que no tape la música)
 	if on and not _rain_sound.playing:
 		_rain_sound.play()
 	_rain_sound.volume_db = move_toward(_rain_sound.volume_db, want_db, delta * 20.0)
