@@ -66,6 +66,7 @@ class Ent:
 	var pose := ""             # una pose especial (el episodio la carga: "<kind>_<pose>" en _tex)
 
 
+var touch_drag_right := true   # (TouchControls: la mitad derecha es para girar, los botones no se vienen al dedo)
 var grid: Array = []
 var doors := {}                 # Vector2i -> apertura 0..1
 var pos := Vector2(2.5, 21.5)

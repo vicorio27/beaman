@@ -3,15 +3,24 @@ extends CanvasLayer
 ## solos con pantalla táctil, o siempre / nunca si se eligió en el título (CONTROLES EN PANTALLA).
 ## Tres disposiciones: caminando (la ciudad), minijuego (botones en la franja derecha, la palanca solo
 ## se ve mientras se toca) y pantalla abierta (diálogo, mochila...: palanca invisible).
-## Izquierda: una palanca (cualquier dedo en la mitad izquierda de la pantalla la mueve).
+## Izquierda: una palanca que nace donde cae el dedo (en cualquier parte de la mitad izquierda: así el
+## pulgar no tapa al protagonista) y lo sigue si se va lejos.
 ## Derecha: A (acción), B (atrás), I (inventario), X (soltar), la huellita (Lukas: su menú), el librito
-## (la libreta). Con una pantalla abierta (diálogo, mochila, libreta...): la palanca no se dibuja (sigue
+## (la libreta). En un minijuego o sueño, tocar la mitad derecha donde no hay botón trae los botones al
+## pulgar: A debajo y los otros alrededor (salvo en PLOMO, que gira arrastrando por esa mitad).
+## Con una pantalla abierta (diálogo, mochila, libreta...): la palanca no se dibuja (sigue
 ## funcionando) y los botones se ponen en fila en la franja derecha (x > 286), que las pantallas dejan libre. Todo dispara las mismas acciones
 ## que el teclado (ver Controls.gd), así que el resto del juego no se entera.
 
-const STICK_CENTER := Vector2(38, 140)
+const STICK_HOME := Vector2(38, 140)  # donde se ve caminando mientras nadie la toca
 const STICK_RADIUS := 20.0
 const DEADZONE := 0.3
+## Los botones del minijuego alrededor del pulgar (el centro de cada uno respecto al de A).
+const CLUSTER := {"interact": Vector2.ZERO, "cancel": Vector2(-30, 6), "drop": Vector2(-2, -30),
+	"sniff": Vector2(-28, -26)}
+## Hasta dónde se dejan llevar (el centro de A): que ninguno se salga ni caiga en la mitad de la palanca.
+const CLUSTER_MIN := Vector2(200, 42)
+const CLUSTER_MAX := Vector2(305, 165)
 const BUTTONS := [
 	# acción, textura, posición caminando, con una pantalla abierta, en un minijuego (null: se esconde)
 	["interact", "touch_a", Vector2(286, 136), Vector2(292, 152), Vector2(292, 152)],
@@ -25,6 +34,10 @@ const BUTTONS := [
 ]
 
 var _stick_finger := -1
+var _stick_origin := STICK_HOME
+var _cluster_at = null  # Vector2: donde el pulgar dejó los botones del minijuego (null: en la franja)
+var _cluster_scene: Node
+var _cluster_finger := -1
 var _held := {}
 var _knob: Sprite2D
 var _base: Sprite2D
@@ -39,11 +52,11 @@ func _ready() -> void:
 	Input.emulate_mouse_from_touch = false
 	_base = Sprite2D.new()
 	_base.texture = load("res://assets/ui/touch_stick_base.png")
-	_base.position = STICK_CENTER
+	_base.position = STICK_HOME
 	add_child(_base)
 	_knob = Sprite2D.new()
 	_knob.texture = load("res://assets/ui/touch_stick_knob.png")
-	_knob.position = STICK_CENTER
+	_knob.position = STICK_HOME
 	add_child(_knob)
 	for b in BUTTONS:
 		var t := TouchScreenButton.new()
@@ -62,6 +75,9 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var m := _current_mode()
+	if _cluster_at != null and (m == "world" or get_tree().current_scene != _cluster_scene):
+		_cluster_at = null  # otro minijuego (o de vuelta a la calle): los botones arrancan en la franja
+		_mode = ""
 	if m != _mode:
 		_mode = m
 		_apply_mode()
@@ -99,13 +115,58 @@ func _apply_mode() -> void:
 		t.visible = at != null
 		if at != null:
 			t.position = at
+	if _mode == "mini" and _cluster_at != null:
+		_layout_cluster()
+
+
+func _layout_cluster() -> void:
+	for b in _buttons:
+		var t: TouchScreenButton = b[0]
+		if t.visible and CLUSTER.has(t.action):
+			t.position = _cluster_at + CLUSTER[t.action] - t.texture_normal.get_size() * 0.5
+
+
+## El pulgar cayó en la mitad derecha, lejos de los botones: se vienen a él. No aprietan nada todavía
+## (un toque perdido no dispara ni salta un menú); el siguiente toque ya cae en A.
+func _place_cluster(at: Vector2, finger: int) -> void:
+	_cluster_at = at.clamp(CLUSTER_MIN, CLUSTER_MAX)
+	_cluster_scene = get_tree().current_scene
+	_cluster_finger = finger
+	_set_passby(false)  # el dedo que los trajo queda encima de A: que no la apriete al moverse
+	_layout_cluster()
+
+
+func _set_passby(on: bool) -> void:
+	for b in _buttons:
+		(b[0] as TouchScreenButton).passby_press = on
+
+
+func _on_button(at: Vector2) -> bool:
+	for b in _buttons:
+		var t: TouchScreenButton = b[0]
+		var r: float = (t.shape as CircleShape2D).radius
+		if t.visible and at.distance_to(t.position + t.texture_normal.get_size() * 0.5) <= r:
+			return true
+	return false
+
+
+## Solo en minijuegos y sueños (caminando, los botones son muchos y tienen su lugar), y no donde la
+## escena usa la mitad derecha (PLOMO: arrastrar gira).
+func _floats() -> bool:
+	var scene := get_tree().current_scene
+	return _mode == "mini" and not (scene and scene.get("touch_drag_right") == true)
 
 
 ## Al apagar los controles: que no quede una dirección apretada.
 func _release_all() -> void:
 	_stick_finger = -1
+	_cluster_finger = -1
+	_cluster_at = null
+	if _buttons:
+		_set_passby(true)
 	if _knob:
-		_move_stick(STICK_CENTER)
+		_stick_origin = STICK_HOME
+		_move_stick(STICK_HOME)
 
 
 func _has_touch() -> bool:
@@ -116,21 +177,34 @@ func _input(event: InputEvent) -> void:
 	if _mode == "off" or _mode == "":
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and _stick_finger == -1 and event.position.x < 160.0:
-			_stick_finger = event.index
-			_move_stick(event.position)
-		elif not event.pressed and event.index == _stick_finger:
+		if event.pressed:
+			if _on_button(event.position):
+				return
+			if event.position.x < 160.0:
+				if _stick_finger == -1:  # la palanca nace debajo del dedo
+					_stick_finger = event.index
+					_stick_origin = event.position
+					_move_stick(event.position)
+			elif _floats():
+				_place_cluster(event.position, event.index)
+		elif event.index == _stick_finger:
 			_stick_finger = -1
-			_move_stick(STICK_CENTER)
+			_stick_origin = STICK_HOME
+			_move_stick(STICK_HOME)
+		elif event.index == _cluster_finger:
+			_cluster_finger = -1
+			_set_passby(true)
 	elif event is InputEventScreenDrag and event.index == _stick_finger:
 		_move_stick(event.position)
 
 
 func _move_stick(at: Vector2) -> void:
-	var v := (at - STICK_CENTER) / STICK_RADIUS
-	if v.length() > 1.0:
-		v = v.normalized()
-	_knob.position = STICK_CENTER + v * STICK_RADIUS
+	var d := at - _stick_origin
+	if d.length() > STICK_RADIUS:  # la base sigue al dedo: para devolverse no hay que recorrer media pantalla
+		_stick_origin = at - d.normalized() * STICK_RADIUS
+	var v := (at - _stick_origin) / STICK_RADIUS
+	_base.position = _stick_origin
+	_knob.position = _stick_origin + v * STICK_RADIUS
 	_axis("move_left", "move_right", v.x)
 	_axis("move_up", "move_down", v.y)
 

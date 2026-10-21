@@ -1449,6 +1449,10 @@ L (Select en el control, el librito en el celular, o L desde la mochila). Págin
   - Caminando por la ciudad: todo en su lugar de siempre.
   - Pantalla abierta (diálogo, mochila, libreta, mejoras): la palanca no se dibuja y los botones van en fila en la franja derecha (x > 286).
   - Minijuego o sueño: los botones que sirven van en la franja derecha, y la palanca solo se ve mientras se toca.
+- **Todo donde cae el dedo (2026-10-21):** en el beat 'em up el pulgar en la palanca fija tapaba al protagonista.
+  - La palanca nace donde cae el dedo, en cualquier parte de la mitad izquierda, y lo sigue si se va lejos (para devolverse no hay que recorrer media pantalla). Caminando se sigue viendo en su sitio mientras nadie la toca.
+  - En un minijuego o sueño, tocar la mitad derecha donde no hay botón trae los botones al pulgar: A debajo, B a la izquierda, X arriba, la huella arriba a la izquierda. Ese toque no aprieta nada (un toque perdido no dispara ni salta un menú); se quedan ahí hasta que cambia la escena o se vuelve a la calle.
+  - En PLOMO no: la mitad derecha es para girar arrastrando (la escena tiene `touch_drag_right`).
 - **Regla para los textos de un minijuego:**
   - No pasan de `Controls.right_edge()`: 286 con controles en pantalla, 320 sin ellos.
   - Los letreros de instrucciones de abajo entran al grupo `under_dialogue`; el diálogo los esconde mientras habla alguien.
