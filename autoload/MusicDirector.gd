@@ -89,14 +89,17 @@ var enabled := true
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	AudioServer.add_bus()
-	var idx := AudioServer.bus_count - 1
+	# Los buses se crean subiendo bus_count, no con add_bus(): en la web (Godot 4.6) add_bus() los
+	# deja en otro orden por dentro, y lo que se le hace a uno le cae a otro (el send del tema le
+	# llegaba al Master y la web quedaba muda; apagar la música apagaba también los sonidos).
+	var idx := AudioServer.bus_count
+	var theme := idx + 1
+	AudioServer.bus_count = idx + 2
 	AudioServer.set_bus_name(idx, BUS)
+	AudioServer.set_bus_send(idx, "Master")
 	_lowpass = AudioEffectLowPassFilter.new()
 	_lowpass.cutoff_hz = 20000.0
 	AudioServer.add_bus_effect(idx, _lowpass)
-	AudioServer.add_bus()
-	var theme := AudioServer.bus_count - 1
 	AudioServer.set_bus_name(theme, THEME_BUS)
 	AudioServer.set_bus_send(theme, BUS)
 	for i in 2:

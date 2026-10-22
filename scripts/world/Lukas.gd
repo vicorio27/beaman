@@ -104,6 +104,7 @@ func _ready() -> void:
 	sprite.play("idle_side")
 	add_child(sprite)
 	_bubble = Label.new()
+	_bubble.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_bubble.text = "!"
 	_bubble.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 	_bubble.add_theme_font_size_override("font_size", 8)
@@ -421,6 +422,8 @@ func pet() -> void:
 	state = "found"
 	_found_time = 6.0
 	sprite.play("sit")
+	if player.has_method("act"):
+		player.act("acariciar", global_position.x > player.global_position.x)
 	_bubble.text = "<3"
 	_bubble.visible = true
 	GameState.calm_until = TimeManager.minutes + CALM_MINUTES
@@ -431,6 +434,16 @@ func pet() -> void:
 		GameState.change_mood(6.0)
 	Narrator.say(PET_LINES[_pet_index % PET_LINES.size()], false, "lukas_feliz")
 	_pet_index += 1
+
+
+## Él tose: Lukas se sienta y lo mira hasta que se le pasa.
+func mirar() -> void:
+	if not state in ["follow", "sit"]:
+		return
+	state = "found"
+	_found_time = 1.8
+	sprite.play("sit")
+	sprite.flip_h = player.global_position.x > global_position.x
 
 
 func feed() -> void:
@@ -458,6 +471,8 @@ func feed() -> void:
 		Narrator.say("(Le da la mitad. Después, el resto.)", false, "lukas_come")
 	f["lukas_fed_day"] = GameState.day
 	f.erase("lukas_hungry")
+	if player.has_method("act"):
+		player.act("dar_comida")
 	state = "found"
 	_found_time = 1.5
 	sprite.play("bark")

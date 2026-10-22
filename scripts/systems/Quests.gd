@@ -90,7 +90,9 @@ const DEFS := {
 	"v_verdad": {"title": "La verdad: Defensoría (pruebas)", "kind": "main",
 		"detail": "Para que se caiga la mentira de Lorena: la página 14 del periódico (que no hubo cargos) y el testigo (el policía que estuvo en el operativo). Con las dos cosas, a la Defensoría."},
 	"v_cumple": {"title": "El cumpleaños de Victoria", "kind": "main",
-		"detail": "El 29 de octubre Victoria cumple doce. Con visitas: en el Parque, de 10 a 2. Sin visitas: sale del colegio a las 12. Llevarle el regalo."},
+		"detail": "El 29 de octubre Victoria cumple doce. Llevarle el regalo. La bicicleta, si la consiguió, espera en el cambuche."},
+	"comprar_bici": {"title": "La bicicleta de Victoria", "kind": "main",
+		"detail": "Ya están los $150.000 en la alcancía. Don Efraín, en el Parque de San Judas, consigue de todo: también una bicicleta."},
 	# Misterios (las pistas van al tablero del cambuche)
 	"m_el": {"title": "¿Quién es \"él\"? (tablero)", "kind": "side",
 		"detail": "¿Quién es \"él\", del que habla la gente? Pistas: tres recortes de periódico (el barrio, el centro, el Parque), Marta y Wilson. Se ponen en el tablero del cambuche. Y de paso: por qué la policía lo para siempre a él."},

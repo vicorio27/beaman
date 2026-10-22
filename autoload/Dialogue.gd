@@ -281,10 +281,27 @@ func _pieces(text: String, page: int) -> Array[String]:
 	return fit
 
 
+## Él es mudo: lo que contesta son gestos, y cuando el narrador los cuenta, se ven (Player.act).
+const GESTOS := [["Asiente", "asentir"], ["Niega", "negar"], ["Señala", "senalar"], ["Se encoge de hombros", "encogerse"],
+	["Le da la tos", "tos"], ["Tose", "tos"]]
+
+
+func _gesture(text: String) -> void:
+	var t := text.trim_prefix("(")
+	for g in GESTOS:
+		if t.begins_with(g[0]):
+			var p := get_tree().get_first_node_in_group("player")
+			if p and p.has_method("act") and p.is_inside_tree() and p.visible:
+				p.act(g[1])
+			return
+
+
 func _show_line() -> void:
 	var line = _lines[_index]
 	var who: String = str(line[0]) if line is Array and line[0] != null else ""
 	_text.text = line[1] if line is Array else str(line)
+	if who == "":
+		_gesture(_text.text)
 	var info: Array = SPEAKERS.get(who, [])
 	var color := INK
 	if who == "":

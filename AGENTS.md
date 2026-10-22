@@ -50,8 +50,14 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
 - **Él es mudo del todo.** No tiene diálogos, ni siquiera para sí mismo, ni en los sueños. Nada en
   primera persona (ni textos de la interfaz). Lo que hace o siente lo cuenta un **narrador** en tercera
   persona (las líneas sin hablante salen con la placa NARRADOR). **Habla una sola vez en todo el juego, y
-  es para Victoria**: en su cumpleaños, cuando ella pregunta "¿Puedo decirle papá?", dice "—Sí." No
-  propongas otras líneas para él.
+  es para Victoria**: en la última visita (el domingo 49, la víspera del cumpleaños), cuando ella pregunta
+  "¿Puedo decirle papá?", dice "—Sí." Sin visitas, no habla nunca. No propongas otras líneas para él.
+  Sus gestos (asiente, niega, señala) sí se ven: los anima el diálogo cuando el narrador los cuenta.
+- **El final:** alcanza a comprar la bicicleta de Victoria pero no a entregarla. Una tos que viene de
+  dormir en la calle avanza con los días; cuando se muere Lukas, se le agrava. Muere la noche del 49,
+  después del último sueño, y Germán le lleva la bicicleta a Victoria (el epílogo).
+- **Las llamadas de Lorena** son todas distintas y todas para joderle la vida; nunca traen nada bueno
+  (`scripts/systems/LorenaLlamadas.gd`).
 - **Humor de libreto, nunca lástima directa.** Nada de frases que expliquen el dolor ("nadie lo quiere",
   "ya no le duele"). Personajes cancheros, rápidos, con remate; lo triste va en un detalle concreto y
   seco, para que la lástima la ponga el jugador.
@@ -93,10 +99,15 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
   - `tools/art/*.py`: pixel art por código con numpy/PIL. Los más importantes: `vinetas_motor.py` (el
     motor de las viñetas: formas, luz por escena, personajes sobre un esqueleto), `draw_vinetas.py`,
     `draw_vinetas_tele.py`, `draw_retratos.py` (las caras de los diálogos), `draw_tenistas.py` (los
-    tenistas, con sus poses y un `.json` de metadatos), `draw_tenis_coliseo.py`.
+    tenistas, con sus poses y un `.json` de metadatos), `draw_tenis_coliseo.py`,
+    `draw_protagonist_acciones.py` (lo que él hace: recibir plata, pagar, el golpe, caerse, toser,
+    comer, el celular, los gestos; se usan con `Player.act()`), `draw_feria_juegos.py` (la feria por
+    dentro y sus seis juegos).
   - `tools/audio/*.py`: música y efectos sintetizados (`barrio.py`: la música de la vida real, que
     tiene que dar gusto oírla horas; `compose.py`: la de los sueños; `tenis_audio.py`,
-    `futbol_audio.py`).
+    `futbol_audio.py`; `cuerpo_sfx.py`: la tos, las monedas, la caída, la moto, la feria).
+  - Todo lo que el jugador escoge hacer se ve: si algo nuevo solo se cuenta con texto, le falta su
+    animación (`Player.act("...")`).
   - Si algo de arte o sonido está mal, el arreglo es en el generador y se vuelve a correr.
 - `docs/`: `DISENO_CIUDAD_Y_SISTEMAS.md` es el documento de diseño grande (**cuando dos secciones se
   contradicen, manda la última**); `DECISIONES.md`; `TENIS.md` (el torneo de tenis entero: motor,

@@ -137,6 +137,26 @@ func _spawn(kind: String) -> void:
 		s.flip_h = spec[1].x < 0
 		s.play("idle_side")
 		_bad.add_child(s)
+		if kind in ["escoba", "correa"]:  # con qué le pega: se ve en la mano y suena
+			var tool := Node2D.new()
+			tool.name = "Con"
+			tool.position = Vector2(-5 if spec[1].x > 0 else 5, -13)
+			var broom: bool = kind == "escoba"
+			tool.draw.connect(func() -> void:
+				if broom:  # el palo azul y las cerdas amarillas, como la de don Octavio
+					tool.draw_line(Vector2(0, -6), Vector2(0, 8), Color(0.28, 0.42, 0.72), 1.0)
+					tool.draw_rect(Rect2(-3, 8, 6, 4), Color(0.86, 0.74, 0.36))
+					tool.draw_line(Vector2(-3, 12), Vector2(3, 12), Color(0.6, 0.48, 0.2), 1.0)
+				else:  # la correa, doblada en la mano
+					tool.draw_line(Vector2(0, 0), Vector2(0, 9), Color(0.22, 0.14, 0.1), 2.0)
+					tool.draw_rect(Rect2(-1, 0, 3, 2), Color(0.8, 0.7, 0.4)))
+			_bad.add_child(tool)
+			var snd := AudioStreamPlayer2D.new()
+			snd.name = "Golpe"
+			snd.stream = load("res://assets/audio/cuerpo/escoba.wav" if broom else "res://assets/audio/hit-1.wav")
+			snd.volume_db = -8.0
+			snd.max_distance = 260.0
+			_bad.add_child(snd)
 		world.add_child(_bad)
 		_hit_loop.call_deferred(spec[1])
 	if f.get("nino_aviso_dia", -1) != GameState.day:
@@ -154,6 +174,15 @@ func _hit_loop(off: Vector2) -> void:
 	_loop.tween_interval(0.9)
 	_loop.tween_property(_bad, "position", home - off * 0.45, 0.09)
 	_loop.tween_callback(func():
+		if is_instance_valid(_bad):
+			var tool: Node2D = _bad.get_node_or_null("Con")
+			if tool:  # el golpe: la escoba (o la correa) baja
+				var sw := tool.create_tween()
+				sw.tween_property(tool, "rotation", -1.1 * signf(off.x), 0.06)
+				sw.tween_property(tool, "rotation", 0.0, 0.2)
+			var snd: AudioStreamPlayer2D = _bad.get_node_or_null("Golpe")
+			if snd:
+				snd.play()
 		if is_instance_valid(_kid) and not _kid.talking:
 			_kid.modulate = Color(1.0, 0.55, 0.55)
 			_kid.position = kid_home - off.normalized() * 2.0)
@@ -285,6 +314,9 @@ func _escoba() -> bool:
 	match opts[i]:
 		"Ponerse en medio":
 			GameState.change_mood(4.0)
+			var me := get_tree().get_first_node_in_group("player")
+			if me and me.has_method("act"):
+				me.act("golpe", false, "golpe")  # la escoba le da a él
 			await Dialogue.talk([
 				["", "(Él se para entre la escoba y el niño. No dice nada. La escoba le da a él, una vez. Después se queda en el aire.)"],
 				["SEÑOR DE LA TIENDA", "—... ¿Y este qué? ¿Es suyo? Lléveselo, pues. Dos gamines en vez de uno. Hoy es promoción."],

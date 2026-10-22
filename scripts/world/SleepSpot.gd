@@ -62,6 +62,7 @@ func _ready() -> void:
 	s.shape = r
 	add_child(s)
 	_hint = Label.new()
+	_hint.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_hint.add_theme_font_override("font", FONT)
 	_hint.add_theme_font_size_override("font_size", 8)
 	_hint.add_theme_constant_override("outline_size", 3)
@@ -127,6 +128,14 @@ func _process(_delta: float) -> void:
 func _refresh_visual() -> void:
 	for c in _visual.get_children():
 		c.queue_free()
+	# La bicicleta de Victoria, envuelta, esperando el 29 (al lado del cambuche; sin cambuche, bajo el puente).
+	var bici_aqui: bool = GameState.flags.get("bici_comprada", false) and \
+		(GameState.has_cambuche(spot_id) or (spot_id == "rio" and not GameState.has_cambuche()))
+	if bici_aqui:
+		var bici := Sprite2D.new()
+		bici.texture = load("res://assets/barrio/bici_envuelta.png")
+		bici.position = Vector2(26, -7)
+		_visual.add_child(bici)
 	if not GameState.has_cambuche(spot_id):
 		if spot_id == "rio":  # el campamento de siempre, bajo el puente
 			var camp := Sprite2D.new()

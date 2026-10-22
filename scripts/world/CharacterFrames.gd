@@ -108,6 +108,34 @@ static func protagonist() -> SpriteFrames:
 	return frames
 
 
+## Las acciones del protagonista (recibir plata, el golpe, caerse, toser, comer...): celdas de 32x32
+## con la suela donde la de caminar. Las dibuja tools/art/draw_protagonist_acciones.py, que también
+## escribe la tabla de animaciones (protagonist_acciones.json). Ver Player.act().
+static var _acciones: SpriteFrames
+
+
+static func acciones() -> SpriteFrames:
+	if _acciones:
+		return _acciones
+	var tex: Texture2D = load("res://assets/characters/protagonist_acciones.png")
+	var meta: Dictionary = (load("res://assets/characters/protagonist_acciones.json") as JSON).data
+	var cell := int(meta["cell"])
+	var frames := SpriteFrames.new()
+	frames.remove_animation("default")
+	for anim in meta["anims"]:
+		var a: Dictionary = meta["anims"][anim]
+		frames.add_animation(anim)
+		frames.set_animation_speed(anim, float(a["fps"]))
+		frames.set_animation_loop(anim, bool(a["loop"]))
+		for c in a["cells"]:
+			var at := AtlasTexture.new()
+			at.atlas = tex
+			at.region = Rect2(int(c[0]) * cell, int(c[1]) * cell, cell, cell)
+			frames.add_frame(anim, at)
+	_acciones = frames
+	return frames
+
+
 ## Viste a una persona de la vida real como la ve él: al principio, como es; con los días y la
 ## locura se le apagan los colores y se le va borrando la cara, hasta quedar igual a todos los demás
 ## (GameState.sameness). Los desconocidos usan una de las hojas de transeúnte, según su fila.

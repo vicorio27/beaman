@@ -369,8 +369,9 @@ func _summary(spot: String) -> void:
 	var s := GameState.stats
 	_text.position = Vector2(16, 40)
 	_text.size = Vector2(_text_w(), 120)
-	await _say("DIA %d\n\nDinero conseguido: $%d\nComida: %d\nDurmió en %s\nCabeza: en su sitio" % [
-		GameState.day, s["money_earned"], s["food_eaten"], SPOT_NAMES.get(spot, "la calle")])
+	await _say("DIA %d\n\nDinero conseguido: $%d\nComida: %d\nDurmió en %s\nPecho: %s" % [
+		GameState.day, s["money_earned"], s["food_eaten"], SPOT_NAMES.get(spot, "la calle"),
+		GameState.TOS_PECHO[GameState.tos_stage()]])
 	if GameState.has_cambuche():
 		await _say("Cambuche: %s (nivel %d)" % [GameState.CAMBUCHE_NAMES[GameState.cambuche_level()], GameState.cambuche_level()])
 	var first := GameState.day == 1
@@ -387,11 +388,14 @@ func _he_dies() -> void:
 	MusicDirector.force("")
 	var spot: String = GameState.flags.get("sleep_spot", "banco")
 	_show_pic(spot if spot in Vineta.SPOTS else "banco", Vineta.FINAL)
-	for line in [
-		"Esa noche, después del último sueño, no se despierta.",
-		"Samuel lo encuentra al amanecer, en %s. Con el collar de Lukas en la mano, apretado." % SPOT_NAMES.get(spot, "la calle"),
-		"Tiene cara de haber ganado algo. Nadie va a saber qué.",
-	]:
+	var lines := ["Esa noche, después del último sueño, no se despierta."]
+	if GameState.tos_stage() >= 1:
+		lines.append("A las cuatro de la mañana se le calla la tos. Nadie la oye callarse.")
+	lines.append("Samuel lo encuentra al amanecer, en %s. Con el collar de Lukas en la mano, apretado." % SPOT_NAMES.get(spot, "la calle"))
+	if GameState.flags.get("bici_comprada", false):
+		lines.append("Al lado, envuelta en bolsas negras, una bicicleta verde agua. Tiene un moño hecho con la cinta de un casete.")
+	lines.append("Tiene cara de haber ganado algo. Nadie va a saber qué.")
+	for line in lines:
 		await _say(line)
 	GameState.flags["murio"] = true
 	SceneRouter.go("res://scenes/world/Epilogo.tscn")
@@ -567,26 +571,9 @@ func _dream_when(id: String) -> bool:
 		"sigilo2", "sigilo3", "sigilo4":  # tres días después del anterior
 			var prev_s := "sigilo%d" % (int(id.right(1)) - 1)
 			return prev_s in seen and _days_since(prev_s) >= 3
-		"final":  # el día 49 sí o sí (la noche antes del cumpleaños); antes, solo si se cayó la mentira
-			# y ya soñó todo lo demás (las revanchas son contra jefes que ya conoce)
-			if GameState.day >= 49:
-				return true
-			if int(f.get("nino_bond", 0)) >= 1 and not f.get("nino_fin", false):
-				return false  # primero se despide Alejandro (scripts/systems/Nino.gd)
-			if not GameState.lukas_alive() and not f.has("ultimo_trabajo"):
-				return false  # y primero el último trabajo: José Mario Camilo, en el centro
-			# Unos días después de Lukas (y con todo lo demás soñado), también.
-			if not GameState.lukas_alive() and GameState.day - int(f["lukas_muerto"]) >= 4:
-				for d in DREAMS:
-					if d[0] != "final" and not d[0] in seen:
-						return false
-				return true
-			if not f.get("lilato_mentira_caida", false):
-				return false
-			for d in DREAMS:
-				if d[0] != "final" and not d[0] in seen:
-					return false
-			return true
+		"final":  # la noche del día 49, siempre: la víspera del cumpleaños. Esa noche no se despierta (el
+			# final que escogió el usuario: alcanza a comprar la bicicleta y no a entregarla).
+			return GameState.day >= 49
 		"callejon3":  # llamó a la mamá
 			return f.get("llamo_mama", false)
 		"lucha1":  # el papá no lo reconoció en la plaza

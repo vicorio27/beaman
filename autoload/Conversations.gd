@@ -292,6 +292,11 @@ func _german_job(npc: Node) -> void:
 	if f.get("job_german_active", false):
 		await Dialogue.talk([["DON GERMAN", "—Atrás, mijo, al lado de las cajas. Al lado del horno. Doble las rodillas."]])
 		return
+	if f.get("lorena_german_dia", -1) == GameState.day:  # Lorena llamó a la panadería (LorenaLlamadas "german")
+		await Dialogue.talk([
+			["DON GERMAN", "—Mijo... hoy no. Llamó una señora. Yo no le creí ni una palabra. Pero mi señora contestó en la extensión."],
+			["DON GERMAN", "—Y mi señora sí le creyó. Mañana se le pasa. A mi señora todo se le pasa en un día, menos yo."]])
+		return
 	await Dialogue.talk([
 		["", "(Señala los bultos. Se señala a sí mismo.)"],
 		["DON GERMAN", "—¿Qué? ¿Los bultos? ¿Usted?"],
@@ -763,6 +768,8 @@ func _bano_anim() -> void:
 	out.tween_property(p, "modulate:a", 1.0, 0.3)
 	out.parallel().tween_property(p, "global_position", from, 0.4)
 	await out.finished
+	if p.has_method("act"):  # sale escurriendo y se sacude, como Lukas
+		await p.act("sacudirse", false, "sacude")
 
 
 
@@ -1597,10 +1604,17 @@ func _leonor() -> void:
 func _efrain() -> void:
 	await _friend("efrain")
 	var opts := ["Ver qué vende"]
+	var f := GameState.flags
+	var bici_lista: bool = GameState.has_cambuche() and int(GameState.cambuche.get("alcancia", 0)) >= GameState.GIFT_GOAL
+	if bici_lista and not f.get("bici_comprada", false):
+		opts.append("La bicicleta de Victoria ($%d)" % GameState.GIFT_GOAL)
 	if not _job_today("efrain"):
 		opts.append("Cuidarle el puesto (2 horas)")
 	opts.append("Nada")
 	var i := await Dialogue.talk([["DON EFRAIN", "—Todo tiene historia, mijo. Yo le vendo la historia. El objeto se lo regalo. Hoy la historia está en promoción."]], opts)
+	if str(opts[i]).begins_with("La bicicleta"):
+		await _comprar_bici()
+		return
 	match opts[i]:
 		"Ver qué vende":
 			GameState.add_locura(1)
@@ -1620,6 +1634,32 @@ func _efrain() -> void:
 				["DON EFRAIN", "—Cuatro mil. Y llévese algo: a usted las cosas le hablan. Lo vi. Yo también las oigo, pero yo ya no les contesto. Me metí en problemas con un reloj."],
 				["", "(%s.)" % Items.info(gift)["name"] if got else "(No le cabe nada más en la mochila.)"],
 			])
+
+
+## La bicicleta de Victoria: con la alcancía llena, Don Efraín la consigue. Verde agua, el color que ella le
+## explicó en una visita. Queda en el cambuche, envuelta, para el 29 (él no alcanza a entregarla).
+func _comprar_bici() -> void:
+	var f := GameState.flags
+	GameState.cambuche["alcancia"] = int(GameState.cambuche["alcancia"]) - GameState.GIFT_GOAL
+	f["bici_comprada"] = true
+	f["bici_dia"] = GameState.day
+	GameState.cambuche_changed.emit()  # (aparece envuelta al lado del cambuche: SleepSpot)
+	GameState.complete_quest("comprar_bici")
+	GameState.change_mood(20.0)
+	await Dialogue.talk([
+		["", "(Pone sobre el puesto una media llena de billetes. Ciento cincuenta mil, de a dos y de a cinco. Los contó tres veces en el cambuche.)"],
+		["DON EFRAIN", "—¿La bicicleta? ... Espere, que tengo una. Tengo de todo. Lo que no tengo, lo consigo. Lo que no consigo, no existe."],
+		["", "(Se mete detrás de las cajas y sale empujando una bicicleta envuelta en plástico. Verde agua. Con canasta y timbre.)"],
+		["DON EFRAIN", "—Verde agua. ¿Eso es un color? ... La niña sabe. Yo no. Yo me quedé en el rojo y el azul, como los partidos."],
+		["", "(Toca el timbre una vez. Suena bonito. Lo toca otra vez, para estar seguro.)"],
+		["DON EFRAIN", "—Llévesela al cambuche y tápela, que el rocío se come las cadenas. Y no le cuente a nadie dónde la tiene. En este barrio las bicicletas se van solas."],
+	])
+	# Sale empujándola del manubrio. Toca el timbre otra vez, ya sin nadie que lo vea. Bueno: Lukas.
+	_yo("bici", "timbre")
+	await get_tree().create_timer(2.6).timeout
+	_yo_fin()
+	if not GameState.quests.has("v_cumple"):
+		GameState.start_quest("v_cumple")
 
 
 func _mono() -> void:
@@ -2453,9 +2493,6 @@ func _v_bond(n: int) -> void:
 func _colegio() -> void:
 	var f := GameState.flags
 	var day := GameState.day
-	if day >= 50 and _kid_here() and not f.get("cumple_hecho", false):
-		await _cumpleanos(false)
-		return
 	if _kid_here():
 		await Recuerdo.show("bebe")  # la primera vez que la ve en la reja
 	# Lo que ella dejó en la reja (si él le dejó algo un día antes).
@@ -2671,16 +2708,25 @@ func _audiencia() -> void:
 ## La visita del domingo, en el Parque.
 func _visita() -> void:
 	var f := GameState.flags
-	if GameState.day >= 50 and not f.get("cumple_hecho", false):
-		await _cumpleanos(true)
+	if GameState.day >= 49 and not f.get("ultima_visita", false):
+		await _ultima_visita()
 		return
 	if f.get("visita_dia", -1) == GameState.day:
 		await Dialogue.talk([["VICTORIA", "—El domingo que viene trae a Lukas otra vez. Sin Lukas no vengo." if GameState.lukas_alive()
 			else "—El domingo que viene le traigo otro dibujo de Lukas. Para que tenga dónde estar."]])
 		return
 	f["visita_dia"] = GameState.day
-	_v_bond(1)
 	GameState.complete_quest("v_visita")
+	if f.get("lorena_visita", false):  # Lorena llamó antes (LorenaLlamadas "visitas"): veinte minutos y con libreto
+		f.erase("lorena_visita")
+		await Dialogue.talk([
+			["VICTORIA", "—Hoy son veinte minutos. Mi mamá dijo. Y que no me abrace, porque usted huele a calle."],
+			["VICTORIA", "—Y que le diga que usted no es mi papá, que es un señor que conoce mi mamá. ... Ya se lo dije. ¿Le puedo dar pan a Lukas?" if GameState.lukas_alive()
+				else "—Y que le diga que usted no es mi papá, que es un señor que conoce mi mamá. ... Ya se lo dije. ¿Ahora sí jugamos?"],
+			["", "(Juegan diecinueve minutos. El minuto que sobra, ella se lo pasa mirándolo.)"]])
+		GameState.change_mood(5.0)
+		return
+	_v_bond(1)
 	GameState.change_mood(15.0)
 	var n := int(f.get("visitas_hechas", 0)) + 1
 	f["visitas_hechas"] = n
@@ -3622,6 +3668,19 @@ func _ev_variant(ev: String, names: Array) -> String:
 	return names[n] if n < names.size() else names.pick_random()
 
 
+## El protagonista hace una acción mientras se habla (Player.act: "golpe", "manos_arriba", "bici"...).
+func _yo(anim: String, sound := "") -> void:
+	var p := get_tree().get_first_node_in_group("player")
+	if p and p.has_method("act"):
+		p.act(anim, false, sound)
+
+
+func _yo_fin() -> void:
+	var p := get_tree().get_first_node_in_group("player")
+	if p and p.has_method("act_stop"):
+		p.act_stop()
+
+
 func _ev_done() -> void:
 	GameState.flags["evento_estado"] = "fin"
 	var n: Node = get_tree().current_scene.find_child("Evento", true, false)
@@ -3654,7 +3713,9 @@ func _ev_redada() -> void:
 		"otro":
 			await _redada_otro()
 			return
+	_yo("manos_arriba")  # la requisa: contra la pared, las manos arriba
 	await Dialogue.talk([["POLICIA", "—Documentos. ... Usted. Sí, usted, el del perro. El perro no, usted."]])
+	_yo_fin()
 	if GameState.count("cedula") > 0:
 		GameState.change_mood(-3.0)
 		await Dialogue.talk([["", "(Le pasa la cédula. El policía la mira. Lo mira. Mira la cédula otra vez.)"],
@@ -3788,6 +3849,7 @@ func _ev_pelea() -> void:
 			if randf() < 0.4:
 				GameState.change_mood(-4.0)
 				GameState.set_hunger(GameState.hunger - 5.0)
+				_yo("golpe", "golpe")
 				await Dialogue.talk([["", "(Se mete en la mitad. Le cae uno en la oreja. Igual los separa.)"],
 					["UNO", "—¡¿Y usted quién es?! ... ¡¿Quién es?! ¡Hable, loco!"], ["", "(...)"],
 					["UNO", "—Este man está loco. Ni grita. Vámonos, vámonos."]])
@@ -4041,49 +4103,38 @@ func _verdad() -> void:
 	MusicDirector.release()
 
 
-## El cumpleaños (día 50). Con visitas: en el Parque, en persona. Sin visitas: de lejos, en la reja.
-func _cumpleanos(in_person: bool) -> void:
+## La última visita (día 49, domingo; mañana ella cumple doce). Él no llega a mañana: esa noche es el
+## último sueño y no se despierta (NightSequence._he_dies). Aquí habla por única vez en todo el juego (lo
+## pidió el usuario: su voz es para Victoria). Una sola palabra, y la placa, por única vez, dice "PAPÁ".
+## Sin visitas no hay esta escena: no habla nunca.
+func _ultima_visita() -> void:
 	var f := GameState.flags
-	f["cumple_hecho"] = true
-	GameState.complete_quest("v_cumple")
-	var saved: int = GameState.cambuche.get("alcancia", 0) if GameState.has_cambuche() else 0
-	var gift := "una bicicleta morada con negro, con canasta y timbre" if saved >= GameState.GIFT_GOAL else \
-		("una caja de colores de cuarenta y ocho" if saved >= 40000 else "un clavel y un dibujo de él mismo, de palitos, con Lukas")
+	f["ultima_visita"] = true
+	f["visita_dia"] = GameState.day
+	GameState.complete_quest("v_visita")
+	var bici: bool = f.get("bici_comprada", false)
+	var tose: bool = GameState.tos_stage() >= 1
 	MusicDirector.force("")
-	if in_person:
-		# Los dos frente a frente. Es la única vez en todo el juego que él habla (lo pidió el usuario: su voz
-		# es para Victoria). Una sola palabra, y la placa, por única vez, dice "PAPÁ".
-		Dialogue.face_off = ["el", "victoria"]
-		await Dialogue.talk([
-			["", "(El Parque de San Judas. Una torta chiquita en la banca verde. Doce velas. Doña Fabiola la hizo. No quiso cobrar.)"],
-			["VICTORIA", "—¡Vino Lukas!" if GameState.lukas_alive() else "—¿Y Lukas?"],
-			["", "(Primero el perro. Después él.)" if GameState.lukas_alive()
-				else "(No contesta. Ella entiende. Le pone una vela más a la torta: trece. Una es de Lukas.)"],
-			["", "(Le da el regalo: %s.)" % gift],
-			["VICTORIA", "—... ¿Esto es para mí?"],
-			["", "(Asiente. Le tiemblan las manos.)"],
-			["", "(Germán, Rosa, Samuel, Marta, el Mono con la guitarra. Llegaron sin que nadie los invitara. Cantan mal. Cantan.)"],
-			["VICTORIA", "—Papá. ... ¿Puedo decirle papá?"],
-			["", "(Abre la boca. Esta vez sí sale.)", "el"],
-			["PAPÁ", "—Sí."],
-		])
-	else:
-		await Dialogue.talk([
-			["", "(Doce y cuarto. Ella sale con un gorro de cumpleaños de papel. Las amigas le cantan en la puerta.)"],
-			["", "(Deja %s en la reja, con una tarjeta: \"Feliz cumpleaños. El del perro.\")" % gift],
-			["", "(Ella lo ve desde lejos. Levanta la mano, chiquita.)"],
-		])
+	Dialogue.face_off = ["el", "victoria"]
 	await Dialogue.talk([
-		["", "BE A MAN"],
-		["", "FIN."],
-		["", "Tiempo jugado: %s." % GameState.play_time_text()],
+		["", "(Domingo. El Parque de San Judas. Ella llega con un gorro de cumpleaños de papel, un día antes.)"],
+		["VICTORIA", "—Mañana cumplo doce. Me lo puse hoy para practicar. Los gorros hay que practicarlos."],
+		["", "(Le da la tos. Se tapa con el brazo y se voltea. Ella espera, seria, como esperan los que esperan mucho.)" if tose
+			else "(Le acomoda el gorro, que se le va de lado.)"],
+		["VICTORIA", "—¿Usted está enfermo?"],
+		["", "(Niega con la cabeza. Ella le pone la mano en la frente, como le hacen a ella.)"],
+		["VICTORIA", "—Está caliente. Así me pongo yo cuando no quiero ir al colegio. ... ¿Mañana viene?"],
+		["", "(Asiente.)"],
+		["", "(La bicicleta está en el cambuche, envuelta en bolsas negras para que no le caiga el rocío. Verde agua, con canasta y timbre. No le dice nada: es para mañana.)" if bici
+			else "(El regalo no lo tiene todavía. Todavía tiene mañana.)"],
+		["VICTORIA", "—Papá. ... ¿Puedo decirle papá?"],
+		["", "(Abre la boca. Esta vez sí sale.)", "el"],
+		["PAPÁ", "—Sí."],
+		["", "(Ella se ríe y sale corriendo, con el gorro en la mano, a contárselo a alguien. Él se queda en la banca hasta que el Parque se vacía.)"],
 	])
-	f["juego_terminado"] = true
-	while SceneRouter.busy:
-		if not is_inside_tree():
-			return
-		await get_tree().process_frame
-	SceneRouter.go("res://scenes/ui/Title.tscn", "", "FIN")
+	f["dijo_si"] = true
+	GameState.change_mood(30.0)
+	MusicDirector.release()
 
 
 ## La enfermedad larga de Lukas: la doctora dice la verdad. Hay algo para que no le duela; no hay cura.

@@ -76,6 +76,7 @@ func _ready() -> void:
 	area.body_entered.connect(_on_enter)
 	area.body_exited.connect(_on_exit)
 	_hint = Label.new()
+	_hint.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_hint.text = "HABLAR"
 	_hint.add_theme_font_override("font", FONT)
 	_hint.add_theme_font_size_override("font_size", 8)
@@ -149,6 +150,7 @@ func _life(delta: float) -> void:
 		return
 	if _bubble == null:
 		_bubble = Label.new()
+		_bubble.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 		_bubble.add_theme_font_override("font", FONT)
 		_bubble.add_theme_font_size_override("font_size", 8)
 		_bubble.add_theme_constant_override("outline_size", 3)

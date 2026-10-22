@@ -21,6 +21,32 @@ var _sit_home := Vector2.ZERO
 var _sit_lift := 0.0
 var _sit_t := 0.0
 
+## Las acciones: lo que antes solo contaba el narrador (recibir plata, pagar, el golpe, caerse, toser,
+## recoger, comer, el celular, las manos arriba...). Van en otro sprite, encima del de caminar (celdas de
+## 32x32: CharacterFrames.acciones(), dibujadas por tools/art/draw_protagonist_acciones.py). Mientras
+## dura una, no camina.
+var acting := false
+var _act: AnimatedSprite2D
+var _sfx: AudioStreamPlayer2D
+## La tos (GameState.tos_stage): cada tanto le da un ataque y se tiene que parar.
+var _tos_t := 25.0
+## La lluvia: mientras se moja, escurre; cuando escampa (o se mete debajo de algo), se sacude.
+var _wet := false
+var _drip_t := 0.0
+const SFX := {
+	"monedas": preload("res://assets/audio/cuerpo/monedas.wav"),
+	"billete": preload("res://assets/audio/cuerpo/billete.wav"),
+	"tos_1": preload("res://assets/audio/cuerpo/tos_1.wav"),
+	"tos_2": preload("res://assets/audio/cuerpo/tos_2.wav"),
+	"tos_3": preload("res://assets/audio/cuerpo/tos_3.wav"),
+	"caida": preload("res://assets/audio/cuerpo/caida.wav"),
+	"golpe": preload("res://assets/audio/hit-2.wav"),
+	"mastica": preload("res://assets/audio/cuerpo/mastica.wav"),
+	"traga": preload("res://assets/audio/cuerpo/traga.wav"),
+	"sacude": preload("res://assets/audio/cuerpo/sacude.wav"),
+	"timbre": preload("res://assets/audio/cuerpo/timbre.wav"),
+}
+
 @onready var sprite: AnimatedSprite2D = $Sprite
 
 
@@ -28,15 +54,31 @@ func _ready() -> void:
 	add_to_group("player")
 	sprite.sprite_frames = CharacterFrames.protagonist()
 	sprite.play("idle_" + facing)
+	_act = AnimatedSprite2D.new()
+	_act.name = "Acciones"
+	_act.sprite_frames = CharacterFrames.acciones()
+	_act.position = sprite.position
+	_act.visible = false
+	add_child(_act)
+	_sfx = AudioStreamPlayer2D.new()
+	_sfx.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
+	add_child(_sfx)
+	GameState.money_delta.connect(_on_money)
+	GameState.ate.connect(_on_ate)
 
 
 func _physics_process(_delta: float) -> void:
+	if acting:
+		velocity = Vector2.ZERO
+		return
 	var dir := Vector2.ZERO
 	if not SceneRouter.busy and not GameState.input_blocked():
 		dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if seated != "":
 		_seated_tick(_delta, dir)
 		return
+	_tos_tick(_delta)
+	_rain_tick(_delta)
 	velocity = dir * speed * speed_scale * carry_factor * GameState.walk_factor()
 	move_and_slide()
 	sprite.speed_scale = speed_scale
@@ -240,6 +282,163 @@ func wake_confused(from_ground := true) -> void:
 	fade.parallel().tween_property(mark, "modulate:a", 0.0, 0.6)
 	fade.tween_callback(mark.queue_free)
 	seated = ""
+
+
+# ---------------------------------------------------------------- Acciones
+
+## Hace la acción `anim` (ver draw_protagonist_acciones.py: "plata", "pagar", "golpe", "caer", "tos",
+## "recoger", "comer", "beber", "dar_comida", "celular", "manos_arriba", "sacudirse", "bici"...) y espera
+## a que termine. Las que se repiten (el celular, las manos arriba, la bici) siguen hasta act_stop().
+## flip: mirando para el otro lado (las de costado miran a la izquierda).
+func act(anim: String, flip := false, sound := "") -> void:
+	if seated != "" or _act == null or not is_inside_tree() or not _act.sprite_frames.has_animation(anim):
+		return
+	acting = true
+	_quirk = ""
+	velocity = Vector2.ZERO
+	_act.flip_h = flip
+	_act.modulate = sprite.modulate
+	_act.visible = true
+	sprite.visible = false
+	if sound != "":
+		play_sfx(sound)
+	_act.play(anim)
+	if _act.sprite_frames.get_animation_loop(anim):
+		return
+	await _act.animation_finished
+	if _act.animation == anim:
+		act_stop()
+
+
+func act_stop() -> void:
+	if _act == null:
+		return
+	_act.stop()
+	_act.visible = false
+	sprite.visible = true
+	acting = false
+	sprite.play("idle_" + facing)
+
+
+func play_sfx(id: String, db := -4.0) -> void:
+	if _sfx and SFX.has(id):
+		_sfx.stream = SFX[id]
+		_sfx.volume_db = db
+		_sfx.play()
+
+
+## Lo tumban (la moto, el empujón del policía, el cobrador): sale para atrás, cae, se queda un momento
+## en el piso y se levanta. from: de dónde viene el golpe.
+func knocked_down(from: Vector2, push := 22.0) -> void:
+	if seated != "" or acting:
+		return
+	var dir := (global_position - from).normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.DOWN
+	play_sfx("golpe", -2.0)
+	act("caer", dir.x > 0)
+	var last := [0.0]
+	var fly := create_tween()
+	fly.tween_method(func(t: float):
+		move_and_collide(dir * (t - last[0]))
+		last[0] = t, 0.0, push, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(0.35).timeout
+	play_sfx("caida", 0.0)
+	await _act.animation_finished
+
+
+## La plata que entra y la que sale, se ve: la mano, el billete, el bolsillo; y arriba, cuánto.
+func _on_money(amount: int) -> void:
+	if not is_inside_tree() or not visible or amount == 0:
+		return
+	if amount > 0:
+		act("plata" if amount >= 1000 else "plata_moneda", false, "monedas" if amount < 5000 else "billete")
+	else:
+		act("pagar", false, "billete")
+	_float_amount(amount)
+
+
+## "+$5.000" en dorado (o "-$2.000" en rojo) sube y se apaga sobre la cabeza. No sale si hay un aviso
+## arriba (ningún texto encima de otro).
+func _float_amount(amount: int) -> void:
+	if Narrator._panel and Narrator._panel.visible:
+		return
+	var l := Label.new()
+	l.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
+	l.text = ("+$" if amount > 0 else "-$") + _miles(absi(amount))
+	l.add_theme_font_override("font", preload("res://assets/fonts/PressStart2P.ttf"))
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_color_override("font_outline_color", Color(0.06, 0.05, 0.08))
+	l.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35) if amount > 0 else Color(1.0, 0.45, 0.4))
+	l.z_index = 60
+	l.position = Vector2(-l.text.length() * 4.0, -44)
+	add_child(l)
+	var t := l.create_tween()
+	t.tween_property(l, "position:y", -54.0, 1.1).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(l, "modulate:a", 0.0, 0.5).set_delay(0.7)
+	t.tween_callback(l.queue_free)
+
+
+static func _miles(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	while s.length() > 3:
+		out = "." + s.right(3) + out
+		s = s.left(s.length() - 3)
+	return s + out
+
+
+## Come o toma: la comida a la boca. Lo caliente de tomar (tinto, aguapanela), de a sorbos.
+func _on_ate(id: String) -> void:
+	if not is_inside_tree() or not visible:
+		return
+	if id in ["tinto", "aguapanela"]:
+		act("beber", false, "traga")
+	else:
+		act("comer", false, "mastica")
+
+
+## La tos: cada tanto (más seguido entre peor esté), se para, se dobla y tose. Lukas lo mira.
+func _tos_tick(delta: float) -> void:
+	var st := GameState.tos_stage()
+	if st == 0 or SceneRouter.busy or GameState.input_blocked() or Dialogue.active or GameState.ui_open 			or not TimeManager.running:
+		return
+	_tos_t -= delta
+	if _tos_t > 0.0:
+		return
+	_tos_t = [0.0, randf_range(70.0, 120.0), randf_range(35.0, 65.0), randf_range(18.0, 32.0)][st]
+	act("tos_corta" if st == 1 else "tos", false, ["", "tos_1", "tos_2", "tos_3"][st])
+	var scene := get_tree().current_scene
+	var lukas: Node = scene.find_child("Lukas", true, false) if scene else null
+	if lukas and lukas.has_method("mirar"):
+		lukas.mirar()
+
+
+## Mojado: gotas que le caen del saco y del pelo. Al salir del agua, se sacude.
+func _rain_tick(delta: float) -> void:
+	var now: bool = TimeManager.minutes < float(GameState.flags.get("bajo_lluvia_hasta", -1.0))
+	if _wet and not now and not SceneRouter.busy:
+		_wet = false
+		act("sacudirse", false, "sacude")
+		return
+	_wet = now
+	if not _wet:
+		return
+	_drip_t -= delta
+	if _drip_t > 0.0:
+		return
+	_drip_t = randf_range(0.12, 0.3)
+	var d := ColorRect.new()
+	d.size = Vector2(1, 2)
+	d.color = Color(0.62, 0.78, 0.98, 0.9)
+	d.position = Vector2(randf_range(-6, 6), randf_range(-26, -8))
+	d.z_index = 5
+	add_child(d)
+	var t := d.create_tween()
+	t.tween_property(d, "position:y", d.position.y + randf_range(6, 12), 0.35)
+	t.parallel().tween_property(d, "modulate:a", 0.0, 0.35)
+	t.tween_callback(d.queue_free)
 
 
 ## Mirar hacia "down", "up", "left" o "right".

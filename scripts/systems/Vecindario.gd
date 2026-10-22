@@ -574,6 +574,7 @@ func _growl(dog: Node2D, player: Node2D) -> void:
 	GameState.block_input(0.4)
 	_hit.play()
 	var l := Label.new()
+	l.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	l.text = "GRRR"
 	l.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 	l.add_theme_font_size_override("font_size", 8)

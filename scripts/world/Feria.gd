@@ -95,89 +95,83 @@ func _process(delta: float) -> void:
 	_room.queue_redraw()
 
 
-## Toda la feria, a mano: el cielo de noche, los bombillos, y cada atracción moviéndose.
+## La feria: el fondo quieto (tools/art/draw_feria_juegos.py lote: el cielo, el piso, la montaña de madera,
+## el pabellón de los chocones, los puestos) y encima lo que se mueve: la rueda con sus cabinas, los
+## caballitos, los carritos chocones, el carrito de la montaña y los bombillos.
+const ART := "res://assets/feria/%s.png"
+var _tex := {}
+
+
+func _img(name: String) -> Texture2D:
+	if not _tex.has(name):
+		_tex[name] = load(ART % name)
+	return _tex[name]
+
+
 func _draw_fair() -> void:
 	var r := _room
-	# El cielo (arriba, detrás de todo) y el piso de tierra.
-	r.draw_rect(Rect2(0, 0, W, 60), Color(0.08, 0.06, 0.18))
-	for i in 30:
-		r.draw_rect(Rect2(fmod(i * 97.0, W), fmod(i * 37.0, 50.0), 1, 1), Color(1, 1, 0.9, 0.5 + 0.5 * sin(_t * 2.0 + i)))
-	r.draw_rect(Rect2(0, 60, W, H - 60), Color(0.36, 0.28, 0.22))
-	for i in 60:  # papelitos en el piso
-		var c := Color.from_hsv(fmod(i * 0.13, 1.0), 0.6, 0.9)
-		r.draw_rect(Rect2(fmod(i * 53.0, W), 64 + fmod(i * 31.0, H - 66), 2, 1), c)
-	# La montaña rusa: la carrilera al fondo y el carrito.
-	var track := PackedVector2Array()
-	for x in range(260, 372, 4):
-		track.append(Vector2(x, 70 - 26 * absf(sin((x - 260) * 0.045))))
-	for i in range(0, track.size(), 3):
-		r.draw_line(track[i], Vector2(track[i].x, 84), Color(0.55, 0.55, 0.6), 1.0)
-	r.draw_polyline(track, Color(0.85, 0.3, 0.3), 2.0)
-	var k := int(fmod(_t * 14.0, track.size()))
-	r.draw_rect(Rect2(track[k] + Vector2(-4, -5), Vector2(8, 5)), Color(0.95, 0.85, 0.3))
-	# La rueda de Chicago: grande, a la derecha, girando despacio.
+	r.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	r.draw_texture(_img("lote_fondo"), Vector2.ZERO)
+	for i in 30:  # las estrellas titilan
+		r.draw_rect(Rect2(fmod(i * 97.0, W), fmod(i * 37.0, 40.0), 1, 1), Color(1, 1, 0.9, 0.3 + 0.7 * absf(sin(_t * 1.5 + i))))
+	# El carrito de la montaña rusa, por la carrilera.
+	var u := fmod(_t * 26.0, 112.0)
+	var cx := 260.0 + u
+	var cy := 70.0 - 26.0 * absf(sin((cx - 260.0) * 0.045))
+	var slope := -26.0 * 0.045 * cos((cx - 260.0) * 0.045) * signf(sin((cx - 260.0) * 0.045))
+	r.draw_set_transform(Vector2(cx, cy), atan(slope))
+	r.draw_texture(_img("mini_vagon"), Vector2(-5, -7))
+	r.draw_set_transform(Vector2.ZERO)
+	# La rueda de Chicago: el aro, los rayos y las cabinas (que cuelgan derechas), girando despacio.
 	var hub := Vector2(430, 64)
-	r.draw_line(hub, Vector2(412, 132), Color(0.6, 0.6, 0.66), 2.0)
-	r.draw_line(hub, Vector2(448, 132), Color(0.6, 0.6, 0.66), 2.0)
-	r.draw_arc(hub, 52, 0, TAU, 40, Color(0.75, 0.75, 0.82), 2.0)
-	for i in 10:
-		var a := _t * 0.25 + i * TAU / 10.0
-		var p := hub + Vector2(cos(a), sin(a)) * 52.0
-		r.draw_line(hub, p, Color(0.7, 0.7, 0.78), 1.0)
-		r.draw_rect(Rect2(p + Vector2(-4, 0), Vector2(8, 6)), Color.from_hsv(i / 10.0, 0.7, 0.9))
-		r.draw_circle(p, 1.5, Color(1, 0.95, 0.6) if int(_t * 3.0 + i) % 2 == 0 else Color(1, 0.4, 0.5))
-	r.draw_rect(Rect2(404, 128, 52, 12), Color(0.45, 0.3, 0.2))  # la plataforma y la boletería
-	# El carrusel: techo de rayas, caballitos que suben y bajan.
+	r.draw_arc(hub, 53, 0, TAU, 48, Color(0.55, 0.56, 0.64), 2.0)
+	r.draw_arc(hub, 48, 0, TAU, 48, Color(0.45, 0.46, 0.54), 1.0)
+	for i in 12:
+		var a := _t * 0.25 + i * TAU / 12.0
+		var p := hub + Vector2(cos(a), sin(a)) * 53.0
+		r.draw_line(hub, p, Color(0.62, 0.63, 0.72), 1.0)
+		var on := int(_t * 3.0 + i) % 3 != 0
+		r.draw_rect(Rect2(p - Vector2(1, 1), Vector2(2, 2)), Color(1, 0.92, 0.6) if on else Color(1, 0.4, 0.5))
+		r.draw_texture(_img("gondola_%d" % (i % 6)), p + Vector2(-4, 2))
+	r.draw_circle(hub, 4.0, Color(0.36, 0.36, 0.42))
+	r.draw_circle(hub, 2.0, Color(0.9, 0.8, 0.4))
+	# El carrusel: los caballitos que dan vuelta (atrás, después el techo tapa los tubos, adelante).
 	var cc := Vector2(92, 104)
-	r.draw_rect(Rect2(cc + Vector2(-30, -2), Vector2(60, 14)), Color(0.55, 0.36, 0.24))
-	for i in 6:
-		var a := _t * 1.2 + i * TAU / 6.0
-		var hx := cc.x + cos(a) * 24.0
-		var hy := cc.y + sin(a) * 6.0 - 6.0 + sin(_t * 4.0 + i) * 2.0
-		if sin(a) < 0.0:
-			r.draw_line(Vector2(hx, cc.y - 22), Vector2(hx, hy), Color(0.9, 0.85, 0.5))
-			r.draw_rect(Rect2(hx - 4, hy - 3, 8, 5), Color.from_hsv(i / 6.0, 0.4, 0.95))
-	for i in 6:
-		var a := _t * 1.2 + i * TAU / 6.0
-		var hx := cc.x + cos(a) * 24.0
-		var hy := cc.y + sin(a) * 6.0 - 6.0 + sin(_t * 4.0 + i) * 2.0
-		if sin(a) >= 0.0:
-			r.draw_line(Vector2(hx, cc.y - 22), Vector2(hx, hy), Color(0.9, 0.85, 0.5))
-			r.draw_rect(Rect2(hx - 4, hy - 3, 8, 5), Color.from_hsv(i / 6.0, 0.4, 0.95))
-	var roof := PackedVector2Array([cc + Vector2(-34, -20), cc + Vector2(0, -34), cc + Vector2(34, -20)])
-	r.draw_colored_polygon(roof, Color(0.9, 0.3, 0.35))
+	for front in [false, true]:
+		for i in 6:
+			var a := _t * 1.2 + i * TAU / 6.0
+			if (sin(a) >= 0.0) != front:
+				continue
+			var hx := cc.x + cos(a) * 26.0
+			var hy := cc.y + sin(a) * 6.0 - 6.0 + sin(_t * 4.0 + i) * 2.0
+			r.draw_line(Vector2(hx, cc.y - 18), Vector2(hx, hy - 4), Color(0.95, 0.82, 0.4))
+			var horse := _img("mini_caballo_%d" % (i % 3))
+			var tint := Color.WHITE if front else Color(0.6, 0.55, 0.7)
+			if cos(a + PI * 0.5) > 0.0:
+				r.draw_texture(horse, Vector2(hx - 6, hy - 6), tint)
+			else:
+				r.draw_texture_rect(horse, Rect2(hx + 6, hy - 6, -12, 9), false, tint)
+	r.draw_texture(_img("mini_carrusel_techo"), cc + Vector2(-38, -40))
+	for k in 12:  # los bombillos de la cenefa
+		var on := (k + int(_t * 8.0)) % 3 != 0
+		r.draw_rect(Rect2(cc.x - 34 + k * 6, cc.y - 22, 1, 1), Color(1, 0.94, 0.6) if on else Color(0.5, 0.4, 0.3))
+	# Los chocones: los carritos dando vueltas (con su vara y sus chispas contra la malla).
+	var names := ["rojo", "azul", "amarillo", "verde", "morado"]
 	for i in 5:
-		r.draw_line(cc + Vector2(0, -34), cc + Vector2(-34 + i * 17, -20), Color(0.98, 0.95, 0.9), 1.0)
-	# Los chocones: la pista con la malla de chispas arriba y los carritos.
-	r.draw_rect(Rect2(176, 84, 76, 34), Color(0.2, 0.2, 0.26))
-	r.draw_rect(Rect2(176, 84, 76, 34), Color(0.9, 0.8, 0.3), false, 1.0)
-	for i in 4:
 		var p := Vector2(214 + cos(_t * (0.8 + i * 0.3) + i) * 28.0, 101 + sin(_t * (1.1 + i * 0.2) + i * 2.0) * 10.0)
-		r.draw_rect(Rect2(p - Vector2(5, 3), Vector2(10, 6)), Color.from_hsv(i * 0.27, 0.8, 0.9))
-		r.draw_line(p, Vector2(p.x, 80), Color(0.6, 0.6, 0.6), 1.0)
-	if int(_t * 7.0) % 5 == 0:
-		r.draw_circle(Vector2(214 + sin(_t * 13.0) * 30.0, 80), 2.0, Color(0.7, 0.85, 1.0))
-	# Los puestos: dardos (globos en la pared) y la garra (la vitrina con peluches).
-	r.draw_rect(Rect2(130, 140, 40, 22), Color(0.3, 0.5, 0.75))
-	r.draw_rect(Rect2(130, 136, 40, 5), Color(0.95, 0.95, 0.9))
-	for i in 6:
-		r.draw_circle(Vector2(136 + (i % 3) * 13, 146 + (i / 3) * 8), 3.0, Color.from_hsv(i * 0.17, 0.75, 0.95))
-	r.draw_rect(Rect2(246, 136, 32, 26), Color(0.85, 0.2, 0.4))
-	r.draw_rect(Rect2(250, 140, 24, 14), Color(0.7, 0.85, 0.95, 0.6))
-	for i in 5:
-		r.draw_circle(Vector2(254 + i * 4, 151), 2.0, Color.from_hsv(0.75 + i * 0.05, 0.6, 0.9))
-	r.draw_line(Vector2(262 + sin(_t) * 8, 140), Vector2(262 + sin(_t) * 8, 146), Color(0.8, 0.8, 0.8))
+		r.draw_line(p + Vector2(-3, -2), Vector2(p.x - 3, 66), Color(0.6, 0.6, 0.66), 1.0)
+		r.draw_texture(_img("mini_chocon_" + names[i]), p - Vector2(5, 4))
+		if randf() < 0.05:
+			r.draw_rect(Rect2(p.x - 4 + randf_range(-1, 1), 65, 2, 2), Color(0.7, 0.9, 1.0))
 	# Las guirnaldas de bombillos, de punta a punta.
 	for row in [[Vector2(0, 66), Vector2(W, 70)], [Vector2(0, 134), Vector2(W, 132)]]:
 		var a: Vector2 = row[0]
 		var b: Vector2 = row[1]
-		for i in 40:
+		var prev := a
+		for i in 41:
 			var f := i / 40.0
 			var p := a.lerp(b, f) + Vector2(0, sin(f * PI * 6.0) * 4.0)
+			r.draw_line(prev, p, Color(0.22, 0.2, 0.24))
+			prev = p
 			var on := int(_t * 4.0 + i) % 3 != 0
-			r.draw_circle(p, 1.2, Color.from_hsv(fmod(i * 0.21, 1.0), 0.7, 1.0) if on else Color(0.3, 0.3, 0.3))
-	# El arco de la entrada, abajo a la izquierda.
-	r.draw_rect(Rect2(22, H - 30, 3, 28), Color(0.85, 0.75, 0.3))
-	r.draw_rect(Rect2(56, H - 30, 3, 28), Color(0.85, 0.75, 0.3))
-	r.draw_rect(Rect2(18, H - 36, 46, 8), Color(0.85, 0.2, 0.25))
-	r.draw_string(load("res://assets/fonts/PressStart2P.ttf"), Vector2(21, H - 29), "FERIA", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 0.95, 0.7))
+			r.draw_rect(Rect2(p - Vector2(1, 0), Vector2(2, 2)), Color.from_hsv(fmod(i * 0.21, 1.0), 0.7, 1.0) if on else Color(0.3, 0.3, 0.3))

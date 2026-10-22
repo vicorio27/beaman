@@ -51,6 +51,7 @@ func _ready() -> void:
 	shape.position = Vector2(0, -4)
 	add_child(shape)
 	_hint = Label.new()
+	_hint.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_hint.text = "AGARRAR"
 	_hint.add_theme_font_override("font", FONT)
 	_hint.add_theme_font_size_override("font_size", 8)
@@ -116,4 +117,6 @@ func _process(_delta: float) -> void:
 		var taken: Dictionary = GameState.flags.get("taken", {})
 		taken[name] = GameState.day
 		GameState.flags["taken"] = taken
+		if _player.has_method("act"):  # se agacha, lo recoge, lo mira
+			_player.act("recoger", global_position.x > _player.global_position.x)
 		queue_free()

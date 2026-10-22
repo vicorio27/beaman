@@ -56,6 +56,7 @@ func _ready() -> void:
 	_layer.layer = 6
 	add_child(_layer)
 	_hint = Label.new()
+	_hint.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_hint.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 	_hint.add_theme_font_size_override("font_size", 8)
 	_hint.add_theme_color_override("font_color", Color(1, 0.92, 0.6))

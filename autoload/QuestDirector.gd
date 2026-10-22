@@ -45,6 +45,7 @@ func _process(delta: float) -> void:
 	_daily()
 	_denuncia()
 	_lombardia()
+	_cobrador()
 	DayTasks.tick(get_tree().current_scene)
 
 
@@ -62,9 +63,9 @@ func _victoria() -> void:
 		Narrator.say("(El colegio de Victoria queda en el centro: el edificio amarillo del fondo, arriba a la derecha, pasando la Defensoría. Sale a las 12.)")
 	if int(f.get("victoria", 0)) >= 2 and not g.quests.has("v_defensoria"):
 		g.start_quest("v_defensoria")
-	if g.day >= 50 and not g.quests.has("v_cumple"):
+	if g.day >= 44 and not g.quests.has("v_cumple"):
 		g.start_quest("v_cumple")
-		Narrator.say("29 de octubre. Victoria cumple doce años. %s" % ("Visita en el Parque, de diez a dos." if f.get("visitas", false) else "Sale del colegio a las doce."))
+		Narrator.say("(El 29 de octubre Victoria cumple doce. Faltan %d días.)" % (50 - g.day))
 	var scene := get_tree().current_scene
 	if scene == null or not TimeManager.running:
 		return
@@ -207,6 +208,8 @@ func _rain_tick(scene: Node) -> void:
 		_rain_layer.add_child(rain)
 		scene.add_child(_rain_layer)
 	var grace: bool = TimeManager.minutes < float(GameState.flags.get("evento_hora", 0)) * 60.0 + 20.0  # 20 min para buscar techo
+	if outdoor and not grace:
+		GameState.flags["bajo_lluvia_hasta"] = TimeManager.minutes + 25.0  # escurre (Player._rain_tick)
 	if outdoor and not grace and not GameState.flags.get("aguacero_mojado", false):
 		GameState.flags["aguacero_mojado"] = true
 		GameState.change_mood(-6.0)
@@ -551,7 +554,9 @@ func _daily() -> void:
 	if GameState.is_active("regalo_hija") and GameState.cambuche.get("alcancia", 0) >= GameState.GIFT_GOAL:
 		GameState.complete_quest("regalo_hija")
 		f["regalo_listo"] = true
-		Narrator.say("(Ciento cincuenta mil en la alcancía.)")
+		if not f.get("bici_comprada", false):
+			GameState.start_quest("comprar_bici")
+		Narrator.say("(Ciento cincuenta mil en la alcancía. Don Efraín, en el Parque, consigue de todo.)")
 
 
 ## Día 2: lo básico en orden (cambuche, Lukas, baño). Cuando lo aprendió, aparece la moto.
@@ -640,6 +645,61 @@ func _lombardia() -> void:
 	GameState.complete_quest("noche_lukas")
 	Narrator.say("(Ya que está despierto: el barrio de noche. Cuando quiera, a dormir otra vez.)")
 	_lombardia_busy = false
+
+
+## El cobro del gota a gota (Torneo._cobro), que antes solo se contaba al despertar: el cobrador llega
+## caminando. Si había con qué, le pagan y se va. Si no, le da un golpe, lo esculca con las manos arriba,
+## se lleva lo que hay y se va despacio, sin afán, que es lo que más humilla.
+var _cobro_busy := false
+
+
+func _cobrador() -> void:
+	var f := GameState.flags
+	if not f.has("cobro_escena") or _cobro_busy:
+		return
+	var scene := get_tree().current_scene
+	if scene == null or not scene.name in ["City", "Parque", "Centro"] or SceneRouter.busy or Dialogue.active:
+		return
+	var p := scene.find_child("Player", true, false) as Node2D
+	if p == null:
+		return
+	_cobro_busy = true
+	var kind: String = f["cobro_escena"]
+	f.erase("cobro_escena")
+	var world: Node = scene.get_node_or_null("World")
+	var c := AnimatedSprite2D.new()
+	CharacterFrames.dress(c, 9)
+	c.modulate = Color(0.62, 0.56, 0.6)
+	c.position = p.global_position + Vector2(90, -8)
+	(world if world else scene).add_child(c)
+	c.play("walk_side")
+	GameState.block_input(7.0)
+	var walk := create_tween()
+	walk.tween_property(c, "position", p.global_position + Vector2(16, -8), 1.1)
+	await walk.finished
+	c.play("idle_side")
+	if kind == "paga":
+		p.act("pagar", false, "billete")
+		await Dialogue.talk([["COBRADOR", "—Completico. Me caen mal los que pagan completo: no me dejan trabajar."],
+			["COBRADOR", "—Saludos a Marta. Dígale que no la extrañé. Mentira. Bueno, sí."]])
+	else:
+		var lunge := create_tween()  # el golpe
+		lunge.tween_property(c, "position", p.global_position + Vector2(9, -8), 0.08)
+		lunge.tween_property(c, "position", p.global_position + Vector2(16, -8), 0.2)
+		await p.act("golpe", false, "golpe")
+		p.act("manos_arriba")  # lo esculca
+		await get_tree().create_timer(1.3).timeout
+		await Dialogue.talk([["COBRADOR", "—Plazo es plazo, parcero. Esto no es personal: es un cuaderno. Y el cuaderno no tiene sentimientos." if kind == "lleva"
+			else "—¿Nada? ... ¿Ni la mochila vale? Usted es el primer cliente que me hace perder plata. Lo felicito. Lo odio."]])
+		p.act_stop()
+	c.play("walk_side")
+	c.flip_h = true
+	var away := create_tween()
+	away.tween_property(c, "position", c.position + Vector2(130, 0), 2.2)
+	away.parallel().tween_property(c, "modulate:a", 0.0, 0.6).set_delay(1.6)
+	await away.finished
+	c.queue_free()
+	_cobro_busy = false
 
 
 ## La denuncia que se va cayendo y Diana Carolina, que lo busca (scripts/systems/Carolina.gd). La

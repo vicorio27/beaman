@@ -59,6 +59,7 @@ func _ready() -> void:
 
 func _label(col: Color) -> Label:
 	var l := Label.new()
+	l.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	l.add_theme_font_override("font", FONT)
 	l.add_theme_font_size_override("font_size", 8)
 	l.add_theme_color_override("font_color", col)

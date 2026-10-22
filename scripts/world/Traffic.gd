@@ -1,7 +1,9 @@
 extends Node2D
 ## Lo que pasa por la calle, de vez en cuando: carros, taxis, la buseta, bicicletas y motos.
 ## Por la avenida (este-oeste, dos carriles) y por la calle principal (norte-sur, hasta el puente).
-## No chocan: si él (o Lukas) está parado en el carril, frenan y pitan hasta que se quite.
+## Los carros no chocan: si él (o Lukas) está parado en el carril, frenan y pitan hasta que se quite.
+## Las motos vienen muy rápido: si él se les atraviesa cuando ya están encima (cruzar sin mirar), no
+## alcanzan a frenar y lo tumban (Player.knocked_down); el de la moto le grita y sigue. A Lukas no.
 ## De noche pasan menos. Dibujos: tools/art/draw_trafico.py.
 ## Si él se queda parado mucho rato en un carril con carros esperando (JAM_SECONDS), llega un agente:
 ## lo saca al andén y le cobra el comparendo ($2.000, o "pedagógico" si no tiene). Una vez por hora.
@@ -22,6 +24,12 @@ const KINDS := [
 	["car_taxi", 3, 135.0], ["car_buseta", 1, 85.0], ["bici", 2, 45.0], ["moto", 2, 150.0],
 ]
 const STOP_DIST := 34.0
+## La moto: frena tarde (si él se le mete a menos de HIT_DIST, se lo lleva por delante).
+const MOTO_STOP := 20.0
+## Si él se mete al carril con la moto a menos de esto, ya no alcanza a frenar.
+const NO_BRAKE := 70.0
+const HIT_LINES := ["¡ÁBRASE, PUES!", "¡¿NO VE O QUÉ?!", "¡MIRE PA' LOS LADOS, GÜEVÓN!", "¡PERDÓN! ¡NO, MENTIRAS!", "¡ESO LE PASA POR PENDEJO!"]
+var _hit_cd := 0.0
 const JAM_SECONDS := 12.0
 const FINE := 2000
 
@@ -113,6 +121,7 @@ func _process(delta: float) -> void:
 			if is_instance_valid(lamp):
 				lamp.queue_redraw()
 	_jam_now = false
+	_hit_cd -= delta
 	for m in _movers.duplicate():
 		_move(m, delta)
 	_jam = _jam + delta if _jam_now else maxf(0.0, _jam - delta * 2.0)
@@ -153,6 +162,7 @@ func _spawn(lane_i: int) -> void:
 	get_parent().add_child(s)
 	var length := tex.get_width() if dir.y == 0 else tex.get_height()
 	s.set_meta("length", float(length))
+	s.set_meta("kind", kind[0])
 	_movers.append({"node": s, "lane": lane_i, "speed": kind[2] * randf_range(0.9, 1.1), "honked": false})
 
 
@@ -163,7 +173,9 @@ func _move(m: Dictionary, delta: float) -> void:
 	if _red_light(m["lane"], s):  # el semáforo
 		s.pause()
 		return
-	if _blocked(s, dir):
+	if str(s.get_meta("kind", "")) == "moto" and _run_over(s, dir):
+		pass  # lo tumbó: sigue de largo
+	elif _blocked(s, dir):
 		s.pause()
 		if not m["honked"]:
 			m["honked"] = true
@@ -180,6 +192,73 @@ func _move(m: Dictionary, delta: float) -> void:
 		_movers.erase(m)
 
 
+## La moto que viene encima: si él se le metió muy cerca, no hay tiempo de frenar. Lo tumba (una vez:
+## después pasa de largo) y el de la moto le grita sin parar.
+func _run_over(s: AnimatedSprite2D, dir: Vector2) -> bool:
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	if p == null or _hit_cd > 0.0 or s.has_meta("hit") or Dialogue.active or SceneRouter.busy or GameState.ui_open:
+		return false
+	if p.get("acting") == true:
+		return false
+	var d: Vector2 = p.global_position - s.global_position
+	var ahead := d.dot(dir)
+	var side := absf(d.dot(Vector2(-dir.y, dir.x)))
+	var was_out: bool = float(s.get_meta("side_antes", 99.0)) >= 9.0
+	s.set_meta("side_antes", side)
+	# Solo si se le atraviesa (venía de afuera del carril) con la moto ya encima: ahí no alcanza a
+	# frenar. Al que ya estaba parado en la calle, le pita.
+	if was_out and side < 9.0 and ahead > -4.0 and ahead < NO_BRAKE:
+		s.set_meta("sin_freno", true)
+	elif side >= 12.0:
+		s.remove_meta("sin_freno")
+	if s.has_meta("sin_freno") and side < 9.0 and ahead > -6.0 and ahead < 12.0:
+		s.set_meta("hit", true)
+		_hit_cd = 10.0
+		_hit(p, s, dir)
+		return true
+	return false
+
+
+func _hit(p: Node2D, s: AnimatedSprite2D, dir: Vector2) -> void:
+	var f := GameState.flags
+	f["atropellos"] = int(f.get("atropellos", 0)) + 1
+	f["violencia"] = true
+	GameState.change_mood(-6.0)
+	GameState.set_hunger(GameState.hunger - 4.0)
+	if p.has_method("knocked_down"):
+		p.knocked_down(s.global_position - dir * 12.0, 24.0)
+	var wob := s.create_tween()  # la moto se tambalea y sigue
+	wob.tween_property(s, "rotation", 0.25 * signf(randf() - 0.5), 0.08)
+	wob.tween_property(s, "rotation", 0.0, 0.15)
+	var sfx := AudioStreamPlayer2D.new()
+	sfx.stream = load("res://assets/audio/cuerpo/pito_moto.wav")
+	sfx.volume_db = -3.0
+	s.add_child(sfx)
+	sfx.play()
+	var l := Label.new()
+	l.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
+	l.text = HIT_LINES[int(f["atropellos"] - 1) % HIT_LINES.size()]
+	l.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_constant_override("outline_size", 3)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.position = Vector2(-30, -40)
+	l.z_index = 20
+	s.add_child(l)
+	var t := create_tween()
+	t.tween_property(l, "position:y", -54.0, 1.0)
+	t.parallel().tween_property(l, "modulate:a", 0.0, 1.0).set_delay(0.4)
+	t.tween_callback(l.queue_free)
+	var lukas := get_parent().find_child("Lukas", false, false)
+	if lukas and lukas.has_method("mirar"):
+		lukas.mirar()
+	await get_tree().create_timer(1.6).timeout
+	if int(f["atropellos"]) == 1:
+		Narrator.say("(Una moto. No frenó. Él tampoco alcanzó a mirar. Se levanta sacudiéndose el saco, que ya estaba sucio.)")
+	elif int(f["atropellos"]) == 3:
+		Narrator.say("(Tercera moto. Ya cruza mirando para los dos lados. Y para arriba, por si acaso.)")
+
+
 ## ¿Hay alguien parado adelante, en el carril? (él, Lukas, u otro que frenó)
 func _blocked(s: Node2D, dir: Vector2) -> bool:
 	var who: Array = get_tree().get_nodes_in_group("player")
@@ -190,6 +269,8 @@ func _blocked(s: Node2D, dir: Vector2) -> bool:
 		if m["node"] != s:
 			who.append(m["node"])
 	for n in who:
+		if (s.has_meta("hit") or s.has_meta("sin_freno")) and n.is_in_group("player"):
+			continue  # no alcanza a frenar (o ya lo tumbó y sigue de largo)
 		var d: Vector2 = n.global_position - s.global_position
 		if (n.is_in_group("player") or str(n.name) == "Lukas") and d.dot(dir) > 0.0 and d.dot(dir) < STOP_DIST and absf(d.dot(Vector2(-dir.y, dir.x))) < 12.0:
 			_jam_now = true
@@ -200,7 +281,8 @@ func _blocked(s: Node2D, dir: Vector2) -> bool:
 		var side := absf(d.dot(Vector2(-dir.y, dir.x)))
 		# El largo de los dos (una buseta ocupa más), más un espacio.
 		var gap: float = (s.get_meta("length", 20.0) + float(n.get_meta("length", 10.0))) / 2.0 + 6.0
-		if ahead > 0.0 and ahead < maxf(gap, STOP_DIST) and side < 12.0:
+		var stop: float = MOTO_STOP if str(s.get_meta("kind", "")) == "moto" else STOP_DIST
+		if ahead > 0.0 and ahead < maxf(gap, stop) and side < 12.0:
 			return true
 	return false
 
@@ -246,6 +328,7 @@ func _honk(s: Node2D) -> void:
 	if not s.is_inside_tree():
 		return
 	var l := Label.new()
+	l.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	l.text = ["¡PIIIP!", "¡QUÍTESE, GÜEVÓN!", "¡ABRA, PIROBO!", "¡¿SE VA A MATAR O QUÉ?!", "¡MUÉVASE, HP!", "¡LA CALLE NO ES SUYA!", "¡ÑERO, ABRA!"].pick_random()
 	l.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 	l.add_theme_font_size_override("font_size", 8)

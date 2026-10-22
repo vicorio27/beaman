@@ -9,6 +9,8 @@ signal inventory_changed
 signal fainted
 ## Comió algo (para las misiones).
 signal ate(item_id: String)
+## Cuánta plata entró (+) o salió (-): Player.gd lo muestra (la mano, el billete, "+$5.000").
+signal money_delta(amount: int)
 ## Una misión empezó ("active") o se cumplió ("done").
 signal quest_changed(id: String, status: String)
 signal hygiene_changed(value: float)
@@ -240,8 +242,11 @@ func active_quests(kind: String) -> Array:
 func add_money(amount: int) -> void:
 	if amount > 0:
 		stats["money_earned"] += amount
+	var before := money
 	money = maxi(0, money + amount)
 	money_changed.emit(money)
+	if money != before:
+		money_delta.emit(money - before)
 
 
 # ---------------------------------------------------------------- Mochila
@@ -466,6 +471,7 @@ func use_slot(i: int) -> String:
 			set_hunger(hunger + it["food"])
 			if id in HOT_FOOD:
 				change_mood(3.0)
+				flags["caliente_dia"] = day  # (la tos: algo caliente esa noche la frena un poquito)
 			remove_slot(i)
 			stats["food_eaten"] += 1
 			ate.emit(id)
@@ -711,6 +717,7 @@ func new_day(spot: String) -> Array:
 	if lukas_alive() and day >= 2 and flags.get("lukas_fed_day", -1) != day:
 		flags["lukas_hungry"] = true
 		lines.append("Lukas lo mira. Ayer no comió.")
+	_tos_noche(spot, rained and not roof and not raised, in_cambuche, lines)
 	if lines.is_empty():
 		lines.append("Nadie le robó. No llovió. Nadie le pegó.")
 	lines.append_array(DayTasks.close_day())
@@ -746,6 +753,78 @@ func new_day(spot: String) -> Array:
 	lines.append_array(Torneo.manana())  # el torneo de tenis (días 32 a 36) y el gota a gota
 	cambuche_changed.emit()
 	return lines
+
+
+# ---------------------------------------------------------------- La tos
+
+## La enfermedad de él (la escogió el usuario: que cuando se muera Lukas solo se le agrave algo que ya
+## venía). Sale de dormir en la calle y avanza sola: el techo, la cobija y la comida caliente la frenan,
+## pero no la quitan. Con Lukas vivo no pasa de la tos de pecho; cuando Lukas se muere, él deja de
+## cuidarse y se le dispara. Es lo que se lo lleva la noche del 49 (NightSequence._he_dies).
+## En la calle se ve: le dan ataques de tos (Player.gd) y Lukas lo mira.
+const TOS_MAX_CON_LUKAS := 65.0
+const TOS_NUEVA := {
+	1: ["Amanece con una tos que ayer no tenía. La tose despacio, para no despertar a Lukas.",
+		"Amanece con una tos que ayer no tenía. La tose despacio. No hay a quién despertar."],
+	2: ["La tos ahora es de pecho. Le suena por dentro, como una puerta mal cerrada.",
+		"La tos ahora es de pecho. Le suena por dentro, como una puerta mal cerrada."],
+	3: ["En el pañuelo hay una mancha que no es de tinto. Lo dobla rápido, con la mancha para adentro.",
+		"En el pañuelo hay una mancha que no es de tinto. Lo dobla rápido, con la mancha para adentro."],
+}
+const TOS_LINES := {
+	1: [["Tose al despertar. Lukas levanta la cabeza, lo mira hasta que termina y se vuelve a acomodar.", "Tose al despertar. Nadie levanta la cabeza."],
+		["La tos ya tiene horario: a las seis, con el frío.", "La tos ya tiene horario: a las seis, con el frío."],
+		["Escupe detrás del cartón. Mira el escupitajo un segundo, como quien lee el periódico.", "Escupe detrás del cartón. Mira el escupitajo un segundo, como quien lee el periódico."]],
+	2: [["Tose hasta que se tiene que sentar. Después se para como si nada. Lukas no le cree.", "Tose hasta que se tiene que sentar. Después se para como si nada."],
+		["Respira y el pecho le silba. Lukas para las orejas: cree que es un pájaro.", "Respira y el pecho le silba. Ya no hay quién pare las orejas."],
+		["Se amarra la camiseta vieja al cuello, como bufanda. No le sirve para nada. Se la deja.", "Se amarra la camiseta vieja al cuello, como bufanda. No le sirve para nada. Se la deja."]],
+	3: [["Fiebre. El sol le hace frío.", "Fiebre. El sol le hace frío."],
+		["Tose y Lukas le pone la pata encima.", "Tose y no hay quién lo mire."],
+		["Le cuesta subir el andén. Lo sube igual, de lado.", "Le cuesta subir el andén. Lo sube igual, de lado."]],
+}
+const TOS_PECHO := ["tranquilo", "tose", "le silba", "le duele"]
+
+
+func tos() -> float:
+	return float(flags.get("tos", 0.0))
+
+
+## 0: nada. 1: tose de vez en cuando. 2: tos de pecho (lo para). 3: fiebre, sangre en el pañuelo.
+func tos_stage() -> int:
+	var t := tos()
+	return 0 if t < 15.0 else (1 if t < 40.0 else (2 if t < 70.0 else 3))
+
+
+## Lo que le hizo la noche al pecho (y la línea de la mañana, si toca).
+func _tos_noche(spot: String, wet: bool, in_cambuche: bool, lines: Array) -> void:
+	if day < 4:
+		return
+	var before := tos_stage()
+	var up := 1.0
+	if wet:
+		up += 3.0
+	if spot != "pension" and not (in_cambuche and cambuche.get("cobija", false)):
+		up += 0.8
+	if hunger < 30.0:
+		up += 0.8
+	if spot == "pension":
+		up -= 2.0
+	if flags.get("caliente_dia", -1) == day:
+		up -= 1.2
+	var t := tos() + maxf(up, 0.6)
+	if lukas_alive():
+		t = minf(t, TOS_MAX_CON_LUKAS)
+	else:
+		t += 7.0  # ya no se cuida: el pecho se le apaga con lo demás
+	flags["tos"] = clampf(t, 0.0, 100.0)
+	var st := tos_stage()
+	var solo := 0 if lukas_alive() else 1
+	if st > before:
+		lines.append(TOS_NUEVA[st][solo])
+		change_mood(-4.0)
+	elif st > 0 and (day % 3 == 0 or st == 3):
+		var opts: Array = TOS_LINES[st]
+		lines.append(opts[day % opts.size()][solo])
 
 
 # ---------------------------------------------------------------- Habilidades

@@ -2033,3 +2033,38 @@ Código: `scripts/prologue/Huida.gd`, escena `scenes/prologue/Huida.tscn`. Todo 
 
 ## Lombardía de noche
 El barrio se llama **Lombardía**. Una noche (desde el día 8, una sola vez) lo despierta el frío: Lukas no está. Sale a buscarlo a la una y diez, por el barrio de noche (los del kiosco, las muchachas del poste, el celador, el billar). Lukas está sentado frente al carrito de los perros calientes, con media salchicha adentro. Al acostarse otra vez sigue la misma noche.
+
+## El final de la bicicleta, la tos, Lorena, todo animado y la feria (2026-10-22)
+
+**Esta sección manda sobre lo anterior del final y del cumpleaños.** Lo pidió el usuario después del recorrido de los 50 días: "la idea es que el protagonista alcance a comprar la bicicleta para el cumpleaños de Victoria pero no alcance a entregársela porque la muerte de Lukas ya lo degradó".
+
+- **El final:**
+  - Con $150.000 en la alcancía sale el encargo "La bicicleta de Victoria": Don Efraín, en el Parque, la consigue (`Conversations._comprar_bici`). Es verde agua, con canasta y timbre: el color que ella le explicó en una visita. Sale empujándola del manubrio y queda envuelta en bolsas negras, con un moño de cinta de casete, al lado del cambuche (`assets/barrio/bici_envuelta.png`, `SleepSpot`).
+  - El último sueño es siempre la noche del 49 (`NightSequence._dream_when("final")`), y esa noche él no se despierta. Si hay tos, a las cuatro de la mañana se le calla. Samuel lo encuentra con el collar de Lukas y, si la compró, con la bicicleta al lado.
+  - **El "—Sí." pasa en la última visita** (domingo 49, la víspera del cumpleaños; `Conversations._ultima_visita`): ella llega con un gorro de cumpleaños de papel "para practicar", le pone la mano en la frente ("está caliente"), le pregunta si mañana viene y "¿Puedo decirle papá?". Sin visitas, no habla nunca.
+  - En el epílogo, Germán le lleva lo que él alcanzó a dejar: la bicicleta, o los colores, o el clavel con el dibujo. Si él le dijo que sí, ella pregunta "—¿Y mi papá? Ayer me dijo que sí."
+- **La tos** (`GameState._tos_noche`, `tos_stage`):
+  - Sale de dormir en la calle y crece cada noche: más si se mojó, si no tiene cobija o si tiene hambre; menos en la pensión o si comió algo caliente. No se quita nunca.
+  - Con Lukas vivo no pasa de la tos de pecho (65). Cuando Lukas se muere, él deja de cuidarse y sube 7 por noche: fiebre, sangre en el pañuelo.
+  - Se ve y se oye: le dan ataques en la calle (se para, se dobla, tose; Lukas se sienta a mirarlo), hay líneas en la mañana y el resumen de la noche dice "Pecho: tranquilo / tose / le silba / le duele". Lorena se entera y lo llama por eso también.
+- **Lorena** (`scripts/systems/LorenaLlamadas.gd`): 46 llamadas en orden, todas distintas, más 10 que se cuelan cuando pasa algo (la cédula, el trabajo, las visitas, la denuncia, Lukas enfermo, el torneo, la tos, Lukas muerto, la bicicleta, la víspera). Todas buscan joderle la vida y nunca traen nada bueno. Algunas tienen consecuencias:
+  - la foto en el grupo del barrio: ese día pedir rinde la mitad;
+  - la llamada al cuadrante: ese día hay redada;
+  - la llamada a la panadería: ese día Germán no le da trabajo;
+  - la de las visitas: el domingo siguiente son veinte minutos y con libreto.
+
+  Si él cuelga, ella vuelve a llamar, cada vez con otra (23); cuando se le acaba el repertorio, deja de llamar. Ponerle el celular a Lukas sirve en todas mientras Lukas viva (10 reacciones distintas).
+- **Todo animado** (`tools/art/draw_protagonist_acciones.py`, `Player.act()`):
+  - **La plata:** recibirla (la mano, el billete, el bolsillo, "+$5.000" en dorado y el número que rueda) y pagar.
+  - **El cuerpo:** el golpe, caerse y levantarse, toser, recoger, comer, beber, darle de comer a Lukas, acariciarlo, el celular en la oreja, las manos arriba (la requisa), sacudirse el agua.
+  - **Los gestos:** asentir, negar, señalar y encogerse de hombros salen solos cuando el narrador los cuenta.
+  - **La calle:** la moto que lo tumba si se le atraviesa (los carros frenan y pitan), el cobrador del gota a gota que llega caminando, los escobazos con escoba de verdad, la lluvia que lo deja escurriendo.
+- **Ningún texto encima de otro, también en la calle:** lo que flota en el mundo (lo que dice la gente, HABLAR, los pitos, "+$5.000") se esconde mientras quede debajo de la barra de arriba, del aviso, del narrador, del diálogo o del celular (`Hud._hide_world_texts`, grupo `texto_mundo`).
+- **La feria, redibujada entera** (`tools/art/draw_feria_juegos.py`):
+  - **Por dentro, donde se camina:** el carrusel con techo de franjas y caballitos, el pabellón de los chocones, la montaña de madera con su carrito, la rueda con cabinas, los puestos y el arco de la entrada.
+  - **Chocones:** pista de lámina antideslizante; los otros carros manejan solos y el niño de la cachucha lo persigue.
+  - **Carrusel:** la sortija, que se agarra al pasar por el brazo.
+  - **Montaña:** subida con cadena, carrilera, soportes de madera y la ciudad de fondo.
+  - **Dardos:** el puesto completo, con los globos que revientan y el dardo que queda clavado.
+  - **Garra:** la máquina con vidrio, peluches y el hueco; a veces el premio se resbala.
+  - **Rueda:** el barrio desde la cabina, él de espaldas y la terraza de la fiesta de antes.

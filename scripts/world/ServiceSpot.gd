@@ -23,6 +23,7 @@ func _ready() -> void:
 	s.shape = r
 	add_child(s)
 	_hint = Label.new()
+	_hint.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_hint.text = hint
 	_hint.add_theme_font_override("font", FONT)
 	_hint.add_theme_font_size_override("font_size", 8)

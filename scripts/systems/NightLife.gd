@@ -99,6 +99,7 @@ func _setup() -> void:
 				_shops.append([n, CLOSES[prefix]])
 	for spec in NEON.get(_scene.name, []):
 		var lab := Label.new()
+		lab.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 		lab.text = spec[0]
 		lab.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 		lab.add_theme_font_size_override("font_size", 8)
@@ -252,6 +253,7 @@ func _spawn(spec: Array) -> Node2D:
 		npc.add_child(torch)
 	if spec[0].begins_with("noche_kiosco"):
 		var notes := Label.new()  # la música del parlante
+		notes.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 		notes.text = "~ ~"
 		notes.add_theme_font_override("font", load("res://assets/fonts/PressStart2P.ttf"))
 		notes.add_theme_font_size_override("font_size", 8)

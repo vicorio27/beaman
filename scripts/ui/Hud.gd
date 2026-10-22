@@ -122,8 +122,59 @@ func _label(pos: Vector2) -> Label:
 	return l
 
 
+## La plata no salta: rueda hasta el número nuevo, dorada si entró y roja si salió.
+var _shown_money := -1.0
+var _money_tween: Tween
+
+
+func _roll_money(to: int) -> void:
+	if _shown_money < 0.0:
+		_shown_money = float(to)
+		_money.text = "$%d" % to
+		return
+	if int(_shown_money) == to:
+		return
+	if _money_tween:
+		_money_tween.kill()
+	var up := float(to) > _shown_money
+	_money.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35) if up else Color(1.0, 0.5, 0.45))
+	_money_tween = create_tween()
+	_money_tween.tween_method(func(v: float) -> void:
+		_shown_money = v
+		_money.text = "$%d" % int(round(v)), _shown_money, float(to), 0.7).set_ease(Tween.EASE_OUT)
+	_money_tween.tween_callback(func() -> void: _money.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85))).set_delay(0.25)
+
+
 func _process(_delta: float) -> void:
 	_clock.text = TimeManager.clock_text()
+	_hide_world_texts()
+
+
+## Ningún texto encima de otro: lo que se escribe en la calle (lo que dice la gente, los avisos de
+## HABLAR, el pito de los carros, "+$5.000": el grupo "texto_mundo") no se ve mientras quede debajo de la
+## barra de arriba, del aviso del centro, del narrador, del diálogo o del celular.
+func _hide_world_texts() -> void:
+	var busy: Array[Rect2] = [Rect2(0, 0, 320, 31)]
+	if _toast.modulate.a > 0.02:
+		busy.append(Rect2(_toast.position, _toast.size))
+	if Narrator._panel and Narrator._panel.visible:
+		busy.append(Narrator._panel.get_global_rect())
+	if Dialogue.active and Dialogue._box:
+		busy.append(Dialogue._box.get_global_rect().grow_side(SIDE_TOP, 14.0))
+	if Phone.ringing():
+		busy.append(Rect2(176, 108, 112, 52))
+	for n in get_tree().get_nodes_in_group("texto_mundo"):
+		var lab := n as Label
+		if lab == null or not lab.is_inside_tree():
+			continue
+		var xf := lab.get_global_transform_with_canvas()
+		var r := Rect2(xf.origin, lab.size * xf.get_scale())
+		var hit := false
+		for b in busy:
+			if b.intersects(r):
+				hit = true
+				break
+		lab.self_modulate.a = 0.0 if hit else 1.0
 
 
 func _refresh() -> void:
@@ -131,7 +182,7 @@ func _refresh() -> void:
 	var low := GameState.hunger < 40.0
 	for i in SEGMENTS:
 		_segs[i].color = (Color(0.86, 0.36, 0.26) if low else Color(0.9, 0.74, 0.36)) if i < filled else Color(0.25, 0.22, 0.24)
-	_money.text = "$%d" % GameState.money
+	_roll_money(GameState.money)
 	_mood.texture = MOOD_ICONS[GameState.mood_level()]
 	var company := 100.0 - GameState.loneliness
 	var lit := ceili(company / (100.0 / 8))

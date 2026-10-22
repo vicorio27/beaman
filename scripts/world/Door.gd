@@ -34,6 +34,7 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_hint = Label.new()
+	_hint.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_hint.text = "TOCAR" if target_scene == "" else ("SALIR" if push_dir.y > 0 else "ENTRAR")
 	_hint.add_theme_font_override("font", FONT)
 	_hint.add_theme_font_size_override("font_size", 8)

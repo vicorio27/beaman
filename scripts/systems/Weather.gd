@@ -152,6 +152,7 @@ func _process(delta: float) -> void:
 		var p := get_tree().get_first_node_in_group("player") as Node2D
 		if p and shelter_for(p.position).distance_to(p.position) > 16.0:
 			GameState.change_mood(-0.5)
+			GameState.flags["bajo_lluvia_hasta"] = TimeManager.minutes + 25.0  # escurre (Player._rain_tick)
 
 
 func _lightning() -> void:

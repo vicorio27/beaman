@@ -129,6 +129,7 @@ static func _cobro() -> Array:
 		g.raise_bond("marta")
 		g.change_mood(10.0)
 		f["gota_pagada"] = true
+		f["cobro_escena"] = "paga"  # en la calle, al empezar el día, se ve (QuestDirector._cobrador)
 		lines.append(TenisHistoria.TEXTOS["cobro_paga"])
 	else:
 		var had := g.money
@@ -142,6 +143,7 @@ static func _cobro() -> Array:
 		g.inventory_changed.emit()
 		g.change_mood(-15.0)
 		f["gota_mochila"] = true
+		f["cobro_escena"] = "lleva" if lost > 0 or had > 0 else "nada"
 		lines.append(TenisHistoria.TEXTOS["cobro_lleva"] % TenisData.money(had) if lost > 0 or had > 0 else TenisHistoria.TEXTOS["cobro_nada"])
 	return lines
 

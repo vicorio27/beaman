@@ -85,6 +85,7 @@ func _ready() -> void:
 	else:
 		_sprite.play("walk_down" if dir.y > 0 else "walk_up")
 	_bubble = Label.new()
+	_bubble.add_to_group("texto_mundo")  # (Hud: no se monta sobre otro texto)
 	_bubble.add_theme_font_override("font", FONT)
 	_bubble.add_theme_font_size_override("font_size", 8)
 	_bubble.add_theme_constant_override("outline_size", 3)

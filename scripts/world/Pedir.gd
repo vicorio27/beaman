@@ -180,6 +180,10 @@ var _night := false
 var _specials: Dictionary = {}  # los especiales del día y los de la noche, juntos
 var _streak := 0
 var _streaks := 0
+## Él, sentado en el andén, y el vaso: la moneda vuela al vaso; si le pegan, se cae y se vuelve a sentar.
+var _me: AnimatedSprite2D
+var _cup: Sprite2D
+var _coin_sfx: AudioStreamPlayer
 
 
 ## La regla de un tipo (de la tabla o de los especiales): [fila, tinte, {acción: regla}].
@@ -252,14 +256,20 @@ func _build() -> void:
 		add_child(s)
 	var me := AnimatedSprite2D.new()
 	me.sprite_frames = CharacterFrames.protagonist()
-	me.play("idle_down")
+	me.play("sit_down")  # sentado en el andén, como dice el narrador
 	me.position = SEAT + Vector2(0, -8)
 	add_child(me)
+	_me = me
 	var cup := Sprite2D.new()
 	cup.texture = load("res://assets/items/vaso.png")
 	cup.position = SEAT + Vector2(14, 0)
 	cup.scale = Vector2(0.7, 0.7)
 	add_child(cup)
+	_cup = cup
+	_coin_sfx = AudioStreamPlayer.new()
+	_coin_sfx.stream = load("res://assets/audio/cuerpo/monedas.wav")
+	_coin_sfx.volume_db = -6.0
+	add_child(_coin_sfx)
 	var lukas := Sprite2D.new()
 	lukas.texture = Lukas.cell(3, 0)
 	lukas.position = SEAT + Vector2(-16, -2)
@@ -440,6 +450,7 @@ func _choose(action: String) -> void:
 			amount = int(amount * 1.5)
 		got += amount
 		if amount > 0:
+			_coin_to_cup(amount)
 			_streak += 1
 			if _streak % 3 == 0:
 				got += 1000
@@ -457,6 +468,40 @@ func _choose(action: String) -> void:
 			_robbed(sp, action == "defender")
 
 
+## La plata vuela de la mano del que pasa al vaso (más monedas entre más plata) y suena.
+func _coin_to_cup(amount: int) -> void:
+	if _cup == null:
+		return
+	var from := _cup.position + Vector2(40, -30)
+	if current.has("sprite") and is_instance_valid(current["sprite"]):
+		from = (current["sprite"] as Node2D).position + Vector2(0, -16)
+	var count := 1 if amount < 1000 else (2 if amount < 3000 else 3)
+	for k in count:
+		var c := ColorRect.new()
+		c.size = Vector2(3, 3)
+		c.color = Color(0.92, 0.78, 0.3) if amount < 2000 else Color(0.43, 0.67, 0.38)  # moneda o billete
+		c.position = from
+		c.z_index = 20
+		add_child(c)
+		var t := c.create_tween()
+		t.tween_interval(k * 0.08)
+		t.tween_method(func(v: float) -> void:
+			c.position = from.lerp(_cup.position + Vector2(-1, -6), v) - Vector2(0, sin(v * PI) * 16.0), 0.0, 1.0, 0.45)
+		t.tween_callback(c.queue_free)
+	_coin_sfx.play()
+
+
+## Le pegan sentado: se va de lado al piso, se queda, y se vuelve a sentar.
+func _hit_me() -> void:
+	if _me == null:
+		return
+	_me.sprite_frames = CharacterFrames.acciones()
+	_me.play("caer")
+	await _me.animation_finished
+	_me.sprite_frames = CharacterFrames.protagonist()
+	_me.play("sit_down")
+
+
 ## Le roban: se lleva parte de lo juntado. Si se paró a pelear y perdió, además le pegan.
 func _robbed(sp: Dictionary, fought: bool) -> void:
 	var lost := int(got * float(sp["rob"]) / 100.0) * 100
@@ -465,6 +510,7 @@ func _robbed(sp: Dictionary, fought: bool) -> void:
 		GameState.change_mood(-6.0)
 		GameState.flags["violencia"] = true
 		_me_line.text = HIT_LINES[randi() % HIT_LINES.size()]
+		_hit_me()
 		var shake := create_tween()
 		for k in 6:
 			shake.tween_property(self, "position", Vector2(randf_range(-3, 3), randf_range(-2, 2)), 0.04)
@@ -485,6 +531,10 @@ func _finish() -> void:
 	_type_label.text = ""
 	var line := "($%d. Leyó bien a la gente. Casi siempre.)" % got if got > 0 else \
 		"(Cero pesos. Hoy la gente venía blindada.)"
+	if GameState.flags.get("lorena_grupo_dia", -1) == GameState.day and got > 0:
+		# Lorena lo puso en el grupo del barrio (LorenaLlamadas "grupo"): la mitad.
+		got /= 2
+		line = "($%d. La mitad de lo que daba la cara. Una señora le mostró el celular a otra y las dos lo miraron a él.)" % got
 	await Dialogue.talk([["", line]])
 	GameState.add_money(got)
 	TimeManager.skip(1.0)

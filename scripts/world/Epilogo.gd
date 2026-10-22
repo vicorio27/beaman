@@ -96,7 +96,7 @@ func _run() -> void:
 	for sc in SCENES:
 		_show(sc)
 		await get_tree().create_timer(1.2).timeout
-		await Dialogue.talk(sc[3])
+		await Dialogue.talk(_victoria_lines() if sc[0] == "victoria" else sc[3])
 		await get_tree().create_timer(0.6).timeout
 	_place = "negro"
 	for p in _people:
@@ -110,6 +110,26 @@ func _run() -> void:
 			return
 		await get_tree().process_frame
 	SceneRouter.go(TITLE)
+
+
+## Lo que le llega a Victoria es lo que él alcanzó a dejar: la bicicleta, o lo que había en la alcancía.
+func _victoria_lines() -> Array:
+	var f := GameState.flags
+	var bici: bool = f.get("bici_comprada", false)
+	var saved: int = int(GameState.cambuche.get("alcancia", 0)) if GameState.has_cambuche() else 0
+	var gift := "una bicicleta verde agua, con canasta y timbre" if bici else 		("una caja de colores de cuarenta y ocho, comprada con la plata de una media" if saved >= 40000 else "un clavel y un dibujo de palitos: él y Lukas")
+	var lines := [["", "29 de octubre. Doce años. Le llega %s. La trae Don Germán." % gift],
+		["", "Tiene una tarjeta, con letra de adulto que escribe despacio: \"Feliz cumpleaños. El del perro.\""],
+		["VICTORIA", "—¿Y mi papá? Ayer me dijo que sí." if f.get("dijo_si", false) else "—¿Y él? ¿Por qué no vino?"],
+		["DON GERMAN", "—... Le tocó irse lejos, mija. Pero le dejó esto."]]
+	if bici:
+		lines.append(["", "Ella da una vuelta en la bicicleta por el Parque. Pasa por el árbol de flores amarillas. Toca el timbre dos veces."])
+		lines.append(["", "Una para él. Otra para el perro."])
+	else:
+		lines.append(["", "Se sienta en la banca verde con el regalo en las piernas. Lo abre despacio, para que le dure."])
+	lines.append(["", "Mira hacia la reja del colegio. Saluda con la mano. Chiquita. A nadie."])
+	lines.append(["", "Algún día alguien le va a contar quién era. Ese día va a ser la única que no diga \"es él\"."])
+	return lines
 
 
 func _show(sc: Array) -> void:
@@ -203,10 +223,11 @@ func _draw() -> void:
 			draw_rect(Rect2(0, 0, 320, 180), Color(0.62, 0.78, 0.92))
 			draw_rect(Rect2(0, 100, 320, 80), Color(0.4, 0.62, 0.32))
 			_tree(Vector2(260, 104))
-			draw_circle(Vector2(140, 156), 9.0, Color(0.15, 0.15, 0.18))  # la bicicleta rosada
-			draw_circle(Vector2(170, 156), 9.0, Color(0.15, 0.15, 0.18))
-			draw_line(Vector2(140, 156), Vector2(160, 142), Color(1, 0.5, 0.7), 3.0)
-			draw_line(Vector2(160, 142), Vector2(170, 156), Color(1, 0.5, 0.7), 3.0)
+			if GameState.flags.get("bici_comprada", false):  # la bicicleta verde agua
+				draw_circle(Vector2(140, 156), 9.0, Color(0.15, 0.15, 0.18))
+				draw_circle(Vector2(170, 156), 9.0, Color(0.15, 0.15, 0.18))
+				draw_line(Vector2(140, 156), Vector2(160, 142), Color(0.55, 0.86, 0.78), 3.0)
+				draw_line(Vector2(160, 142), Vector2(170, 156), Color(0.55, 0.86, 0.78), 3.0)
 			for k in 3:
 				draw_circle(Vector2(60 + k * 14, 60 + sin(_t * 2 + k) * 3), 6.0, [Color(1, 0.4, 0.5), Color(0.5, 0.7, 1), Color(1, 0.9, 0.3)][k])
 		"negro":
