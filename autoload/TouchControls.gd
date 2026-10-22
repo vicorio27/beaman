@@ -174,6 +174,10 @@ func _has_touch() -> bool:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and event.pressed and not _has_touch():
+		Controls.touch_seen()  # ese toque solo los prende
+		get_tree().call_group("ajustes", "_refresh")  # (el título y la pausa dicen cómo quedó)
+		return
 	if _mode == "off" or _mode == "":
 		return
 	if event is InputEventScreenTouch:

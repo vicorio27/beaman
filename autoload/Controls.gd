@@ -52,6 +52,7 @@ static var minigame := false
 static var touch_pref := "auto"
 const SETTINGS := "user://ajustes.cfg"
 const TOUCH_PREFS := ["auto", "si", "no"]
+static var touched := false  # ya cayó un dedo en la pantalla (por si el navegador no avisa que es táctil)
 
 
 static func touch() -> bool:
@@ -59,7 +60,16 @@ static func touch() -> bool:
 		return true
 	if touch_pref == "no":
 		return false
-	return DisplayServer.is_touchscreen_available() or OS.has_feature("web_android") or OS.has_feature("web_ios")
+	return touched or DisplayServer.is_touchscreen_available() or OS.has_feature("web_android") 		or OS.has_feature("web_ios")
+
+
+## Un dedo en la pantalla con los controles apagados: se prenden. En el celular, con el NO puesto no
+## había cómo volver al menú a quitarlo (el NO es para quien juega con teclado o control en una
+## pantalla táctil: ese no la toca).
+static func touch_seen() -> void:
+	touched = true
+	if touch_pref == "no":
+		set_touch_pref("auto")
 
 
 static func set_touch_pref(pref: String) -> void:

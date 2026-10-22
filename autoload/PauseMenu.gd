@@ -24,6 +24,7 @@ var _note: Label
 func _ready() -> void:
 	layer = 115  # encima de todo menos los controles táctiles (120)
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("ajustes")  # (si un dedo prende los controles, la opción se actualiza)
 	_root = Control.new()
 	_root.visible = false
 	add_child(_root)

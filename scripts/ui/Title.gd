@@ -44,6 +44,7 @@ var _head: Array[Control] = []
 
 
 func _ready() -> void:
+	add_to_group("ajustes")  # (si un dedo prende los controles, la opción se actualiza)
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.03, 0.06)
 	bg.size = Vector2(320, 180)
