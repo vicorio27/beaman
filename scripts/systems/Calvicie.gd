@@ -7,7 +7,13 @@ class_name Calvicie
 ##   3  días 39-50  calvo
 
 
+## En un recuerdo de antes (la moto) tiene el pelo de siempre, sea el día que sea.
+static var antes := false
+
+
 static func etapa() -> int:
+	if antes:
+		return 0
 	var d := GameState.day
 	if d <= 12:
 		return 0

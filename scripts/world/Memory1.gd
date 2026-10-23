@@ -26,23 +26,19 @@ var _flash: ColorRect
 
 
 func _ready() -> void:
-	var ts: TileSet = load("res://assets/barrio/barrio_tileset.tres")
-	var ground := TileMapLayer.new()
-	ground.tile_set = ts
-	add_child(ground)
-	for y in H:
-		for x in W:
-			ground.set_cell(Vector2i(x, y), 0, Vector2i([0, 1, 2, 3][(x * 7 + y * 3) % 4], 0))
+	# El patio entero, dibujado (tools/art/draw_recuerdos_lugares.py): la casa, la pila, la ropa colgada, la
+	# cerca con el potrero y la vaca, el palo de mango, la llanta, las gallinas, el arco de dos chanclas.
+	var bg := Sprite2D.new()
+	bg.texture = load("res://assets/recuerdos/patio.png")
+	bg.centered = false
+	bg.z_index = -10
+	add_child(bg)
 	var world := Node2D.new()
 	world.y_sort_enabled = true
 	add_child(world)
-	# La casa a la izquierda (de donde sale), cerco arriba y abajo, algunos árboles.
-	_prop(world, "house_d", Vector2(40, 64))
+	# Abajo, la cerca va delante de él (por eso no está en el dibujo).
 	for x in range(8, W * 16, 16):
-		_prop(world, "fence_wood", Vector2(x, 18))
 		_prop(world, "fence_wood", Vector2(x, H * 16 + 2))
-	for p in [Vector2(150, 90), Vector2(300, 60), Vector2(380, 150)]:
-		_prop(world, "tree_sparse", p)
 	# Al fondo a la derecha, una luz: hacia ahí se va la pelota.
 	var light := ColorRect.new()
 	light.color = Color(1, 0.97, 0.88, 0.55)
@@ -131,7 +127,8 @@ func _prop(parent: Node, art: String, foot: Vector2) -> void:
 
 func _walls() -> void:
 	var body := StaticBody2D.new()
-	for r in [Rect2(0, 0, W * 16, 22), Rect2(0, H * 16, W * 16, 20), Rect2(-10, 0, 10, H * 16)]:
+	# Arriba, la cerca y la cuerda de la ropa; a la izquierda, la casa con la pila (no se camina por encima).
+	for r in [Rect2(0, 0, W * 16, 40), Rect2(0, 0, 124, 78), Rect2(0, H * 16, W * 16, 20), Rect2(-10, 0, 10, H * 16)]:
 		var cs := CollisionShape2D.new()
 		var shape := RectangleShape2D.new()
 		shape.size = r.size
@@ -155,7 +152,7 @@ func _physics_process(delta: float) -> void:
 		if not _voice_done:
 			_text.text = ""  # solo borra la ayuda "E: patear", nunca la voz
 	_ball.position += _ball_v * delta
-	_ball.position.y = clampf(_ball.position.y, 30.0, H * 16 - 6.0)
+	_ball.position.y = clampf(_ball.position.y, 44.0, H * 16 - 6.0)
 	_ball_v = _ball_v.move_toward(Vector2.ZERO, FRICTION * delta)
 	_spin += _ball_v.x * delta * 0.4
 	_ball.get_node("Ball").rotation = _spin

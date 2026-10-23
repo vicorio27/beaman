@@ -113,7 +113,9 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
     oficina, la esquina, la casa de Guillermo, otra ciudad, la cantina, el cumpleaños y el FIN),
     `draw_fondos.py` (los fondos de los minijuegos que eran rectángulos: la obra, con y sin lluvia; la
     fuente desde arriba y la mano de él), `draw_oficina.py` (la Empresa del sueño de sigilo, en baldosas),
-    `draw_interiores.py` (los ocho interiores: lee la distribución de `PLACES` en `Interior.gd`).
+    `draw_interiores.py` (los ocho interiores: lee la distribución de `PLACES` en `Interior.gd`),
+    `draw_recuerdos_lugares.py` (los lugares de dos recuerdos: el patio de la pelota, `Memory1.gd`, y la calle
+    del día de la Renegade, `FlashbackMoto.gd`; en los de antes él tiene todo el pelo: `Calvicie.antes`).
   - `tools/audio/*.py`: música y efectos sintetizados (`barrio.py`: la música de la vida real, que
     tiene que dar gusto oírla horas; `compose.py`: la de los sueños; `tenis_audio.py`,
     `futbol_audio.py`; `cuerpo_sfx.py`: la tos, las monedas, la caída, la moto, la feria).
