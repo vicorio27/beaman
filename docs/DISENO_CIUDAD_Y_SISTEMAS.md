@@ -2149,3 +2149,14 @@ caja de diálogo la tapaba).
 - **Los techos de la huida** (`Huida.gd`, `_slab`) ya no son bloques lisos: fachada que se repite
   (`techo_0/1.png`, de `draw_fondos.py`): ladrillo, o pañete pintado y descascarado, con el remate de
   concreto y la humedad que baja. Va pegada al mundo (al correr, la pared pasa; no se desliza encima).
+- **Los interiores** (`Interior.gd`): cada uno es una imagen (`tools/art/draw_interiores.py` →
+  `assets/interiores/<id>.png`) que se arma leyendo `PLACES` de `Interior.gd` (tamaño, colores, cada mueble
+  con su posición): el dibujo y los choques no se pueden correr. Para cambiar un mueble de sitio: se cambia
+  en `PLACES` y se vuelve a correr el generador. Detalles: la iglesia de piedra con vitrales, el altar con
+  floreros, el misal olvidado en una banca, la alcancía de las limosnas; la veterinaria con un perro, un
+  gato y un conejo en las jaulas y el afiche de VACUNE; la pensión con papel de colgadura despegado, las
+  puertas 1, 2 y 4 (el 3 es de mala suerte) y dos llaves que no están; el baño con lo que escribieron en la
+  puerta y el espejo manchado; la Defensoría y la Registraduría con la franja institucional, el cordón de
+  la fila y la cabina de FOTO; el estudio con el telón de nubes; la Caverna con la alfombra de confeti,
+  las maquinitas y el gato de Al. Encima, `Interior.gd` pinta solo lo que se mueve (las llamas, el
+  televisor, las pantallas, el turno).

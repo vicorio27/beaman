@@ -108,6 +108,7 @@ const HOURS := {"iglesia": [6, 20], "veterinaria": [8, 19], "pension": [0, 24], 
 var place := {}
 var _t := 0.0
 var _room: Node2D
+var _art: Texture2D  # el cuarto dibujado (se guarda aquí: si no, se suelta antes de pintarse y sale blanco)
 
 
 static func is_open(id: String) -> bool:
@@ -195,6 +196,17 @@ func _process(delta: float) -> void:
 func _draw_room() -> void:
 	var w := float(area_size.x)
 	var h := float(area_size.y)
+	if _art == null:
+		var art := "res://assets/interiores/%s.png" % GameState.flags.get("interior", ["iglesia"])[0]
+		if ResourceLoader.exists(art):
+			_art = load(art)
+	if _art:  # el cuarto dibujado (tools/art/draw_interiores.py); encima, solo lo que se mueve
+		_room.draw_texture(_art, Vector2.ZERO)
+		for p in place["props"]:
+			_moving(p[0], p[1], p[2])
+		if place.get("dark", false):
+			_room.draw_rect(Rect2(0, 0, w, h), Color(0.05, 0.02, 0.1, 0.25))
+		return
 	var fl: Color = place["floor"]
 	var wl: Color = place["wall"]
 	var r := _room
@@ -223,6 +235,28 @@ func _draw_room() -> void:
 			r.draw_rect(Rect2(c.x - 5, c.y - 4, 10, 5), Color(0.9, 0.55, 0.25))
 			r.draw_rect(Rect2(c.x + 3, c.y - 7, 4, 4), Color(0.9, 0.55, 0.25))
 			r.draw_line(Vector2(c.x - 5, c.y - 1), Vector2(c.x - 9, c.y + 3), Color(0.9, 0.55, 0.25))
+
+
+## Lo que se mueve encima del cuarto dibujado: las llamas, el televisor, las maquinitas, el turno.
+func _moving(kind: String, at: Vector2, size: Vector2) -> void:
+	var r := _room
+	match kind:
+		"candles":
+			for k in 6:
+				var x := at.x + 2 + k * 5
+				var fl := 1.0 + sin(_t * 9.0 + k) * 0.5
+				r.draw_rect(Rect2(x, at.y - 1 - fl, 2, 2 + fl), Color(1, 0.75, 0.3))
+				r.draw_rect(Rect2(x, at.y - fl * 0.5, 2, 1), Color(1, 0.95, 0.7))
+		"tv":
+			var tvc := Color.from_hsv(fmod(_t * 0.2, 1.0), 0.4, 0.8)
+			r.draw_rect(Rect2(at + Vector2(2, 2), size - Vector2(4, 6)), tvc)
+			r.draw_rect(Rect2(at + Vector2(2, 2 + fmod(_t * 12.0, size.y - 6)), Vector2(size.x - 4, 1)), tvc.lightened(0.3))
+		"arcade":
+			var sc := Color.from_hsv(fmod(_t * 0.35 + at.x * 0.01, 1.0), 0.7, 0.95)
+			r.draw_rect(Rect2(at + Vector2(3, 5), Vector2(size.x - 6, 11)), sc.darkened(0.5))
+			r.draw_rect(Rect2(at + Vector2(4 + fmod(_t * 20.0 + at.x, size.x - 9), 9), Vector2(2, 2)), sc)
+		"screen":
+			r.draw_string(load("res://assets/fonts/PressStart2P.ttf"), at + Vector2(3, 12), "T-%02d" % (47 + int(_t / 20.0) % 3), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 0.3, 0.25))
 
 
 func _prop(kind: String, at: Vector2, size: Vector2) -> void:
