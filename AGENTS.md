@@ -106,7 +106,9 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
     cancha de cal, los puestos, las palomas, el río, la olla comunitaria; lo pone y lo hace responder
     `scripts/systems/Relleno.gd`), `draw_epilogo.py` (los lugares del epílogo, a pantalla entera, con el
     motor de las viñetas: el entierro bajo el guayacán, la cocina de Brenda, el garaje, lo de Lorena, la
-    oficina, la esquina, la casa de Guillermo, otra ciudad, la cantina, el cumpleaños y el FIN).
+    oficina, la esquina, la casa de Guillermo, otra ciudad, la cantina, el cumpleaños y el FIN),
+    `draw_fondos.py` (los fondos de los minijuegos que eran rectángulos: la obra, con y sin lluvia; la
+    fuente desde arriba y la mano de él).
   - `tools/audio/*.py`: música y efectos sintetizados (`barrio.py`: la música de la vida real, que
     tiene que dar gusto oírla horas; `compose.py`: la de los sueños; `tenis_audio.py`,
     `futbol_audio.py`; `cuerpo_sfx.py`: la tos, las monedas, la caída, la moto, la feria).

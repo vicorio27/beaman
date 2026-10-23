@@ -16,6 +16,9 @@ const POOL_R := Vector2(130, 62)
 const DURATION := 40.0
 const HAND_SPEED := 75.0
 const GRAB_DIST := 7.0
+## La plaza y el pozo (tools/art/draw_fondos.py: 4 cuadros, el agua se mueve) y la mano de él.
+const BG := preload("res://assets/ui/fondos/fuente.png")
+const MANO := preload("res://assets/ui/fondos/fuente_mano.png")
 const COINS := [100, 100, 100, 100, 100, 100, 100, 100, 200, 200, 200, 200, 500, 500, 1000]
 
 var coins: Array = []           # {"pos", "value", "phase"}
@@ -28,6 +31,7 @@ var _guard_t := 3.0
 var _t := 0.0
 var _moved_t := 0.0
 var _splashes: Array = []       # {"pos", "t"}
+var _grab_t := 0.0              # la mano cerrada un momento después de agarrar
 var _guard_sprite: AnimatedSprite2D
 var _guard_mark: Label
 var _hud: Label
@@ -83,6 +87,7 @@ func _intro() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	_grab_t -= delta
 	queue_redraw()
 	if state != "play":
 		return
@@ -133,6 +138,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	get_viewport().set_input_as_handled()
 	_splashes.append({"pos": hand, "t": 0.0})
+	_grab_t = 0.3
 	if guard == "looking":
 		_finish(true)
 		return
@@ -154,13 +160,8 @@ func _apparent(c: Dictionary) -> Vector2:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, W, H), Color(0.55, 0.52, 0.5))           # baldosas de la plaza
-	for x in range(0, int(W), 16):
-		draw_line(Vector2(x, 0), Vector2(x, H), Color(0.5, 0.47, 0.45))
-	for y in range(0, int(H), 16):
-		draw_line(Vector2(0, y), Vector2(W, y), Color(0.5, 0.47, 0.45))
-	_ellipse(POOL_C, POOL_R + Vector2(12, 10), Color(0.72, 0.7, 0.66))  # borde de piedra
-	_ellipse(POOL_C, POOL_R, Color(0.24, 0.42, 0.5))                # agua
+	var fr := int(_t * 3.0) % 4
+	draw_texture_rect_region(BG, Rect2(0, 0, W, H), Rect2(fr * W, 0, W, H))
 	for c in coins:
 		var p := _apparent(c)
 		var big: bool = c["value"] >= 500
@@ -168,19 +169,14 @@ func _draw() -> void:
 		draw_circle(p, 3.5 if c["value"] == 1000 else 2.5, col.darkened(0.25))
 		if int(_t * 4.0 + c["phase"] * 3.0) % 5 == 0:
 			draw_circle(p + Vector2(-1, -1), 1.0, Color(1, 1, 0.9))     # brillo
-	for i in 7:  # ondas
+	for i in 7:  # ondas (las que corren las monedas)
 		var y := POOL_C.y - POOL_R.y + 10 + i * 16 + sin(_t * 2.0 + i) * 3.0
 		var half := POOL_R.x * sqrt(maxf(0.0, 1.0 - pow((y - POOL_C.y) / POOL_R.y, 2.0))) * 0.8
-		draw_line(Vector2(POOL_C.x - half, y), Vector2(POOL_C.x + half, y), Color(0.45, 0.65, 0.75, 0.5))
-	draw_rect(Rect2(POOL_C.x - 8, POOL_C.y - 18, 16, 22), Color(0.78, 0.76, 0.72))  # la columna
-	draw_circle(POOL_C + Vector2(0, -20), 9.0, Color(0.82, 0.8, 0.76))
+		draw_line(Vector2(POOL_C.x - half, y), Vector2(POOL_C.x + half, y), Color(0.7, 0.88, 0.92, 0.25))
 	for s in _splashes:
 		draw_arc(s["pos"], 4.0 + s["t"] * 16.0, 0, TAU, 16, Color(0.85, 0.95, 1.0, 1.0 - s["t"] * 2.0), 1.0)
-	# La mano (piel, con la manga blanca).
-	draw_rect(Rect2(hand.x - 3, hand.y + 4, 6, 14), Color(0.86, 0.84, 0.8))
-	draw_circle(hand, 4.5, Color(0.86, 0.6, 0.5))
-	for k in 4:
-		draw_line(hand + Vector2(-3 + k * 2, -2), hand + Vector2(-3 + k * 2, -6), Color(0.86, 0.6, 0.5), 1.5)
+	# La mano de él (la manga del saco, el puño de la camisa): abierta, o cerrada justo al agarrar.
+	draw_texture_rect_region(MANO, Rect2(hand - Vector2(8, 6), Vector2(16, 28)), Rect2(16 if _grab_t > 0.0 else 0, 0, 16, 28))
 
 
 func _ellipse(c: Vector2, r: Vector2, col: Color) -> void:

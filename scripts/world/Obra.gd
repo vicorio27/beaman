@@ -31,6 +31,8 @@ const WALK := 27.0
 const SHIFT := 110.0                  # segundos de turno
 const DROP_X := 236.0                 # al llegar al andamio
 const PUDDLE := Vector2(150.0, 196.0)   # dónde está el charco de mezcla (x)
+## El lugar (tools/art/draw_fondos.py): de día, o con el cielo cerrado y barro cuando llueve.
+const BG := "res://assets/ui/fondos/%s.png"
 
 var trip := 0
 var stack := BRICKS
@@ -58,6 +60,7 @@ var _brick: Dictionary = {}          # el ladrillo que viene volando: {"p", "v"}
 var _pigeon := false
 ## El giro del turno: "", "lluvia", "ingeniero", "cunado".
 var twist := ""
+var _bg: Sprite2D
 var _penalty := 0
 var _eng_look := false
 var _eng_t := 3.0
@@ -111,6 +114,12 @@ func _ready() -> void:
 	_prompt.add_to_group("under_dialogue")
 	var n := int(GameState.flags.get("obra_turnos", 0))
 	twist = TWISTS[n] if n < TWISTS.size() else TWISTS[1 + (n - TWISTS.size()) % (TWISTS.size() - 1)]
+	_bg = Sprite2D.new()
+	_bg.texture = load(BG % ("obra_lluvia" if twist == "lluvia" else "obra"))
+	_bg.centered = false
+	_bg.hframes = 4
+	_bg.z_index = -1
+	add_child(_bg)
 	if twist == "cunado":
 		_cunado = AnimatedSprite2D.new()
 		_cunado.sprite_frames = _me.sprite_frames
@@ -447,12 +456,8 @@ func _say(line: String) -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 320, 180), Color(0.62, 0.74, 0.86))
-	draw_rect(Rect2(0, 100, 320, 80), Color(0.55, 0.46, 0.36))     # tierra
-	draw_rect(Rect2(0, 140, 320, 40), Color(0.48, 0.4, 0.32))
+	_bg.frame = int(_t * 3.0) % 4
 	if twist == "lluvia":
-		draw_rect(Rect2(0, 0, 320, 180), Color(0.2, 0.25, 0.35, 0.25))
-		draw_rect(Rect2(0, 139, 320, 2), Color(0.7, 0.75, 0.8, 0.6))  # el piso mojado brilla
 		for k in 40:
 			var rx := fposmod(k * 37.0 + _t * 40.0, 330.0)
 			var ry := fposmod(k * 53.0 + _t * 260.0, 180.0)
@@ -460,19 +465,6 @@ func _draw() -> void:
 	if trip == 2:  # el charco de mezcla del tercer viaje
 		draw_rect(Rect2(PUDDLE.x, 139, PUDDLE.y - PUDDLE.x, 4), Color(0.62, 0.62, 0.6))
 		draw_rect(Rect2(PUDDLE.x + 4, 138, PUDDLE.y - PUDDLE.x - 8, 2), Color(0.75, 0.75, 0.72))
-	# El edificio a medio hacer y el andamio.
-	draw_rect(Rect2(250, 30, 70, 110), Color(0.7, 0.66, 0.6))
-	for y in range(36, 140, 18):
-		draw_rect(Rect2(256, y, 14, 10), Color(0.35, 0.38, 0.45))
-		draw_rect(Rect2(290, y, 14, 10), Color(0.35, 0.38, 0.45))
-	for xx in [244.0, 276.0]:
-		draw_line(Vector2(xx, 30), Vector2(xx, 140), Color(0.3, 0.3, 0.32), 2.0)
-	for y in range(40, 140, 25):
-		draw_line(Vector2(244, y), Vector2(276, y), Color(0.3, 0.3, 0.32), 2.0)
-	# La pila de ladrillos de abajo.
-	for i in 5:
-		for j in 3 - i % 2:
-			draw_rect(Rect2(8 + j * 9 + (i % 2) * 4, 132 - i * 5, 8, 4), Color(0.72, 0.32, 0.22))
 	# El viento: rayitas que cruzan.
 	if _event == "wind" and _event_t < 0.0:
 		for k in 6:

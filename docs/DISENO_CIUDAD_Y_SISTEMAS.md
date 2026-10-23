@@ -2119,3 +2119,23 @@ hecho con el motor de las viñetas (luz, manchas, tramado). La gente sigue encim
 Las flores que caen del guayacán las pinta `Epilogo.gd` (de a una, continuas). Ajustes de posición: en el
 garaje Mauricio y el Pecas se abren para que se vea la moto; Victoria, un poco más grande y más arriba (la
 caja de diálogo la tapaba).
+
+
+## Textos que ya no se repiten, y dos fondos nuevos (2026-10-23)
+
+- **El gallo** (`NightLife.gd`, `GALLO`): catorce líneas, una por noche, en orden.
+- **"Oscurece"** (`QuestDirector.gd`, `OSCURECE`): trece maneras de decir que hay que buscar dónde dormir,
+  una por día.
+- **Alejandro** (`Nino.gd`): la primera vez de cada situación es como estaba. Desde la segunda: otra
+  entrada (`OTRA_VEZ`, tres por situación), lo que hace él en corto (`HACE_OTRA_VEZ`) y un remate del niño
+  que va rotando (`REMATES`); los avisos de "cerca, algo pasa" también rotan. El recuerdo de él de niño
+  solo sale la primera vez.
+- Los títulos de misión con voseo que se leía como primera persona ("Conseguí algo para comer") quedan en
+  infinitivo ("Conseguir algo para comer").
+- **La obra** (`Obra.gd`) y **la fuente** (`Fuente.gd`) tienen fondo dibujado (`tools/art/draw_fondos.py`):
+  la obra con la grúa, el edificio a medio hacer con la polisombra, el andamio, la mezcladora que gira y el
+  perro de la obra dormido en los bultos (en la lluvia: cielo cerrado, barro, charcos, la carpa encima de
+  los bultos). La fuente, desde arriba: la plaza de piedra, el borde de bloques, las baldosas del fondo
+  torcidas por el agua, el chorrito del centro. Los brillos del agua son hilos, no puntos (los puntos se
+  confundían con las monedas). La mano es la de él: la manga del saco, el puño de la camisa; se cierra al
+  agarrar.
