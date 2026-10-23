@@ -308,7 +308,49 @@ for px_ in (18, 266):
     d.rectangle([px_, 30, px_ + 6, 130], fill=(70, 66, 74, 255))
     for _ in range(40):
         d.point((random.randint(px_ + 1, px_ + 35), random.randint(32, 128)), fill=(100, 96, 102, 255))
-d.text((24, 90), "LILA", font=FONT, fill=(170, 110, 200, 255))
+# El grafiti del pilar: LILA en letras gordas de aerosol (contorno, brillo, chorreados), no una letra
+# de imprenta: a mano, un poco torcido, como lo pinta alguien que se sabe el nombre de memoria.
+LETRAS = {
+    "L": ["##....", "##....", "##....", "##....", "##....", "##....", "##....", "######", "######"],
+    "I": ["##", "##", "##", "##", "##", "##", "##", "##", "##"],
+    "A": [".####.", "##..##", "##..##", "##..##", "######", "######", "##..##", "##..##", "##..##"],
+}
+SPRAY = (190, 120, 214, 255)
+SPRAY_LUZ = (232, 186, 240, 255)
+SPRAY_BORDE = (58, 30, 66, 255)
+tag = set()
+gx = 21
+for i, ch in enumerate("LILA"):
+    gy = 82 + (1 if i % 2 else 0)  # a mano: una letra sube, la otra baja
+    rows = LETRAS[ch]
+    for ry, row in enumerate(rows):
+        for rx, c in enumerate(row):
+            if c == "#":
+                tag.add((gx + rx, gy + ry))
+    gx += len(rows[0]) + 2
+for x_, y_ in tag:  # el contorno: el borde de afuera de las letras
+    for dx_ in (-1, 0, 1):
+        for dy_ in (-1, 0, 1):
+            if (x_ + dx_, y_ + dy_) not in tag:
+                d.point((x_ + dx_, y_ + dy_), fill=SPRAY_BORDE)
+for x_, y_ in tag:
+    d.point((x_, y_), fill=SPRAY_LUZ if (x_ - 1, y_ - 1) not in tag and (x_, y_ - 1) not in tag else SPRAY)
+for x_, n_ in ((22, 5), (30, 3), (35, 7), (45, 2)):  # los chorreados de la pintura
+    y0_ = max(y_ for xx_, y_ in tag if xx_ == x_) + 1
+    d.line([(x_, y0_), (x_, y0_ + n_)], fill=SPRAY)
+    d.point((x_, y0_ + n_ + 1), fill=SPRAY_BORDE)
+# Un corazón chiquito encima, con una tachadura de otro aerosol (el azul del otro pilar).
+CORAZON = [".##.##.", "#######", "#######", ".#####.", "..###..", "...#..."]
+heart = {(31 + rx, 69 + ry) for ry, row in enumerate(CORAZON) for rx, c in enumerate(row) if c == "#"}
+for x_, y_ in heart:
+    for dx_ in (-1, 0, 1):
+        for dy_ in (-1, 0, 1):
+            if (x_ + dx_, y_ + dy_) not in heart:
+                d.point((x_ + dx_, y_ + dy_), fill=SPRAY_BORDE)
+for x_, y_ in heart:
+    d.point((x_, y_), fill=SPRAY)
+d.point((32, 70), fill=SPRAY_LUZ)
+d.line([(29, 77), (40, 67)], fill=(90, 160, 210, 255))  # la tachadura
 d.line([(272, 70), (280, 62), (288, 72), (296, 64)], fill=(90, 160, 210, 255), width=2)
 # Su campamento (eco de la vida real): cartones y una frazada.
 d.polygon([(60, 128), (80, 122), (104, 125), (108, 132), (64, 134)], fill=(150, 124, 86, 255), outline=INK)
