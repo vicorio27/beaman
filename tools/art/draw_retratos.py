@@ -206,10 +206,13 @@ def hair(b, g, front):
     style = p.get("pelo", "corto")
     if style == "ninguno":
         return None
+    calv = p.get("calvicie", 0)  # él, con los días: 1 entradas, 2 la coronilla pelada, 3 calvo
+    if calv >= 3:
+        style = "calvo"
     c = p.get("pelo_color", (46, 38, 42))
     t3 = tones(c, 0.55, 1.35)
     cx, cy, rx, ry = g["cx"], g["cy"], g["rx"], g["ry"]
-    face_poly = FACE_HIGH if style in ("engominado", "calvo") else (FACE_F if p.get("mujer") or p.get("nino") else FACE_M)
+    face_poly = FACE_HIGH if style in ("engominado", "calvo") or calv >= 2 else (FACE_F if p.get("mujer") or p.get("nino") else FACE_M)
     face = b.M(lambda d: d.poly(face_poly))
     grow = {"rizado": 4.5, "afro": 0, "corto": 1.6, "engominado": 1.0, "rapado": 0.5, "trenzas": 1.4}.get(style, 2.4)
     cap = b.M(lambda d: d.ell(cx, cy - 1, rx + grow, ry + grow)) & ~face
@@ -249,6 +252,11 @@ def hair(b, g, front):
         m = cap | (b.M(lambda d: [d.ell(cx + np.cos(a) * 21, cy - 2 + np.sin(a) * 21, 6, 6) for a in np.linspace(3.3, 6.2, 9)]) & ~face)
     else:
         m = cap
+        if calv == 1:  # las entradas: se le va la frente para atrás en las sienes
+            m = m & ~b.M(lambda d: (d.ell(cx + 1, cy - ry + 9, rx * 0.6, 7), d.ell(cx - 9, cy - ry + 11, 6, 6),
+                                    d.ell(cx + 11, cy - ry + 12, 6, 6)))
+        elif calv == 2:  # la coronilla pelada: queda la franja de los lados y la de atrás
+            m = m & ~b.M(lambda d: d.ell(cx + 2, cy - ry + 2, rx * 0.8, ry * 0.62))
         if style in ("melena", "largo", "linda"):  # las cortinas a los lados
             low = {"melena": 76, "largo": 100, "linda": 104}[style]
             m = m | b.M(lambda d: (d.poly([(22, 36), (33, 30), (34.5, 44), (33, 60), (35, low), (22, low - 2), (19, 60)]),
@@ -809,6 +817,8 @@ CAST = {
            "pelo_color": (40, 34, 34), "canas": 0.12, "barba": True, "bigote": True, "barba_color": (58, 50, 48),
            "ropa": (82, 86, 106), "tipo": "saco", "camisa": (206, 200, 184), "corbata": (206, 48, 52),
            "fondo": (60, 90, 140), "ojeras": True},  # como en el mapa: saco gris grande, corbata roja floja
+    # Él, quedándose calvo con los días (Calvicie.gd escoge cuál): el_c1, el_c2, el_c3.
+    "el_c1": None, "el_c2": None, "el_c3": None,
     "german": {"piel": "clara", "pelo": "calvo", "pelo_color": (190, 186, 180), "bigote": True, "viejo": True,
                "barba_color": (200, 196, 190), "ropa": (200, 176, 136), "tipo": "delantal", "delantal": (238, 234, 226),
                "fondo": (170, 120, 60), "sonrisa": True},
@@ -1059,14 +1069,15 @@ def main():
             if pid == "iguales" or pid.startswith("lukas"):
                 im = mannequin() if pid == "iguales" else lukas(pid[6:] if pid != "lukas" else "normal")
             else:
-                im = portrait(CAST[pid], seed=list(CAST).index(pid))
+                im = portrait(CAST[pid], seed=list(CAST).index("el" if pid.startswith("el_c") else pid))
             sheet.paste(im, ((k % cols) * W, (k // cols) * H), im)
         sheet.resize((sheet.width * 3, sheet.height * 3), Image.NEAREST).save(args[1])
         return
     for i, (pid, p) in enumerate(CAST.items()):
         if args and pid not in args:
             continue
-        portrait(p, seed=i).save(OUT / f"{pid}.png")
+        seed = list(CAST).index("el") if pid.startswith("el_c") else i  # (la misma cara que el de siempre)
+        portrait(p, seed=seed).save(OUT / f"{pid}.png")
     if not args or "iguales" in args:
         mannequin().save(OUT / "iguales.png")
     if not args or "lukas" in args:
@@ -1074,6 +1085,9 @@ def main():
             lukas(mode).save(OUT / ("lukas.png" if mode == "normal" else f"lukas_{mode}.png"))
     print("retratos:", len(args) or len(CAST), OUT)
 
+
+for _k in (1, 2, 3):
+    CAST["el_c%d" % _k] = {**CAST["el"], "calvicie": _k}
 
 if __name__ == "__main__":
     main()

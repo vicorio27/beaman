@@ -191,7 +191,7 @@ var _did := {}
 
 func _ready() -> void:
 	o = OPPONENTS[fight]
-	me = _wrestler("res://assets/prologue/player.png", SideFrames.PLAYER, 1.0, Color(1, 1, 1), Vector2(90, 136), 1)
+	me = _wrestler(Calvicie.path("res://assets/prologue/player.png"), SideFrames.PLAYER, 1.0, Color(1, 1, 1), Vector2(90, 136), 1)
 	me.hp = 100.0
 	me.max = 100.0
 	# Cada uno con su muñeco (tools/art/draw_luchadores.py); "sheet" es la hoja de la que sale (la tabla de cuadros).

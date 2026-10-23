@@ -113,12 +113,14 @@ static func protagonist() -> SpriteFrames:
 ## con la suela donde la de caminar. Las dibuja tools/art/draw_protagonist_acciones.py, que también
 ## escribe la tabla de animaciones (protagonist_acciones.json). Ver Player.act().
 static var _acciones: SpriteFrames
+static var _acciones_etapa := -1
 
 
 static func acciones() -> SpriteFrames:
-	if _acciones:
+	if _acciones and _acciones_etapa == Calvicie.etapa():
 		return _acciones
-	var tex: Texture2D = load("res://assets/characters/protagonist_acciones.png")
+	_acciones_etapa = Calvicie.etapa()
+	var tex: Texture2D = Calvicie.tex("res://assets/characters/protagonist_acciones.png")
 	var meta: Dictionary = (load("res://assets/characters/protagonist_acciones.json") as JSON).data
 	var cell := int(meta["cell"])
 	var frames := SpriteFrames.new()
@@ -185,9 +187,9 @@ static func adult(sheet: Texture2D) -> SpriteFrames:
 	return frames
 
 
-static func _adult(col: int, row: int, sheet: Texture2D = PROTAGONIST_ADULT) -> AtlasTexture:
+static func _adult(col: int, row: int, sheet: Texture2D = null) -> AtlasTexture:
 	var t := AtlasTexture.new()
-	t.atlas = sheet
+	t.atlas = sheet if sheet else Calvicie.tex("res://assets/characters/protagonist_adult.png")  # él: el pelo del día
 	t.region = Rect2(col * ADULT_W, row * ADULT_H, ADULT_W, ADULT_H)
 	t.margin = Rect2(0, 0, 0, 10)
 	return t

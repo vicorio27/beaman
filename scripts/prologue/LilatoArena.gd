@@ -41,7 +41,7 @@ func _ready() -> void:
 	add_child(bg)
 
 	player = FightPlayer.new()
-	player.sheet = load("res://assets/prologue/player.png")
+	player.sheet = Calvicie.tex("res://assets/prologue/player.png")
 	player.max_hp = 50
 	player.speed = 62.0
 	player.position = Vector2(50, 156)

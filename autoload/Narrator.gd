@@ -84,7 +84,7 @@ func say(text: String, top := false, face := "") -> void:
 	_face.visible = face != "" and ResourceLoader.exists("res://assets/portraits/%s.png" % face)
 	if _face.visible:
 		var at := AtlasTexture.new()
-		at.atlas = load("res://assets/portraits/%s.png" % face)
+		at.atlas = load(Calvicie.path("res://assets/portraits/%s.png" % face))  # (si es él: el pelo del día)
 		at.region = Rect2(4, 6, 90, 74)
 		_face.texture = at
 		_face.position = Vector2(_panel.position.x - 4, _panel.position.y - 72) if not top else Vector2(_panel.position.x, _panel.position.y + _panel.size.y)

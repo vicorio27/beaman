@@ -81,6 +81,10 @@ static func _esquina(scene: Node) -> void:
 		["", "(Diana Carolina. La reconoce por cómo camina, aunque esté quieta: como si llegara tarde a algo que no existe.)"]])
 	if GameState.lukas_alive():
 		await Dialogue.talk([["", "(Lukas la conoce. No ladra. Mueve la cola poquito, como pidiendo permiso.)"]])
+	if not is_instance_valid(her):  # (se cambió de lugar mientras hablaban)
+		f.erase("carolina_ocupada")
+		_done()
+		return
 	her.flip_h = true
 	her.play("walk_side")
 	await her.create_tween().tween_property(her, "position", her.position + Vector2(160, 0), 2.4).finished

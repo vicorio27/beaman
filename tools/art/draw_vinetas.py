@@ -44,6 +44,9 @@ from vinetas_motor import (W, H, BAY, Cv, Env, Actor, col, mix, breath, vapor, r
 
 import vinetas_motor  # noqa: E402
 vinetas_motor.POLISH = True   # el acabado: el contorno de los actores, las manchas, el viñeteado
+# Él se va quedando calvo: CALVO=2 o 3 saca las hojas <nombre>_c2/_c3 (Calvicie.gd escoge según el día).
+vinetas_motor.BALD = int(os.environ.get("CALVO", "0"))
+SUF = "_c%d" % vinetas_motor.BALD if vinetas_motor.BALD else ""
 
 OUT = "assets/ui/"
 FRAMES = 4
@@ -1179,6 +1182,7 @@ def moto(f):
     cv.glow(146, 65, 8, (255, 236, 170), 0.6)
     # Él, de veintitantos, sin barba, con chaqueta. Una mano en el tanque.
     a = Actor(cv, env, 156, 93, flip=True)
+    a.clean = True  # (antes: con todo el pelo, sin barba)
     man_stand(a, coat=(50, 50, 62), pants=(64, 76, 110), beard=None, tie=False, near_arm=False)
     a.part((50, 50, 62), lambda d: (_limb(d, (1.0, -45.6), 2.4, (8.6, -39.4), 2.1), _limb(d, (8.6, -39.4), 2.1, (17.0, -33.4), 1.7)))
     a.part(SKIN, lambda d: d.ell(17.6, -33.2, 1.6, 1.4), shade=1)                     # la mano, en el manubrio
@@ -1367,8 +1371,14 @@ def _man_back_seated(cv, env, x, y, coat=COAT, scale=1.0, hair=HAIR, reach=None)
     a.part(SKIN, lambda d: d.rect(-1.6, -30.4, 1.6, -27.4), shade=0)                  # la nuca
     a.part(coat, lambda d: d.rect(-3.2, -28.6, 3.2, -27.0), shade=0)                 # el cuello del saco
     a.part(SKIN, lambda d: (d.ell(-3.6, -32.8, 1.0, 1.6), d.ell(3.6, -32.8, 1.0, 1.6)), shade=0, rim=False)   # las orejas
-    a.part(hair, lambda d: (d.ell(0, -34.0, 3.6, 4.2), d.ell(-2.2, -37.4, 1.6, 1.3), d.ell(2.0, -37.8, 1.5, 1.2),
-                            d.ell(-3.2, -31.6, 1.0, 1.4), d.ell(3.0, -31.4, 1.0, 1.4)), shade=2)
+    if vinetas_motor.BALD >= 2 and hair == HAIR:  # la cabeza pelada, de espaldas: la franja de la nuca
+        a.part(SKIN, lambda d: d.ell(0, -34.0, 3.6, 4.2), shade=2)
+        k = 1.8 if vinetas_motor.BALD == 2 else 1.2
+        a.part(hair, lambda d: (d.ell(0, -31.4, 3.8, k), d.ell(-3.2, -32.2, 1.0, k), d.ell(3.0, -32.0, 1.0, k)), shade=1)
+        a.dot(-1.0, -37.0, a.lit(SKIN, 1.3))
+    else:
+        a.part(hair, lambda d: (d.ell(0, -34.0, 3.6, 4.2), d.ell(-2.2, -37.4, 1.6, 1.3), d.ell(2.0, -37.8, 1.5, 1.2),
+                                d.ell(-3.2, -31.6, 1.0, 1.4), d.ell(3.0, -31.4, 1.0, 1.4)), shade=2)
     return a
 
 
@@ -1898,7 +1908,7 @@ def build_spot(name):
     sheet = Image.new("RGBA", (W * FRAMES, H * len(ROWS)), (0, 0, 0, 0))
     for i, (pose, time, r, s) in enumerate(ROWS):
         sheet.paste(strip(lambda f: fn(pose, time, r, s, f)), (0, i * H))
-    sheet.save(OUT + "vinetas_%s.png" % name)
+    sheet.save(OUT + "vinetas_%s%s.png" % (name, SUF))
     return name
 
 
@@ -1907,7 +1917,7 @@ def build_momentos():
     for i, fn in enumerate(MOMENTOS):
         s = strip(fn)
         sheet.paste(gris(s, 0.35) if i == 3 else s, (0, i * H))
-    sheet.save(OUT + "vinetas_momentos.png")
+    sheet.save(OUT + "vinetas_momentos%s.png" % SUF)
     return "momentos"
 
 

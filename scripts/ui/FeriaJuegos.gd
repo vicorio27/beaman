@@ -95,7 +95,7 @@ func _ready() -> void:
 
 func _img(name: String) -> Texture2D:
 	if not _tex.has(name):
-		_tex[name] = load(ART % name)
+		_tex[name] = Calvicie.tex(ART % name)  # (las que lo tienen a él: según el día, con menos pelo)
 	return _tex[name]
 
 

@@ -186,7 +186,10 @@ func _plan() -> void:
 
 ## Las primeras salen en orden (cada una una vez); después, al azar.
 func _next(key: String, names: Array, rng: RandomNumberGenerator) -> String:
-	var n := int(GameState.flags.get("nino_n_" + key, 0))
+	# Cuenta lo que ya apareció (aunque él haya pasado de largo): si no, el que nunca se detiene vería
+	# todos los días lo mismo.
+	var f := GameState.flags
+	var n := maxi(int(f.get("nino_n_" + key, 0)), int(f.get("nino_aparece_" + key, 0)))
 	return names[n] if n < names.size() else names[rng.randi() % names.size()]
 
 
@@ -240,7 +243,11 @@ func _spawn(kind: String) -> void:
 	if f.get("nino_aviso_dia", -1) != GameState.day:
 		f["nino_aviso_dia"] = GameState.day
 		var hints: Array = HINTS.get(kind, ["(Cerca, alguien chifla bajito. \"¡Pst! ¡Señor del perro!\")"])
-		Narrator.say(hints[_vez(kind) % hints.size()])
+		var shown := int(f.get("nino_aviso_" + kind, 0))
+		f["nino_aviso_" + kind] = shown + 1
+		Narrator.say(hints[shown % hints.size()])
+		var key := "help" if kind in HELP else "hurt"
+		f["nino_aparece_" + key] = int(f.get("nino_aparece_" + key, 0)) + 1
 
 
 ## El que le pega: se le va encima cada tanto. El niño se encoge y se pone rojo un instante.

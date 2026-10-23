@@ -76,7 +76,7 @@ var _summary_t := -1.0  # desde cuándo se ve el resumen del final (-1: no hay)
 # El recogebolas (setup["ballboy"]).
 const BB_HOME := Vector2(TenisData.HALF_W + 2.1, 0.7)  # agachado al lado del poste de la red (abajo, a la derecha)
 const BB_SPEED := 5.2
-const EL_SHEET := preload("res://assets/tenis/el.png")
+var _el_sheet: Texture2D = Calvicie.tex("res://assets/tenis/el.png")  # él, con el pelo que le queda ese día
 var bb_fast := 0           # pelotas traídas rápido (cada una, propina)
 var bb_slow := 0
 var _bb_pos := BB_HOME
@@ -418,7 +418,7 @@ func take_over() -> void:
 	var pid: String = sim.players[0].id
 	var path := "res://assets/tenis/el_%s.png" % pid
 	if ResourceLoader.exists(path):
-		_sheets[pid] = load(path)
+		_sheets[pid] = Calvicie.tex(path)
 		_key[pid] = "el_" + pid
 	_ta[0] = TenisAnim.new(0)
 	_ta[0].persona = "el"   # con la raqueta de otro, pero los gestos son los de él
@@ -952,7 +952,7 @@ func _draw_ballboy() -> void:
 	var row := 0 if _bb_vel.y < -0.1 else 1   # de espaldas si va para arriba
 	draw_circle(feet + Vector2(0, 0.5), 3.0, Color(0, 0, 0, 0.28))
 	var src := Rect2(Vector2(col(pose) * CELL.x, row * CELL.y), CELL)
-	draw_texture_rect_region(EL_SHEET, Rect2(feet - FEET, CELL), src)
+	draw_texture_rect_region(_el_sheet, Rect2(feet - FEET, CELL), src)
 	if _bb_has and _bb_pick <= 0.0:  # la pelota en la mano
 		draw_circle(feet + Vector2(5, -14), 1.5, Color(0.85, 0.95, 0.25))
 

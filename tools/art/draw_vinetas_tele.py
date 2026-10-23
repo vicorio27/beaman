@@ -19,7 +19,7 @@ from vinetas_motor import (W, H, Cv, Env, Actor, col, mix, breath, vapor, man_st
                            COAT, PANTS, HAIR, SKIN, WHITE, BLACK)
 from draw_vinetas import FONT, frame, small_man, _man_back_seated, _woman  # noqa: E402  (prende el acabado)
 
-OUT = "assets/ui/vinetas_tele.png"
+OUT = "assets/ui/vinetas_tele%s.png"  # (CALVO=2/3: él, quedándose calvo; ver draw_vinetas.py)
 X0, Y0, SW, SH = 64, 9, 112, 62   # la pantalla grande
 FRAMES = 4
 
@@ -510,7 +510,8 @@ def main():
     sheet = Image.new("RGBA", (W * FRAMES, H * len(PROGRAMAS)), (0, 0, 0, 0))
     for i in range(len(PROGRAMAS)):
         sheet.paste(row(i), (0, i * H))
-    sheet.save(OUT)
+    from draw_vinetas import SUF
+    sheet.save(OUT % SUF)
     print("tele: %d programas" % len(PROGRAMAS))
 
 

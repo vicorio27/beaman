@@ -96,7 +96,7 @@ const IDLE_LINES := [
 
 func _ready() -> void:
 	_me = AnimatedSprite2D.new()
-	_me.sprite_frames = SideFrames.build(load("res://assets/prologue/player.png"), SideFrames.PLAYER)
+	_me.sprite_frames = SideFrames.build(Calvicie.tex("res://assets/prologue/player.png"), SideFrames.PLAYER)
 	_me.offset = Vector2(0, -22)
 	add_child(_me)
 	var ui := CanvasLayer.new()

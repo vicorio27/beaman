@@ -25,6 +25,7 @@ from PIL import Image, ImageDraw
 W, H, SS = 240, 100, 4
 BAYER = (np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) + 0.5) / 16.0
 BAY = np.tile(BAYER, (H // 4 + 1, W // 4 + 1))[:H, :W]
+BALD = 0         # él se va quedando calvo (2: la coronilla pelada, 3: calvo): ver tools/art/calvicie.py
 POLISH = False   # el acabado (ver arriba): lo prenden draw_vinetas.py y draw_vinetas_tele.py
 # El tramado de las manchas: el mismo Bayer, con cada celda de 2x2 (manchitas, no puntos sueltos).
 BAY2 = np.tile(np.kron(BAYER, np.ones((2, 2))), (H // 8 + 1, W // 8 + 1))[:H, :W]
@@ -437,13 +438,26 @@ def _head(a, cx, cy, look, hair_only=False, lying=False, hair=None, beard=None):
     rx, ry = (4.0, 3.4) if lying else (3.4, 4.0)
     lx, ly = look
     a.part(SKIN, lambda d: d.ell(cx, cy, rx, ry), shade=1)
-    if hair_only:
+    if BALD >= 2 and hair == HAIR and not getattr(a, "clean", False):  # él, ya pelado arriba (el de antes, no): queda la franja (de lado y atrás)
+        k = 1.7 if BALD == 2 else 1.1
+        if hair_only:  # de espaldas: la franja de la nuca
+            a.part(hair, lambda d: d.ell(cx, cy + ry * 0.55, rx + 0.4, k), shade=1)
+        elif abs(lx) < 0.3:  # de frente: las dos franjas encima de las orejas
+            a.part(hair, lambda d: (d.ell(cx - rx + 0.4, cy + 0.6, 1.0, k), d.ell(cx + rx - 0.4, cy + 0.6, 1.0, k)), shade=1)
+        else:  # de lado: la franja de atrás
+            a.part(hair, lambda d: d.ell(cx - lx * 2.4, cy + 0.8, 1.6, k + 0.4), shade=1)
+        a.dot(cx - lx * 0.6, cy - ry + 1.0, a.lit(SKIN, 1.3))  # el brillito de la calva
+        if hair_only:
+            return
+        hair = None
+    if hair is not None and hair_only:
         a.part(hair, lambda d: (d.ell(cx, cy, rx + 0.6, ry + 0.5), d.ell(cx - 2.4, cy - 2.6, 1.6, 1.4),
                                 d.ell(cx + 2.2, cy - 2.8, 1.5, 1.3)))
         return
     # El pelo: atrás y arriba de donde mira (despeinado: mechones que se salen).
     bx, by = cx - lx * 1.5, cy - ly * 1.5 - 0.6
-    a.part(hair, lambda d: (d.ell(bx, by, rx + 0.4, ry + 0.2), d.ell(bx - lx * 2.4 + 0.6, by - 3.0, 1.7, 1.4),
+    if hair is not None:
+        a.part(hair, lambda d: (d.ell(bx, by, rx + 0.4, ry + 0.2), d.ell(bx - lx * 2.4 + 0.6, by - 3.0, 1.7, 1.4),
                             d.ell(bx + 1.8, by - 3.2, 1.5, 1.2), d.ell(bx - lx * 3.4, by + 1.0, 1.4, 1.6)))
     # La piel de la cara (sin cara) y la oreja, al lado.
     fx, fy = cx + lx * 1.2, cy + ly * 1.2 + 0.4

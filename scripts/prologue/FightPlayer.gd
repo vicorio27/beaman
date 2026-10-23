@@ -83,7 +83,7 @@ func equip(kind: String) -> void:
 	weapon = kind
 	_uses = WEAPONS[kind]["uses"]
 	if not _weapon_frames.has(kind):
-		_weapon_frames[kind] = SideFrames.build(load(WEAPONS[kind]["sheet"]), SideFrames.PLAYER)
+		_weapon_frames[kind] = SideFrames.build(Calvicie.tex(WEAPONS[kind]["sheet"]), SideFrames.PLAYER)
 	set_overlay(_weapon_frames[kind])
 
 

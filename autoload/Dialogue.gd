@@ -311,7 +311,7 @@ func _show_line() -> void:
 	_text.add_theme_color_override("font_color", color)
 	_portrait.visible = not info.is_empty()
 	if _portrait.visible:
-		_portrait.texture = load("res://assets/portraits/%s.png" % info[0])
+		_portrait.texture = load(_face(info[0]))
 		_portrait.modulate = Color(0.8, 0.88, 1.0) if who == INNER else Color.WHITE
 		_set_sameness(info[0])
 	_portrait2.visible = false
@@ -359,8 +359,8 @@ func _show_face_off(line, info: Array) -> void:
 	if line is Array and line.size() > 2 and str(line[2]) != "" and not face_off.has(str(line[2])):
 		faces[1 if right else 0] = line[2]
 	_portrait.material = null
-	_portrait.texture = load("res://assets/portraits/%s.png" % faces[0])
-	_portrait2.texture = load("res://assets/portraits/%s.png" % faces[1])
+	_portrait.texture = load(_face(faces[0]))
+	_portrait2.texture = load(_face(faces[1]))
 	_portrait.position = Vector2(46, 24)
 	_portrait2.position = Vector2(178, 24)
 	_portrait.visible = true
@@ -505,3 +505,9 @@ func _close(choice: int) -> void:
 	GameState.ui_open = false
 	GameState.block_input(0.2)
 	_finished.emit(choice)
+
+
+## El retrato de cada uno; el de él, con el pelo que le queda ese día (Calvicie.gd).
+func _face(id: String) -> String:
+	var p := "res://assets/portraits/%s.png" % id
+	return Calvicie.path(p) if id == "el" else p

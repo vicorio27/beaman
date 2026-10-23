@@ -68,7 +68,7 @@ static func spot_row(kind: String, time: String, rain: bool, solo: bool) -> int:
 
 ## La fila `row` de la hoja `sheet` ("momentos" o un lugar).
 func show_row(sheet: String, row: int) -> void:
-	var tex: Texture2D = load("res://assets/ui/vinetas_%s.png" % sheet)
+	var tex: Texture2D = Calvicie.tex("res://assets/ui/vinetas_%s.png" % sheet)  # (él: el pelo que le queda ese día)
 	_frames.clear()
 	for k in 4:
 		var at := AtlasTexture.new()

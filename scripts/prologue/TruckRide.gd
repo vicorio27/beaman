@@ -221,7 +221,7 @@ func _ready() -> void:
 	_hanging.play("hang")
 	_hands.add_child(_hanging)
 
-	_player_frames = SideFrames.build(load("res://assets/prologue/player.png"), SideFrames.PLAYER)
+	_player_frames = SideFrames.build(Calvicie.tex("res://assets/prologue/player.png"), SideFrames.PLAYER)
 	_runner = AnimatedSprite2D.new()
 	_runner.sprite_frames = _player_frames
 	_runner.position = Vector2(-60, GROUND_Y - 23)
@@ -246,7 +246,7 @@ func _ready() -> void:
 
 
 func _build_hang_frames() -> SpriteFrames:
-	var sheet: Texture2D = load("res://assets/prologue/player_hang.png")
+	var sheet: Texture2D = Calvicie.tex("res://assets/prologue/player_hang.png")
 	var anims := {
 		"hang": [[0, 1], 3.0, true],
 		"swing_l": [[2], 1.0, true],

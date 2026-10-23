@@ -56,6 +56,10 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
 - **El final:** alcanza a comprar la bicicleta de Victoria pero no a entregarla. Una tos que viene de
   dormir en la calle avanza con los días; cuando se muere Lukas, se le agrava. Muere la noche del 49,
   después del último sueño, y Germán le lleva la bicicleta a Victoria (el epílogo).
+- **Se va quedando calvo con los días**: con pelo hasta el día 12, entradas hasta el 25, la coronilla
+  pelada hasta el 38, calvo desde el 39 (la barba se queda). Todo su dibujo escoge la etapa del día
+  (`scripts/systems/Calvicie.gd`; las hojas `_c1/_c2/_c3` las saca `tools/art/calvicie.py`; las viñetas,
+  `CALVO=2/3 python tools/art/draw_vinetas.py`). El de antes (la moto, el apartamento) y él de niño tienen pelo.
 - **Las llamadas de Lorena** son todas distintas y todas para joderle la vida; nunca traen nada bueno
   (`scripts/systems/LorenaLlamadas.gd`).
 - **Humor de libreto, nunca lástima directa.** Nada de frases que expliquen el dolor ("nadie lo quiere",

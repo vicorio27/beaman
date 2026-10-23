@@ -192,7 +192,7 @@ func _ready() -> void:
 	_dog.play("run")
 	add_child(_dog)
 	_me = AnimatedSprite2D.new()
-	_me.sprite_frames = SideFrames.build(load("res://assets/prologue/player.png"), SideFrames.PLAYER)
+	_me.sprite_frames = SideFrames.build(Calvicie.tex("res://assets/prologue/player.png"), SideFrames.PLAYER)
 	# Tirado (deslizándose) y apretado (debajo de algo, boca arriba): tools/art/draw_huida.py.
 	var slide_sheet: Texture2D = load(ART + "player_slide.png")
 	for anim in [["slide", [1, 2], 9.0], ["flat", [3, 4], 5.0]]:

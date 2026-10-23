@@ -2165,3 +2165,25 @@ caja de diálogo la tapaba).
   (como en su retrato), el saco morado del colegio con el cuello blanco, la falda gris, medias blancas y
   zapatos negros. Ya no se tiñe ni se encoge. Sale así en la salida del colegio, en las visitas y en el
   epílogo. En el Parque, el sitio de la visita pasó delante del árbol (detrás, solo se le veía la cabeza).
+
+
+## Se va quedando calvo (2026-10-23)
+
+Decisión del usuario: él se va quedando calvo a medida que pasan los días (como la tos: lo que la calle le
+va quitando). Cuatro etapas (`scripts/systems/Calvicie.gd`): días 1-12 el pelo de siempre, 13-25 las
+entradas, 26-38 la coronilla pelada con la franja a los lados, 39-50 calvo. La barba se queda.
+
+- **Las hojas de pixel** (el muñeco del barrio, sus acciones, el de los sueños y sus armas, el colgado del
+  camión, él en la feria, él en el tenis): `tools/art/calvicie.py` saca de cada una `_c1/_c2/_c3`. Busca el
+  color de su pelo; cada mancha conectada es una cabeza y la pela desde arriba, dejando los lados. En el de
+  los sueños el pelo es del color del contorno: ahí busca la cara y recorta la cresta (cabeza redonda).
+  Después de regenerar cualquiera de esas hojas, se vuelve a correr.
+- **El retrato** (`draw_retratos.py`): `el_c1/_c2/_c3` con la misma cara; las entradas, la coronilla, la calva.
+- **Las viñetas** (`vinetas_motor.BALD`): `CALVO=2` y `CALVO=3 python tools/art/draw_vinetas.py` (y
+  `draw_vinetas_tele.py`) sacan las hojas `_c2/_c3`; los días 13-25 usan las de siempre (a ese tamaño las
+  entradas casi no se ven). El de antes (la moto: `clean`) sigue con pelo.
+- El juego carga todo por `Calvicie.tex()/path()`: si no hay hoja de esa etapa, usa la más cercana para atrás.
+- El prólogo (antes del día 1) y él de niño (Alejandro, la foto del colegio) tienen pelo.
+
+También: lo de Alejandro avanza aunque él pase de largo (antes, si no se le hablaba, todos los días salía la
+misma escena de la escoba con el mismo aviso: 28 veces en el recorrido de prueba).
