@@ -63,6 +63,23 @@ var _bulb: PointLight2D
 var _check := 0.0
 var _glow: GradientTexture2D
 var _crow: AudioStreamPlayer
+## Lo que dice el narrador cuando canta el gallo (uno por noche, en orden; no se repite hasta dar la vuelta).
+const GALLO := [
+	"(Canta un gallo. De noche. En este barrio el gallo avisa al revés: ya salen los otros.)",
+	"(El gallo otra vez. Nadie sabe de quién es. Vive en una terraza y trabaja de noche, como medio barrio.)",
+	"(Kikirikí, a las ocho de la noche. Se prenden los avisos de neón, como si el gallo los prendiera.)",
+	"(Canta el gallo. Una vecina le grita \"¡ya sabemos!\". El gallo canta otra vez, por llevar la contraria.)",
+	"(Canta el gallo de la terraza. Desafinado. Lleva años ensayando y no mejora. Igual nadie lo despide.)",
+	"(Canta el gallo. En la esquina alguien sube un vallenato para taparlo. Pierde el vallenato.)",
+	"(El gallo de la noche. Lo iban a hacer sancocho en diciembre. Ya van tres diciembres.)",
+	"(Kikirikí. Bajan las persianas de los negocios decentes y suben las de los otros.)",
+	"(Canta el gallo. Las muchachas del poste salen al tiempo, como si fuera el pito de una fábrica.)",
+	"(El gallo, puntual. Más puntual que el bus, que la EPS y que la policía cuando sí se necesita.)",
+	"(Kikirikí desde una terraza. El barrio cambia de turno.)",
+	"(El gallo canta y un perro le contesta. Discuten un rato. Gana el gallo, por altura.)",
+	"(Canta el gallo. En el billar alguien grita \"¡ya es de noche, mijo!\" y pide otra.)",
+	"(El gallo. Tarde, ronco y seguro de sí mismo. Un gallo que no le pide permiso a nadie.)",
+]
 
 
 func _ready() -> void:
@@ -155,7 +172,9 @@ func _apply() -> void:
 		if night and not _first:
 			# El gallo: canta cuando se hace de noche. Aquí avisa que se acabó lo decente.
 			_crow.play()
-			Narrator.say("(Canta un gallo. De noche. En este barrio el gallo avisa al revés: ya salen los otros.)")
+			var k := int(GameState.flags.get("gallo_n", 0))
+			GameState.flags["gallo_n"] = k + 1
+			Narrator.say(GALLO[k % GALLO.size()])
 		_night = night
 		_first = false
 		_switch(night)

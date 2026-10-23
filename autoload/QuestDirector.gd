@@ -5,6 +5,22 @@ extends Node
 
 const CAMP := Vector2(400, 628)
 const DUSK_HOUR := 18
+## El aviso de que se hace de noche (uno por día, para que no sea siempre el mismo).
+const OSCURECE := [
+	"(Oscurece. Hay que buscar dónde pasar la noche.)",
+	"(Se va la luz. Hay que escoger dónde dormir antes de que lo escojan otros.)",
+	"(Prenden los postes. Los que tienen casa se van para la casa. Él tiene que buscar dónde.)",
+	"(Oscurece. El cartón no se arma solo, y los buenos rincones se llenan temprano.)",
+	"(Anochece. La ciudad cierra el día; hay que buscar un rincón para la noche.)",
+	"(Se hace de noche. Hay que buscar dónde dormir: lejos del billar, cerca de algo que tape el viento.)",
+	"(Ya está oscuro. Los perros de la cuadra empiezan el turno. Toca buscar dónde pasar la noche.)",
+	"(Las tiendas bajan la persiana. Hay que buscar dónde pasar la noche.)",
+	"(El cielo se pone morado y después ya no. Hay que buscar dónde dormir.)",
+	"(Oscurece. La noche aquí no pregunta si uno ya tiene dónde. Toca buscar.)",
+	"(Se acaba la tarde. Hay que buscar dónde pasar la noche, y que no llueva encima.)",
+	"(Llega la noche, puntual como cobrador. Hay que buscar dónde dormir.)",
+	"(Huele a arepa de la tarde y a lluvia que viene. Hay que buscar dónde pasar la noche.)",
+]
 ## Donde aparece la café racer (en la vereda, a la derecha del café).
 const MOTO_POS := Vector2(664, 382)
 ## Donde espera Zaida en el centro (cerca de la Registraduría, "por casualidad").
@@ -536,7 +552,7 @@ func _daily() -> void:
 		f["dusk_warned"] = true
 		GameState.complete_quest("sobrevivir")
 		GameState.start_quest("donde_dormir")
-		Narrator.say("(Oscurece. Hay que buscar dónde pasar la noche.)")
+		Narrator.say(OSCURECE[(GameState.day - 1) % OSCURECE.size()])
 	if TimeManager.running and GameState.day >= 2 and TimeManager.hour() >= 14 \
 			and f.get("lukas_water_day", -1) != GameState.day and f.get("sed_aviso", -1) != GameState.day and GameState.lukas_alive():
 		f["sed_aviso"] = GameState.day

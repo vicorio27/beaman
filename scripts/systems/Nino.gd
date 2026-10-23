@@ -23,15 +23,93 @@ const HURT := ["escoba", "correa", "solo", "grandes", "celador", "agua"]
 const HELP := ["pan", "tombos", "moneda", "aviso", "agua_botella"]
 ## Quién le pega en cada una: [fila de desconocido, hacia dónde está del niño]. Sin entrada: nadie a la vista.
 const BAD := {"escoba": [3, Vector2(15, 0)], "correa": [0, Vector2(-14, 1)], "grandes": [2, Vector2(14, 3)], "celador": [-1, Vector2(13, -1)]}
+## El aviso de que algo pasa cerca: la primera vez, el primero; después van rotando.
 const HINTS := {
-	"escoba": "(Cerca, un escobazo. Y otro. Alguien grita \"¡gamín!\".)",
-	"correa": "(Cerca, un señor grita \"¡ladrón!\". Suena una correa.)",
-	"grandes": "(Cerca, risas de pelados grandes. Y uno chiquito que no se ríe.)",
-	"celador": "(Cerca, un pito de celador. Alguien arrastra a alguien.)",
-	"agua": "(Cerca, una ventana que se abre. Un baldado de agua.)",
-	"solo": "(Cerca, un niño sentado en el andén. Nadie lo mira.)",
-	"final": "(En el andén, un niño peinado con agua. De manga larga. Lo está esperando.)",
+	"escoba": ["(Cerca, un escobazo. Y otro. Alguien grita \"¡gamín!\".)", "(Cerca, una escoba que no está barriendo.)",
+		"(Cerca, la voz del de la panadería: \"¡fuera!\". Y el ruido de palo.)"],
+	"correa": ["(Cerca, un señor grita \"¡ladrón!\". Suena una correa.)", "(Cerca, el chasquido de una correa. Uno solo. Después, otro.)",
+		"(Cerca, alguien se está quitando la correa. Y no es para cambiarse.)"],
+	"grandes": ["(Cerca, risas de pelados grandes. Y uno chiquito que no se ríe.)", "(Cerca, unos pelados cuentan monedas en voz alta. Las ajenas.)",
+		"(Cerca, uno grande dice \"¡suelte!\". Uno chiquito no suelta.)"],
+	"celador": ["(Cerca, un pito de celador. Alguien arrastra a alguien.)", "(Cerca, el pito de un celador, pitando como si fuera un partido.)",
+		"(Cerca, un celador repite el reglamento a gritos. Le sale de memoria.)"],
+	"agua": ["(Cerca, una ventana que se abre. Un baldado de agua.)", "(Cerca, un balde. Y una voz chiquita que dice \"¡gracias, muy amable!\".)",
+		"(Cerca, agua que cae de un segundo piso. No está lloviendo.)"],
+	"solo": ["(Cerca, un niño sentado en el andén. Nadie lo mira.)", "(Cerca, en el andén, alguien chiquito que no está jugando a nada.)",
+		"(Cerca, un niño se limpia algo de la cara con la manga.)"],
+	"final": ["(En el andén, un niño peinado con agua. De manga larga. Lo está esperando.)"],
 }
+## Cuando ya pasó antes: otra entrada (para no contar lo mismo), lo que hace él (corto) y un remate del niño.
+const OTRA_VEZ := {
+	"escoba": [
+		[["", "(La panadería otra vez. La escoba otra vez. El niño mirando la vitrina, como si el pan fuera a cambiar de opinión.)"],
+			["SEÑOR DE LA TIENDA", "—¡Usted otra vez! ¡Le voy a cobrar por mirar! ¡Mirar también gasta!"]],
+		[["", "(El de la tienda barre al niño junto con la basura de la entrada. Ni cambia el ritmo de la escoba.)"],
+			["SEÑOR DE LA TIENDA", "—¡Fuera! ¡Esto es una panadería, no un museo!"]],
+		[["", "(La escoba de nuevo. El niño ya no se cubre la cabeza: se cubre las piernas. Aprendió dónde pega.)"],
+			["SEÑOR DE LA TIENDA", "—¡Y no vuelva! ... Vuelve. Siempre vuelve. Es como la humedad."]]],
+	"correa": [
+		[["", "(Otro señor, otra correa. Dice que el niño le robó el celular. El celular le está sonando en el bolsillo.)"],
+			["SEÑOR", "—¡Ese timbre no prueba nada!"]],
+		[["", "(Un señor tiene al niño del brazo y se quita la correa con la otra mano. Le cuesta: es correa de domingo.)"],
+			["SEÑOR", "—¡Quieto! ¡Esto me duele más a mí que a usted! ... Bueno, no. Pero quieto."]],
+		[["", "(La correa otra vez. El niño ya está de medio lado, con el brazo bueno adelante. Tiene el cuerpo organizado para esto.)"],
+			["SEÑOR", "—¡Para que aprenda a respetar!"]]],
+	"grandes": [
+		[["", "(Los grandes otra vez. Hoy le quitan la gorra. La gorra tampoco es de él: es de un primo.)"],
+			["EL GRANDE", "—¿Y el loco del perro? ... No está. Rápido, rápido."]],
+		[["", "(Tres pelados grandes rodean al niño. Uno le revisa los bolsillos con la calma de un funcionario.)"],
+			["EL GRANDE", "—Impuesto de andén. Se cobra por metro cuadrado."]],
+		[["", "(Los grandes tienen al niño contra la reja. Él aprieta las monedas en la mano, como si fueran a crecer.)"],
+			["EL GRANDE", "—Suelte, suelte. Es por su bien: la plata daña a los niños."]]],
+	"celador": [
+		[["", "(El celador otra vez. Hoy lo saca de debajo de un puente peatonal, pitando sin parar, como en un partido.)"],
+			["CELADOR", "—¡Circule! ¡Circule!"]],
+		[["", "(El celador lo lleva de la oreja. La misma oreja. Ya la tiene más larga que la otra.)"],
+			["CELADOR", "—¡Le dije ayer! ¡Y antier! ¡Usted no entiende el español!"]],
+		[["", "(El celador le patea el cartón. El niño lo dobla en cuatro sin pararse, como un mago.)"],
+			["CELADOR", "—¡Aquí no es hotel!"]]],
+	"agua": [
+		[["", "(Otra puerta, otra ventana, otro balde. En este barrio los baldes salen de noche, como los murciélagos.)"],
+			["NINO", "—¡Señora, por lo menos caliéntela!"]],
+		[["", "(Un baldado. Este traía jabón. El niño hace espuma con la mano, muy digno.)"],
+			["NINO", "—¡Gracias! ¡Mañana traigo el champú!"]],
+		[["", "(Agua desde un segundo piso. El niño ya duerme con una bolsa de basura de impermeable. Igual se moja.)"],
+			["NINO", "—¡Falló la mitad, señora! ¡Mejore la puntería!"]]],
+	"solo": [
+		[["", "(El niño en el andén otra vez. Hoy es la ceja. Se la tapó con una curita de Hello Kitty.)"],
+			["NINO", "—Era la única que había. No me mire así. Me queda bien."]],
+		[["", "(Solo en el andén, con la rodilla raspada. Se la limpia con saliva, con mucha técnica.)"],
+			["NINO", "—Me caí. De verdad esta vez. ... Bueno, me empujaron, pero el piso puso de su parte."]],
+		[["", "(El niño en el andén, con la mano envuelta en un trapo.)"],
+			["NINO", "—Fue una puerta. Una puerta con correa. Ya, no pregunte."]]],
+}
+const HACE_OTRA_VEZ := {
+	"Ponerse en medio": "(Él se mete otra vez entre la escoba y el niño. El señor ya ni levanta la escoba: suspira y se va a barrer adentro.)",
+	"Comprarle un pan ($1.500)": "(Plata en el mostrador. El pan. El niño. El señor cobra sin mirarlo: ya son clientes.)",
+	"Agarrarle la correa": "(Él agarra la correa por la hebilla, como la otra vez. Ya le está saliendo callo en esa parte de la mano.)",
+	"Soltar a Lukas": "(Lukas ladra una vez. Con eso basta. Lukas ya tiene fama.)",
+	"Caminar hacia ellos": "(Él camina hacia ellos. No alcanza a llegar: a mitad de camino ya se están yendo.)",
+	"Pagarles para que lo suelten ($2.000)": "(Dos billetes al piso, otra vez. Los grandes los recogen con una venia. Ya hay confianza.)",
+	"Sentarse y sentarlo al lado": "(Él se sienta ahí mismo y le hace campo. El celador busca en el reglamento que tiene en la cabeza y no encuentra nada contra eso.)",
+	"Ponerle el saco encima": "(El saco otra vez encima del niño. Ya tiene la forma de él.)",
+	"Sentarse al lado": "(Se sienta al lado. No pregunta. El niño le agradece que no pregunte con un codazo suave.)",
+}
+const REMATES := [
+	"—Usted otra vez. ¿Me está siguiendo? Si me está siguiendo, cobro.",
+	"—Ya iba a ganar yo. Usted me dañó la remontada.",
+	"—Gracias. Pero no se acostumbre. Ni yo me acostumbro.",
+	"—Quedamos a mano. ... No, todavía le debo. Lleve la cuenta usted, que yo no sé sumar tanto.",
+	"—¿Sabe qué es lo bueno de usted? Que no pregunta. Todo el mundo me pregunta cosas. Usted solo aparece.",
+	"—Mañana no venga. ... Bueno, venga. Pero tarde, para que alcance a pasar algo.",
+	"—Esto ya parece telenovela. Yo soy la protagonista. Usted es el que sale de la nada en el capítulo.",
+	"—Le voy a hacer una tarjeta de cliente frecuente. A la décima, le salvo yo a usted.",
+]
+const PASA_OTRA_VEZ := [
+	"(Sigue de largo. Atrás, el ruido de siempre. Cuenta los pasos hasta la esquina: diecinueve.)",
+	"(Sigue de largo. Ya se sabe el camino para no mirar. Lo malo es que el camino también se sabe dónde queda el niño.)",
+	"(Sigue de largo. El niño no lo busca con los ojos. Hace como que tampoco lo vio. Son dos profesionales.)",
+]
 
 var _kid: Node2D
 var _bad: Node2D
@@ -161,7 +239,8 @@ func _spawn(kind: String) -> void:
 		_hit_loop.call_deferred(spec[1])
 	if f.get("nino_aviso_dia", -1) != GameState.day:
 		f["nino_aviso_dia"] = GameState.day
-		Narrator.say(HINTS.get(kind, "(Cerca, alguien chifla bajito. \"¡Pst! ¡Señor del perro!\")"))
+		var hints: Array = HINTS.get(kind, ["(Cerca, alguien chifla bajito. \"¡Pst! ¡Señor del perro!\")"])
+		Narrator.say(hints[_vez(kind) % hints.size()])
 
 
 ## El que le pega: se le va encima cada tanto. El niño se encoge y se pone rojo un instante.
@@ -255,7 +334,12 @@ func talk(_npc: Node) -> void:
 		_kid.modulate = Color.WHITE
 	GameState.start_quest("nino")
 	var helped := false
+	if OTRA_VEZ.has(kind) and _vez(kind) > 0:  # ya pasó antes: se cuenta distinto
+		helped = await _otra_vez(kind)
+		kind = ""
 	match kind:
+		"":
+			pass
 		"escoba":
 			helped = await _escoba()
 		"correa":
@@ -273,6 +357,8 @@ func talk(_npc: Node) -> void:
 		_:
 			helped = await _help(kind)
 	f["nino_estado"] = "fin"
+	kind = f.get("nino_hoy", "")
+	f["nino_vez_" + kind] = _vez(kind) + 1
 	var key := "nino_n_" + ("help" if kind in HELP else "hurt")
 	if kind != "final":
 		f[key] = int(f.get(key, 0)) + 1
@@ -289,6 +375,67 @@ func talk(_npc: Node) -> void:
 	if not f.get("nino_quieto", false):
 		_kid_leaves()
 	f.erase("nino_quieto")
+
+
+## Cuántas veces ya pasó esta (antes de hoy).
+func _vez(kind: String) -> int:
+	return int(GameState.flags.get("nino_vez_" + kind, 0))
+
+
+## Lo mismo que ya pasó, contado de otra manera: otra entrada, lo que hace él en corto, el remate del niño.
+## (El recuerdo de él de niño ya se contó la primera vez: no se repite.)
+func _otra_vez(kind: String) -> bool:
+	var f := GameState.flags
+	var opts: Array = _opciones(kind)
+	var intros: Array = OTRA_VEZ[kind]
+	var intro: Array = []
+	for line in intros[(_vez(kind) - 1) % intros.size()]:
+		intro.append([_who() if line[0] == "NINO" else line[0], line[1]])
+	var i := await Dialogue.talk(intro, opts)
+	var opt: String = opts[i]
+	if opt == "Seguir de largo":
+		var n := int(f.get("nino_pasa_n", 0))
+		f["nino_pasa_n"] = n + 1
+		return await _pass(PASA_OTRA_VEZ[n % PASA_OTRA_VEZ.size()])
+	var p := get_tree().get_first_node_in_group("player")
+	var sentado := opt in ["Sentarse y sentarlo al lado", "Sentarse al lado"]
+	match opt:
+		"Ponerse en medio":
+			if p and p.has_method("act"):
+				p.act("golpe", false, "golpe")
+		"Comprarle un pan ($1.500)":
+			GameState.add_money(-1500)
+		"Pagarles para que lo suelten ($2.000)":
+			GameState.add_money(-2000)
+	if sentado:
+		f["nino_quieto"] = true
+		_bad_leaves()
+		await Conversations._sit_ground("down")
+	var r := int(f.get("nino_remate_n", 0))
+	f["nino_remate_n"] = r + 1
+	await Dialogue.talk([["", HACE_OTRA_VEZ[opt]], [_who(), REMATES[r % REMATES.size()]]])
+	GameState.change_mood(2.0 if opt.begins_with("Pagarles") else 5.0)
+	if sentado:
+		TimeManager.skip(0.5)
+		if p and p.has_method("stand_up"):
+			await p.stand_up()
+	return true
+
+
+## Las opciones de cada una (las mismas de la primera vez).
+func _opciones(kind: String) -> Array:
+	match kind:
+		"escoba":
+			return ["Ponerse en medio", "Comprarle un pan ($1.500)", "Seguir de largo"] if GameState.money >= 1500 else ["Ponerse en medio", "Seguir de largo"]
+		"correa":
+			return ["Agarrarle la correa", "Soltar a Lukas", "Seguir de largo"] if GameState.lukas_alive() else ["Agarrarle la correa", "Seguir de largo"]
+		"grandes":
+			return ["Caminar hacia ellos", "Pagarles para que lo suelten ($2.000)", "Seguir de largo"] if GameState.money >= 2000 else ["Caminar hacia ellos", "Seguir de largo"]
+		"celador":
+			return ["Sentarse y sentarlo al lado", "Seguir de largo"]
+		"agua":
+			return ["Ponerle el saco encima", "Seguir de largo"]
+	return ["Sentarse al lado", "Seguir de largo"]
 
 
 ## Lo de él, de niño: una línea después de cada encuentro.

@@ -5,7 +5,7 @@ class_name Quests
 
 const DEFS := {
 	# Día 1 — principales
-	"conseguir_comida": {"title": "Conseguí algo para comer", "kind": "main",
+	"conseguir_comida": {"title": "Conseguir algo para comer", "kind": "main",
 		"detail": "Hay que comer algo antes de que oscurezca. Pan en la panadería de Don Germán (plaza, $1.500), algo tirado por el barrio, o que Lukas busque [F]. Se cumple al comer cualquier cosa."},
 	"pasar_el_dia": {"title": "Al anochecer, volvé al puente", "kind": "main",
 		"detail": "Cuando caiga la tarde (desde las 6), volver al puente del río, donde duerme. Alguien está ocupando el lugar."},
@@ -46,7 +46,7 @@ const DEFS := {
 		"detail": "Juntar $55.000 para el trámite de la cédula. Trabajos: la obra (de 6 a 10, menos domingos), Rapidito (desde el día 4), la ruta de Wilson, pedir."},
 	"c_foto": {"title": "Fotos tipo documento (centro)", "kind": "side",
 		"detail": "Fotos tipo documento en Foto Express, en el centro: $8.000. Hay que ir bañado: si no, el fotógrafo no la toma."},
-	"c_direccion": {"title": "Conseguí una dirección", "kind": "side",
+	"c_direccion": {"title": "Conseguir una dirección", "kind": "side",
 		"detail": "Para la cédula hace falta una dirección. Don Germán puede dar la suya (hablarle, y volver al otro día). En el centro hay alguien que también ofrece la suya, pero cobra después."},
 	"recoger_cedula": {"title": "Recogé la cédula", "kind": "main",
 		"detail": "La cédula ya está en trámite. Volver a la Registraduría del centro el día que dijeron y recogerla."},
@@ -80,7 +80,7 @@ const DEFS := {
 	# Victoria: verla, que lo vea, y pedir visitas en la Defensoría de Familia
 	"v_colegio": {"title": "Victoria sale a las 12: colegio (centro)", "kind": "main",
 		"detail": "DONDE: en el centro (en bus, desde la plaza del barrio). Bajando del bus, cruzar la avenida y seguir por el andén de arriba hasta el fondo, a la derecha: el edificio amarillo con el letrero COLEGIO, pasando la Defensoría. CUANDO: Victoria sale a las 12 del día (menos los domingos). Lorena la recoge. Ir a la reja: verla, dejarle algo, que ella lo vea. De a poco lo va a reconocer."},
-	"v_defensoria": {"title": "Pedí visitas: Defensoría (centro)", "kind": "main",
+	"v_defensoria": {"title": "Pedir visitas: Defensoría (centro)", "kind": "main",
 		"detail": "Pedir visitas en la Defensoría de Familia, en el centro. Hay que llevar todo lo que piden (abajo)."},
 	"v_audiencia": {"title": "La audiencia en la Defensoría", "kind": "main",
 		"detail": "La audiencia es en la Defensoría del centro. Ir ese día, bañado."},
