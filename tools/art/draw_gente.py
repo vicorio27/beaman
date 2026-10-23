@@ -2,8 +2,8 @@
 que aparecen poco: el celador del colegio y los del epílogo ("los demás, sin enterarse").
 Para los personajes de todos los días están draw_vecinos.py y draw_parque_gente.py (dibujados a mano).
 
-Los niños (Victoria, el niño de Brenda, el pelado de Lisandro) siguen con los muñecos chiquitos de
-Kenney a propósito: al lado de los adultos se leen como niños.
+Victoria y Alejandro tienen hoja propia de niños (tools/art/draw_nino.py). Los otros niños (el de Brenda,
+el pelado de Lisandro) siguen con los muñecos chiquitos de Kenney: al lado de los adultos se leen como niños.
 
 Además, los desconocidos (transeunte_0..5) y los guardias del sigilo (guardia_0..2).
 

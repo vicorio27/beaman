@@ -2160,3 +2160,8 @@ caja de diálogo la tapaba).
   la fila y la cabina de FOTO; el estudio con el telón de nubes; la Caverna con la alfombra de confeti,
   las maquinitas y el gato de Al. Encima, `Interior.gd` pinta solo lo que se mueve (las llamas, el
   televisor, las pantallas, el turno).
+- **Victoria tiene dibujo propio** (`assets/characters/victoria.png`, de `tools/art/draw_nino.py`): niña
+  de doce, más alta que Alejandro y más bajita que los grandes; pelo largo castaño con el moño morado
+  (como en su retrato), el saco morado del colegio con el cuello blanco, la falda gris, medias blancas y
+  zapatos negros. Ya no se tiñe ni se encoge. Sale así en la salida del colegio, en las visitas y en el
+  epílogo. En el Parque, el sitio de la visita pasó delante del árbol (detrás, solo se le veía la cabeza).

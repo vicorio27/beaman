@@ -68,7 +68,7 @@ func _process(delta: float) -> void:
 ## Victoria: a las 12 sale del colegio (menos los domingos) y Lorena la viene a buscar. A veces
 ## (con el vínculo alto) Lorena llega tarde. Los domingos, con visitas, está en el Parque.
 const VICTORIA_POS := Vector2(612, 202)
-const VISITA_POS := Vector2(470, 300)
+const VISITA_POS := Vector2(470, 346)  # delante del árbol (detrás, solo se le veía la cabeza)
 
 
 func _victoria() -> void:
@@ -109,8 +109,7 @@ func _victoria() -> void:
 
 
 func _spawn_kid(scene: Node, at: Vector2) -> void:
-	var v := _spawn_npc(scene, "victoria", "Victoria", 3, at, Color(1.0, 0.8, 0.9))
-	v.scale = Vector2(0.86, 0.86)  # tiene once (doce el 29 de octubre)
+	_spawn_npc(scene, "victoria", "Victoria", 3, at, Color.WHITE)  # (su hoja ya es de niña: once, doce el 29)
 
 
 func _spawn_npc(scene: Node, id: String, node_name: String, row: int, at: Vector2, tint: Color) -> Node2D:

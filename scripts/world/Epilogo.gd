@@ -61,7 +61,7 @@ const SCENES := [
 		["ALVARITO", "—Por los que no vinieron."],
 		["RAUL", "—¿Quiénes?"],
 		["ALVARITO", "—... No sé. Alguno."]]],
-	["victoria", "EL CUMPLEAÑOS DE VICTORIA", [[3, Color(1.0, 0.8, 0.9), 146, 132, 1.9, "side"]],
+	["victoria", "EL CUMPLEAÑOS DE VICTORIA", [[3, Color.WHITE, 146, 128, 2.4, "side", "victoria"]],
 		[["", "29 de octubre. Doce años. Le llega una bicicleta rosada, con canasta y timbre. La trae Don Germán."],
 		["", "Tiene una tarjeta, con letra de adulto que escribe despacio: \"Feliz cumpleaños. El del perro.\""],
 		["VICTORIA", "—¿Y él? ¿Por qué no vino?"],

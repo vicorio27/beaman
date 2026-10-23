@@ -52,6 +52,7 @@ const OWN := {
 	"raul": preload("res://assets/characters/raul.png"),
 	"alvarito": preload("res://assets/characters/alvarito.png"),
 	"nino": preload("res://assets/characters/nino.png"),
+	"victoria": preload("res://assets/characters/victoria.png"),  # (tools/art/draw_nino.py)
 	"buhonero": preload("res://assets/characters/tomqueen.png"),  # Tom Queen, el padrino
 }
 const ADULT_W := 16

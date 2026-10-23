@@ -2,6 +2,10 @@
   assets/characters/nino.png          la hoja del niño (celdas de 16x26, como los adultos, pero más bajito):
                                       flaco, pelo al rape, una camiseta roja desteñida que le queda grande,
                                       pantaloneta, chanclas
+  assets/characters/victoria.png      Victoria (doce años): más alta que Alejandro, más bajita que los grandes;
+                                      pelo largo castaño con el moño morado (como en su retrato), el saco
+                                      morado del colegio con el cuello blanco, la falda gris, medias blancas
+                                      hasta la rodilla y zapatos negros
   assets/items/recuerdo_infancia.png  la foto del colegio: él a los ocho, peinado con agua, de manga larga
                                       en pleno calor, parado de lado (listo para correr)
 Uso: python tools/art/draw_nino.py  (desde la carpeta del proyecto)"""
@@ -24,6 +28,66 @@ def nino():
                    "p": (70, 74, 96), "q": (172, 116, 84), "k": (90, 110, 150)},
            "legs": 3}
     sheet(kid).save(Path("assets/characters") / "nino.png")
+
+
+VICTORIA = {
+    "front": [
+        "...oooo...",
+        ".Bohhhho..",
+        ".ohhhhhho.",
+        ".ohssssho.",
+        ".ohesseho.",
+        ".ohrssrho.",
+        ".ohossoho.",
+        ".ohoSSoho.",
+        ".occwwcco.",
+        "occcccccco",
+        "ococcccoco",
+        "ososccoso.",
+        ".oddddddo.",
+        "oddddddddo",
+    ],
+    "back": [
+        "...oooo...",
+        ".Bohhhho..",
+        ".ohhhhhho.",
+        ".ohhhhhho.",
+        ".ohhhhhho.",
+        ".ohhhhhho.",
+        ".ohhhhhho.",
+        ".ohhhhhho.",
+        ".ochhhhco.",
+        "occhhhhcco",
+        "ococcccoco",
+        "osoccccoso",
+        ".oddddddo.",
+        "oddddddddo",
+    ],
+    "side": [
+        "...oooo...",
+        ".Bohhhho..",
+        ".ohhhhhho.",
+        "ohhhhssso.",
+        "ohhhhseso.",
+        "ohhohrsso.",
+        "ohho.osso.",
+        "oho..oSo..",
+        "..ocwcco..",
+        "..occcco..",
+        "..occcco..",
+        "..osccco..",
+        "..oddddo..",
+        ".oddddddo.",
+    ],
+    "pal": {"s": (232, 186, 160), "S": (196, 146, 122), "h": (108, 66, 38), "r": (236, 150, 150), "B": (84, 44, 124),
+            "c": (112, 66, 160), "w": (240, 238, 232), "d": (96, 96, 112),
+            "p": (236, 236, 232), "q": (200, 200, 208), "k": (34, 28, 34)},
+    "legs": 3,
+}
+
+
+def victoria():
+    sheet(VICTORIA).save(Path("assets/characters") / "victoria.png")
 
 
 def infancia():
@@ -65,5 +129,6 @@ def infancia():
 
 if __name__ == "__main__":
     nino()
+    victoria()
     infancia()
     print("nino listo")
