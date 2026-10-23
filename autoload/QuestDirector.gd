@@ -21,6 +21,58 @@ const OSCURECE := [
 	"(Llega la noche, puntual como cobrador. Hay que buscar dónde dormir.)",
 	"(Huele a arepa de la tarde y a lluvia que viene. Hay que buscar dónde pasar la noche.)",
 ]
+## Los eventos del barrio, cada vez distintos (van en orden: evento_n_<evento>). La redada se lee
+## como lo que es: lo buscan a él.
+const EVENTO_LINEAS := {
+	"redada": [
+		"(Sirenas cerca de la plaza. Están pidiendo papeles. Él sabe a quién buscan.)",
+		"(Una patrulla le da la vuelta a la plaza despacio. Dos veces. Mirando caras. Una cara.)",
+		"(Retén en la plaza. A los de corbata les dicen \"siga, doctor\". A los demás: \"cédula\".)",
+		"(Policía en la plaza. Le muestran un celular a los lustrabotas. En el celular sale él, más joven y más peinado.)",
+		"(La patrulla se parquea en la plaza con el motor prendido. No tiene afán. Está esperando a alguien.)",
+		"(Requisa en la plaza. Le preguntan a la señora de los tintos si lo ha visto. Ella dice que no. Miente bien.)",
+		"(Sirenas en la plaza. Por el radio de la patrulla dicen un nombre. Es el de él.)",
+		"(Operativo en la plaza: dos motos, una patrulla y uno con chaleco que toma fotos. Fotos de las bancas donde él duerme.)",
+		"(Paran a todo el que pasa por la plaza. Al de la chaza no le piden nada. Preguntan por uno de barba que duerme en la calle.)",
+		"(Sirenas otra vez por la plaza. Ya se saben el camino de memoria. Él también.)",
+	],
+	"pelea": [
+		"(Gritos en la avenida. Dos se están agarrando.)",
+		"(En la avenida, dos se pelean por un puesto de parqueo. Ninguno de los dos tiene carro.)",
+		"(Pelea en la avenida. Uno graba, otro apuesta, un tercero vende empanadas.)",
+		"(Dos taxistas se agarran en la avenida. Los pasajeros esperan adentro, con el taxímetro corriendo.)",
+		"(Gritos en la avenida: dos primos que se deben plata desde el 2014.)",
+		"(En la avenida se agarran dos por una muchacha. La muchacha ya se fue.)",
+		"(Pelea en la avenida. Uno pega como si hubiera visto muchos videos. Los videos no servían.)",
+		"(Se arma en la avenida. El que grita \"¡sepárenlos!\" es el que más se acerca a mirar.)",
+		"(Dos hinchas se agarran en la avenida. Del mismo equipo. No se ponen de acuerdo en a quién odiar.)",
+	],
+	"ayuda": [
+		"(Alguien grita en la plaza: \"¡Ayuda!\". Nadie se mueve.)",
+		"(\"¡Ayuda!\", desde la plaza. Tres personas miran el celular con más fuerza.)",
+		"(Un señor en el piso de la plaza. La gente le pasa por el lado como a un andén.)",
+		"(\"¡Ayuda!\". En la plaza se cayó una señora. El vigilante del banco dice que eso no es su jurisdicción.)",
+		"(Gritan \"¡ayuda!\" en la plaza. Uno llama a la ambulancia. Lo ponen en espera.)",
+		"(En la plaza hay alguien en el piso. Los que pasan hacen una curva perfecta alrededor.)",
+		"(\"¡Ayuda!\". Un muchacho se desmayó en la plaza. Le toman foto antes que el pulso.)",
+	],
+	# Afuera: el aviso y dónde escamparse.
+	"aguacero": [
+		"(Se pone negro el cielo. Va a caer un aguacero.",
+		"(Las palomas se van todas al tiempo. Ellas saben algo. Viene agua.",
+		"(Huele a tierra mojada antes de que esté mojada. Va a llover.",
+		"(Las señoras recogen la ropa de los balcones a la carrera. Va a caer duro.",
+		"(Truena lejos, por el lado de los cerros. Viene para acá.",
+		"(Se nubla de golpe. El de los mangos ya está sacando el plástico.",
+		"(El cielo se pone del color del recibo de la luz. Va a caer un aguacero.",
+		"(Sopla un viento frío que levanta las bolsas. Detrás viene el agua.",
+	],
+	"aguacero_adentro": [
+		"Afuera empieza a llover duro. Aquí adentro, por ahora, no.",
+		"Se oye la lluvia en el techo. Por un rato, él es de los que están secos.",
+		"Afuera se larga el agua. Aquí adentro todavía nadie lo ha sacado.",
+	],
+}
 ## Donde aparece la café racer (en la vereda, a la derecha del café).
 const MOTO_POS := Vector2(664, 382)
 ## Donde espera Zaida en el centro (cerca de la Registraduría, "por casualidad").
@@ -179,16 +231,20 @@ func _event_start(ev: String, scene: Node) -> void:
 	var outdoor: bool = scene != null and scene.name in ["City", "Centro", "Parque"]
 	if ev != "aguacero" and (scene == null or scene.name != "City"):
 		return  # pasa en el barrio: si no está ahí, no se entera
-	match ev:
-		"redada":
-			Narrator.say("(Sirenas cerca de la plaza. Están pidiendo papeles.)")
-		"aguacero":
-			Narrator.say("(Se pone negro el cielo. Va a caer un aguacero. Bajo techo: iglesia, panadería, café, pensión.)" if outdoor
-				else "Afuera empieza a llover duro. Aquí adentro, por ahora, no.")
-		"pelea":
-			Narrator.say("(Gritos en la avenida. Dos se están agarrando.)")
-		"ayuda":
-			Narrator.say("(Alguien grita en la plaza: \"¡Ayuda!\". Nadie se mueve.)")
+	if ev == "aguacero":
+		Narrator.say(_evento_linea("aguacero") + " Bajo techo: iglesia, panadería, café, pensión.)" if outdoor
+			else _evento_linea("aguacero_adentro"))
+	elif EVENTO_LINEAS.has(ev):
+		Narrator.say(_evento_linea(ev))
+
+
+## La que sigue de ese evento (en orden, para que no se repita hasta haberlas dicho todas).
+func _evento_linea(key: String) -> String:
+	var f := GameState.flags
+	var n := int(f.get("evento_n_" + key, 0))
+	f["evento_n_" + key] = n + 1
+	var lines: Array = EVENTO_LINEAS[key]
+	return lines[n % lines.size()]
 
 
 func _event_end(ev: String, scene: Node) -> void:

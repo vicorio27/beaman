@@ -12,6 +12,21 @@ extends Node
 ## La lluvia de la noche (la que se ve al dormir) es otra cosa: NightSequence.
 
 const CHANCE := 0.25
+## Cuando se larga (en orden: aguacero_n).
+const LARGA := [
+	"(Se larga el aguacero. La gente corre a los aleros. Él no tiene a dónde correr. Bueno: tiene, pero no lo dejan.)",
+	"(Aguacero. El del kiosco baja la persiana hasta la mitad: lo justo para que quepa él y nadie más.)",
+	"(Llueve de lado. A los de paraguas se les voltea el paraguas. A él no: no tiene.)",
+	"(Aguacero. Pasa corriendo un señor con la bolsa del mercado en la cabeza. Se le mojan el mercado y la cabeza.)",
+	"(Se viene el agua. La alcantarilla de la esquina devuelve todo lo que se tragó esta semana.)",
+	"(Llueve. En la parada del bus caben doce en un techo para cuatro. Él cuenta: no hay puesto para el trece.)",
+	"(Se larga. El de los mangos tapa los mangos con un plástico y se queda él afuera. Prioridades.)",
+	"(Agua. Las motos se meten debajo del puente peatonal. Las motos sí tienen alero.)",
+	"(Llueve duro. Una señora le ofrece media sombrilla a otra señora. Las dos lo miran a él. La sombrilla no da para tres.)",
+	"(Aguacero. Por la cuneta baja una chancla sola, rápido, como si supiera para dónde va.)",
+	"(El cielo se cae a pedazos. El celador del edificio abre la puerta para los del edificio y la cierra justo a tiempo.)",
+	"(Llueve. En el radio de la tienda dicen que es \"un leve chubasco\". El del radio no está afuera.)",
+]
 ## Lo que tapa: el alero queda debajo (adelante) del techo de cada uno.
 const SHELTER_NAMES := ["bus_stop_", "kiosk_", "bakery_", "cafe_", "electro_", "house_", "warehouse_"]
 
@@ -139,7 +154,13 @@ func _process(delta: float) -> void:
 		return
 	if not _told and not Dialogue.active:
 		_told = true
-		Narrator.say("(Se larga el aguacero. La gente corre a los aleros. Él no tiene a dónde correr. Bueno: tiene, pero no lo dejan.)")
+		# Una vez por aguacero (no cada vez que entra a otra parte con la lluvia ya cayendo), y cada vez otra.
+		var f := GameState.flags
+		if int(f.get("aguacero_dicho", -1)) != GameState.day:
+			f["aguacero_dicho"] = GameState.day
+			var n := int(f.get("aguacero_n", 0))
+			f["aguacero_n"] = n + 1
+			Narrator.say(LARGA[n % LARGA.size()])
 	# Rayos.
 	_bolt -= delta
 	if _bolt <= 0.0:
