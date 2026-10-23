@@ -217,11 +217,17 @@ func _ready() -> void:
 	_sign.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_sign.add_theme_color_override("font_color", Color(0.75, 1.0, 0.75))
 	_call = _label(ui, Vector2(4, 160), 8)  # abajo, sobre el delantal: no tapa el cartel ni la pantalla
-	_call.size = Vector2(Controls.right_edge() - 8, 20)
+	_call.size = Vector2(Controls.right_edge() - 8, 0)
 	_call.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_call.add_theme_color_override("font_color", Color(1, 0.9, 0.55))
-	_center = _label(ui, Vector2(0, 70), 16)
-	_center.size = Vector2(320, 20)
+	var call_bg := StyleBoxFlat.new()  # que se lea encima del delantal rojo
+	call_bg.bg_color = Color(0.05, 0.03, 0.05, 0.78)
+	call_bg.set_content_margin_all(2)
+	_call.add_theme_stylebox_override("normal", call_bg)
+	_call.modulate.a = 0.0
+	_center = _label(ui, Vector2(4, 78), 16)  # debajo del cartel de Lukas (y 46-76), encima del conteo
+	_center.size = Vector2(312, 20)
+	_center.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # "EL ENTERRADOR DE DOMINGOS" no cabe en un renglón
 	_center.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ref_count = _label(self, Vector2(150, 118), 16)
 	for n in ["hit-1", "hit-2", "miss", "grunt"]:
@@ -1061,11 +1067,15 @@ func _wake(won: bool) -> void:
 func _say_call(line: String, force := false) -> void:
 	if _call_cd > 0.0 and not force:
 		return
-	_call_cd = 2.8
+	var hold := maxf(2.6, line.length() * 0.055)  # las largas de la Mona se alcanzan a leer
+	_call_cd = hold + 0.2
 	_call.text = line
+	# Crece hacia arriba desde el borde de abajo: nunca se corta un renglón.
+	_call.size.y = 0.0
+	_call.position.y = 178.0 - _call.get_combined_minimum_size().y
 	var tw := create_tween()
 	_call.modulate.a = 1.0
-	tw.tween_interval(2.6)
+	tw.tween_interval(hold)
 	tw.tween_property(_call, "modulate:a", 0.0, 0.4)
 
 

@@ -10,6 +10,7 @@ func setup() -> void:
 	dream_id = "final"
 	dream_hard = 0.5
 	title_text = "EL OPERATIVO"
+	title_dim = 0.15  # el barrio de noche ya es oscuro
 	subtitle = "LA SERPIENTE: FASE 2\n(lo que ella armó)"
 	recap = [
 		["", "El sargento cayó. Lilato llamó a todos."],

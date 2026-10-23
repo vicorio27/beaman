@@ -77,7 +77,14 @@ var inventory: Array = []
 var quests := {}
 var flags := {}
 ## Hay alguna ventana abierta (mochila, diálogo): el jugador no se mueve y el reloj se frena.
-var ui_open := false
+var ui_open := false:
+	set(v):
+		# Un minijuego que se cierra con un diálogo encima: el diálogo sigue abierto, y al cerrarse
+		# ya no devuelve el minijuego (Dialogue._ui_was).
+		if not v and Dialogue.active:
+			Dialogue._ui_was = false
+			return
+		ui_open = v
 ## Estadísticas del día (para el resumen al dormir).
 var stats := {"money_earned": 0, "food_eaten": 0, "segundos": 0.0}
 var _block_until := 0

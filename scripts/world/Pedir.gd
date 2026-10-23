@@ -278,7 +278,7 @@ func _build() -> void:
 	var ui := CanvasLayer.new()
 	ui.layer = 10
 	add_child(ui)
-	_hud = _label(ui, Vector2(6, 4))
+	_hud = _label(ui, Vector2(6, 149))  # abajo: arriba va el globo de lo que dicen
 	_legend = _label(ui, Vector2(0, 160))
 	_legend.size = Vector2(Controls.right_edge(), 20)  # a la derecha, los botones táctiles
 	_legend.add_to_group("under_dialogue")
@@ -294,8 +294,8 @@ func _build() -> void:
 	_type_label.add_theme_color_override("font_color", Color(1, 0.85, 0.4))
 	_bubble = _label(ui, Vector2(0, 0))
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_bubble.size = Vector2(150, 30)
-	var bg := StyleBoxFlat.new()  # fondo oscuro: que se lea encima de los letreros de las casas
+	_bubble.size = Vector2(230, 0)
+	var bg := StyleBoxFlat.new()  # fondo oscuro: que se lea encima de los techos
 	bg.bg_color = Color(0.05, 0.04, 0.06, 0.6)
 	bg.set_content_margin_all(2)
 	_bubble.add_theme_stylebox_override("normal", bg)
@@ -365,8 +365,10 @@ func _process(delta: float) -> void:
 	# Que no se salgan de la pantalla ("BRERO") ni se metan debajo de los botones táctiles.
 	_type_label.position.x = clampf(_type_label.position.x, 2.0, Controls.right_edge() - _type_label.text.length() * 8.0)
 	_bubble.visible = _bubble.text != ""
-	# El globo crece hacia arriba desde el cartelito del tipo: nunca se le monta encima.
-	_bubble.position = spr.position + Vector2(-75, -36.0 - maxi(1, _bubble.get_line_count()) * 10.0)
+	# El globo va en la franja de arriba (los techos), encima de quien habla: así no se monta sobre los
+	# letreros de las casas ni sobre el cartelito del tipo.
+	_bubble.size.y = 0.0
+	_bubble.position = Vector2(spr.position.x - _bubble.size.x / 2.0, 3.0)
 	_bubble.position.x = clampf(_bubble.position.x, 2.0, Controls.right_edge() - _bubble.size.x)
 	if not current["done"] and spr.position.x > ZONE.y:
 		_choose("nada")

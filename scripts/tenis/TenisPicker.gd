@@ -35,7 +35,7 @@ func _ready() -> void:
 		var path := "res://assets/tenis/%s.png" % id
 		if ResourceLoader.exists(path):
 			_sheets[id] = load(path)
-	_head = _label(Vector2(0, 10), Color(1, 0.9, 0.5), true)
+	_head = _label(Vector2(0, 4), Color(1, 0.9, 0.5), true)  # arriba de la valla del fondo (y 18-22): no se montan
 	for i in roster.size():
 		var d: Dictionary = TenisData.player(roster[i])
 		_label(Vector2(30, 28 + i * 12), d["color"]).text = d["name"]

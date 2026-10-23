@@ -98,6 +98,7 @@ var mini_awake := false
 ## Lo que define el episodio (PLOMO 2 y 3 lo cambian en setup()).
 var dream_id := "plomo1"
 var title_text := "PLOMO"
+var title_dim := 0.62  # cuánto se oscurece el nivel detrás de la portada (los niveles oscuros, menos)
 var subtitle := "EPISODIO 1: EL QUE ME MANDO A MATAR\n(cuando tenia diez años)"
 ## "Anteriormente en PLOMO...": se muestra antes de empezar (vacío en el episodio 1).
 var recap: Array = []
@@ -511,14 +512,19 @@ func los(a: Vector2, b: Vector2) -> bool:
 
 # ---------------------------------------------------------------- Bucle
 
+var _title_ang := 0.0
+
+
 func _title() -> void:
 	state = "title"
+	_title_ang = ang
 	_big.text = title_text
 	_small.text = subtitle + "\n\n" + ("[A] empezar" if Controls.touch() else "[E / clic] empezar")
 
 
 func _start() -> void:
 	state = "recap"
+	ang = _title_ang
 	_big.text = ""
 	_small.text = ""
 	MusicDirector.force(music)
@@ -574,6 +580,8 @@ func _process(delta: float) -> void:
 		if q[1] > time:
 			_show_say(q[0])
 	match state:
+		"title":
+			ang += delta * 0.18  # la portada mira alrededor
 		"play":
 			time += delta
 			_grace -= delta
@@ -1034,9 +1042,6 @@ func _wake(won: bool) -> void:
 # ---------------------------------------------------------------- Dibujo
 
 func _draw() -> void:
-	if state == "title":
-		draw_rect(Rect2(0, 0, W, 180), Color(0.05, 0.02, 0.04))
-		return
 	var dir := Vector2(cos(ang), sin(ang))
 	var plane := Vector2(-dir.y, dir.x) * FOV_PLANE
 	if _floor:  # pisos y techos: los pinta el shader (el nodo de atrás); acá solo se le dice dónde está uno
@@ -1111,6 +1116,9 @@ func _draw() -> void:
 		else:
 			draw_texture_rect_region(tex, Rect2(x, top, 1, lh), Rect2(tx, 0, 1, th), col)
 	_draw_sprites(dir, plane)
+	if state == "title":  # la portada: el nivel mismo, girando despacio y a media luz (nunca negro solo)
+		draw_rect(Rect2(0, 0, W, 180), Color(0.05, 0.02, 0.04, title_dim))
+		return
 	_draw_weapon()
 	if _hurt > 0.0:
 		draw_rect(Rect2(0, 0, W, VIEW_H), Color(0.8, 0.0, 0.0, _hurt * 0.45))
@@ -1119,7 +1127,7 @@ func _draw() -> void:
 	if state == "dead":
 		draw_rect(Rect2(0, 0, W, VIEW_H), Color(0.5, 0.0, 0.0, 0.55))
 	if state == "done":
-		draw_rect(Rect2(0, 0, W, 180), Color(0.05, 0.02, 0.04, 0.92))
+		draw_rect(Rect2(0, 0, W, 180), Color(0.05, 0.02, 0.04, 0.78))
 	# La barra de abajo (estilo Doom).
 	draw_rect(Rect2(0, VIEW_H, W, 180 - VIEW_H), Color(0.22, 0.2, 0.2))
 	draw_rect(Rect2(0, VIEW_H, W, 1), Color(0.45, 0.42, 0.4))

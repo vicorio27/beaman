@@ -89,6 +89,7 @@ const CITY := {"german": "german", "marta": "marta", "samuel": "samuel", "wilson
 const SAME_SHADER := preload("res://assets/shaders/retrato_iguales.gdshader")
 
 var active := false
+var _ui_was := false  # GameState.ui_open de antes del diálogo
 ## Cara a cara: [retrato de la izquierda, retrato de la derecha]. Se vacía al cerrar.
 var face_off: Array = []
 var _lines: Array = []
@@ -208,6 +209,7 @@ func talk(lines: Array, choices: Array = []) -> int:
 	_cursor = 0
 	_guard = 0.15
 	active = true
+	_ui_was = GameState.ui_open  # si había un minijuego o un menú abierto, sigue abierto al cerrar
 	GameState.ui_open = true
 	_box.visible = true
 	_hide_under(true)
@@ -502,7 +504,8 @@ func _close(choice: int) -> void:
 	face_off = []
 	_plate.visible = false
 	_choice_panel.visible = false
-	GameState.ui_open = false
+	GameState.ui_open = _ui_was
+	_ui_was = false
 	GameState.block_input(0.2)
 	_finished.emit(choice)
 
