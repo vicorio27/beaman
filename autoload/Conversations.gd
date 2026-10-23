@@ -67,6 +67,11 @@ func run(id: String, npc: Node) -> void:
 	if id.begins_with("noche_"):
 		await _noche(id)
 		return
+	if id.begins_with("relleno_"):  # lo que llena el barrio (scripts/systems/Relleno.gd)
+		var r := get_tree().current_scene.get_node_or_null("Relleno")
+		if r:
+			await r.tocar(id)
+		return
 	if id == "nino":  # Alejandro, el pelao de la calle (scripts/systems/Nino.gd)
 		var d := get_tree().current_scene.get_node_or_null("NinoDirector")
 		if d:

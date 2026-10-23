@@ -102,7 +102,9 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
     tenistas, con sus poses y un `.json` de metadatos), `draw_tenis_coliseo.py`,
     `draw_protagonist_acciones.py` (lo que él hace: recibir plata, pagar, el golpe, caerse, toser,
     comer, el celular, los gestos; se usan con `Player.act()`), `draw_feria_juegos.py` (la feria por
-    dentro y sus seis juegos).
+    dentro y sus seis juegos), `draw_relleno.py` (lo que llena la calle, el Centro y el Parque: la
+    cancha de cal, los puestos, las palomas, el río, la olla comunitaria; lo pone y lo hace responder
+    `scripts/systems/Relleno.gd`).
   - `tools/audio/*.py`: música y efectos sintetizados (`barrio.py`: la música de la vida real, que
     tiene que dar gusto oírla horas; `compose.py`: la de los sueños; `tenis_audio.py`,
     `futbol_audio.py`; `cuerpo_sfx.py`: la tos, las monedas, la caída, la moto, la feria).

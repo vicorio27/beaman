@@ -45,6 +45,7 @@ func _ready() -> void:
 		systems.append("res://scripts/systems/NightLife.gd")
 		systems.append("res://scripts/systems/Nino.gd")
 		systems.append("res://scripts/systems/Vecindario.gd")
+		systems.append("res://scripts/systems/Relleno.gd")
 		systems.append("res://scripts/world/PasserbySpawner.gd")
 		systems.append("res://scripts/systems/Weather.gd")
 	for script in systems:

@@ -2068,3 +2068,24 @@ El barrio se llama **Lombardía**. Una noche (desde el día 8, una sola vez) lo 
   - **Dardos:** el puesto completo, con los globos que revientan y el dardo que queda clavado.
   - **Garra:** la máquina con vidrio, peluches y el hueco; a veces el premio se resbala.
   - **Rueda:** el barrio desde la cabina, él de espaldas y la terraza de la fiesta de antes.
+
+## Los espacios vacíos, llenos (2026-10-22)
+
+`tools/art/draw_relleno.py` dibuja y `scripts/systems/Relleno.gd` pone, al cargar el lugar (las escenas no se
+regeneran):
+- **La calle (City):**
+  - el lote: la cancha de cal con morrales de arco, llantas de gradería, gallinas que se espantan y el
+    NO BOTE BASURA; el columpio se corrió a la esquina;
+  - el potrero: Relámpago, el caballo del zorrero, y la zorra; si ya está el coliseo, el lote "se vendió";
+  - las casas: caminitos, matas en tarros, pipetas, plátanos, la ropa colgada y la mesa de la tienda;
+  - la esquina: el chance (se juega a mil, una vez al día), el de los minutos y las arepas;
+  - el río: juncos, la garza, el carrito hundido, la basura que baja y la corriente;
+  - la plaza: la fuente con chorrito, palomas que vuelan cuando él pasa, materas, el busto con su paloma,
+    el lustrabotas y el paletero.
+- **El Centro:** la fila de edificios de atrás con la valla del abogado ("¿LO DENUNCIARON? LO SACAMOS"),
+  la dulcera, el tintero (el tinto se toma ahí: cuenta como algo caliente para la tos), el lustrabotas,
+  el de los minutos y las palomas.
+- **El Parque:** la carpa de la Olla Comunitaria con su fogón (el letrero flotante se quitó), el gimnasio
+  del parque, el pelado de la cometa y el laguito con patos (a los que se les puede dar pan).
+- Los vendedores solo están de 6 de la mañana a 7 de la noche. Todo lo que se toca responde con su
+  chiste, y él no habla.
