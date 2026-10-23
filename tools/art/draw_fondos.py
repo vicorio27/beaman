@@ -11,6 +11,8 @@ solo el lugar.
     fuente         la fuente del Centro vista desde arriba (scripts/world/Fuente.gd): la plaza, el borde de
                    piedra, el agua con las baldosas del fondo, el chorro del centro. Pozo en (160, 98), radios
                    (130, 62).
+    techo_0/1      (en assets/prologue/) la fachada de los techos de la huida, que se repite: ladrillo, o
+                   pañete pintado y descascarado; arriba el remate, la humedad que baja.
     fuente_mano    la mano que mete él (16x28, 2 cuadros: abierta, agarrando): la manga del saco, el puño de
                    la camisa.
 """
@@ -272,3 +274,57 @@ if __name__ == "__main__":
             print("ok", build(n))
         mano().save(OUT + "fuente_mano.png")
         print("ok fuente_mano")
+        build_techos()
+
+
+# ---------------------------------------------------------------- LOS TECHOS DE LA HUIDA (de noche)
+
+def techo(v):
+    """Un pedazo de fachada de 48 de ancho que se repite (scripts/prologue/Huida.gd, _slab): arriba el
+    remate del techo; abajo, ladrillo (v=0) o pañete pintado y descascarado (v=1). De noche."""
+    w, h = 48, 140
+    im = Image.new("RGBA", (w, h))
+    d = ImageDraw.Draw(im)
+    r = np.random.default_rng(40 + v)
+    if v == 0:
+        base, mortar, hi = (70, 42, 42), (46, 30, 34), (86, 54, 50)
+        d.rectangle([0, 0, w, h], fill=base)
+        for y in range(6, h, 4):
+            d.line([(0, y), (w, y)], fill=mortar)
+            off = 4 if (y // 4) % 2 else 0
+            for x in range(off, w, 8):
+                d.line([(x, y), (x, y + 3)], fill=mortar)
+                if r.random() < 0.25:
+                    d.line([(x + 1, y + 1), (x + 6, y + 1)], fill=hi)
+                elif r.random() < 0.15:
+                    d.rectangle([x + 1, y + 1, x + 7, y + 3], fill=(60, 36, 38))
+    else:
+        base = (64, 58, 74)
+        d.rectangle([0, 0, w, h], fill=base)
+        for _ in range(260):  # el pañete: grano
+            x, y = int(r.integers(0, w)), int(r.integers(6, h))
+            d.point((x, y), fill=(58, 52, 68) if r.random() < 0.6 else (72, 66, 82))
+        for cx, cy in ((12, 40), (36, 90)):  # donde se cayó la pintura: asoma el ladrillo
+            d.ellipse([cx - 6, cy - 4, cx + 6, cy + 4], fill=(66, 42, 44))
+            d.line([(cx - 4, cy - 1), (cx + 4, cy - 1)], fill=(48, 30, 34))
+    # La humedad que baja desde el remate.
+    for x in range(0, w):
+        run = int(6 + 10 * (0.5 + 0.5 * np.sin(x * 0.4 + v)) + r.integers(0, 4))
+        for y in range(6, 6 + run):
+            if (x + y) % 2 == 0:
+                c = im.getpixel((x, y))
+                im.putpixel((x, y), tuple(int(k * 0.82) for k in c[:3]) + (255,))
+    # El remate del techo: el borde de concreto, la sombrita, una varilla, un tarro con una mata.
+    d.rectangle([0, 0, w, 3], fill=(108, 84, 76))
+    d.line([(0, 0), (w, 0)], fill=(140, 112, 100))
+    d.line([(0, 4), (w, 4)], fill=(30, 22, 28))
+    d.line([(0, 5), (w, 5)], fill=(40, 30, 34))
+    if v == 0:
+        d.line([(30, 0), (30, -6)], fill=(90, 60, 50))
+    return im
+
+
+def build_techos():
+    for v in (0, 1):
+        techo(v).save("assets/prologue/techo_%d.png" % v)
+        print("ok techo_%d" % v)

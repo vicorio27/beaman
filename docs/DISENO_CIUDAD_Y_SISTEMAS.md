@@ -2146,3 +2146,6 @@ caja de diálogo la tapaba).
   pocillo, papeles, la foto de la familia o el cactus y la silla metida. Se lee igual que antes: los
   escondites son verde oscuro (la mata de plástico, el locker), los documentos son la carpeta manila con el
   sello de CONFIDENCIAL (brilla), el tablero tiene su luz.
+- **Los techos de la huida** (`Huida.gd`, `_slab`) ya no son bloques lisos: fachada que se repite
+  (`techo_0/1.png`, de `draw_fondos.py`): ladrillo, o pañete pintado y descascarado, con el remate de
+  concreto y la humedad que baja. Va pegada al mundo (al correr, la pared pasa; no se desliza encima).

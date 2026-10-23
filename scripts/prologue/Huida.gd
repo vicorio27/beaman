@@ -170,6 +170,7 @@ var _rotor: AudioStreamPlayer
 
 func _ready() -> void:
 	_skyline = load("res://assets/prologue/skyline.png")
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED  # las fachadas de los techos se repiten
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	for i in 2:
 		var c := AnimatedSprite2D.new()
@@ -1088,6 +1089,8 @@ func _draw() -> void:
 
 
 const ROOF := Color(0.24, 0.16, 0.16)
+## Las fachadas (tools/art/draw_fondos.py): ladrillo, o pañete pintado; cada techo, según su altura.
+const FACHADAS := [preload("res://assets/prologue/techo_0.png"), preload("res://assets/prologue/techo_1.png")]
 const ROOF_EDGE := Color(0.42, 0.3, 0.26)
 
 
@@ -1157,8 +1160,9 @@ func _slab(wx0: float, wx1: float, h: float) -> void:
 	if wx1 <= wx0:
 		return
 	var top := GROUND - h
-	draw_rect(Rect2(_sx(wx0), top, wx1 - wx0, 180 - top), ROOF)
-	draw_rect(Rect2(_sx(wx0), top, wx1 - wx0, 2), ROOF_EDGE)
+	var tex: Texture2D = FACHADAS[int(h / 8.0) % 2]
+	# Pegada al mundo (no a la pantalla): al correr, la pared pasa; no se desliza encima.
+	draw_texture_rect_region(tex, Rect2(_sx(wx0), top, wx1 - wx0, 180 - top), Rect2(fposmod(wx0, 48.0), 0, wx1 - wx0, 180 - top))
 
 
 ## Lo de saltar y lo de pasar por debajo (la capa de atrás: lo de adelante va en _draw_fx).
