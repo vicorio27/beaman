@@ -19,6 +19,10 @@ const VIEW := 74.0
 const HALF_ANGLE := 0.48
 const SPEED := 52.0
 ## Los guardias de seguridad (tools/art/draw_gente.py). Los jefes usan su hoja (CharacterFrames.OWN, por "id").
+## La oficina, en baldosas (tools/art/draw_oficina.py; el orden de la fila, en TILES de ese archivo).
+const TILES := preload("res://assets/dreams/oficina_tiles.png")
+const TI := {"piso0": 0, "piso1": 1, "cafe": 2, "papel": 3, "pared": 4, "cara": 5, "ventana": 6, "afiche": 7, "reloj": 8,
+	"esc": 9, "mata": 13, "locker": 14, "doc": 15, "puerta": 16, "tablero": 17}
 const GUARDS := [
 	preload("res://assets/characters/guardia_0.png"),
 	preload("res://assets/characters/guardia_1.png"),
@@ -649,30 +653,33 @@ func _draw() -> void:
 		for c in grid[r].size():
 			var ch: String = grid[r][c]
 			var rect := Rect2(c * T, TOP + r * T, T, T)
+			var h := absi(hash(Vector3i(r, c, level)))  # para que cada cosa tenga su variante (siempre la misma)
+			var idx: int = TI["piso1"] if h % 2 else TI["piso0"]
+			var mod := Color.WHITE
 			match ch:
 				"#":
-					draw_rect(rect, Color(0.42, 0.42, 0.46))
-					draw_rect(Rect2(rect.position, Vector2(T, 3)), Color(0.55, 0.55, 0.6))
+					idx = TI["pared"]
+					if r + 1 < grid.size() and grid[r + 1][c] != "#":  # la pared que se ve de frente
+						idx = [TI["ventana"], TI["ventana"], TI["afiche"], TI["reloj"], TI["cara"], TI["cara"], TI["cara"]][h % 7]
 				"d":
-					draw_rect(rect, Color(0.3, 0.33, 0.42))
-					draw_rect(rect.grow(-2), Color(0.55, 0.42, 0.3))
-					draw_rect(Rect2(rect.position + Vector2(4, 3), Vector2(8, 5)), Color(0.15, 0.2, 0.3))  # el computador
+					idx = TI["esc"] + h % 4
 				"h":
-					draw_rect(rect, Color(0.3, 0.33, 0.42))
-					draw_rect(rect.grow(-1), Color(0.15, 0.32, 0.2))
-					draw_line(rect.position + Vector2(8, 2), rect.position + Vector2(8, 14), Color(0.1, 0.2, 0.12))
+					idx = TI["mata"] if h % 2 == 0 else TI["locker"]
 				"o":
-					draw_rect(rect, Color(0.3, 0.33, 0.42))
-					draw_rect(Rect2(rect.position + Vector2(4, 4), Vector2(8, 9)), Color(0.95, 0.85, 0.3) * (0.8 + 0.2 * sin(_t * 5.0)))
+					idx = TI["doc"]
+					mod = Color(1, 1, 1) * (0.85 + 0.25 * sin(_t * 5.0))  # brilla: es lo que hay que juntar
 				"D":
-					draw_rect(rect, Color(0.45, 0.28, 0.18))
-					draw_rect(Rect2(rect.position + Vector2(11, 7), Vector2(2, 2)), Color(0.9, 0.8, 0.3))
+					idx = TI["puerta"]
 				"P", "p":
-					draw_rect(rect, Color(0.3, 0.33, 0.42))
-					draw_rect(rect.grow(-2), Color(0.2, 0.2, 0.24))
-					draw_circle(rect.get_center(), 3.0, Color(0.9, 0.2, 0.2) if ch == "P" else Color(0.2, 0.4, 0.2))
+					idx = TI["tablero"]
 				_:
-					draw_rect(rect, Color(0.3, 0.33, 0.42) if (r + c) % 2 == 0 else Color(0.28, 0.31, 0.4))
+					if h % 23 == 0:
+						idx = TI["cafe"]
+					elif h % 29 == 1:
+						idx = TI["papel"]
+			draw_texture_rect_region(TILES, rect, Rect2(idx * T, 0, T, T), mod)
+			if ch == "P" or ch == "p":
+				draw_circle(rect.get_center() + Vector2(0, -1), 2.0, Color(0.95, 0.2, 0.2) if ch == "P" else Color(0.3, 0.9, 0.4))
 	# Conos de visión.
 	for g in guards:
 		if g.state == "out" or g.state == "eat":

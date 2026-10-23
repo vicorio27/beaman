@@ -2139,3 +2139,10 @@ caja de diálogo la tapaba).
   torcidas por el agua, el chorrito del centro. Los brillos del agua son hilos, no puntos (los puntos se
   confundían con las monedas). La mano es la de él: la manga del saco, el puño de la camisa; se cierra al
   agarrar.
+
+- **El sueño de sigilo** (`Sigilo.gd`) ya no son cuadros de colores: la Empresa en baldosas de 16x16
+  (`tools/art/draw_oficina.py`): alfombra gris azul con su mancha de café y algún papel en el piso, la pared
+  de frente con ventanas, el afiche de la montaña y el reloj (siempre las 7:58), escritorios con computador,
+  pocillo, papeles, la foto de la familia o el cactus y la silla metida. Se lee igual que antes: los
+  escondites son verde oscuro (la mata de plástico, el locker), los documentos son la carpeta manila con el
+  sello de CONFIDENCIAL (brilla), el tablero tiene su luz.
