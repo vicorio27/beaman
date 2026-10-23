@@ -9,6 +9,9 @@ const CALENDAR := {
 	4: "comer3", 5: "rosa", 7: "vet1", 8: "zaida1", 10: "alcancia", 12: "samuel", 14: "truco", 15: "zaida2",
 	17: "wilson", 19: "no_pedir", 20: "german", 22: "zaida3", 24: "trabajar", 26: "mono", 27: "vet2",
 	30: "zaida4", 31: "marta", 33: "vet3", 34: "bano", 37: "zaida5", 40: "efrain", 42: "tumba",
+	# El tramo final: cada día algo, alrededor de lo que se viene (la tos, la bicicleta, el cumpleaños).
+	35: "alcancia2", 36: "wilson2", 38: "pilar_tos", 39: "mono2", 41: "german2", 43: "samuel2",
+	44: "rosa2", 45: "marta2", 46: "efrain2", 47: "afeitarse", 48: "meta_bici",
 }
 
 ## id -> [con quién se habla ("" = se cumple solo), escena donde está, línea de la mañana]
@@ -30,6 +33,17 @@ const TASKS := {
 	"mono": ["mono", "Parque", "El Mono tiene \"un show\" en el Parque. Necesita público."],
 	"marta": ["marta", "City", "Marta no abrió la tienda esta mañana. El cobrador del gota a gota anda por el barrio."],
 	"efrain": ["efrain", "Parque", "Don Efraín mandó a llamarlo al Parque."],
+	"alcancia2": ["", "", "Hoy: $15.000 más en la alcancía. La bicicleta no se junta sola."],
+	"afeitarse": ["", "", "Hoy: bañarse y arreglarse la barba. Faltan tres días."],
+	"meta_bici": ["", "", "Hoy: completar la alcancía ($150.000). Mañana es la última visita."],
+	"wilson2": ["wilson", "City", "Wilson consiguió un carrito con las cuatro ruedas. Necesita brazos, y que alguien lo vea."],
+	"pilar_tos": ["veterinaria", "Parque", "La Dra. Pilar lo oyó toser desde la veterinaria. Mandó a decir que pase por el Parque."],
+	"mono2": ["mono", "Parque", "El Mono anuncia \"segunda temporada\" en el Parque. Con coreografía."],
+	"german2": ["german", "City", "A Don Germán se le pegó la puerta del garaje. Dice que no es urgente. Lo dijo tres veces."],
+	"samuel2": ["samuel", "City", "Samuel lo anda buscando por el río. Trae algo envuelto en una bolsa."],
+	"rosa2": ["rosa", "City", "Doña Rosa mandó a decir que pase por el puesto. Que tiene \"algo para lo del cumpleaños\"."],
+	"marta2": ["marta", "City", "Marta abrió el café temprano. Mandó a decir que pase, \"pero rápido, que no es caridad\"."],
+	"efrain2": ["efrain", "Parque", "Don Efraín mandó a decir que pase por el Parque. Que \"es de la bicicleta\"."],
 	"zaida1": ["zaida_dia", "Centro", "En la ventana empañada del café alguien escribió: \"Z. Centro\"."],
 	"zaida2": ["zaida_dia", "City", "Zaida está en la plaza."],
 	"zaida3": ["zaida_dia", "Parque", "Un niño trae razón: Zaida lo espera en el Parque."],
@@ -61,6 +75,10 @@ static func open_day() -> Array:
 	if id == "tumba" and g.lukas_alive():
 		id = "bano"
 	if id == "truco" and _tricks() >= g.LUKAS_TRICKS.size():
+		id = "comer3"
+	# La alcancía, si la bicicleta ya está (o ya alcanza, o no hay cambuche): que coma.
+	if id in ["alcancia2", "meta_bici"] and (f.get("bici_comprada", false) or not g.has_cambuche()
+			or (id == "meta_bici" and int(g.cambuche["alcancia"]) >= g.GIFT_GOAL)):
 		id = "comer3"
 	f["hoy_tarea"] = id
 	f["hoy_ok"] = false
@@ -115,11 +133,15 @@ static func tick(scene: Node) -> void:
 			ok = int(g.stats["food_eaten"]) >= 3
 		"alcancia":
 			ok = g.has_cambuche() and int(g.cambuche["alcancia"]) >= int(base.get("alcancia", 0)) + 10000
+		"alcancia2":
+			ok = g.has_cambuche() and int(g.cambuche["alcancia"]) >= int(base.get("alcancia", 0)) + 15000
+		"meta_bici":
+			ok = f.get("bici_comprada", false) or (g.has_cambuche() and int(g.cambuche["alcancia"]) >= g.GIFT_GOAL)
 		"truco":
 			ok = _tricks() > int(base.get("trucos", 0))
 		"trabajar":
 			ok = int(f.get("trabajo_ultimo", -1)) == g.day
-		"bano":
+		"bano", "afeitarse":
 			ok = g.hygiene >= 85.0
 		"tumba":
 			ok = scene != null and scene.name == "Parque"
@@ -139,11 +161,14 @@ static func talk(npc_id: String) -> bool:
 	if id == "" or GameState.flags.get("hoy_ok", false) or TASKS[id][0] != npc_id:
 		return false
 	match id:
-		"vet1", "vet2", "vet3":
+		"vet1", "vet2", "vet3", "pilar_tos":
 			var h := TimeManager.hour()
 			if h < 8 or h >= 18:
 				return false
-			await _vet(id)
+			if id == "pilar_tos":
+				await _pilar_tos()
+			else:
+				await _vet(id)
 		"zaida1", "zaida2", "zaida3", "zaida4", "zaida5":
 			await _zaida(int(id.right(1)))
 		"rosa":
@@ -162,6 +187,20 @@ static func talk(npc_id: String) -> bool:
 			await _marta()
 		"efrain":
 			await _efrain()
+		"wilson2":
+			await _wilson2()
+		"mono2":
+			await _mono2()
+		"german2":
+			await _german2()
+		"samuel2":
+			await _samuel2()
+		"rosa2":
+			await _rosa2()
+		"marta2":
+			await _marta2()
+		"efrain2":
+			await _efrain2()
 	_done(true)
 	return true
 
@@ -177,6 +216,9 @@ static func _done(say: bool) -> void:
 			"truco": "(Lukas aprendió algo.)",
 			"trabajar": "(Trabajó.)",
 			"bano": "(Bañado.)",
+			"alcancia2": "(Quince mil más en la alcancía. La bicicleta se acerca de a poquito, como el bus cuando uno va de afán.)",
+			"afeitarse": "(Bañado. La barba, recortada: es lo único que le queda para peinar.)",
+			"meta_bici": "(La bicicleta ya está.)" if GameState.flags.get("bici_comprada", false) else "(La alcancía ya da para la bicicleta. Don Efraín la tiene, en el Parque.)",
 			"tumba": "(El árbol amarillo. Se sienta al lado de la tierra removida. No se mueve en un rato.)"}.get(id, "Hecho."))
 
 
@@ -323,6 +365,139 @@ static func _efrain() -> void:
 		["DON EFRAIN", "—Gloria le manda saludes. Bueno, no. Pero si hablara, le mandaría."],
 	])
 	GameState.change_mood(10.0 if dead else 6.0)
+
+
+# ---------------------------------------------------------------- El tramo final (días 35-48)
+
+static func _yo(anim: String) -> void:
+	Conversations._yo(anim)
+
+
+static func _wilson2() -> void:
+	await Dialogue.talk([
+		["WILSON", "—Socio. Conseguí un carrito con las cuatro ruedas. Las cuatro van para el mismo lado. No sé qué hacer con tanta tecnología."],
+		["WILSON", "—Hoy es cartón. El cartón no pesa, pero ocupa. Como mi cuñado."],
+	])
+	_yo("recoger")
+	await Dialogue.talk([
+		["", "(Dos horas apilando cartón en un carrito que, ahora sí, va derecho. Wilson extraña la rueda vieja: \"tenía personalidad\".)"],
+		["WILSON", "—Sesenta y cuarenta, como siempre. Es tradición. Las tradiciones no se discuten: se cobran."],
+	])
+	TimeManager.skip(2.0)
+	_yo("plata")
+	GameState.add_money(8000)
+
+
+static func _pilar_tos() -> void:
+	await Dialogue.talk([["DRA. PILAR", "—Siéntese en la camilla. ... Sí, en la de los perros. Es la única que tengo."]])
+	_yo("tos")
+	var lines := [
+		["", "(Le pone en la espalda el estetoscopio. El mismo de Lukas. Lo limpia antes. Lo piensa y lo limpia otra vez.)"],
+		["DRA. PILAR", "—Respire. ... Otra vez. ... Yo soy de perros, ¿sabe? Pero eso suena a perro viejo que duerme en el patio."],
+		["DRA. PILAR", "—Vaya al puesto de salud. ... Ya sé: sin papeles, sin EPS, sin dirección. Entonces tome esto. Es para perros grandes."],
+		["", "(Un jarabe con un beagle sonriente en la etiqueta. Dos cucharadas en la noche. Sabe a hígado.)"],
+	]
+	if GameState.lukas_alive():
+		lines.append(["", "(Lukas lo mira desde el piso, satisfecho: por fin le toca a otro.)"])
+	await Dialogue.talk(lines)
+	GameState.flags["tos"] = maxf(0.0, GameState.tos() - 5.0)
+	GameState.change_mood(6.0)
+
+
+static func _mono2() -> void:
+	await Dialogue.talk([
+		["EL MONO", "—¡Volvió mi público! Hoy hay coreografía. Usted no baila: usted es la coreografía. Se para ahí y no se mueve."],
+		["", "(Una hora de pie en la glorieta, quieto, mientras el Mono le canta boleros alrededor, como a un poste.)"],
+		["", "(La gente echa monedas. Al poste.)"],
+		["EL MONO", "—Le iba a pedir que se peinara para el show. ... Ya no hace falta. Usted es moderno."],
+		["EL MONO", "—Setenta y treinta. El poste no canta."],
+	])
+	TimeManager.skip(1.0)
+	_yo("plata")
+	GameState.add_money(6000)
+	GameState.change_mood(8.0)
+
+
+static func _german2() -> void:
+	await Dialogue.talk([
+		["DON GERMAN", "—La puerta del garaje. Usted empuja y yo opino. Es lo que hago desde que me pensioné: opinar."],
+		["", "(Media hora empujando una puerta de lata. Cede de golpe, y él entra detrás, de jeta.)"],
+	])
+	_yo("sacudirse")
+	await Dialogue.talk([
+		["", "(Adentro hay un carro que no prende desde el 98, cajas con letra de mujer y un rincón seco, barrido, vacío.)"],
+		["DON GERMAN", "—Ahí cabe de todo. Una moto, un mercado, una bicicleta. Lo que uno no quiera que le caiga el rocío."],
+		["", "(Mira el rincón. Mira a Don Germán.)"],
+		["DON GERMAN", "—No me mire así. Yo no pregunto nada. Pero tengo garaje. ... Y ahora tengo puerta."],
+	])
+	GameState.add_item("pan")
+	GameState.change_mood(8.0)
+
+
+static func _samuel2() -> void:
+	var g := GameState
+	await Dialogue.talk([
+		["SAMUEL", "—Le traje la cobija. No, no me estoy muriendo. Conseguí otra más fea y a esta le da pena con la nueva."],
+		["", "(Una cobija de tigre, con un hueco que tiene la forma de Venezuela.)"],
+	])
+	_yo("recoger")
+	if g.has_cambuche() and not g.cambuche["cobija"]:
+		g.cambuche["cobija"] = true
+		await Dialogue.talk([["", "(Va derecho al cambuche. Con cobija se tose menos. Un poquito menos.)"]])
+	elif g.has_cambuche():
+		await Dialogue.talk([["SAMUEL", "—¿Ya tiene? Entonces es para el perro." if g.lukas_alive()
+			else "—¿Ya tiene? Entonces se la pone en las piernas. Las piernas también son gente."]])
+	else:
+		await Dialogue.talk([["SAMUEL", "—Si no tiene dónde ponerla, se la pone encima. Así empecé yo. Once años y todavía funciona."]])
+	g.change_mood(6.0)
+
+
+static func _rosa2() -> void:
+	await Dialogue.talk([["DOÑA ROSA", "—Venga le enseño a envolver. Un regalo sin papel es una compra."]])
+	_yo("recoger")
+	await Dialogue.talk([
+		["", "(Le enseña con un periódico: tres dobleces, uno que nadie ve, y cinta. Él lo hace once veces.)"],
+		["", "(La once queda bien. Doña Rosa le regala el papel bueno: de globos, un poco arrugado. \"Lo planché yo\".)"],
+		["DOÑA ROSA", "—Y el moño. La gente mira el moño. Lo de adentro lo miran después, cuando ya dieron las gracias."],
+	])
+	GameState.flags["papel_regalo"] = true
+	GameState.change_mood(6.0)
+
+
+static func _marta2() -> void:
+	var g := GameState
+	await Dialogue.talk([["MARTA", "—Siéntese. No, no es caridad. Es un tinto que se me iba a enfriar. Y un pan que se me iba a... también."]])
+	_yo("beber")
+	await Dialogue.talk([
+		["", "(Se toma el tinto de pie: sentado le da tos. Tose igual.)"],
+		["MARTA", "—Me dijeron que anda juntando para una bicicleta. ... No me diga nada. Ya sé que no me va a decir nada."],
+		["MARTA", "—Tome. Cinco mil. No es para usted, idiota: es para la bicicleta. Para el timbre, o lo que sea que tengan ahora las bicicletas."],
+	])
+	_yo("plata")
+	if g.has_cambuche() and not g.flags.get("bici_comprada", false):
+		g.cambuche["alcancia"] = int(g.cambuche["alcancia"]) + 5000
+	else:
+		g.add_money(5000)
+	g.add_item("pan")
+	g.change_mood(6.0)
+
+
+static func _efrain2() -> void:
+	if GameState.flags.get("bici_comprada", false):
+		await Dialogue.talk([["DON EFRAIN", "—¿Y la bicicleta? ¿Bien tapada? A ver esas manos."]])
+		_yo("asentir")
+		await Dialogue.talk([
+			["", "(Le muestra las manos. Grasa de cadena hasta las muñecas.)"],
+			["DON EFRAIN", "—Bien. La está cuidando. Péguele una aceitadita al timbre, que el timbre es lo primero que se oxida y lo primero que uno quiere oír."],
+		])
+	else:
+		await Dialogue.talk([
+			["DON EFRAIN", "—La verde agua sigue aquí. Ya me la quisieron comprar tres. A los tres les dije que estaba vendida. Por terco."],
+			["DON EFRAIN", "—No me afane. Yo se la guardo hasta el veintinueve. El treinta ya es otra bicicleta: es la de cualquiera."],
+		])
+		_yo("recoger")
+		await Dialogue.talk([["", "(Debajo de un plástico, la bicicleta. Le pasa la mano al sillín sin quitarle el plástico.)"]])
+	GameState.change_mood(6.0)
 
 
 # ---------------------------------------------------------------- Zaida: cinco encuentros. Ayuda que se cobra.

@@ -1272,6 +1272,7 @@ Algunos días tienen un encargo propio:
 | Lukas a la veterinaria | 7, 27, 33 | Vacunas; control del corazón; las gotas ($8.000, o la Dra. Pilar fía). Faltar: ánimo -10. |
 | Metas personales | 4, 10, 14, 19, 24, 34, 42 | Comer 3 veces, $10.000 a la alcancía, un truco nuevo, no pedir, trabajar, bañarse, el árbol amarillo (si Lukas ya no está). |
 | Amigos | 5, 12, 17, 20, 26, 31, 40 | Rosa (cuidar el puesto), Samuel (aguapanela), Wilson (latas), Germán (una flor por su cumpleaños), el Mono (su público), Marta (el cobrador), Efraín (un Lukas tallado). |
+| El tramo final | 35-48 (todos los que no tenían) | Cada día algo, alrededor de lo que se viene: $15.000 a la alcancía (35); el carrito nuevo de Wilson (36); la Dra. Pilar le oye la tos a él, con el estetoscopio de Lukas, y le da jarabe para perros grandes (38, tos -5); el Mono, segunda temporada: él hace de poste (39); la puerta del garaje de Germán, con su rincón seco "para una bicicleta" (41); Samuel le trae su cobija (43: si el cambuche no tenía, ya tiene); Doña Rosa le enseña a envolver un regalo (44, `papel_regalo`); Marta, un tinto y $5.000 para la bicicleta (45); Efraín, lo de la bicicleta (46: si no la ha comprado, se la guarda hasta el 29); bañarse y la barba (47); completar la alcancía (48). Si la bicicleta ya está, lo de la alcancía se vuelve "comer tres veces". |
 
 **Zaida** lleva la cuenta de cuántas veces le aceptó (`zaida_deuda`):
 1. Le ofrece $20.000 "sin cobrar".

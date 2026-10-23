@@ -98,6 +98,7 @@ func _ready() -> void:
 	bg.content_margin_bottom = 2
 	_toast.add_theme_stylebox_override("normal", bg)
 	_toast.modulate.a = 0.0
+	_toast.add_to_group("under_dialogue")  # con un diálogo abierto, la cara del que habla le quedaba encima
 	GameState.quest_changed.connect(_on_quest_changed)
 	GameState.skill_learned.connect(_show_skill)
 	GameState.bond_changed.connect(_show_bond)
