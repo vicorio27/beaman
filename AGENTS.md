@@ -104,7 +104,9 @@ acertijos, no esponjas de golpes; los diálogos son cortos y punzantes.
     comer, el celular, los gestos; se usan con `Player.act()`), `draw_feria_juegos.py` (la feria por
     dentro y sus seis juegos), `draw_relleno.py` (lo que llena la calle, el Centro y el Parque: la
     cancha de cal, los puestos, las palomas, el río, la olla comunitaria; lo pone y lo hace responder
-    `scripts/systems/Relleno.gd`).
+    `scripts/systems/Relleno.gd`), `draw_epilogo.py` (los lugares del epílogo, a pantalla entera, con el
+    motor de las viñetas: el entierro bajo el guayacán, la cocina de Brenda, el garaje, lo de Lorena, la
+    oficina, la esquina, la casa de Guillermo, otra ciudad, la cantina, el cumpleaños y el FIN).
   - `tools/audio/*.py`: música y efectos sintetizados (`barrio.py`: la música de la vida real, que
     tiene que dar gusto oírla horas; `compose.py`: la de los sueños; `tenis_audio.py`,
     `futbol_audio.py`; `cuerpo_sfx.py`: la tos, las monedas, la caída, la moto, la feria).

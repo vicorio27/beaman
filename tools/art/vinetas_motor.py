@@ -57,10 +57,12 @@ def _noise():
     return _NOISE
 
 def set_size(w, h):
-    """Otro tamaño de lienzo (los retratos: 96x112)."""
-    global W, H, BAY
+    """Otro tamaño de lienzo (los retratos: 96x112; el epílogo: 320x180)."""
+    global W, H, BAY, BAY2, _NOISE
     W, H = w, h
     BAY = np.tile(BAYER, (H // 4 + 1, W // 4 + 1))[:H, :W]
+    BAY2 = np.tile(np.kron(BAYER, np.ones((2, 2))), (H // 8 + 1, W // 8 + 1))[:H, :W]
+    _NOISE = None
 
 
 # Los colores de cada cosa, a la luz del día.

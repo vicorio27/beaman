@@ -2089,3 +2089,33 @@ regeneran):
   del parque, el pelado de la cometa y el laguito con patos (a los que se les puede dar pan).
 - Los vendedores solo están de 6 de la mañana a 7 de la noche. Todo lo que se toca responde con su
   chiste, y él no habla.
+
+
+## El epílogo, dibujado (2026-10-23)
+
+Los diez lugares del epílogo eran rectángulos de colores. Ahora cada uno es un cuadro a pantalla entera
+(`tools/art/draw_epilogo.py` → `assets/ui/epilogo/<lugar>.png`, 4 cuadros que `Epilogo.gd` pasa despacio),
+hecho con el motor de las viñetas (luz, manchas, tramado). La gente sigue encima, como antes.
+
+- **El entierro**: el Parque de San Judas con la iglesia al fondo, el guayacán, las dos cruces (la de
+  Lukas, chiquita, con el collar colgado). Lo que le dejaron se ve: el clavel medio caído, el pan de Don
+  Germán, la lata de Wilson, la ollita de sopa de Doña Fabiola y Gloria, la muñeca sin un ojo.
+- **La cocina de Brenda** (Ibagué): el Nevado del Tolima por la ventana, la radio con el bolero, la cebolla
+  partida en la tabla (la culpa es de ella), la sopa con su vapor, el Sagrado Corazón, el almanaque.
+- **El garaje**: la moto (el brillo le pasa por el tanque), el partido en el televisorcito, el tablero de
+  herramientas, la calle de domingo por la puerta.
+- **Lo de Lorena**: rosado; lluvia en la ventana; el aro de luz para las fotos; LIVE LAUGH LOVE; los
+  esmaltes; una foto de Victoria chiquita y una de ella misma, más grande.
+- **La oficina**: los cerros y Monserrate por el vidrio, la silla del gerente (la que mide Eddy), la
+  carpeta en el computador, el cuadro de EQUIPO con un remero solo.
+- **La esquina**: de noche, la luz de sodio con sus polillas, la persiana con grafiti, el charco.
+- **La casa de Guillermo**: la camioneta enjabonada, la manguera con el chorro, las bolsas de tres almacenes.
+- **Otra ciudad**: el amanecer, el lago, uno que pasea un perro (que no es Lukas).
+- **La cantina**: la rockola prendida, las luces de navidad de todo el año, el partido repetido.
+- **El cumpleaños**: la reja del colegio con la bandera, la banca verde con globos, el guayacán con las
+  dos cruces chiquitas debajo; la bicicleta verde agua (si la compró) o el regalo envuelto en la banca.
+- **El FIN** ya no va sobre negro: el guayacán al atardecer, las dos cruces, la huella de una rueda.
+
+Las flores que caen del guayacán las pinta `Epilogo.gd` (de a una, continuas). Ajustes de posición: en el
+garaje Mauricio y el Pecas se abren para que se vea la moto; Victoria, un poco más grande y más arriba (la
+caja de diálogo la tapaba).

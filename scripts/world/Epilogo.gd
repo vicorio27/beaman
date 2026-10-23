@@ -2,10 +2,14 @@ extends Node2D
 ## EPÍLOGO. Él murió después del último sueño. Primero, el entierro: los únicos que lo querían, debajo
 ## del árbol de flores amarillas del Parque, al lado de Lukas. Después, un recorrido corto por la vida de
 ## todos los demás: siguen tranquilos, sin enterarse. Al final, Victoria, el día de su cumpleaños.
-## Cada cuadro: un lugar dibujado, la gente (los muñecos de la vida real, teñidos) y unas líneas.
+## Cada cuadro: un lugar dibujado (tools/art/draw_epilogo.py: cuatro cuadros que se pasan despacio), la
+## gente encima (los muñecos de la vida real, teñidos) y unas líneas. El FIN también tiene su lugar.
 
 const FONT := preload("res://assets/fonts/PressStart2P.ttf")
 const TITLE := "res://scenes/ui/Title.tscn"
+const BG := "res://assets/ui/epilogo/%s.png"
+## Dónde está el guayacán en los lugares que lo tienen (de ahí caen las flores): centro de la copa, ancho.
+const GUAYACAN := {"entierro": [Vector2(158, 30), 70.0], "victoria": [Vector2(270, 26), 58.0], "fin": [Vector2(172, 40), 70.0]}
 
 ## [lugar, título, gente [fila de la hoja, tinte, x, y, escala, mira, (id si tiene hoja propia)], líneas]
 const SCENES := [
@@ -28,7 +32,7 @@ const SCENES := [
 	["cocina", "IBAGUE. LA CASA NUEVA DE BRENDA", [[3, Color(0.75, 0.55, 0.45), 160, 140, 2.6, "side", "brenda"], [0, Color(1, 1, 1), 230, 146, 1.8, "down"]],
 		[["", "Brenda revuelve una sopa. La misma. Se la sirve a un niño que no es él."],
 		["", "En la radio pasan un bolero. Ella lo tararea. No sabe por qué se le aguan los ojos. Le echa la culpa a la cebolla."]]],
-	["garaje", "UN GARAJE. DOMINGO", [[6, Color(0.85, 0.82, 0.76), 130, 140, 2.6, "side", "mauricio"], [12, Color(1, 0.7, 0.55), 210, 142, 2.4, "side", "pecas"]],
+	["garaje", "UN GARAJE. DOMINGO", [[6, Color(0.85, 0.82, 0.76), 118, 140, 2.6, "side", "mauricio"], [12, Color(1, 0.7, 0.55), 240, 142, 2.4, "side", "pecas"]],
 		[["", "Mauricio le saca brillo al tanque de la moto. El Pecas le pasa el trapo."],
 		["EL PECAS", "—¿Salimos a Melgar, don Mauricio?"],
 		["MAURICIO", "—Ahorita. Primero el partido."],
@@ -57,7 +61,7 @@ const SCENES := [
 		["ALVARITO", "—Por los que no vinieron."],
 		["RAUL", "—¿Quiénes?"],
 		["ALVARITO", "—... No sé. Alguno."]]],
-	["victoria", "EL CUMPLEAÑOS DE VICTORIA", [[3, Color(1.0, 0.8, 0.9), 150, 150, 1.6, "side"]],
+	["victoria", "EL CUMPLEAÑOS DE VICTORIA", [[3, Color(1.0, 0.8, 0.9), 146, 132, 1.9, "side"]],
 		[["", "29 de octubre. Doce años. Le llega una bicicleta rosada, con canasta y timbre. La trae Don Germán."],
 		["", "Tiene una tarjeta, con letra de adulto que escribe despacio: \"Feliz cumpleaños. El del perro.\""],
 		["VICTORIA", "—¿Y él? ¿Por qué no vino?"],
@@ -73,9 +77,15 @@ var _people: Array = []
 var _head: Label
 var _t := 0.0
 var _place := ""
+var _bg: Sprite2D
 
 
 func _ready() -> void:
+	_bg = Sprite2D.new()
+	_bg.centered = false
+	_bg.hframes = 4
+	_bg.z_index = -1
+	add_child(_bg)
 	var ui := CanvasLayer.new()
 	add_child(ui)
 	_head = Label.new()
@@ -98,11 +108,7 @@ func _run() -> void:
 		await get_tree().create_timer(1.2).timeout
 		await Dialogue.talk(_victoria_lines() if sc[0] == "victoria" else sc[3])
 		await get_tree().create_timer(0.6).timeout
-	_place = "negro"
-	for p in _people:
-		p.queue_free()
-	_people.clear()
-	_head.text = ""
+	_show(["fin", "", [], []])  # el guayacán al atardecer, con las dos cruces: el FIN no va sobre negro
 	await Dialogue.talk([["", "BE A MAN"], ["", "Para los que se quedan en la calle. Y para los perros que se quedan con ellos."], ["", "FIN."], ["", "Tiempo jugado: %s." % GameState.play_time_text()]])
 	GameState.flags["juego_terminado"] = true
 	while SceneRouter.busy:
@@ -135,6 +141,10 @@ func _victoria_lines() -> Array:
 func _show(sc: Array) -> void:
 	_place = sc[0]
 	_head.text = sc[1]
+	var bg: String = _place
+	if _place == "victoria" and GameState.flags.get("bici_comprada", false):
+		bg = "victoria_bici"
+	_bg.texture = load(BG % bg)
 	for p in _people:
 		p.queue_free()
 	_people.clear()
@@ -154,98 +164,20 @@ func _show(sc: Array) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	_bg.frame = int(_t * 3.0) % 4
 	queue_redraw()
 
 
+## Las flores amarillas que caen del guayacán (de a una, despacio, cada una con su vaivén).
 func _draw() -> void:
-	draw_set_transform(Vector2(0, -38))  # todo más arriba: abajo va la caja de diálogo
-	match _place:
-		"entierro":
-			draw_rect(Rect2(0, 0, 320, 180), Color(0.62, 0.78, 0.92))
-			draw_rect(Rect2(0, 90, 320, 90), Color(0.4, 0.6, 0.32))
-			_tree(Vector2(160, 92))
-			for g in [[Vector2(140, 150), 10.0], [Vector2(176, 152), 18.0]]:  # Lukas, chiquita; él, al lado
-				draw_rect(Rect2(g[0].x - g[1], g[0].y - 4, g[1] * 2, 8), Color(0.45, 0.34, 0.24))
-				draw_rect(Rect2(g[0].x - 1, g[0].y - 18, 3, 16), Color(0.5, 0.36, 0.22))
-				draw_rect(Rect2(g[0].x - 6, g[0].y - 14, 13, 3), Color(0.5, 0.36, 0.22))
-			draw_circle(Vector2(170, 148), 3.0, Color(0.9, 0.2, 0.25))  # el clavel
-			draw_rect(Rect2(188, 140, 6, 9), Color(0.92, 0.82, 0.78))  # Gloria
-		"cocina":
-			_room(Color(0.86, 0.78, 0.62), Color(0.55, 0.42, 0.3))
-			draw_rect(Rect2(40, 60, 70, 40), Color(0.6, 0.75, 0.9))  # ventana
-			draw_rect(Rect2(200, 92, 60, 26), Color(0.3, 0.3, 0.33))  # estufa
-			draw_rect(Rect2(214, 80, 22, 14), Color(0.5, 0.5, 0.55))  # la olla
-			for k in 3:
-				draw_line(Vector2(218 + k * 6, 78 - fmod(_t * 10 + k * 5, 14)), Vector2(220 + k * 6, 70 - fmod(_t * 10 + k * 5, 14)), Color(1, 1, 1, 0.5))
-		"garaje":
-			_room(Color(0.55, 0.55, 0.58), Color(0.4, 0.4, 0.42))
-			draw_rect(Rect2(150, 120, 70, 14), Color(0.15, 0.15, 0.18))  # la moto
-			draw_circle(Vector2(156, 136), 9.0, Color(0.1, 0.1, 0.1))
-			draw_circle(Vector2(214, 136), 9.0, Color(0.1, 0.1, 0.1))
-			draw_rect(Rect2(170, 112, 26, 10), Color(0.6, 0.25, 0.2))
-			draw_rect(Rect2(40, 70, 26, 16), Color(0.3, 0.3, 0.32))  # radio
-		"apartamento":
-			_room(Color(0.75, 0.6, 0.68), Color(0.45, 0.35, 0.38))
-			draw_rect(Rect2(220, 50, 70, 50), Color(0.3, 0.35, 0.5))  # ventana con lluvia
-			for k in 12:
-				var x := 222.0 + fmod(k * 13.0, 66.0)
-				var y := 52.0 + fmod(_t * 60.0 + k * 17.0, 46.0)
-				draw_line(Vector2(x, y), Vector2(x - 1, y + 4), Color(0.8, 0.85, 1.0, 0.6))
-			draw_rect(Rect2(60, 110, 70, 22), Color(0.6, 0.2, 0.3))  # el sofá
-		"oficina":
-			draw_rect(Rect2(0, 0, 320, 180), Color(0.25, 0.3, 0.4))
-			for k in 8:
-				draw_rect(Rect2(k * 42, 40 + (k % 3) * 12, 30, 70), Color(0.18, 0.22, 0.3))  # la ciudad por el vidrio
-			draw_rect(Rect2(0, 120, 320, 60), Color(0.3, 0.32, 0.42))
-			draw_rect(Rect2(170, 112, 70, 12), Color(0.45, 0.3, 0.2))  # escritorio
-		"esquina":
-			draw_rect(Rect2(0, 0, 320, 180), Color(0.08, 0.07, 0.12))
-			draw_rect(Rect2(0, 120, 320, 60), Color(0.2, 0.2, 0.22))
-			draw_line(Vector2(180, 40), Vector2(180, 150), Color(0.35, 0.35, 0.38), 3.0)  # el poste
-			draw_circle(Vector2(180, 40), 30.0, Color(1, 0.85, 0.5, 0.12))
-		"casa_camila":
-			draw_rect(Rect2(0, 0, 320, 180), Color(0.7, 0.85, 0.95))
-			draw_rect(Rect2(0, 100, 320, 80), Color(0.6, 0.6, 0.62))
-			draw_rect(Rect2(180, 104, 90, 34), Color(0.2, 0.45, 0.3))  # la camioneta
-			draw_circle(Vector2(196, 140), 9.0, Color(0.1, 0.1, 0.1))
-			draw_circle(Vector2(254, 140), 9.0, Color(0.1, 0.1, 0.1))
-		"ciudad":
-			draw_rect(Rect2(0, 0, 320, 180), Color(0.9, 0.75, 0.6))
-			for k in 6:
-				draw_rect(Rect2(k * 56, 60 + (k % 2) * 20, 40, 60), Color(0.6, 0.55, 0.6))
-			draw_rect(Rect2(0, 120, 320, 60), Color(0.5, 0.65, 0.4))
-		"cantina":
-			_room(Color(0.35, 0.22, 0.2), Color(0.25, 0.15, 0.12))
-			draw_rect(Rect2(40, 108, 240, 16), Color(0.45, 0.28, 0.18))  # la barra
-			for k in 7:
-				draw_rect(Rect2(60 + k * 30, 60, 8, 22), Color(0.3, 0.6, 0.35, 0.8))  # botellas
-		"victoria":
-			draw_rect(Rect2(0, 0, 320, 180), Color(0.62, 0.78, 0.92))
-			draw_rect(Rect2(0, 100, 320, 80), Color(0.4, 0.62, 0.32))
-			_tree(Vector2(260, 104))
-			if GameState.flags.get("bici_comprada", false):  # la bicicleta verde agua
-				draw_circle(Vector2(140, 156), 9.0, Color(0.15, 0.15, 0.18))
-				draw_circle(Vector2(170, 156), 9.0, Color(0.15, 0.15, 0.18))
-				draw_line(Vector2(140, 156), Vector2(160, 142), Color(0.55, 0.86, 0.78), 3.0)
-				draw_line(Vector2(160, 142), Vector2(170, 156), Color(0.55, 0.86, 0.78), 3.0)
-			for k in 3:
-				draw_circle(Vector2(60 + k * 14, 60 + sin(_t * 2 + k) * 3), 6.0, [Color(1, 0.4, 0.5), Color(0.5, 0.7, 1), Color(1, 0.9, 0.3)][k])
-		"negro":
-			draw_rect(Rect2(0, 0, 320, 180), Color(0, 0, 0))
-
-
-func _room(wall: Color, floor: Color) -> void:
-	draw_rect(Rect2(0, 0, 320, 120), wall)
-	draw_rect(Rect2(0, 120, 320, 60), floor)
-
-
-## El árbol de flores amarillas (guayacán).
-func _tree(base: Vector2) -> void:
-	draw_rect(Rect2(base.x - 4, base.y - 40, 8, 44), Color(0.45, 0.32, 0.2))
-	for k in 18:
-		var p := base + Vector2(cos(k * 1.7) * 30.0, -50.0 + sin(k * 2.3) * 16.0)
-		draw_circle(p, 10.0, Color(0.95, 0.82, 0.2))
-	for k in 6:  # flores que caen
-		var x := base.x - 40 + fmod(k * 23.0 + _t * 8.0, 80.0)
-		var y := base.y - 30 + fmod(_t * 14.0 + k * 19.0, 60.0)
-		draw_circle(Vector2(x, y), 1.5, Color(1, 0.86, 0.25))
+	if not GUAYACAN.has(_place):
+		return
+	var c: Vector2 = GUAYACAN[_place][0]
+	var w: float = GUAYACAN[_place][1]
+	for k in 14:
+		var fall := fmod(_t * (9.0 + k % 4 * 2.0) + k * 23.0, 96.0)
+		var x := c.x - w + fmod(k * 37.0, w * 2.0) + sin(_t * 1.7 + k) * 3.0 + fall * 0.15
+		var y := c.y + 10.0 + fall
+		draw_rect(Rect2(x, y, 1, 1), Color(1.0, 0.86, 0.3, 1.0 - fall / 120.0))
+		if k % 3 == 0:
+			draw_rect(Rect2(x + 1, y, 1, 1), Color(0.9, 0.7, 0.2, 0.8))
