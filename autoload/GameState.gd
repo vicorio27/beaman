@@ -724,11 +724,20 @@ func new_day(spot: String) -> Array:
 		var st := lukas_stage()
 		change_mood(-2.0 * st)
 		var by_stage := {
-			1: ["Lukas tose otra vez. Le pone la camiseta encima. Tose debajo de la camiseta.", "La tos de Lukas lo despierta. Se queda despierto escuchándola."],
-			2: ["Lukas comió la mitad. Después tampoco quiere el resto.", "Lukas camina más despacio. Él lo espera."],
-			3: ["Lukas duerme casi todo el día. Cuando lo mira, mueve la cola una vez. Una sola.", "Lukas respira rápido, con la boca abierta. Le moja la lengua con agua del cuenco."],
+			1: ["Lukas tose otra vez. Le pone la camiseta encima. Tose debajo de la camiseta.", "La tos de Lukas lo despierta. Se queda despierto escuchándola.",
+				"Lukas tose y después se mira la pata, como si la culpa fuera de ella.",
+				"Lukas tose bajito, con la boca cerrada, como pidiendo permiso. Igual lo despierta.",
+				"Lukas tose y el gato de la esquina se asoma a ver. Se va sin opinar."],
+			2: ["Lukas comió la mitad. Después tampoco quiere el resto.", "Lukas camina más despacio. Él lo espera.",
+				"Lukas sube el andén en dos tiempos. Él hace como que no vio.",
+				"Lukas deja la mitad del pan. Él la guarda en la mochila, por si cambia de idea. No cambia.",
+				"Lukas se echa en cada esquina. Él se sienta en cada esquina, como si fuera idea suya."],
+			3: ["Lukas duerme casi todo el día. Cuando lo mira, mueve la cola una vez. Una sola.", "Lukas respira rápido, con la boca abierta. Le moja la lengua con agua del cuenco.",
+				"Pasan las palomas y Lukas no se levanta. Las palomas se quedan, sin entender nada.",
+				"Dormido, Lukas le busca la mano. La encuentra. Sigue durmiendo.",
+				"En la oscuridad, él le cuenta las respiraciones a Lukas. Pierde la cuenta. Vuelve a empezar."],
 		}
-		lines.append(by_stage[st][day % 2])
+		lines.append(rota("lukas_cronico_%d" % st, by_stage[st]))  # (antes day % 2: dos por etapa, una y otra vez)
 	# Lukas se enferma si pasó el día sin comer ni tomar agua, o si se mojó toda la noche sin techo.
 	if lukas_alive() and not flags.has("lukas_enfermo") and not flags.has("lukas_cronico_dia") and day >= 3:
 		var risk := 0.0
@@ -746,7 +755,10 @@ func new_day(spot: String) -> Array:
 			"Lukas tiene la nariz seca. Él se la toca cada hora, como quien revisa una olla.",
 			"Lukas no se levantó a ladrarle al de la basura. Es la primera vez en años. El de la basura se queda esperando.",
 			"Lukas toma agua y la devuelve. Lo vuelve a intentar: es más terco que enfermo. La Dra. Pilar está en el Parque.",
-			"Lukas duerme con la cabeza encima del zapato de él. Para saber si se va. No se va."]))
+			"Lukas duerme con la cabeza encima del zapato de él. Para saber si se va. No se va.",
+			"Lukas no quiso ni la pelota. Él se la deja al lado, por si acaso.",
+			"Lukas tiene los ojos aguados. Él le limpia uno con la manga. El otro se lo limpia Lukas con la pata, por orgullo.",
+			"Lukas se come dos granos de concentrado y se acuesta, como quien ya cumplió."]))
 	if lukas_alive() and day >= 2 and flags.get("lukas_fed_day", -1) != day:
 		flags["lukas_hungry"] = true
 		lines.append(rota("lukas_hambre", ["Lukas lo mira. Ayer no comió.",

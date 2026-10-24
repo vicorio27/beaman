@@ -409,9 +409,9 @@ F abre su menú:
 ## Día 2: aprender lo básico, y el recuerdo de la moto
 
 **El Día 2 es un tutorial.** Las principales van en orden y cada una enseña una mecánica:
-1. Armá tu cambuche: 3 cartones, [C] para combinar.
-2. Dale de comer a Lukas [F].
-3. Bañate en el baño de la plaza ($1.000).
+1. Armar el cambuche: 3 cartones, [C] para combinar.
+2. Darle de comer a Lukas [F].
+3. Bañarse en el baño de la plaza ($1.000).
 4. Esa moto frente al café...
 
 Cuando aprendió lo básico, aparece frente al café una café racer igual a la que tuvo. La toca y empieza el recuerdo **(ANTES)**:

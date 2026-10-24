@@ -5,7 +5,7 @@ class_name Skills
 
 const DEFS := {
 	"aguante": {"name": "Aguante",
-		"desc": "El desprecio de la gente te baja la mitad de ánimo. En los sueños, más vida."},
+		"desc": "El desprecio de la gente le baja la mitad de ánimo. En los sueños, más vida."},
 	"sangre_fria": {"name": "Sangre fría",
 		"desc": "Más tiempo para reaccionar (colados, el celador de la fuente). En los sueños, mejor puntería."},
 	"labia": {"name": "Mirada",  # (el id sigue siendo "labia")
@@ -13,11 +13,11 @@ const DEFS := {
 	"rebusque": {"name": "Rebusque",
 		"desc": "Latas y botellas valen 50% más y Lukas olfatea más lejos. En los sueños, los enemigos sueltan más cosas."},
 	"cocinero": {"name": "Cocinero de calle",
-		"desc": "Lo que cocinás en el cambuche llena más. En los sueños, la comida cura el doble."},
+		"desc": "Lo que cocina en el cambuche llena más. En los sueños, la comida cura el doble."},
 	"paso_firme": {"name": "Paso firme",
-		"desc": "Caminás más rápido y el hambre no te frena tanto. En los sueños, te movés más rápido."},
+		"desc": "Camina más rápido y el hambre no lo frena tanto. En los sueños, se mueve más rápido."},
 	"lazo_lukas": {"name": "Lazo con Lukas",
-		"desc": "Lukas encuentra cosas escondidas más seguido y su compañía te levanta más el ánimo."},
+		"desc": "Lukas encuentra cosas escondidas más seguido y su compañía le levanta más el ánimo."},
 }
 const ORDER := ["aguante", "sangre_fria", "labia", "rebusque", "cocinero", "paso_firme", "lazo_lukas"]
 ## Qué habilidad deja cada sueño (el primero, el beat 'em up del prólogo, deja "aguante").

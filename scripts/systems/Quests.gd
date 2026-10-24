@@ -7,75 +7,75 @@ const DEFS := {
 	# Día 1 — principales
 	"conseguir_comida": {"title": "Conseguir algo para comer", "kind": "main",
 		"detail": "Hay que comer algo antes de que oscurezca. Pan en la panadería de Don Germán (plaza, $1.500), algo tirado por el barrio, o que Lukas busque [F]. Se cumple al comer cualquier cosa."},
-	"pasar_el_dia": {"title": "Al anochecer, volvé al puente", "kind": "main",
+	"pasar_el_dia": {"title": "Al anochecer, volver al puente", "kind": "main",
 		"detail": "Cuando caiga la tarde (desde las 6), volver al puente del río, donde duerme. Alguien está ocupando el lugar."},
-	"donde_dormir": {"title": "Encontrá dónde pasar la noche", "kind": "main",
+	"donde_dormir": {"title": "Encontrar dónde pasar la noche", "kind": "main",
 		"detail": "Elegir dónde pasar la noche: el cambuche, el banco de la plaza, el techito del kiosco o la pensión ($15.000). Afuera roban más; en el cambuche, menos. Se duerme con [E] en el lugar."},
 	# Día 1 — secundarias
-	"latas": {"title": "Juntá 5 latas o botellas", "kind": "side", "goal": 5,
+	"latas": {"title": "Juntar 5 latas o botellas", "kind": "side", "goal": 5,
 		"detail": "Recoger latas o botellas tiradas por el barrio (brillan en el piso). Wilson, el del carro de supermercado, las compra en la plaza."},
-	"cartones": {"title": "Juntá 3 cartones para dormir", "kind": "side", "goal": 3,
+	"cartones": {"title": "Juntar 3 cartones para dormir", "kind": "side", "goal": 3,
 		"detail": "Juntar tres cartones (están tirados por el barrio, cerca de las bodegas y la basura). Sirven para armar el cambuche."},
-	"bultos_german": {"title": "Cargá los bultos de Don Germán", "kind": "side",
+	"bultos_german": {"title": "Cargar los bultos de Don Germán", "kind": "side",
 		"detail": "Don Germán, en la panadería de la plaza, necesita que le carguen los bultos de harina. Paga con plata y pan."},
-	"mandado_marta": {"title": "Llevá el pedido de Marta", "kind": "side",
+	"mandado_marta": {"title": "Llevar el pedido de Marta", "kind": "side",
 		"detail": "Marta, la del café, mandó un pedido a una casa del barrio. Llevarlo a la puerta que dice ella y tocar una sola vez."},
 	# Día 1 — opcionales
 	"lukas_olfato": {"title": "Que Lukas busque comida [F]", "kind": "optional",
 		"detail": "Abrir el menú de Lukas [F] y elegir \"Buscá\": va olfateando hasta lo más cercano (prefiere comida) y ladra donde está."},
 	# La noche en que Lukas se le va (NightSequence._lombardia): buscarlo por el barrio, de madrugada.
-	"noche_lukas": {"title": "Buscá a Lukas", "kind": "main",
+	"noche_lukas": {"title": "Buscar a Lukas", "kind": "main",
 		"detail": "A la una y diez lo despertó el frío: Lukas no estaba. Se oyó un ladrido para el lado de la avenida. Lombardía de noche es otro barrio."},
 	"lo_bueno": {"title": "Lo bueno del barrio", "kind": "optional",
 		"detail": "Seis cosas buenas del barrio, sin plata: pescar en la orilla del río, el atardecer en el puente (de 5 a 7 de la tarde), tapar penaltis con los pelados del lote (de 9 a 6), la banca del parquecito, el columpio y el perro del barrio."},
 	# Día 2 — principales: aprender lo básico, en orden (y después, el recuerdo de la moto)
-	"t_cambuche": {"title": "Armá el cambuche: 3 cartones", "kind": "main",
+	"t_cambuche": {"title": "Armar el cambuche: 3 cartones", "kind": "main",
 		"detail": "Con tres cartones en la mochila, ir a un lugar que sirva y darle [E] donde dice ARMAR: debajo del puente, el lote del fondo (junto al río, al oriente), el parque o el kiosco viejo."},
-	"t_lukas": {"title": "Dale de comer a Lukas [F]", "kind": "main",
+	"t_lukas": {"title": "Darle de comer a Lukas [F]", "kind": "main",
 		"detail": "Darle de comer a Lukas: menú de Lukas [F] > Comida. Concentrado, o compartir algo de comida de la mochila. Una vez al día."},
-	"t_bano": {"title": "Bañate: baño de la plaza, $1.000", "kind": "main",
+	"t_bano": {"title": "Bañarse: baño de la plaza, $1.000", "kind": "main",
 		"detail": "Bañarse en el baño público de la plaza: $1.000. Sucio, la gente se aparta y el fotógrafo no le toma la foto."},
 	"moto_cafe": {"title": "Esa moto frente al café...", "kind": "main",
 		"detail": "Frente al café de Marta hay una moto parqueada. Acercarse y mirarla [E]."},
 	# Día 3 en adelante — la cédula (varios días)
-	"hablar_german": {"title": "Don Germán te quiere decir algo", "kind": "main",
+	"hablar_german": {"title": "Don Germán le quiere decir algo", "kind": "main",
 		"detail": "Don Germán, en la panadería de la plaza, tiene algo que decirle. Hablarle."},
-	"cedula": {"title": "Sacá la cédula en el centro", "kind": "main",
+	"cedula": {"title": "Sacar la cédula en el centro", "kind": "main",
 		"detail": "Sacar el duplicado de la cédula en la Registraduría del centro (bus en la plaza, $2.500). Se hace fila: abren de 8 a 11 de la mañana; hay que llegar temprano. La que tenía se la quedó la policía la noche del operativo."},
-	"c_plata": {"title": "Juntá $55.000 para el trámite", "kind": "side",
+	"c_plata": {"title": "Juntar $55.000 para el trámite", "kind": "side",
 		"detail": "Juntar $55.000 para el trámite de la cédula. Trabajos: la obra (de 6 a 10, menos domingos), Rapidito (desde el día 4), la ruta de Wilson, pedir."},
 	"c_foto": {"title": "Fotos tipo documento (centro)", "kind": "side",
 		"detail": "Fotos tipo documento en Foto Express, en el centro: $8.000. Hay que ir bañado: si no, el fotógrafo no la toma."},
 	"c_direccion": {"title": "Conseguir una dirección", "kind": "side",
 		"detail": "Para la cédula hace falta una dirección. Don Germán puede dar la suya (hablarle, y volver al otro día). En el centro hay alguien que también ofrece la suya, pero cobra después."},
-	"recoger_cedula": {"title": "Recogé la cédula", "kind": "main",
+	"recoger_cedula": {"title": "Recoger la cédula", "kind": "main",
 		"detail": "La cédula ya está en trámite. Volver a la Registraduría del centro el día que dijeron y recogerla."},
 	# Favores (vínculos)
 	"f_anillo": {"title": "El anillo de Germán (bodegas)", "kind": "side",
 		"detail": "Don Germán perdió el anillo de matrimonio detrás de las bodegas (al norte del barrio). No se ve a simple vista: que Lukas busque [F] por ahí."},
-	"f_anillo_volver": {"title": "Llevale el anillo a Germán", "kind": "side",
+	"f_anillo_volver": {"title": "Llevarle el anillo a Germán", "kind": "side",
 		"detail": "Llevarle el anillo a Don Germán, a la panadería de la plaza."},
 	"f_carta": {"title": "La carta de Samuel (casa del este)", "kind": "side",
 		"detail": "Samuel escribió una carta para su hija. La última dirección que tiene es la casa del fondo, al este, pasando la avenida. Tocar esa puerta con la carta en la mochila."},
-	"f_carta_volver": {"title": "Volvé con Samuel", "kind": "side",
+	"f_carta_volver": {"title": "Volver con Samuel", "kind": "side",
 		"detail": "Volver donde Samuel, en la orilla del río, y contarle cómo le fue a la carta."},
-	"f_gato": {"title": "Encontrá a Michi, el gato de Marta", "kind": "side",
+	"f_gato": {"title": "Encontrar a Michi, el gato de Marta", "kind": "side",
 		"detail": "Michi, el gato negro de Marta (collar rojo con campanita), se perdió. Siempre volvía a las 4, cuando sale el pan. Buscar con Lukas [F] por el barrio: algo suyo quedó tirado."},
-	"f_gato_volver": {"title": "Contale a Marta", "kind": "side",
+	"f_gato_volver": {"title": "Contarle a Marta", "kind": "side",
 		"detail": "Volver al café y contarle a Marta lo que pasó con Michi."},
 	# La familia (disparan los sueños 6 y 7)
-	"llamar_mama": {"title": "Llamá a mamá (teléfono, $500)", "kind": "side",
+	"llamar_mama": {"title": "Llamar a la mamá (teléfono, $500)", "kind": "side",
 		"detail": "Llamar a la mamá desde el teléfono público de la plaza: $500."},
 	"papa_plaza": {"title": "Ese hombre de la moto, en la plaza", "kind": "side",
 		"detail": "En la plaza hay una moto grande parqueada y un hombre al lado (de 9 a 5). Ir a verlo."},
 	# Del Día 2 en adelante (se repiten cada día)
-	"sobrevivir": {"title": "Sobreviví hasta la noche", "kind": "main",
+	"sobrevivir": {"title": "Llegar a la noche", "kind": "main",
 		"detail": "Pasar el día: comer, que Lukas coma y tome agua, no quedarse sin ánimo. A las 6 oscurece y hay que buscar dónde dormir."},
-	"lukas_comida": {"title": "Dale de comer a Lukas [F]", "kind": "optional",
+	"lukas_comida": {"title": "Darle de comer a Lukas [F]", "kind": "optional",
 		"detail": "Darle de comer a Lukas hoy: menú de Lukas [F] > Comida. Si no come, busca peor y se enferma."},
-	"lukas_agua": {"title": "Dale agua a Lukas (cuenco: guarda)", "kind": "optional",
+	"lukas_agua": {"title": "Darle agua a Lukas (cuenco: guarda)", "kind": "optional",
 		"detail": "Que Lukas tome agua: hay cuencos con agua limpia por el barrio (alguien los llena). Pararse al lado y él toma solo."},
-	"banarse": {"title": "Bañate: baño de la plaza, $1.000", "kind": "optional",
+	"banarse": {"title": "Bañarse: baño de la plaza, $1.000", "kind": "optional",
 		"detail": "Bañarse en el baño público de la plaza: $1.000. Sucio, la gente se aparta y da menos al pedir."},
 	# Victoria: verla, que lo vea, y pedir visitas en la Defensoría de Familia
 	"v_colegio": {"title": "Victoria sale a las 12: colegio (centro)", "kind": "main",
@@ -105,7 +105,7 @@ const DEFS := {
 	# Del Día 2 en adelante (una vez)
 	"regalo_hija": {"title": "Regalo para Victoria", "kind": "side",
 		"detail": "Juntar $150.000 en la alcancía del cambuche para el regalo de Victoria (cambuche > Alcancía > meter). Lo que está en la alcancía no se gasta ni se lo roban dormido."},
-	"armar_cambuche": {"title": "Armá tu cambuche [C en la mochila]", "kind": "side",
+	"armar_cambuche": {"title": "Armar el cambuche [C en la mochila]", "kind": "side",
 		"detail": "Armar un cambuche con tres cartones ([E] donde dice ARMAR): debajo del puente, en el lote del fondo, en el parque o en el kiosco viejo. Con cambuche se duerme mejor y hay dónde guardar cosas."},
 	# Encargos del día (DayTasks): uno por día marcado, hasta la noche
 	"hoy_comer3": {"title": "Hoy: comer tres veces", "kind": "side",
@@ -128,11 +128,11 @@ const DEFS := {
 		"detail": "El control de Lukas, que tosió toda la noche: la veterinaria de la Dra. Pilar, en el Parque."},
 	"hoy_vet3": {"title": "Hoy: las gotas de Lukas (veterinaria)", "kind": "side",
 		"detail": "Se acabaron las gotas de Lukas: la Dra. Pilar, en el Parque. Cuestan $8.000 (o ella fía)."},
-	"hoy_rosa": {"title": "Hoy: Doña Rosa te necesita (puesto)", "kind": "side",
+	"hoy_rosa": {"title": "Hoy: Doña Rosa lo necesita (puesto)", "kind": "side",
 		"detail": "Doña Rosa mandó a decir que es urgente: buscarla en su puesto de empanadas."},
 	"hoy_samuel": {"title": "Hoy: aguapanela para Samuel", "kind": "side",
 		"detail": "Samuel amaneció con fiebre. Llevarle una aguapanela caliente a la orilla del río."},
-	"hoy_wilson": {"title": "Hoy: ayudale a Wilson con las latas", "kind": "side",
+	"hoy_wilson": {"title": "Hoy: ayudarle a Wilson con las latas", "kind": "side",
 		"detail": "Wilson necesita brazos para llevar las latas a la chatarrería. Hablarle en la plaza."},
 	"hoy_german": {"title": "Hoy: una flor para Don Germán", "kind": "side",
 		"detail": "Hoy cumple años Don Germán (no le gusta que se sepa). Doña Leonor vende flores en el Parque: llevarle una a la panadería."},
@@ -145,7 +145,7 @@ const DEFS := {
 		"detail": "En el potrero de arriba (entre la Caverna del Gamer y la feria) armaron un coliseo: un torneo de tenis de cuatro días. Buscan recogebolas, de 8 a 6, una jornada por día: $12.000 y propinas."},
 	"hoy_marta": {"title": "Hoy: el cobrador, donde Marta", "kind": "side",
 		"detail": "Marta no abrió el café: el cobrador del gota a gota anda por el barrio. Ir al café."},
-	"hoy_efrain": {"title": "Hoy: Don Efraín te busca (Parque)", "kind": "side",
+	"hoy_efrain": {"title": "Hoy: Don Efraín lo busca (Parque)", "kind": "side",
 		"detail": "Don Efraín, el de los cachivaches, mandó a llamarlo al Parque."},
 	"hoy_alcancia2": {"title": "Hoy: $15.000 más en la alcancía", "kind": "side",
 		"detail": "Meter $15.000 más en la alcancía del cambuche hoy (cambuche > Alcancía). Es para la bicicleta de Victoria."},
@@ -191,9 +191,9 @@ static func title(id: String) -> String:
 
 static func _title_raw(id: String) -> String:
 	if id == "sobrevivir":
-		return "Día %d: llegá a la noche" % GameState.day
+		return "Día %d: llegar a la noche" % GameState.day
 	if id == "recoger_cedula" and GameState.flags.has("cedula_day"):
-		return "Recogé la cédula (desde el día %d)" % GameState.flags["cedula_day"]
+		return "Recoger la cédula (desde el día %d)" % GameState.flags["cedula_day"]
 	return DEFS.get(id, {"title": id})["title"]
 
 

@@ -352,7 +352,7 @@ func _tutorial_run() -> void:
 	_ref.texture = REF_TEX["cartel"]
 	_ref.position = Vector2(160, 112)
 	var steps := [
-		["hit", "LUKAS LEVANTA UN CARTEL:\nE = GOLPE. Pegale a Raúl."],
+		["hit", "LUKAS LEVANTA UN CARTEL:\nE = GOLPE. Pegarle a Raúl."],
 		["taunt", "LUKAS LEVANTA OTRO CARTEL:\nF = PROVOCAR AL PÚBLICO. Llena la barra del ESPECIAL."],
 		["clothesline", "X LEJOS DE RAÚL = CORRER A LAS CUERDAS.\nAl volver, E = CLOTHESLINE."],
 		["llave", "X CERCA = AGARRE. Machacá E.\nCon las flechas elegís: ← SUPLEX  → CUERDAS  ↑ DDT  ↓ SLAM."],
