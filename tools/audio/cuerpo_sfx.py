@@ -13,6 +13,7 @@
   traga.wav     tragar (agua, tinto)
   mastica.wav   el pan
   sacude.wav    sacudirse el agua
+  lukas_llora.wav  Lukas con fiebre, de noche: tres gemidos por la nariz, que suben y se quiebran
 """
 import os
 import wave
@@ -238,6 +239,22 @@ def campanita():  # la sortija en la mano
     return tone * np.exp(-t / 0.25)
 
 
+def llora():
+    """El gemido de un perro: un tono nasal que sube y se quiebra, con temblor, tres veces (cada vez más corto)."""
+    out = np.zeros(int(2.6 * SR))
+    for at, dur, f0, f1 in ((0.0, 0.95, 720, 1080), (1.05, 0.7, 760, 1020), (1.85, 0.5, 700, 940)):
+        t = t_of(dur)
+        k = t / dur
+        f = f0 + (f1 - f0) * np.sin(np.pi * np.minimum(1.0, k * 1.25)) ** 0.8         # sube y se quiebra al final
+        f *= 1.0 + 0.025 * np.sin(2 * np.pi * 7.5 * t)                                 # el temblor
+        ph = 2 * np.pi * np.cumsum(f) / SR
+        tone = np.sin(ph) + 0.45 * np.sin(2 * ph) + 0.2 * np.sin(3 * ph) + 0.08 * np.sin(4 * ph)
+        tone += 0.06 * RNG.standard_normal(len(t))                                      # el aire por la nariz
+        e = np.minimum(1.0, t / 0.06) * np.minimum(1.0, (dur - t) / 0.12) ** 1.5
+        place(out, tone * e, at)
+    return biquad(biquad(out, "bp", 950, 0.9), "lp", 2600)
+
+
 def main():
     save("feria_pop", pop())
     save("feria_pum", pum())
@@ -257,6 +274,7 @@ def main():
     save("traga", traga(), 0.6)
     save("mastica", mastica(), 0.6)
     save("sacude", sacude(), 0.6)
+    save("lukas_llora", llora(), 0.6)
     print("listo:", os.path.normpath(OUT))
 
 

@@ -1013,6 +1013,42 @@ def lukas_pecho(still, f):
     return cv
 
 
+def lukas_inquieto(f):
+    """Lukas con fiebre no deja dormir: cada cuadro está en otro lado (se sienta, se echa, da la vuelta,
+    llora para arriba). Él, sentado en el cartón, despierto, con la mano hacia el perro o en la cara."""
+    cv = Cv(f)
+    env = Env((0.36, 0.38, 0.56), (0.9, 0.96, 1.3), (1, -1), half=0.32)
+    dk = lambda alb, k=0.55: col(alb, env.amb * k)
+    cv.grad((0, 0, W, 70), [(8, 9, 22), (14, 15, 34), (22, 22, 46)], horizontal=True)
+    cv.grad((0, 70, W, H), [dk((132, 116, 112), 0.85), dk((132, 116, 112), 0.55)])
+    stars(cv, f, n=18, y1=40)
+    cv.shape(poly(cv, [(10, 84), (150, 84), (158, 94), (2, 94)]), CARTON, env, shade=1)        # el cartón
+    Actor(cv, env, 0, 0).part(PACK, lambda d: d.cap(18, 80, 34, 80, 10))                       # la mochila
+    # Él, despierto: la mano a Lukas cuando lo tiene cerca; en la cara cuando ya no sabe qué hacer.
+    a = Actor(cv, env, 62, 88, scale=2.0)
+    man_wake(a, 0, reach=f in (0, 2))
+    # Lukas, en otro lado cada cuadro.
+    if f == 0:   # sentado, la cabeza arriba: llora
+        lk = Actor(cv, env, 132, 88, scale=1.9)
+        h = lukas_sit(lk, 0, up=True)
+    elif f == 1:  # se echa, la cabeza arriba, la cola quieta
+        lk = Actor(cv, env, 204, 90, scale=1.9)
+        h = lukas_down(lk, 0, "up", ear_up=True, tail_up=False)
+    elif f == 2:  # da la vuelta: se enrolla al revés
+        lk = Actor(cv, env, 124, 90, flip=True, scale=1.9)
+        h = lukas_curl(lk, 1, eye=True)
+        h = None
+    else:         # se para otra vez y mira para afuera
+        lk = Actor(cv, env, 196, 88, flip=True, scale=1.9)
+        h = lukas_sit(lk, 1, up=True)
+    if h:  # el llanto: dos rayitas que salen de la trompa
+        hx, hy = h["head"]
+        tone = (200, 206, 236)
+        sx = 1 if f in (0, 1) else -1
+        lines(cv, [[(hx + sx * 8, hy - 2), (hx + sx * 12, hy - 5)], [(hx + sx * 9, hy + 2), (hx + sx * 13, hy + 1)]], tone)
+    return cv
+
+
 def entierro(f):
     cv = Cv(f)
     env = Env((0.62, 0.58, 0.62), (1.24, 1.04, 0.86), (-1, -1), half=0.45)
@@ -1344,7 +1380,7 @@ MOMENTOS = [lambda f: intruso(False, f), lambda f: intruso(True, f), lambda f: l
             lambda f: lukas_pecho(True, f), entierro, collar,
             antes, moto, billar_card, lambda f: desmayo(False, f), lambda f: desmayo(True, f), fin,
             lambda f: atardecer(False, False, f), lambda f: atardecer(True, False, f), lambda f: atardecer(False, True, f),
-            lambda f: espejo(False, f), lambda f: espejo(True, f)]
+            lambda f: espejo(False, f), lambda f: espejo(True, f), lukas_inquieto]
 
 
 # ---------------------------------------------------------------- Mirar desde el puente; el espejo de Lisandro

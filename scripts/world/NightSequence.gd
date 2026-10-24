@@ -300,7 +300,11 @@ func _run() -> void:
 	if GameState.day >= 2:
 		var settle: Dictionary = SETTLE if GameState.lukas_alive() else SETTLE_SOLO
 		_spot_pic(spot, "dormir", "noche", _rain_tonight())
-		await _say(GameState.rota("settle_" + spot, settle.get(spot, settle["banco"])))
+		if _fiebre_noche() > 0:  # (con fiebre, Lukas no está "de guardia" ni "enroscado": no se acomoda)
+			await _say(GameState.rota("settle_fiebre", ["Se acomoda en el cartón. Lukas no se acomoda en ninguna parte.",
+				"Se acuesta. Lukas se acuesta. Lukas se levanta.", "Él se tapa. Lukas tiene la nariz caliente y no quiere cobija."]))
+		else:
+			await _say(GameState.rota("settle_" + spot, settle.get(spot, settle["banco"])))
 		if _rain_tonight():
 			await _say(GameState.rota("llueve_techo", ["Empieza a llover. Aquí, por una vez, no.",
 				"Empieza a llover. Él oye el agua desde adentro, como la gente de casa.",
@@ -317,14 +321,20 @@ func _run() -> void:
 			await _say("Vuelve a acostarse. Lukas se le echa encima, con olor a salchicha. A él no le importa.")
 			await _summary(spot)
 			return
-		# Una noche, Lukas se le va: lo despierta el frío y sale a buscarlo (Lombardía de noche).
-		if _lombardia_tonight():
-			await _lombardia(spot)
-			return
 		# La noche en que Lukas se muere (no hay sueño esa noche).
 		if GameState.lukas_dies_tonight():
 			await _lukas_dies()
 			await _summary(spot)
+			return
+		# Lukas con fiebre y sin veterinario: no lo deja dormir (ni soñar) hasta que lo lleve.
+		var fiebre := _fiebre_noche()
+		if fiebre > 0:
+			await _lukas_fiebre(spot, fiebre)
+			await _summary(spot)
+			return
+		# Una noche, Lukas se le va: lo despierta el frío y sale a buscarlo (Lombardía de noche).
+		if _lombardia_tonight():
+			await _lombardia(spot)
 			return
 		# Algunas noches, un sueño (otro juego).
 		var dream := _dream_tonight()
@@ -407,13 +417,74 @@ func _lombardia(spot: String) -> void:
 	SceneRouter.go(CITY, "Wake_" + spot, "LOMBARDIA — 01:10", "(Lombardía de noche es otro barrio. El mismo, pero con el volumen al revés.)")
 
 
+## Lukas enfermo (la fiebre, "lukas_enfermo") y sin llevarlo donde la Dra. Pilar: las tres primeras
+## noches él duerme a ratos (1); después, nada (2). Ninguna de esas noches hay sueño. 0: duerme normal.
+## (Del 48 en adelante no: que nada tape el final.)
+func _fiebre_noche() -> int:
+	var f := GameState.flags
+	if not f.has("lukas_enfermo") or not GameState.lukas_alive() or GameState.day >= 48:
+		return 0
+	return 1 if GameState.day - int(f["lukas_enfermo"]) <= 2 else 2
+
+
+const FIEBRE_A_RATOS := [
+	["Lukas no se acomoda. Se acuesta, se para, da la vuelta, se vuelve a acostar.",
+		"Él se duerme a ratos. Cada rato lo despierta un gemido chiquito, por la nariz.",
+		"Cuando por fin se duerme de verdad, ya está aclarando. No alcanza a soñar nada."],
+	["A las dos, Lukas gime. A las tres, gime más pasito, como para no molestar. Molesta igual.",
+		"Él le pone la mano en el lomo. Está caliente. Lukas se calma un rato. El rato dura veinte minutos.",
+		"Duerme en pedacitos. Ninguno alcanza para un sueño."],
+	["Lukas se pasa la noche cambiando de lado del cartón. Los prueba todos. Ninguno le sirve.",
+		"Él cuenta las vueltas. Se duerme en la once. Lo despierta la doce.",
+		"Amanece con los ojos llenos de arena."],
+]
+const FIEBRE_NADA := [
+	["Lukas llora. No ladra: llora, con la boca cerrada. Se mueve todo el tiempo, como si el piso quemara.",
+		"Él no duerme. Le da agua, la cobija, la camiseta. Lukas lo mira como si él supiera qué hacer.",
+		"No sabe. Pero sabe quién sabe."],
+	["Esta noche no hay sueño. Lukas se para, se echa, se para, gime. Él lo sigue con la mano en la oscuridad.",
+		"A las cuatro un vecino prende la luz y grita que callen a ese perro. Lukas no se calla. No puede.",
+		"Amanece. Él no cerró los ojos ni una vez."],
+	["Lukas tiembla y jadea. Se le mete debajo del brazo, sale, se vuelve a meter.",
+		"Él lo abraza para que se quede quieto. Lukas se queda quieto un minuto, y llora ese minuto.",
+		"Ninguno de los dos duerme. Uno de los dos necesita un veterinario."],
+]
+
+
+func _lukas_fiebre(spot: String, nivel: int) -> void:
+	GameState.flags["noche_fiebre"] = [GameState.day, nivel]
+	_moment(Vineta.M.LUKAS_INQUIETO)
+	var llora := AudioStreamPlayer.new()
+	llora.stream = load("res://assets/audio/cuerpo/lukas_llora.wav")
+	llora.volume_db = -6.0 if nivel == 2 else -12.0
+	add_child(llora)
+	var opts: Array = FIEBRE_NADA if nivel == 2 else FIEBRE_A_RATOS
+	var key := "fiebre_%d" % nivel
+	var n := int(GameState.flags.get("rota_" + key, 0))
+	GameState.flags["rota_" + key] = n + 1
+	var k := 0
+	for line in opts[n % opts.size()]:
+		if k == 0 or nivel == 2:
+			llora.play()
+		await _say(line)
+		k += 1
+	if nivel == 2:
+		await _say("La Dra. Pilar atiende en el Parque de San Judas: veinte mil. Los domingos en la mañana, gratis.")
+	GameState.change_mood(-10.0 if nivel == 2 else -4.0)
+	llora.queue_free()
+
+
 func _summary(spot: String) -> void:
 	_spot_pic(spot, "dormir", "noche", _rain_tonight(), 0.3)
 	var s := GameState.stats
 	_text.position = Vector2(16, 40)
 	_text.size = Vector2(_text_w(), 120)
-	await _say("DIA %d\n\nDinero conseguido: $%d\nComida: %d\nDurmió en %s\nPecho: %s" % [
-		GameState.day, s["money_earned"], s["food_eaten"], SPOT_NAMES.get(spot, "la calle"),
+	var fb: Array = GameState.flags.get("noche_fiebre", [])
+	var donde: String = "Durmió en %s" % SPOT_NAMES.get(spot, "la calle")
+	if fb.size() == 2 and int(fb[0]) == GameState.day:  # Lukas con fiebre
+		donde = ("Durmió a ratos en %s" if int(fb[1]) == 1 else "No durmió (%s)") % SPOT_NAMES.get(spot, "la calle")
+	await _say("DIA %d\n\nDinero conseguido: $%d\nComida: %d\n%s\nPecho: %s" % [
+		GameState.day, s["money_earned"], s["food_eaten"], donde,
 		GameState.TOS_PECHO[GameState.tos_stage()]])
 	if GameState.has_cambuche():
 		await _say("Cambuche: %s (nivel %d)" % [GameState.CAMBUCHE_NAMES[GameState.cambuche_level()], GameState.cambuche_level()])

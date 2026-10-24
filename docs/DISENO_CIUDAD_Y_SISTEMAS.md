@@ -2202,3 +2202,17 @@ chiste. Lukas lo lleva en la boca (se ve) y se lo pone al lado de la cara; él s
   quedan quietos; Lukas lee los controles directo y la cámara lo sigue a él.
 - Que no se repita: la primera vez la entrada es larga y explica; las siguientes, corta y distinta. Al que ya
   le dio otro día le toca otra línea (`REPITE`); al que ya dijo que no, "los perros no creen en antecedentes".
+
+## Lukas con fiebre no deja dormir (2026-10-24)
+
+Si Lukas se enferma (la fiebre: "lukas_enfermo") y no lo llevan donde la Dra. Pilar, la noche se bloquea
+(`NightSequence._fiebre_noche`, `_lukas_fiebre`):
+- Las tres primeras noches él duerme a ratos: Lukas no se acomoda, gime por la nariz; ánimo -4.
+- Desde la cuarta, no duerme nada: Lukas llora y se mueve toda la noche; ánimo -10, y el narrador dice dónde
+  está la doctora (veinte mil; los domingos en la mañana, gratis).
+- Ninguna de esas noches hay sueño: la historia de los sueños espera a que lo curen. Del 48 en adelante no
+  bloquea (que nada tape el final), ni la noche en que se muere Lukas.
+- Se ve: la viñeta `Vineta.M.LUKAS_INQUIETO` (Lukas en otro lado cada cuadro; él sentado, despierto) y se
+  oye `assets/audio/cuerpo/lukas_llora.wav`. En el resumen: "Durmió a ratos" / "No durmió".
+- Con la enfermedad larga (desde el día 30), la doctora también le baja la fiebre, gratis: si no, la fiebre
+  no tendría cura y no lo dejaría dormir nunca más.

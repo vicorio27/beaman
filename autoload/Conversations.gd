@@ -2850,6 +2850,11 @@ func _veterinaria() -> void:
 	if (GameState.lukas_stage() >= 1 or GameState.lukas_sick()) and f.get("pilar_dia", -1) != GameState.day:
 		await _vet_coca()  # comer primero; lo demás, después
 	if GameState.lukas_stage() >= 1:
+		if f.has("lukas_enfermo"):  # la fiebre sí tiene arreglo, aunque lo otro no (y si no, no lo deja dormir)
+			f.erase("lukas_enfermo")
+			f["lukas_curado"] = GameState.day
+			await Dialogue.talk([["DRA. PILAR", "—Y de paso, la fiebre. Eso sí tiene arreglo: una inyección y listo. Esa va por la casa."],
+				["", "(Lukas ni se da cuenta del chuzo. Está ocupado mirándolo a él.)"]])
 		await _vet_cronico()
 		return
 	if not GameState.lukas_sick():
