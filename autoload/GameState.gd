@@ -730,7 +730,7 @@ func new_day(spot: String) -> Array:
 	lines.append_array(DayTasks.close_day())
 	# El día nuevo.
 	day += 1
-	stats = {"money_earned": 0, "food_eaten": 0}
+	stats = {"money_earned": 0, "food_eaten": 0, "segundos": stats.get("segundos", 0.0)}  # el tiempo jugado no es del día
 	for f in ["job_german_done", "job_german_active", "german_gift", "dusk_warned", "rosa_fiado"]:
 		flags.erase(f)
 	for q in ["sobrevivir", "donde_dormir", "lukas_comida", "banarse", "lukas_agua"]:

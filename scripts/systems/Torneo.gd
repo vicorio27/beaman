@@ -92,7 +92,10 @@ static func _ayer(r: int) -> Array:
 		m = b.next_match()
 	st["bracket"] = b.to_dict()
 	if not worked:
-		lines.append(TenisHistoria.TEXTOS["no_fue"])
+		var nf: Array = TenisHistoria.TEXTOS["no_fue"]
+		var k := int(st.get("no_fue_n", 0))
+		st["no_fue_n"] = k + 1
+		lines.append(nf[mini(k, nf.size() - 1)])
 	var ultimo: String = st.get("ultimo", "")
 	if worked and ultimo != "" and ultimo in st.get("salvados", []) and b.alive(ultimo) and r + 1 < b.rounds.size():
 		lines.append(str(TenisHistoria.ABANDONOS.get(ultimo, {}).get("vuelve", "")))

@@ -107,7 +107,10 @@ const ABANDONOS := {
 const TEXTOS := {
 	# Las mañanas (Torneo.manana).
 	"llega": "En el potrero de arriba, donde ayer había una llanta y un perro, amaneció un coliseo. Dice HIGHWAY TO HELL. Nadie lo vio llegar.",
-	"no_fue": "Ayer no fue al coliseo. Se jugó igual. El organizador consiguió otro recogebolas: uno que habla.",
+	"no_fue": ["Ayer no fue al coliseo. Se jugó igual. El organizador consiguió otro recogebolas: uno que habla.",
+		"Otra vez no fue al coliseo. El recogebolas nuevo ya tiene uniforme, apodo y una barra que le canta.",
+		"Tampoco ayer. Dicen que en el coliseo preguntaron por él: el del parqueadero, para cobrarle el puesto que no usó.",
+		"El coliseo siguió sin él. El recogebolas que habla ya da entrevistas. Dice que el oficio se lo enseñó \"un mudo\"."],
 	"campeon": "Anoche ganó %s el torneo. El coliseo se fue como llegó: de noche, sin avisar. Quedó el pasto pisado y un vaso de cerveza en cada hueco.",
 	"raqueta_queda": "Nadie le pidió de vuelta la raqueta de %s. Él tampoco la ofreció.",
 	"gota_ultimo": "El gota a gota: hoy es el último día. ",

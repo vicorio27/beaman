@@ -133,7 +133,8 @@ func _victoria() -> void:
 		g.start_quest("v_defensoria")
 	if g.day >= 44 and not g.quests.has("v_cumple"):
 		g.start_quest("v_cumple")
-		Narrator.say("(El 29 de octubre Victoria cumple doce. Faltan %d días.)" % (50 - g.day))
+		var left := 50 - g.day
+		Narrator.say("(El 29 de octubre Victoria cumple doce. %s)" % ("Es mañana." if left == 1 else "Faltan %d días." % left))
 	var scene := get_tree().current_scene
 	if scene == null or not TimeManager.running:
 		return
