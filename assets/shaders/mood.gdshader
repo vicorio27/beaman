@@ -36,15 +36,18 @@ void fragment() {
 		texture(screen_tex, uv).g,
 		texture(screen_tex, uv - vec2(ab, 0.0)).b);
 	float lum = luma(col);
+	// Con el filtro fuerte se levantan las sombras (no los claros): de noche o en un sitio oscuro, lo
+	// oscuro quedaba casi negro y no se veía por dónde ir.
+	float lum_c = pow(max(lum, 0.0), mix(1.0, 0.72, max(distress, grief)));
 
 	// Registro cálido: tinte de mañana y un poco más de saturación.
 	vec3 warm = col * warm_tint;
 	warm = mix(vec3(luma(warm)), warm, 1.2);
 
 	// Registro frío: duotono, y los rojos se conservan como sangre/óxido.
-	vec3 cold = mix(cold_shadow, cold_light, smoothstep(0.05, 0.95, lum));
+	vec3 cold = mix(cold_shadow, cold_light, smoothstep(0.05, 0.95, lum_c));
 	float redness = clamp((col.r - max(col.g, col.b)) * 2.5, 0.0, 1.0);
-	cold = mix(cold, blood * (0.4 + lum), redness);
+	cold = mix(cold, blood * (0.4 + lum_c), redness);
 	float levels = mix(12.0, 6.0, distress);
 	cold = floor(cold * levels + 0.5) / levels;
 
@@ -67,7 +70,9 @@ void fragment() {
 	col *= clamp(vig, 0.0, 1.0);
 
 	// Luto: sin color, un poco azul, un poco más oscuro.
-	vec3 grey = vec3(luma(col)) * vec3(0.9, 0.94, 1.04) * (1.0 - 0.05 * grief);
+	float gl = luma(col);
+	gl = pow(max(gl, 0.0), mix(1.0, 0.8, grief));  // (las sombras, un poco arriba: si no, el luto de noche es negro)
+	vec3 grey = vec3(gl) * vec3(0.9, 0.94, 1.04) * (1.0 - 0.05 * grief);
 	col = mix(col, grey, grief);
 
 	// Memoria: sepia quemado, centro sobreexpuesto, parpadeo de proyector.

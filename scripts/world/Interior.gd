@@ -91,7 +91,7 @@ const PLACES := {
 			{"row": 6, "path": [Vector2(88, 52)], "pose": "down", "say": ["(posa para la foto de grado de la hija, más tieso que el diploma)"],
 				"talk": ["—Sonría, me dicen. Llevo cuarenta años sin hacerlo. No me lo van a sacar con un pajarito."]},
 			{"row": 15, "path": [Vector2(108, 52)], "pose": "down", "say": ["—¡Papá, sonría! ... ¡Así no! ¡Así da miedo!"], "talk": ["—Es mi foto de grado. Mi papá vino. Eso ya es el regalo. No le diga."]}]},
-	"caverna": {"size": Vector2(208, 128), "floor": Color(0.16, 0.14, 0.22), "wall": Color(0.22, 0.18, 0.34),
+	"caverna": {"size": Vector2(208, 128), "floor": Color(0.24, 0.2, 0.32), "wall": Color(0.28, 0.22, 0.4),
 		"title": "LA CAVERNA DEL GAMER", "tiles": false, "dark": true,
 		"props": [["arcade", Vector2(14, 6), Vector2(20, 34)], ["arcade", Vector2(40, 6), Vector2(20, 34)], ["arcade", Vector2(66, 6), Vector2(20, 34)],
 			["arcade", Vector2(14, 70), Vector2(20, 34)], ["poster", Vector2(96, 6), Vector2(24, 22)], ["shelf_games", Vector2(126, 6), Vector2(70, 22)],
@@ -205,7 +205,7 @@ func _draw_room() -> void:
 		for p in place["props"]:
 			_moving(p[0], p[1], p[2])
 		if place.get("dark", false):
-			_room.draw_rect(Rect2(0, 0, w, h), Color(0.05, 0.02, 0.1, 0.25))
+			_room.draw_rect(Rect2(0, 0, w, h), Color(0.05, 0.02, 0.1, 0.12))  # (penumbra, no negro: con el filtro encima no se veía nada)
 		return
 	var fl: Color = place["floor"]
 	var wl: Color = place["wall"]
@@ -228,7 +228,7 @@ func _draw_room() -> void:
 	for p in place["props"]:
 		_prop(p[0], p[1], p[2])
 	if place.get("dark", false):
-		r.draw_rect(Rect2(0, 0, w, h), Color(0.05, 0.02, 0.1, 0.25))
+		r.draw_rect(Rect2(0, 0, w, h), Color(0.05, 0.02, 0.1, 0.12))
 	for spec in place["people"]:
 		if spec.get("cat", false):  # el gato de Al, en el televisor de la pared
 			var c: Vector2 = spec["path"][0]

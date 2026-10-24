@@ -4,16 +4,17 @@ extends Node
 ## Lo agrega Location en los lugares con `outdoor = true`.
 
 ## Hora (en horas) -> color de la luz. Se interpola entre puntos.
+## (La noche no es negra: encima va el filtro del ánimo, que oscurece más. Tiene que verse por dónde se camina.)
 const KEYS := [
-	[0.0, Color(0.36, 0.38, 0.62)],
-	[5.0, Color(0.38, 0.4, 0.64)],
+	[0.0, Color(0.44, 0.46, 0.68)],
+	[5.0, Color(0.46, 0.48, 0.7)],
 	[6.5, Color(0.78, 0.74, 0.86)],
 	[8.0, Color(1, 1, 1)],
 	[16.0, Color(1, 1, 1)],
 	[18.0, Color(1.0, 0.84, 0.7)],
 	[19.5, Color(0.6, 0.52, 0.66)],
-	[20.5, Color(0.36, 0.38, 0.62)],
-	[24.0, Color(0.36, 0.38, 0.62)],
+	[20.5, Color(0.44, 0.46, 0.68)],
+	[24.0, Color(0.44, 0.46, 0.68)],
 ]
 ## Nombres de nodos (prefijo) que dan luz de noche, y cómo.
 const LIGHTS := {
