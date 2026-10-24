@@ -93,7 +93,8 @@ var _block_until := 0
 ## Hay una ventana abierta o se acaba de cerrar una (evita que el mismo botón que cierra un
 ## diálogo agarre algo o abra una puerta).
 func input_blocked() -> bool:
-	return ui_open or Time.get_ticks_msec() < _block_until
+	# (el día que manda Lukas, él y lo que se toca con E se quedan quietos: LukasManda)
+	return ui_open or Time.get_ticks_msec() < _block_until or flags.get("lukas_manda", false)
 
 
 func block_input(seconds: float) -> void:
@@ -613,6 +614,10 @@ func roofed(spot: String) -> bool:
 ## Pasa la noche en `spot` y arranca el día siguiente. Devuelve las líneas de la mañana.
 func new_day(spot: String) -> Array:
 	var lines := []
+	# Se acostó con el hambre en 0 o 1 (de 10): mañana no se levanta y manda Lukas (LukasManda).
+	# Algunos días, no siempre: uno cada cuatro como mucho, nunca el domingo de visita ni al final.
+	var manana := day + 1
+	var no_levanta := hunger <= 10.0 and lukas_alive() and day >= 3 and manana < 48 and manana % 7 != 0 		and manana - int(flags.get("no_se_levanta", -99)) >= 4
 	var in_cambuche := has_cambuche(spot)
 	var rained: bool = randf() < 0.3
 	if flags.get("lluvia_noche_dia", -1) == day:  # (se decidió al acostarse, para verla llover: NightSequence)
@@ -754,6 +759,9 @@ func new_day(spot: String) -> Array:
 	lines.append_array(DayTasks.close_day())
 	# El día nuevo.
 	day += 1
+	if no_levanta:
+		flags["no_se_levanta"] = day
+		lines.append("Se acostó sin comer. Amanece, y el cuerpo no quiere.")
 	stats = {"money_earned": 0, "food_eaten": 0, "segundos": stats.get("segundos", 0.0)}  # el tiempo jugado no es del día
 	for f in ["job_german_done", "job_german_active", "german_gift", "dusk_warned", "rosa_fiado"]:
 		flags.erase(f)

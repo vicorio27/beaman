@@ -51,6 +51,8 @@ const FETCH_LINES := [
 
 var player: CharacterBody2D
 var state := "follow"
+## El día que él no se levanta, el jugador maneja a Lukas (LukasManda).
+var manda := false
 var facing := "side"
 var _target: Node2D
 var _idle := 0.0
@@ -508,6 +510,15 @@ func fetch() -> void:
 func _physics_process(delta: float) -> void:
 	if player == null:
 		return
+	if manda:
+		var dir := Vector2.ZERO
+		if not Dialogue.active and not SceneRouter.busy:
+			dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+		if dir == Vector2.ZERO and sprite.animation in ["sit", "bark"]:
+			velocity = Vector2.ZERO
+			return  # (sentado pidiendo: que se quede así)
+		_walk(dir * LukasManda.SPEED)
+		return
 	_cooldown -= delta
 	var to_player := player.global_position - global_position
 	if to_player.length() > TELEPORT_DIST and not state in ["seek", "settle_go", "settled", "lost"]:
@@ -656,6 +667,8 @@ func wait_at(at: Vector2) -> void:
 
 ## Él le habla a alguien: Lukas va a olerlo.
 func greet(who: Node2D, id: String) -> void:
+	if manda:
+		return
 	if not state in ["follow", "sit"] or who == null or not GameState.lukas_alive():
 		return
 	_greet_who = who

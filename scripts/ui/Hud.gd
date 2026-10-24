@@ -162,6 +162,9 @@ func _hide_world_texts() -> void:
 		busy.append(Narrator._panel.get_global_rect())
 	if Dialogue.active and Dialogue._box:
 		busy.append(Dialogue._box.get_global_rect().grow_side(SIDE_TOP, 14.0))
+		for face in [Dialogue._portrait, Dialogue._portrait2]:  # (la cara del que habla también tapa)
+			if face and face.visible:
+				busy.append(face.get_global_rect())
 	if Phone.ringing():
 		busy.append(Rect2(176, 108, 112, 52))
 	for n in get_tree().get_nodes_in_group("texto_mundo"):

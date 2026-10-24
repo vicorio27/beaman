@@ -2188,3 +2188,15 @@ entradas, 26-38 la coronilla pelada con la franja a los lados, 39-50 calvo. La b
 
 También: lo de Alejandro avanza aunque él pase de largo (antes, si no se le hablaba, todos los días salía la
 misma escena de la escoba con el mismo aviso: 28 veces en el recorrido de prueba).
+
+## El día que manda Lukas (2026-10-23, experimento)
+
+Si él se acuesta con el hambre en 0 o 1 (de 10), al otro día no se levanta: se queda tirado, tapado con el
+cartón, y el jugador maneja a Lukas (`scripts/systems/LukasManda.gd`). Con E, Lukas le pide a la gente:
+Doña Rosa (arepa), Marta (empanada), Samuel, Doña Fabiola y el Padre (pan) le dan algo; los demás, un
+chiste. Lukas lo lleva en la boca (se ve) y se lo pone al lado de la cara; él se sienta, come, le da el
+último pedazo y se levanta. A mediodía se levanta solo, con o sin comida.
+- Lo marca `GameState.new_day` ("no_se_levanta"): como mucho uno cada cuatro días, nunca un domingo de
+  visita ni del 48 en adelante, y solo con Lukas vivo.
+- Mientras tanto `GameState.input_blocked()` es verdad (bandera "lukas_manda"): él y lo que se toca con E se
+  quedan quietos; Lukas lee los controles directo y la cámara lo sigue a él.

@@ -73,6 +73,7 @@ func _ready() -> void:
 	add_child(_sfx)
 	GameState.money_delta.connect(_on_money)
 	GameState.ate.connect(_on_ate)
+	LukasManda.maybe_start.call_deferred(get_tree().current_scene)  # (el día que no se levanta)
 	_color_layer = CanvasLayer.new()
 	_color_layer.layer = COLOR_LAYER
 	_color_layer.follow_viewport_enabled = true  # (va con la cámara, como el mundo)
