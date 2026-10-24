@@ -47,6 +47,14 @@ const SFX := {
 	"timbre": preload("res://assets/audio/cuerpo/timbre.wav"),
 }
 
+## Él conserva un poco de color cuando el mundo se pone gris (el ánimo, el luto): una copia suya, a todo
+## color y medio transparente, por encima del filtro (MoodFilter, capa 10). Así no se pierde en la pantalla.
+const COLOR_LAYER := 11
+const COLOR_MAX := 0.5
+var _color_layer: CanvasLayer
+var _color_copy: AnimatedSprite2D
+var _mood_mat: ShaderMaterial
+
 @onready var sprite: AnimatedSprite2D = $Sprite
 
 
@@ -65,6 +73,49 @@ func _ready() -> void:
 	add_child(_sfx)
 	GameState.money_delta.connect(_on_money)
 	GameState.ate.connect(_on_ate)
+	_color_layer = CanvasLayer.new()
+	_color_layer.layer = COLOR_LAYER
+	_color_layer.follow_viewport_enabled = true  # (va con la cámara, como el mundo)
+	add_child(_color_layer)
+	_color_copy = AnimatedSprite2D.new()
+	_color_copy.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_color_copy.visible = false
+	_color_layer.add_child(_color_copy)
+
+
+## Cuánto gris le pone el filtro a la pantalla ahora (0: nada).
+func _grey_amount() -> float:
+	if _mood_mat == null:
+		var scene := get_tree().current_scene
+		var mf := scene.find_child("MoodFilter", true, false) if scene else null
+		var screen := mf.get_node_or_null("Screen") as ColorRect if mf else null
+		if screen == null:
+			return 0.0
+		_mood_mat = screen.material as ShaderMaterial
+	var d: float = float(_mood_mat.get_shader_parameter("distress"))
+	var g = _mood_mat.get_shader_parameter("grief")
+	var m: float = float(_mood_mat.get_shader_parameter("memory"))
+	if m > 0.1:
+		return 0.0  # en los recuerdos, sepia como todo
+	return clampf(maxf(smoothstep(0.3, 1.0, d), float(g) if g != null else 0.0), 0.0, 1.0)
+
+
+func _process(_delta: float) -> void:
+	var k := _grey_amount()
+	var src: AnimatedSprite2D = _act if _act.visible else sprite
+	var show := k > 0.05 and is_visible_in_tree() and src.visible and not SceneRouter.busy and not GameState.input_blocked()
+	_color_copy.visible = show
+	if not show:
+		return
+	if _color_copy.sprite_frames != src.sprite_frames:
+		_color_copy.sprite_frames = src.sprite_frames
+	_color_copy.animation = src.animation
+	_color_copy.frame = src.frame
+	_color_copy.flip_h = src.flip_h
+	_color_copy.offset = src.offset
+	_color_copy.centered = src.centered
+	_color_copy.global_transform = src.global_transform
+	_color_copy.modulate = Color(1, 1, 1, COLOR_MAX * k)
 
 
 func _physics_process(_delta: float) -> void:
