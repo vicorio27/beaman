@@ -805,13 +805,19 @@ const TOS_NUEVA := {
 const TOS_LINES := {
 	1: [["Tose al despertar. Lukas levanta la cabeza, lo mira hasta que termina y se vuelve a acomodar.", "Tose al despertar. Nadie levanta la cabeza."],
 		["La tos ya tiene horario: a las seis, con el frío.", "La tos ya tiene horario: a las seis, con el frío."],
-		["Escupe detrás del cartón. Mira el escupitajo un segundo, como quien lee el periódico.", "Escupe detrás del cartón. Mira el escupitajo un segundo, como quien lee el periódico."]],
+		["Escupe detrás del cartón. Mira el escupitajo un segundo, como quien lee el periódico.", "Escupe detrás del cartón. Mira el escupitajo un segundo, como quien lee el periódico."],
+		["Tose y una paloma se va volando. Lukas la persigue dos metros, por si acaso.", "Tose y una paloma se va volando. Es lo único que se movió por él."],
+		["La señora de las arepas le pasa un Halls sin decir nada. Él se lo guarda para cuando sea grave.", "La señora de las arepas le pasa un Halls sin decir nada. Él se lo guarda para cuando sea grave."]],
 	2: [["Tose hasta que se tiene que sentar. Después se para como si nada. Lukas no le cree.", "Tose hasta que se tiene que sentar. Después se para como si nada."],
 		["Respira y el pecho le silba. Lukas para las orejas: cree que es un pájaro.", "Respira y el pecho le silba. Ya no hay quién pare las orejas."],
-		["Se amarra la camiseta vieja al cuello, como bufanda. No le sirve para nada. Se la deja.", "Se amarra la camiseta vieja al cuello, como bufanda. No le sirve para nada. Se la deja."]],
+		["Se amarra la camiseta vieja al cuello, como bufanda. No le sirve para nada. Se la deja.", "Se amarra la camiseta vieja al cuello, como bufanda. No le sirve para nada. Se la deja."],
+		["Tose tan fuerte que el celador del frente prende la luz. La apaga. La vuelve a prender, por si acaso.", "Tose tan fuerte que el celador del frente prende la luz. La apaga. La vuelve a prender, por si acaso."],
+		["Lukas le trae la camiseta en la boca y se la deja en el pecho. No sabe para qué. Él tampoco.", "Duerme con la mano en el pecho, como quien sostiene una puerta."]],
 	3: [["Fiebre. El sol le hace frío.", "Fiebre. El sol le hace frío."],
 		["Tose y Lukas le pone la pata encima.", "Tose y no hay quién lo mire."],
-		["Le cuesta subir el andén. Lo sube igual, de lado.", "Le cuesta subir el andén. Lo sube igual, de lado."]],
+		["Le cuesta subir el andén. Lo sube igual, de lado.", "Le cuesta subir el andén. Lo sube igual, de lado."],
+		["Suda frío. Se pone la chaqueta. Se la quita. Se la vuelve a poner. La chaqueta no opina.", "Suda frío. Se pone la chaqueta. Se la quita. Se la vuelve a poner. La chaqueta no opina."],
+		["Lukas duerme pegado a su pecho, a ver si lo calienta. Lo calienta.", "Se abraza la mochila para dormir. La mochila no calienta. Igual."]],
 }
 const TOS_PECHO := ["tranquilo", "tose", "le silba", "le duele"]
 
@@ -855,7 +861,9 @@ func _tos_noche(spot: String, wet: bool, in_cambuche: bool, lines: Array) -> voi
 		change_mood(-4.0)
 	elif st > 0 and (day % 3 == 0 or st == 3):
 		var opts: Array = TOS_LINES[st]
-		lines.append(opts[day % opts.size()][solo])
+		var n := int(flags.get("rota_tos_%d" % st, 0))  # (antes salía siempre la primera: day % 3 era 0)
+		flags["rota_tos_%d" % st] = n + 1
+		lines.append(opts[n % opts.size()][solo])
 
 
 # ---------------------------------------------------------------- Habilidades

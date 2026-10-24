@@ -2722,7 +2722,8 @@ func _visita() -> void:
 		return
 	f["visita_dia"] = GameState.day
 	GameState.complete_quest("v_visita")
-	if f.get("lorena_visita", false):  # Lorena llamó antes (LorenaLlamadas "visitas"): veinte minutos y con libreto
+	# La visita corta de Lorena no puede ser la primera: la primera es la del "¿Usted es mi papá?".
+	if f.get("lorena_visita", false) and int(f.get("visitas_hechas", 0)) >= 1:  # Lorena llamó antes (LorenaLlamadas "visitas"): veinte minutos y con libreto
 		f.erase("lorena_visita")
 		await Dialogue.talk([
 			["VICTORIA", "—Hoy son veinte minutos. Mi mamá dijo. Y que no me abrace, porque usted huele a calle."],

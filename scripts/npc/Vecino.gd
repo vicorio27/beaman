@@ -42,6 +42,10 @@ func _ready() -> void:
 	_bubble.position = Vector2(-60, -42)
 	_bubble.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var bg := StyleBoxFlat.new()  # (fondo oscuro: no se lee encima de letreros ni bombillos)
+	bg.bg_color = Color(0.05, 0.04, 0.06, 0.72)
+	bg.set_content_margin_all(2)
+	_bubble.add_theme_stylebox_override("normal", bg)
 	_bubble.visible = false
 	_hint = _label(Color(1, 1, 1))
 	_hint.text = "HABLAR"
@@ -76,7 +80,19 @@ func _pose() -> void:
 	_sprite.flip_h = bool(spec.get("flip", false))
 
 
+## El globo crece para arriba (no tapa a quien habla) y nunca se sale de la pantalla.
+func _place_bubble() -> void:
+	_bubble.size = Vector2(120, 0)
+	var h := _bubble.get_combined_minimum_size().y
+	var view := get_viewport().get_canvas_transform().affine_inverse() * Rect2(Vector2.ZERO, get_viewport().get_visible_rect().size)
+	var x := clampf(global_position.x - 60.0, view.position.x + 2.0, view.position.x + Controls.right_edge() - 122.0)  # (en el celular, la franja de los botones queda libre)
+	var y := maxf(global_position.y - 22.0 - h, view.position.y + 2.0)
+	_bubble.global_position = Vector2(x, y)
+
+
 func _process(delta: float) -> void:
+	if _bubble.visible:
+		_place_bubble()
 	_hint.visible = _player != null and not GameState.input_blocked() and not _bubble.visible
 	Focus.dim(self, _hint)
 	if GameState.ui_open or Dialogue.active:
@@ -124,6 +140,7 @@ func say(t: String) -> void:
 	_bubble.text = t
 	_bubble.modulate.a = 1.0
 	_bubble.visible = true
+	_place_bubble()
 	var tw := create_tween()
 	tw.tween_interval(maxf(2.2, t.length() * 0.06))
 	tw.tween_property(_bubble, "modulate:a", 0.0, 0.4)
