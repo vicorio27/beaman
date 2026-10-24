@@ -12,8 +12,9 @@ uniform float memory : hint_range(0.0, 1.0) = 0.0;
 uniform float grief : hint_range(0.0, 1.0) = 0.0;
 
 uniform vec3 warm_tint = vec3(1.08, 1.0, 0.86);
-uniform vec3 cold_shadow = vec3(0.03, 0.04, 0.06);
-uniform vec3 cold_light = vec3(0.56, 0.64, 0.64);
+// (Más claros que antes: con el ánimo en cero tiene que seguir viéndose dónde está él.)
+uniform vec3 cold_shadow = vec3(0.07, 0.08, 0.10);
+uniform vec3 cold_light = vec3(0.70, 0.77, 0.77);
 uniform vec3 blood = vec3(0.62, 0.07, 0.09);
 
 float hash(vec2 p) {
@@ -44,28 +45,29 @@ void fragment() {
 	vec3 cold = mix(cold_shadow, cold_light, smoothstep(0.05, 0.95, lum));
 	float redness = clamp((col.r - max(col.g, col.b)) * 2.5, 0.0, 1.0);
 	cold = mix(cold, blood * (0.4 + lum), redness);
-	float levels = mix(12.0, 4.0, distress);
+	float levels = mix(12.0, 6.0, distress);
 	cold = floor(cold * levels + 0.5) / levels;
 
-	col = mix(warm, cold, smoothstep(0.0, 1.0, distress));
+	// El frío nunca se lo come todo: algo del color de verdad se queda (la gente se distingue del fondo).
+	col = mix(warm, cold, smoothstep(0.0, 1.0, distress) * 0.8);
 
 	// Grano animado, del tamaño de un píxel.
 	float grain = hash(px + fract(TIME * 7.0) * 100.0) - 0.5;
-	col += grain * (0.03 + distress * 0.13);
+	col += grain * (0.03 + distress * 0.07);
 
 	// Líneas horizontales sutiles.
 	if (mod(px.y, 2.0) < 1.0) {
-		col *= 1.0 - 0.07 * distress;
+		col *= 1.0 - 0.04 * distress;
 	}
 
 	// Viñeta que "late" despacio cuando el hambre es fuerte.
 	vec2 d = uv - 0.5;
 	float pulse = 1.0 + distress * 0.15 * sin(TIME * 2.2);
-	float vig = 1.0 - dot(d, d) * (0.5 + 2.0 * distress) * pulse;
+	float vig = 1.0 - dot(d, d) * (0.5 + 1.2 * distress) * pulse;
 	col *= clamp(vig, 0.0, 1.0);
 
 	// Luto: sin color, un poco azul, un poco más oscuro.
-	vec3 grey = vec3(luma(col)) * vec3(0.9, 0.94, 1.04) * (1.0 - 0.12 * grief);
+	vec3 grey = vec3(luma(col)) * vec3(0.9, 0.94, 1.04) * (1.0 - 0.05 * grief);
 	col = mix(col, grey, grief);
 
 	// Memoria: sepia quemado, centro sobreexpuesto, parpadeo de proyector.
