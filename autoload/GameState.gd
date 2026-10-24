@@ -617,7 +617,7 @@ func new_day(spot: String) -> Array:
 	# Se acostó con el hambre en 0 o 1 (de 10): mañana no se levanta y manda Lukas (LukasManda).
 	# Algunos días, no siempre: uno cada cuatro como mucho, nunca el domingo de visita ni al final.
 	var manana := day + 1
-	var no_levanta := hunger <= 10.0 and lukas_alive() and day >= 3 and manana < 48 and manana % 7 != 0 		and manana - int(flags.get("no_se_levanta", -99)) >= 4
+	var no_levanta := hunger <= 10.0 and lukas_alive() and day >= 3 and manana < 48 and manana % 7 != 0 		and manana - int(flags.get("no_se_levanta", -99)) >= 6
 	var in_cambuche := has_cambuche(spot)
 	var rained: bool = randf() < 0.3
 	if flags.get("lluvia_noche_dia", -1) == day:  # (se decidió al acostarse, para verla llover: NightSequence)

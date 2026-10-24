@@ -2196,7 +2196,9 @@ cartón, y el jugador maneja a Lukas (`scripts/systems/LukasManda.gd`). Con E, L
 Doña Rosa (arepa), Marta (empanada), Samuel, Doña Fabiola y el Padre (pan) le dan algo; los demás, un
 chiste. Lukas lo lleva en la boca (se ve) y se lo pone al lado de la cara; él se sienta, come, le da el
 último pedazo y se levanta. A mediodía se levanta solo, con o sin comida.
-- Lo marca `GameState.new_day` ("no_se_levanta"): como mucho uno cada cuatro días, nunca un domingo de
+- Lo marca `GameState.new_day` ("no_se_levanta"): como mucho uno cada seis días (con hambre todas las noches salían nueve en 50 días; así, siete), nunca un domingo de
   visita ni del 48 en adelante, y solo con Lukas vivo.
 - Mientras tanto `GameState.input_blocked()` es verdad (bandera "lukas_manda"): él y lo que se toca con E se
   quedan quietos; Lukas lee los controles directo y la cámara lo sigue a él.
+- Que no se repita: la primera vez la entrada es larga y explica; las siguientes, corta y distinta. Al que ya
+  le dio otro día le toca otra línea (`REPITE`); al que ya dijo que no, "los perros no creen en antecedentes".

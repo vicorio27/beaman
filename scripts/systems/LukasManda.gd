@@ -41,6 +41,22 @@ const PIDE := {
 	"celador": {"da": "", "lines": [["CELADOR", "—Aquí no pueden estar perros. ... Bueno. Usted no es perro: usted es visita. Pero no tengo nada."],
 		["", "(Le toca el pito. Lukas le ladra al pito. Empatan.)"]]},
 }
+## Cuando Lukas vuelve donde alguien que ya le dio otro día: que no sea el mismo chiste.
+const REPITE := {
+	"rosa": [["DOÑA ROSA", "—¿Otra vez usted? Ese hombre suyo tiene que aprender a comer solo."],
+		["DOÑA ROSA", "—Tome. Y dígale que esta se la anoto. Con letra grande."]],
+	"marta": [["MARTA", "—Mire quién volvió: el cobrador. ... Una empanada. La de la otra vez me la pagó con ojitos. Esta también, ya sé."]],
+	"samuel": [["SAMUEL", "—Usted otra vez. Bueno: el pan es del que lo necesita, y hoy lo necesitan dos."]],
+	"fabiola": [["DOÑA FABIOLA", "—Ay, mijo, otra vez. Tome. Y dígale que la sopa es el jueves, que no me vuelva a faltar."]],
+	"padre": [["PADRE HERNANDO", "—El recadero, otra vez. Tome. A este paso me toca bautizarlo."]],
+}
+const NO_OTRA_VEZ := [["", "(Ese ya le dijo que no la otra vez. Lukas lo intenta igual: los perros no creen en antecedentes.)"]]
+## La segunda vez en adelante, la entrada es corta (y cambia).
+const ENTRADA_OTRA := [
+	["(Otra vez el cartón en la cara. Otra vez el cuerpo que dice que no.)", "(Lukas ya conoce el procedimiento. Se estira, bosteza y sale a trabajar.)"],
+	["(No se levanta. Lukas le revisa los bolsillos con la nariz: nada. Lo de siempre.)", "(Lukas suspira como un empleado público y se pone de pie.)"],
+	["(El cartón no se mueve. Lukas le ladra una vez, por protocolo.)", "(Después sale a la calle. Hoy el que trae la comida es el perro. Otra vez.)"],
+]
 const OTRA_VEZ := [["", "(Ya le dieron lo que había. Lukas lo sabe, pero lo intenta otra vez, por si cambió el mundo.)"]]
 const SOLO := [
 	"(Lukas ladra. Nadie le contesta. Un perro de otra cuadra sí, pero eso es otro tema.)",
@@ -54,7 +70,6 @@ var _cam: Camera2D
 var _carry := ""
 var _carry_spr: Sprite2D
 var _asked := {}
-var _solo_i := 0
 var _busy := true
 var _cool := 0.0
 
@@ -85,12 +100,18 @@ func _ready() -> void:
 	player.act("en_el_piso")
 	while SceneRouter.busy or Dialogue.active:
 		await get_tree().process_frame
-	await Dialogue.talk([
-		["", "(No se levanta. Se tapa la cara con el cartón. Anoche se acostó sin comer, y hoy el cuerpo dijo que no.)"],
-		["", "(Lukas le lame la oreja. Nada. Le jala la manga. Nada. Lukas se sienta y lo piensa.)"],
-		["", "(Lo piensa poquito: es un perro. Pero lo piensa bien.)"],
-		["", Controls.keys_in("Hoy manda LUKAS. Las flechas: caminar. E: pedirle a alguien. Hay que traerle algo de comer antes de mediodía.")],
-	])
+	var veces := int(GameState.flags.get("lukas_manda_veces", 0))
+	GameState.flags["lukas_manda_veces"] = veces + 1
+	if veces == 0:
+		await Dialogue.talk([
+			["", "(No se levanta. Se tapa la cara con el cartón. Anoche se acostó sin comer, y hoy el cuerpo dijo que no.)"],
+			["", "(Lukas le lame la oreja. Nada. Le jala la manga. Nada. Lukas se sienta y lo piensa.)"],
+			["", "(Lo piensa poquito: es un perro. Pero lo piensa bien.)"],
+			["", Controls.keys_in("Hoy manda LUKAS. Las flechas: caminar. E: pedirle a alguien. Hay que traerle algo de comer antes de mediodía.")],
+		])
+	else:
+		var e: Array = ENTRADA_OTRA[(veces - 1) % ENTRADA_OTRA.size()]
+		await Dialogue.talk([["", e[0]], ["", e[1]], ["", Controls.keys_in("Manda LUKAS. E: pedirle a alguien. Antes de mediodía.")]])
 	_cam = Camera2D.new()
 	_cam.position = Vector2(0, -7)
 	_cam.position_smoothing_enabled = true
@@ -131,8 +152,7 @@ func _ask() -> void:
 	lukas.sprite.play("sit")
 	if best == null:
 		lukas.sprite.play("bark")
-		await Dialogue.talk([["", SOLO[_solo_i % SOLO.size()]]])
-		_solo_i += 1
+		await Dialogue.talk([["", GameState.rota("lukas_solo", SOLO)]])
 		_busy = false
 		return
 	var id: String = str(best.get("npc_id"))
@@ -142,7 +162,13 @@ func _ask() -> void:
 		return
 	_asked[id] = true
 	var spec: Dictionary = PIDE.get(id, {"da": "", "lines": [["", "(Lo mira. Lukas lo mira. No pasa nada. Los perros saben cuándo no.)"]]})
-	await Dialogue.talk(spec["lines"])
+	var antes: Dictionary = GameState.flags.get("lukas_pidio", {})
+	var lines: Array = spec["lines"]
+	if antes.has(id):  # ya le pidió otro día
+		lines = REPITE.get(id, NO_OTRA_VEZ)
+	antes[id] = true
+	GameState.flags["lukas_pidio"] = antes
+	await Dialogue.talk(lines)
 	if str(spec["da"]) != "":
 		_take(str(spec["da"]))
 	_busy = false
