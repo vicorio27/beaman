@@ -173,7 +173,8 @@ func _hide_world_texts() -> void:
 			continue
 		var xf := lab.get_global_transform_with_canvas()
 		var r := Rect2(xf.origin, lab.size * xf.get_scale())
-		var hit := false
+		# Un minijuego o un menú abierto (sin diálogo) tapa la calle entera: sus paneles van encima del mundo.
+		var hit := GameState.ui_open and not Dialogue.active
 		for b in busy:
 			if b.intersects(r):
 				hit = true

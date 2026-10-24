@@ -755,7 +755,11 @@ func new_day(spot: String) -> Array:
 			"Lukas no pide. Se le sienta al lado y espera. Ayer no comió."]))
 	_tos_noche(spot, rained and not roof and not raised, in_cambuche, lines)
 	if lines.is_empty():
-		lines.append("Nadie le robó. No llovió. Nadie le pegó.")
+		lines.append(rota("noche_buena", ["Nadie le robó. No llovió. Nadie le pegó.",
+			"Una noche sin nada. En la calle, eso es una noche buena.",
+			"No pasó nada. Él lo revisa dos veces, por si acaso. No pasó nada.",
+			"Durmió de corrido. No se acuerda de la última vez. Tampoco se acuerda de qué soñó. Mejor.",
+			"Amanece con todo: la mochila, los zapatos y las ganas. Las ganas, a medias."]))
 	lines.append_array(DayTasks.close_day())
 	# El día nuevo.
 	day += 1

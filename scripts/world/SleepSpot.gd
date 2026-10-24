@@ -114,6 +114,11 @@ func _update_hint() -> void:
 
 func _process(_delta: float) -> void:
 	Focus.dim(self, _hint)
+	# Con un minijuego abierto (la pesca es al lado del río) o el día que manda Lukas, el aviso no se ve.
+	if GameState.input_blocked():
+		_hint.visible = false
+	elif _player and not _hint.visible:
+		_update_hint()
 	if _player == null or GameState.input_blocked() or SceneRouter.busy:
 		return
 	if not Input.is_action_just_pressed("interact") or not Focus.mine(self):
