@@ -133,8 +133,9 @@ func _refresh_visual() -> void:
 		(GameState.has_cambuche(spot_id) or (spot_id == "rio" and not GameState.has_cambuche()))
 	if bici_aqui:
 		var bici := Sprite2D.new()
-		bici.texture = load("res://assets/barrio/bici_envuelta.png")
-		bici.position = Vector2(26, -7)
+		bici.texture = load("res://assets/barrio/bici_regalo.png" if GameState.flags.get("papel_regalo", false)
+			else "res://assets/barrio/bici_envuelta.png")  # (el papel de globos de Doña Rosa, si aprendió a envolver)
+		bici.position = Vector2(-44, -8) if spot_id == "rio" else Vector2(26, -7)  # (bajo el puente, a la derecha la tapa la rampa)
 		_visual.add_child(bici)
 	if not GameState.has_cambuche(spot_id):
 		if spot_id == "rio":  # el campamento de siempre, bajo el puente

@@ -4147,7 +4147,8 @@ func _ultima_visita() -> void:
 		["", "(Niega con la cabeza. Ella le pone la mano en la frente, como le hacen a ella.)"],
 		["VICTORIA", "—Está caliente. Así me pongo yo cuando no quiero ir al colegio. ... ¿Mañana viene?"],
 		["", "(Asiente.)"],
-		["", "(La bicicleta está en el cambuche, envuelta en bolsas negras para que no le caiga el rocío. Verde agua, con canasta y timbre. No le dice nada: es para mañana.)" if bici
+		["", ("(La bicicleta está en el cambuche, envuelta en el papel de globos de Doña Rosa: tres dobleces y uno que nadie ve. Verde agua por dentro. No le dice nada: es para mañana.)"
+			if f.get("papel_regalo", false) else "(La bicicleta está en el cambuche, envuelta en bolsas negras para que no le caiga el rocío. Verde agua, con canasta y timbre. No le dice nada: es para mañana.)") if bici
 			else "(El regalo no lo tiene todavía. Todavía tiene mañana.)"],
 		["VICTORIA", "—Papá. ... ¿Puedo decirle papá?"],
 		["", "(Abre la boca. Esta vez sí sale.)", "el"],

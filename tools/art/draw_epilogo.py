@@ -974,7 +974,23 @@ def cantina(f):
 
 # ---------------------------------------------------------------- EL CUMPLEAÑOS DE VICTORIA
 
-def victoria(f, con_bici=False):
+def papel_roto(cv, env, x, y):
+    """El papel de globos de Doña Rosa, roto en el pasto al lado de la bicicleta. Lo abrió despacio, pero lo abrió."""
+    paper = (244, 228, 176)
+    for pts in ([(x, y), (x + 14, y - 3), (x + 18, y + 2), (x + 6, y + 5)],
+                [(x + 22, y + 1), (x + 31, y - 1), (x + 30, y + 5), (x + 21, y + 5)],
+                [(x - 13, y + 3), (x - 4, y + 1), (x - 3, y + 6), (x - 14, y + 7)]):
+        cv.shape(poly(cv, pts), paper, env, shade=1)
+    for px, py, c in ((x + 4, y + 1, (220, 62, 74)), (x + 10, y, (72, 124, 210)), (x + 14, y + 2, (84, 172, 96)),
+                      (x + 25, y + 2, (220, 62, 74)), (x - 9, y + 4, (236, 170, 50))):
+        cv.post.append(lambda d, px=px, py=py, c=c: (d.point((px, py), fill=c), d.point((px + 1, py), fill=c),
+                                                     d.point((px, py + 1), fill=(150, 140, 120))))
+    # El moño de cinta de casete, aparte: ese no se bota.
+    post_lines(cv, [[(x + 36, y + 3), (x + 39, y + 1)], [(x + 36, y + 3), (x + 39, y + 5)], [(x + 42, y + 3), (x + 39, y + 1)],
+                    [(x + 42, y + 3), (x + 39, y + 5)]], (120, 72, 46))
+
+
+def victoria(f, con_bici=False, papel=False):
     cv = Cv(f)
     env = Env((0.7, 0.66, 0.66), (1.32, 1.12, 0.9), (1, -1), half=0.45)
     sky(cv, 80, [(110, 160, 226), (150, 190, 232), (206, 224, 236)])
@@ -1006,6 +1022,8 @@ def victoria(f, con_bici=False):
     if con_bici:
         bici(cv, env, 166, 120)
         cv.veil(ell(cv, 182, 121, 24, 2), (30, 40, 30), 0.5)
+        if papel:
+            papel_roto(cv, env, 102, 112)
     else:  # el regalo, en la banca: envuelto con un clavel encima
         cv.shape(cv.box(62, 92, 76, 100), (240, 120, 160), env, shade=1)
         cv.fill(cv.box(68, 92, 70, 100) | cv.box(62, 95, 76, 96), (250, 230, 120))
@@ -1042,7 +1060,8 @@ def fin(f):
 SCENES = {
     "entierro": entierro, "cocina": cocina, "garaje": garaje, "apartamento": apartamento, "oficina": oficina,
     "esquina": esquina, "casa_camila": casa_camila, "ciudad": ciudad, "cantina": cantina,
-    "victoria": victoria, "victoria_bici": lambda f: victoria(f, True), "fin": fin,
+    "victoria": victoria, "victoria_bici": lambda f: victoria(f, True),
+    "victoria_bici_papel": lambda f: victoria(f, True, True), "fin": fin,
 }
 
 

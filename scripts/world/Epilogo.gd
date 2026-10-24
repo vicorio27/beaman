@@ -128,6 +128,8 @@ func _victoria_lines() -> Array:
 		["", "Tiene una tarjeta, con letra de adulto que escribe despacio: \"Feliz cumpleaños. El del perro.\""],
 		["VICTORIA", "—¿Y mi papá? Ayer me dijo que sí." if f.get("dijo_si", false) else "—¿Y él? ¿Por qué no vino?"],
 		["DON GERMAN", "—... Le tocó irse lejos, mija. Pero le dejó esto."]]
+	if bici and f.get("papel_regalo", false):
+		lines.append(["", "Viene envuelta en papel de globos, un poco arrugado. El moño está perfecto. Ella mira el moño primero. Lo de adentro, después."])
 	if bici:
 		lines.append(["", "Ella da una vuelta en la bicicleta por el Parque. Pasa por el árbol de flores amarillas. Toca el timbre dos veces."])
 		lines.append(["", "Una para él. Otra para el perro."])
@@ -143,7 +145,7 @@ func _show(sc: Array) -> void:
 	_head.text = sc[1]
 	var bg: String = _place
 	if _place == "victoria" and GameState.flags.get("bici_comprada", false):
-		bg = "victoria_bici"
+		bg = "victoria_bici_papel" if GameState.flags.get("papel_regalo", false) else "victoria_bici"
 	_bg.texture = load(BG % bg)
 	for p in _people:
 		p.queue_free()

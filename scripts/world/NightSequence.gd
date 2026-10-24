@@ -436,7 +436,9 @@ func _he_dies() -> void:
 		lines.append("A las cuatro de la mañana se le calla la tos. Nadie la oye callarse.")
 	lines.append("Samuel lo encuentra al amanecer, en %s. Con el collar de Lukas en la mano, apretado." % SPOT_NAMES.get(spot, "la calle"))
 	if GameState.flags.get("bici_comprada", false):
-		lines.append("Al lado, envuelta en bolsas negras, una bicicleta verde agua. Tiene un moño hecho con la cinta de un casete.")
+		lines.append("Al lado, una bicicleta envuelta en papel de globos. Los dobleces, como le enseñaron: uno que nadie ve. Tiene un moño hecho con la cinta de un casete."
+			if GameState.flags.get("papel_regalo", false)
+			else "Al lado, envuelta en bolsas negras, una bicicleta verde agua. Tiene un moño hecho con la cinta de un casete.")
 	lines.append("Tiene cara de haber ganado algo. Nadie va a saber qué.")
 	for line in lines:
 		await _say(line)
