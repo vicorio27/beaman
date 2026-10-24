@@ -82,6 +82,8 @@ func _ready() -> void:
 	add_child(_quest_bg)
 	_quest = _label(Vector2(5, 20))
 	_quest.add_theme_color_override("font_color", Color(0.95, 0.82, 0.45))
+	_quest.clip_text = true
+	_quest.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_others = _label(Vector2(250, 20))
 	_others.size = Vector2(66, 10)
 	_others.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -200,6 +202,9 @@ func _refresh() -> void:
 	var others := GameState.active_quests("side").size() + GameState.active_quests("optional").size()
 	_quest.text = ("> " + Quests.title(main) + Quests.progress_text(main)) if main != "" else ""
 	_others.text = ("+%d Tab" % others) if others > 0 else ""
+	# La misión no se monta sobre el "+N Tab": se corta con puntos suspensivos antes de llegar.
+	var tope: float = (_others.position.x + _others.size.x - _others.text.length() * 8.0 - 6.0) if _others.text != "" else Controls.right_edge() - 4.0
+	_quest.size = Vector2(tope - _quest.position.x, 10)
 	_quest_bg.visible = _quest.text != "" or _others.text != ""
 
 
