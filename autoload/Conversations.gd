@@ -2745,12 +2745,29 @@ func _visita() -> void:
 		[["VICTORIA", "—¿Por qué usted vive en la calle?"], ["", "(...)"],
 			["VICTORIA", "—¿No sabe? Yo tampoco sé por qué vivo donde vivo. Si encuentra una casa con patio, Lukas puede tener una casa de perro."],
 			["VICTORIA", "—Azul. La casa de perro. No, verde agua. Ya le expliqué el verde agua."]],
+		[["VICTORIA", "—Le hice una lista de nombres para Lukas, por si se aburre del suyo. Capitán. Arepa. Señor Lukas."],
+			["", "(Ella los dice uno por uno. Lukas no se mueve con ninguno. Con \"Lukas\", levanta la cabeza.)"],
+			["VICTORIA", "—Bueno. Se queda Lukas. Es muy de él."]],
+		[["VICTORIA", "—En el colegio dibujamos la familia. Yo dibujé a mi mamá, a mí y a un perro."],
+			["VICTORIA", "—La profesora preguntó de quién era el perro. Le dije que de un señor. Que el señor no salía porque no cabía."],
+			["", "(Le pasa el dibujo. En la esquina, chiquito, casi saliéndose de la hoja, hay un señor.)"],
+			["VICTORIA", "—Sí cabía. Pero apretado."]],
 	]
 	if not GameState.lukas_alive():
 		talks = [[["VICTORIA", "—¿Dónde está enterrado Lukas?"], ["", "(La lleva al árbol de flores amarillas. Ella deja un dibujo debajo de una piedra.)"],
 			["VICTORIA", "—Para que no se aburra."]],
-			[["VICTORIA", "—¿Usted está triste?"], ["", "(...)"], ["VICTORIA", "—No me diga nada. Ya sé. Yo también. Pero estamos juntos. Eso cuenta."]]]
-	await Dialogue.talk(talks[(n - 1) % talks.size()])
+			[["VICTORIA", "—¿Usted está triste?"], ["", "(...)"], ["VICTORIA", "—No me diga nada. Ya sé. Yo también. Pero estamos juntos. Eso cuenta."]],
+			[["VICTORIA", "—Hoy no traje pan. No hay a quién dárselo."],
+				["", "(Igual se sientan en la banca. Las palomas llegan por costumbre. Ella les dice que hoy no.)"],
+				["VICTORIA", "—Lukas les ladraba. Ahora no saben qué hacer. Andan como perdidas."]],
+			[["VICTORIA", "—En el colegio dibujamos la familia. Yo dibujé a mi mamá, a mí y a un perro con alas."],
+				["VICTORIA", "—La profesora dijo que los perros no tienen alas. Le dije que este sí. Que se las ganó."],
+				["", "(En la esquina de la hoja, chiquito, casi afuera, hay un señor.)"]]]
+	# La primera ("¿Usted es mi papá?") sale una sola vez; después rotan las otras.
+	var idx := (n - 1) % talks.size()
+	if GameState.lukas_alive() and n > talks.size():
+		idx = 1 + (n - 1 - talks.size()) % (talks.size() - 1)
+	await Dialogue.talk(talks[idx])
 
 
 # ---------------------------------------------------------------- Trabajos con minijuego

@@ -88,6 +88,27 @@ static func open_day() -> Array:
 	return [TASKS[id][2]]
 
 
+## Lo que se cuenta en la mañana cuando él le quedó mal a alguien (rota: GameState.rota).
+const FALLAS := {
+	"rosa": ["Doña Rosa lo esperó ayer con el tinto servido. Se lo tomó ella, frío, para no botarlo.",
+		"Doña Rosa le contó a toda la fila de la arepa que él no fue. Con nombre y apellido. El apellido se lo inventó."],
+	"samuel": ["Samuel lo esperó ayer. Dice que no importa. Lo dice dos veces.",
+		"Samuel le mandó razón con un pelado: que uno no deja botado a un viejo. Que el viejo es él."],
+	"wilson": ["Wilson cargó solo ayer. Dice que le salió más barato: no tuvo que repartir.",
+		"Wilson lo buscó ayer tres cuadras empujando el carrito. Ahora le duele la espalda a nombre de él."],
+	"german": ["Don Germán le guardó el pan ayer. Hoy está duro. Se lo va a dar igual.",
+		"Don Germán preguntó por él ayer. Dos veces. Después barrió lo que ya estaba barrido."],
+	"mono": ["El Mono lo esperó ayer. Tocó solo. Dice que sonó mejor. Miente feo.",
+		"El Mono le compuso una canción a la gente que no llega. Tiene tres estrofas y él sale en las tres."],
+	"marta": ["Marta lo esperó ayer. Dice que no lo estaba esperando. Tenía dos tintos.",
+		"Marta dice que ayer ni se acordó de él. Lo dice antes de que nadie le pregunte."],
+	"efrain": ["Don Efraín lo esperó ayer. Gloria, la muñeca, también: sin parpadear, con su único ojo.",
+		"Don Efraín le dejó una nota en la reja: Pase. Con mayúscula y punto. Es lo más bravo que escribe."],
+	"veterinaria": ["La Dra. Pilar le guardó la cita ayer. Dice que la tos no espera.",
+		"La Dra. Pilar le mandó razón: que la tos no se cura por no ir. Que ella ya probó."],
+}
+
+
 ## La noche: cómo quedó el encargo. Devuelve líneas para el resumen.
 static func close_day() -> Array:
 	var g := GameState
@@ -106,12 +127,19 @@ static func close_day() -> Array:
 			g.change_mood(-10.0)
 			lines.append("La cita de Lukas era ayer. Pasó la noche tosiendo.")
 		elif id.begins_with("zaida"):
-			lines.append("Zaida lo esperó ayer.")
+			lines.append(g.rota("falla_zaida", ["Zaida lo esperó ayer.",
+				"Zaida lo esperó ayer. Se fumó el cigarrillo de los dos.",
+				"Ayer Zaida le guardó puesto en la banca. Se lo alquiló a otro.",
+				"Zaida le mandó razón con el de los minutos: que ni se le ocurra volver. O sea que vuelva."]))
 		elif TASKS[id][0] != "":
 			g.change_mood(-5.0)
-			lines.append("Ayer le falló a alguien.")
+			var who := str(TASKS[id][0])
+			lines.append(g.rota("falla_" + who, FALLAS.get(who, ["Ayer le falló a alguien."])))
 		else:
-			lines.append("La meta de ayer quedó sin cumplir.")
+			lines.append(g.rota("falla_meta", ["La meta de ayer quedó sin cumplir.",
+				"Lo de ayer quedó para hoy. Lo de hoy, ya se verá.",
+				"La meta de ayer sigue ahí, como el letrero de SE VENDE: nadie la compra.",
+				"Lo de ayer no se hizo. El día no se enteró. Él sí."]))
 	if f.get("zaida_chisme", false) and id == "zaida2":
 		f.erase("zaida_chisme")
 		lines.append("Anoche alguien preguntó por él en el puente. Por su nombre.")

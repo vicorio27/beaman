@@ -99,24 +99,60 @@ const WAKE := {
 	"lucha3": ["Se despierta sentado de golpe.", "Se despierta con una moto sonando en la cabeza.", ""],
 	"lucha4": ["Se despierta con los puños cerrados. Le duelen.", "Se despierta con la mandíbula apretada.", ""],
 }
+## Cómo se acomoda en cada sitio (cambia cada noche: GameState.rota).
 const SETTLE := {
-	"banco": "Banco de plaza. Espalda contra la pared. Lukas abajo, de guardia.",
-	"kiosco": "El kiosco gotea en una esquina. Se acomoda en la otra. Lukas se le pega a la espalda.",
-	"rio": "El cambuche. Huele a humedad. Lukas se le acuesta en los pies.",
-	"callejon": "El callejón. Seco, oscuro. Del billar salen de a tres. Lukas duerme con una oreja parada.",
-	"lote": "El lote. Nadie pasa. Se oye el río y, a ratos, el carro quemado, que cruje solo. Lukas se le pega.",
-	"parque": "El parque. Los columpios crujen solos con el viento.",
-	"pension": "Una cama. Con colchón. Con sábanas. Lukas debajo, sin respirar.",
+	"banco": ["Banco de plaza. Espalda contra la pared. Lukas abajo, de guardia.",
+		"Banco de plaza. El de la tinta roja que dice CAMILO + YURI. Camilo y Yuri ya no se hablan. El banco sigue.",
+		"Banco de plaza. La paloma de siempre ya le tiene confianza: se le duerme en el espaldar. Lukas la vigila.",
+		"Banco de plaza. Un borracho le pide permiso para la otra punta. Ronca en la otra punta. Lukas, en la mitad."],
+	"kiosco": ["El kiosco gotea en una esquina. Se acomoda en la otra. Lukas se le pega a la espalda.",
+		"El kiosco. Todavía dice MINUTOS A 200. Hace años que nadie vende minutos. Él tampoco tiene a quién llamar.",
+		"El kiosco. Lukas le gana la esquina seca. Él se queda con la que gotea: el que manda, manda.",
+		"El kiosco. Alguien escribió AQUÍ VIVO YO en la pared de adentro. Por si acaso, duerme mirando la puerta."],
+	"rio": ["El cambuche. Huele a humedad. Lukas se le acuesta en los pies.",
+		"El cambuche. El río suena a carretera. Lukas da tres vueltas antes de echarse. Siempre tres.",
+		"El cambuche. Una rata pasa por el techo de plástico. Lukas la oye. Decide que hoy no.",
+		"El cambuche. Arregla una esquina del plástico. Mañana se va a volver a soltar. Es el trato."],
+	"callejon": ["El callejón. Seco, oscuro. Del billar salen de a tres. Lukas duerme con una oreja parada.",
+		"El callejón. Del billar sale una ranchera y un tipo que la canta peor. Lukas aúlla con él. Le pagan con un pan.",
+		"El callejón. Una gata pasa por encima de los dos sin pedir permiso. Lukas finge que no la vio.",
+		"El callejón. Se acuesta debajo del aviso de NO ORINAR. Es el pedazo más seco: nadie le hace caso al aviso."],
+	"lote": ["El lote. Nadie pasa. Se oye el río y, a ratos, el carro quemado, que cruje solo. Lukas se le pega.",
+		"El lote. Los cocuyos prenden y apagan. Lukas les ladra a todos, uno por uno.",
+		"El lote. El carro quemado todavía tiene el ambientador de pino colgado. Huele a pino quemado.",
+		"El lote. Una lechuza en el poste. Lo mira toda la noche. Él la mira. Gana la lechuza."],
+	"parque": ["El parque. Los columpios crujen solos con el viento.",
+		"El parque. El celador de la tienda de enfrente lo saluda con la linterna. Es lo más parecido a un buenas noches.",
+		"El parque. Lukas se mete debajo del rodadero. Él, al lado. El rodadero hace de techo y de cobija.",
+		"El parque. Riegan el pasto a las dos de la mañana. A los dos, también."],
+	"pension": ["Una cama. Con colchón. Con sábanas. Lukas debajo, sin respirar.",
+		"Una cama. Lukas debajo, quieto: la de la pensión no puede saber. Lukas lo sabe.",
+		"Una cama. El de la pieza de al lado ve novela con el volumen a todo. Él se queda con el final.",
+		"Una cama. No se acuerda de cómo se duerme en una. Lo resuelve en el piso, al lado de Lukas."],
 }
 ## Las mismas noches, sin Lukas.
 const SETTLE_SOLO := {
-	"banco": "Banco de plaza. Espalda contra la pared. Nadie abajo.",
-	"kiosco": "El kiosco gotea en una esquina. Se acomoda en la otra. La espalda, fría.",
-	"rio": "El cambuche. Huele a humedad. Los pies, sin peso encima.",
-	"callejon": "El callejón. Del billar salen de a tres. Nadie con la oreja parada.",
-	"lote": "El lote. Nadie pasa. Se oye el río. Eso es todo lo que se oye.",
-	"parque": "El parque. Desde aquí se ve el árbol de flores amarillas.",
-	"pension": "Una cama. Debajo, nadie. Duerme en la mitad.",
+	"banco": ["Banco de plaza. Espalda contra la pared. Nadie abajo.",
+		"Banco de plaza. Pone la mochila donde se echaba Lukas. La mochila no cuida.",
+		"Banco de plaza. La paloma de siempre baja al piso, al puesto de Lukas. No le dura."],
+	"kiosco": ["El kiosco gotea en una esquina. Se acomoda en la otra. La espalda, fría.",
+		"El kiosco. Le sobra la esquina seca. Duerme en la que gotea, por costumbre.",
+		"El kiosco. Se despierta a las tres buscando con la mano. Sigue durmiendo con la mano ahí."],
+	"rio": ["El cambuche. Huele a humedad. Los pies, sin peso encima.",
+		"El cambuche. La rata del techo pasa tranquila. Ya nadie la oye.",
+		"El cambuche. Da tres vueltas antes de acostarse. No sabe de quién lo aprendió. Sí sabe."],
+	"callejon": ["El callejón. Del billar salen de a tres. Nadie con la oreja parada.",
+		"El callejón. La gata pasa por encima. Esta vez nadie finge no verla.",
+		"El callejón. Del billar sale una ranchera. Nadie aúlla. Le queda mal la ranchera."],
+	"lote": ["El lote. Nadie pasa. Se oye el río. Eso es todo lo que se oye.",
+		"El lote. Los cocuyos prenden y apagan. Nadie les ladra. Siguen igual, sin público.",
+		"El lote. La lechuza del poste. Ahora le gana más rápido."],
+	"parque": ["El parque. Desde aquí se ve el árbol de flores amarillas.",
+		"El parque. Duerme debajo del rodadero. Le sobra rodadero.",
+		"El parque. El celador lo saluda con la linterna. Alumbra al lado, buscando al perro. Apaga."],
+	"pension": ["Una cama. Debajo, nadie. Duerme en la mitad.",
+		"Una cama. Ya no tiene a quién esconder. Igual cierra la puerta despacito.",
+		"Una cama. Duerme en el piso igual. El piso es donde está la costumbre."],
 }
 const SPOT_NAMES := {"banco": "el banco de la plaza", "kiosco": "el kiosco viejo", "rio": "el cambuche del puente",
 	"callejon": "el callejón", "parque": "el parque", "pension": "la pensión", "lote": "el lote del fondo"}
@@ -264,10 +300,17 @@ func _run() -> void:
 	if GameState.day >= 2:
 		var settle: Dictionary = SETTLE if GameState.lukas_alive() else SETTLE_SOLO
 		_spot_pic(spot, "dormir", "noche", _rain_tonight())
-		await _say(settle.get(spot, settle["banco"]))
+		await _say(GameState.rota("settle_" + spot, settle.get(spot, settle["banco"])))
 		if _rain_tonight():
-			await _say("Empieza a llover. Aquí, por una vez, no." if GameState.roofed(spot)
-				else "Empieza a llover. No hay para dónde correrse.")
+			await _say(GameState.rota("llueve_techo", ["Empieza a llover. Aquí, por una vez, no.",
+				"Empieza a llover. Él oye el agua desde adentro, como la gente de casa.",
+				"Empieza a llover. El techo suena a aplauso. No es para él, pero lo coge."])
+				if GameState.roofed(spot) else GameState.rota("llueve", ["Empieza a llover. No hay para dónde correrse.",
+				"Empieza a llover. Se tapa con el cartón. El cartón dura veinte minutos. Él, el resto.",
+				"Empieza a llover. Lukas se le mete debajo de la chaqueta. Quedan mojados los dos, pero juntos." if GameState.lukas_alive()
+					else "Empieza a llover. Se mete la mano al bolsillo, donde tiene el collar. Que eso no se moje.",
+				"Empieza a llover. Primero gotas gordas, después de todas. El cielo no tiene término medio.",
+				"Empieza a llover. Alguien en un segundo piso cierra la ventana. Suena como una puerta en la cara."]))
 		# Volvió a acostarse después de buscar a Lukas por el barrio: sigue la misma noche.
 		if GameState.flags.get("lombardia_vuelta", false):
 			GameState.flags.erase("lombardia_vuelta")
@@ -310,7 +353,7 @@ func _run() -> void:
 		await _summary(spot)
 		return
 	_spot_pic(spot, "dormir", "noche", _rain_tonight())
-	await _say(SETTLE.get(spot, SETTLE["banco"]))
+	await _say(str(SETTLE.get(spot, SETTLE["banco"])[0]))
 	_vignette_off()
 	# La fotografía.
 	_photo.texture = load("res://assets/items/foto_frente.png")

@@ -110,6 +110,13 @@ func _process(delta: float) -> void:
 		stats["segundos"] = float(stats.get("segundos", 0.0)) + delta
 
 
+## Una línea de la lista, distinta cada vez: rota en orden (la cuenta va en las banderas, se guarda).
+func rota(key: String, opts: Array) -> String:
+	var n := int(flags.get("rota_" + key, 0))
+	flags["rota_" + key] = n + 1
+	return str(opts[n % opts.size()])
+
+
 func play_time_text() -> String:
 	var t := int(stats.get("segundos", 0.0))
 	return "%d h %02d min" % [t / 3600, (t / 60) % 60]
@@ -625,10 +632,20 @@ func new_day(spot: String) -> Array:
 	if rained and not roof and not raised:
 		change_mood(-5.0)
 	if spot == "pension":
-		lines.append("Durmió en una cama. Se despertó tres veces a revisar la puerta.")
+		lines.append(rota("pension", ["Durmió en una cama. Se despertó tres veces a revisar la puerta.",
+			"Durmió en una cama. Se cayó de ella a las tres de la mañana: el cuerpo buscaba el piso.",
+			"Durmió en una cama. La almohada olía a otro. Mejor que oler a nada.",
+			"Durmió en una cama. Soñó que alguien le cobraba la cama. Se despertó y era verdad: a las doce."]))
 	elif rained:
-		lines.append("Llovió toda la noche. El techo aguantó." if roof
-			else "Llovió toda la noche. Durmió mojado.")
+		lines.append(rota("lluvia_techo", ["Llovió toda la noche. El techo aguantó.",
+			"Llovió toda la noche. El techo aguantó; las goteras, también.",
+			"Llovió toda la noche. Él, seco. Lukas lo mira como si fuera mérito de él." if lukas_alive()
+				else "Llovió toda la noche. Él, seco. Por una vez le tocó lo bueno."])
+			if roof else rota("lluvia_mojado", ["Llovió toda la noche. Durmió mojado.",
+			"Llovió toda la noche. Amaneció con los zapatos llenos, como dos materas.",
+			"Llovió toda la noche. Exprime la camiseta. Sale agua para un tinto.",
+			"Llovió toda la noche. Lo único seco es el bolsillo, porque no tiene nada.",
+			"Llovió toda la noche. La ropa se le seca a las tres de la tarde. Si no vuelve a llover a las dos."]))
 	# Robo. En el cambuche donde duerme, lo decide la defensa de la noche (NightSequence._defend).
 	var defense: String = str(flags.get("defense_result", ""))
 	flags.erase("defense_result")
@@ -719,11 +736,18 @@ func new_day(spot: String) -> Array:
 			lines.append("Lukas no se levanta. Tiene la nariz caliente y seca. No mueve la cola.")
 	elif flags.has("lukas_enfermo") and lukas_alive():
 		change_mood(-6.0)
-		lines.append(["Lukas sigue enfermo. Come poquito. Hay una veterinaria en el Parque de San Judas.",
-			"Lukas tiembla de noche. Le da la cobija, la camiseta. Necesita un veterinario."][day % 2])
+		lines.append(rota("lukas_enfermo", ["Lukas sigue enfermo. Come poquito. Hay una veterinaria en el Parque de San Judas.",
+			"Lukas tiembla de noche. Le da la cobija, la camiseta. Necesita un veterinario.",
+			"Lukas tiene la nariz seca. Él se la toca cada hora, como quien revisa una olla.",
+			"Lukas no se levantó a ladrarle al de la basura. Es la primera vez en años. El de la basura se queda esperando.",
+			"Lukas toma agua y la devuelve. Lo vuelve a intentar: es más terco que enfermo. La Dra. Pilar está en el Parque.",
+			"Lukas duerme con la cabeza encima del zapato de él. Para saber si se va. No se va."]))
 	if lukas_alive() and day >= 2 and flags.get("lukas_fed_day", -1) != day:
 		flags["lukas_hungry"] = true
-		lines.append("Lukas lo mira. Ayer no comió.")
+		lines.append(rota("lukas_hambre", ["Lukas lo mira. Ayer no comió.",
+			"Lukas le lame la mano a ver si sabe a algo. Ayer no comió.",
+			"Lukas olfatea la mochila entera. Ayer no comió. La mochila tampoco tenía.",
+			"Lukas no pide. Se le sienta al lado y espera. Ayer no comió."]))
 	_tos_noche(spot, rained and not roof and not raised, in_cambuche, lines)
 	if lines.is_empty():
 		lines.append("Nadie le robó. No llovió. Nadie le pegó.")
